@@ -11,18 +11,8 @@ export const useFeelbackDeviceStore = defineStore('feelback-device', () => {
   async function fetchDevices() {
     isLoading.value = true
     try {
-      devices.value = await feelbackDeviceApi.getAll()
-    } finally {
-      isLoading.value = false
-    }
-  }
-
-  async function registerDevice(data: Partial<FeelbackDevice>) {
-    isLoading.value = true
-    try {
-      const created = await feelbackDeviceApi.register(data)
-      devices.value.push(created)
-      return created
+      const response = await feelbackDeviceApi.getAll()
+      devices.value = response.data
     } finally {
       isLoading.value = false
     }
@@ -31,11 +21,71 @@ export const useFeelbackDeviceStore = defineStore('feelback-device', () => {
   async function fetchDevice(id: string) {
     isLoading.value = true
     try {
-      currentDevice.value = await feelbackDeviceApi.getById(id)
+      const response = await feelbackDeviceApi.getById(id)
+      currentDevice.value = response.data
+      return response.data
     } finally {
       isLoading.value = false
     }
   }
 
-  return { devices, currentDevice, isLoading, fetchDevices, registerDevice, fetchDevice }
+  async function registerDevice(data: Partial<FeelbackDevice>) {
+    isLoading.value = true
+    try {
+      const response = await feelbackDeviceApi.register(data)
+      devices.value.push(response.data)
+      return response.data
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  async function updateDevice(id: string, data: Partial<FeelbackDevice>) {
+    isLoading.value = true
+    try {
+      const response = await feelbackDeviceApi.update(id, data)
+      const updated = response.data
+      const index = devices.value.findIndex((d) => d.id === id)
+      if (index !== -1) {
+        devices.value[index] = updated
+      }
+      if (currentDevice.value?.id === id) {
+        currentDevice.value = updated
+      }
+      return updated
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  async function deleteDevice(id: string) {
+    isLoading.value = true
+    try {
+      await feelbackDeviceApi.delete(id)
+      devices.value = devices.value.filter((d) => d.id !== id)
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  async function restartDevice(id: string) {
+    isLoading.value = true
+    try {
+      await feelbackDeviceApi.restart(id)
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  return {
+    devices,
+    currentDevice,
+    isLoading,
+    fetchDevices,
+    fetchDevice,
+    registerDevice,
+    updateDevice,
+    deleteDevice,
+    restartDevice,
+  }
 })

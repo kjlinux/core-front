@@ -1,5 +1,4 @@
 import { useUiStore } from '@/stores/ui.store'
-import type { ToastMessage } from '@/types/common'
 
 export function useToast() {
   const ui = useUiStore()
@@ -20,5 +19,11 @@ export function useToast() {
     ui.addToast({ type: 'info', title, message })
   }
 
-  return { success, error, warning, info }
+  // Aliases for compatibility with showSuccess/showError pattern
+  const showSuccess = success
+  const showError = error
+  const showWarning = warning
+  const showInfo = info
+
+  return { success, error, warning, info, showSuccess, showError, showWarning, showInfo }
 }

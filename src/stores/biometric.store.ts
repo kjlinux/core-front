@@ -5,6 +5,7 @@ import type { BiometricDevice, FingerprintEnrollment, BiometricAuditEntry } from
 
 export const useBiometricStore = defineStore('biometric', () => {
   const devices = ref<BiometricDevice[]>([])
+  const currentDevice = ref<BiometricDevice | null>(null)
   const enrollments = ref<FingerprintEnrollment[]>([])
   const auditLog = ref<BiometricAuditEntry[]>([])
   const isLoading = ref(false)
@@ -12,7 +13,19 @@ export const useBiometricStore = defineStore('biometric', () => {
   async function fetchDevices() {
     isLoading.value = true
     try {
-      devices.value = await biometricApi.getDevices()
+      const response = await biometricApi.getDevices()
+      devices.value = response.data
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  async function fetchDevice(id: string) {
+    isLoading.value = true
+    try {
+      const response = await biometricApi.getDevice(id)
+      currentDevice.value = response.data
+      return response.data
     } finally {
       isLoading.value = false
     }
@@ -21,7 +34,8 @@ export const useBiometricStore = defineStore('biometric', () => {
   async function fetchEnrollments() {
     isLoading.value = true
     try {
-      enrollments.value = await biometricApi.getEnrollments()
+      const response = await biometricApi.getEnrollments()
+      enrollments.value = response.data
     } finally {
       isLoading.value = false
     }
@@ -30,9 +44,19 @@ export const useBiometricStore = defineStore('biometric', () => {
   async function startEnrollment(data: Partial<FingerprintEnrollment>) {
     isLoading.value = true
     try {
-      const enrollment = await biometricApi.startEnrollment(data)
-      enrollments.value.push(enrollment)
-      return enrollment
+      const response = await biometricApi.startEnrollment(data)
+      enrollments.value.push(response.data)
+      return response.data
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  async function deleteEnrollment(id: string) {
+    isLoading.value = true
+    try {
+      await biometricApi.deleteEnrollment(id)
+      enrollments.value = enrollments.value.filter((e) => e.id !== id)
     } finally {
       isLoading.value = false
     }
@@ -41,7 +65,8 @@ export const useBiometricStore = defineStore('biometric', () => {
   async function fetchAuditLog() {
     isLoading.value = true
     try {
-      auditLog.value = await biometricApi.getAuditLog()
+      const response = await biometricApi.getAuditLog()
+      auditLog.value = response.data
     } finally {
       isLoading.value = false
     }
@@ -50,11 +75,35 @@ export const useBiometricStore = defineStore('biometric', () => {
   async function fetchInconsistencies() {
     isLoading.value = true
     try {
-      return await biometricApi.getInconsistencies()
+      const response = await biometricApi.getInconsistencies()
+      return response.data
     } finally {
       isLoading.value = false
     }
   }
 
-  return { devices, enrollments, auditLog, isLoading, fetchDevices, fetchEnrollments, startEnrollment, fetchAuditLog, fetchInconsistencies }
+  async function syncDevice(id: string) {
+    isLoading.value = true
+    try {
+      await biometricApi.syncDevice(id)
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  return {
+    devices,
+    currentDevice,
+    enrollments,
+    auditLog,
+    isLoading,
+    fetchDevices,
+    fetchDevice,
+    fetchEnrollments,
+    startEnrollment,
+    deleteEnrollment,
+    fetchAuditLog,
+    fetchInconsistencies,
+    syncDevice,
+  }
 })

@@ -156,7 +156,15 @@ const sidebarClasses = computed(() => [
         :active="route.path.startsWith('/biometrique')"
       >
         <TheSidebarItem
-          label="Appareils"
+          label="Tableau de bord"
+          to="/biometrique"
+          :icon="ChartBarIcon"
+          :collapsed="false"
+          :active="route.path === '/biometrique'"
+          :nested="true"
+        />
+        <TheSidebarItem
+          label="Terminaux"
           to="/biometrique/devices"
           :icon="DevicePhoneMobileIcon"
           :collapsed="false"
@@ -164,19 +172,11 @@ const sidebarClasses = computed(() => [
           :nested="true"
         />
         <TheSidebarItem
-          label="Enrollement"
+          label="Inscriptions"
           to="/biometrique/enrollment"
           :icon="HandRaisedIcon"
           :collapsed="false"
           :active="route.path.startsWith('/biometrique/enrollment')"
-          :nested="true"
-        />
-        <TheSidebarItem
-          label="Historique"
-          to="/biometrique/history"
-          :icon="ClipboardDocumentListIcon"
-          :collapsed="false"
-          :active="route.path.startsWith('/biometrique/history')"
           :nested="true"
         />
         <TheSidebarItem
@@ -213,19 +213,27 @@ const sidebarClasses = computed(() => [
           :nested="true"
         />
         <TheSidebarItem
-          label="Appareils"
+          label="Analyse"
+          to="/feelback/analytics"
+          :icon="DocumentChartBarIcon"
+          :collapsed="false"
+          :active="route.path.startsWith('/feelback/analytics')"
+          :nested="true"
+        />
+        <TheSidebarItem
+          label="Donnees brutes"
+          to="/feelback/data"
+          :icon="ClipboardDocumentListIcon"
+          :collapsed="false"
+          :active="route.path.startsWith('/feelback/data')"
+          :nested="true"
+        />
+        <TheSidebarItem
+          label="Terminaux"
           to="/feelback/devices"
           :icon="DevicePhoneMobileIcon"
           :collapsed="false"
           :active="route.path.startsWith('/feelback/devices')"
-          :nested="true"
-        />
-        <TheSidebarItem
-          label="Donnees"
-          to="/feelback/data"
-          :icon="DocumentChartBarIcon"
-          :collapsed="false"
-          :active="route.path.startsWith('/feelback/data')"
           :nested="true"
         />
         <TheSidebarItem
@@ -234,6 +242,22 @@ const sidebarClasses = computed(() => [
           :icon="BellAlertIcon"
           :collapsed="false"
           :active="route.path.startsWith('/feelback/alerts')"
+          :nested="true"
+        />
+        <TheSidebarItem
+          label="Comparaison sites"
+          to="/feelback/comparison"
+          :icon="ChartBarIcon"
+          :collapsed="false"
+          :active="route.path.startsWith('/feelback/comparison')"
+          :nested="true"
+        />
+        <TheSidebarItem
+          label="Rapports"
+          to="/feelback/reports"
+          :icon="DocumentChartBarIcon"
+          :collapsed="false"
+          :active="route.path.startsWith('/feelback/reports')"
           :nested="true"
         />
       </TheSidebarGroup>
@@ -250,7 +274,15 @@ const sidebarClasses = computed(() => [
           to="/marketplace"
           :icon="TagIcon"
           :collapsed="false"
-          :active="route.path === '/marketplace' || route.path.startsWith('/marketplace/product')"
+          :active="route.path === '/marketplace' || route.path.startsWith('/marketplace/products')"
+          :nested="true"
+        />
+        <TheSidebarItem
+          label="Mon panier"
+          to="/marketplace/cart"
+          :icon="ShoppingCartIcon"
+          :collapsed="false"
+          :active="route.path === '/marketplace/cart'"
           :nested="true"
         />
         <TheSidebarItem
@@ -258,16 +290,43 @@ const sidebarClasses = computed(() => [
           to="/marketplace/orders"
           :icon="ClipboardDocumentListIcon"
           :collapsed="false"
-          :active="route.path.startsWith('/marketplace/orders') || route.path.startsWith('/marketplace/cart')"
+          :active="route.path.startsWith('/marketplace/orders')"
           :nested="true"
         />
         <TheSidebarItem
           v-if="isSuperAdmin"
-          label="Administration"
-          to="/marketplace/admin"
+          label="Gestion produits"
+          to="/marketplace/admin/products"
+          :icon="CubeIcon"
+          :collapsed="false"
+          :active="route.path.startsWith('/marketplace/admin/products')"
+          :nested="true"
+        />
+        <TheSidebarItem
+          v-if="isSuperAdmin"
+          label="Toutes commandes"
+          to="/marketplace/admin/orders"
           :icon="WrenchScrewdriverIcon"
           :collapsed="false"
-          :active="route.path.startsWith('/marketplace/admin')"
+          :active="route.path.startsWith('/marketplace/admin/orders')"
+          :nested="true"
+        />
+        <TheSidebarItem
+          v-if="isSuperAdmin"
+          label="Stocks"
+          to="/marketplace/admin/inventory"
+          :icon="ServerStackIcon"
+          :collapsed="false"
+          :active="route.path.startsWith('/marketplace/admin/inventory')"
+          :nested="true"
+        />
+        <TheSidebarItem
+          v-if="isSuperAdmin"
+          label="Rapports ventes"
+          to="/marketplace/admin/reports"
+          :icon="DocumentChartBarIcon"
+          :collapsed="false"
+          :active="route.path.startsWith('/marketplace/admin/reports')"
           :nested="true"
         />
       </TheSidebarGroup>
@@ -277,41 +336,41 @@ const sidebarClasses = computed(() => [
         label="Parametres"
         :icon="Cog6ToothIcon"
         :collapsed="ui.sidebarCollapsed"
-        :active="route.path.startsWith('/settings')"
+        :active="route.path.startsWith('/parametres')"
       >
         <TheSidebarItem
           label="Mon profil"
-          to="/settings/profile"
+          to="/parametres/profile"
           :icon="UserIcon"
           :collapsed="false"
-          :active="route.path === '/settings/profile'"
+          :active="route.path === '/parametres/profile'"
           :nested="true"
         />
         <TheSidebarItem
           v-if="isAdminOrSuper"
           label="Entreprise"
-          to="/settings/company"
+          to="/parametres/entreprise"
           :icon="BuildingOffice2Icon"
           :collapsed="false"
-          :active="route.path === '/settings/company'"
+          :active="route.path === '/parametres/entreprise'"
           :nested="true"
         />
         <TheSidebarItem
           v-if="isAdminOrSuper"
           label="Utilisateurs"
-          to="/settings/users"
+          to="/parametres/utilisateurs"
           :icon="UsersIcon"
           :collapsed="false"
-          :active="route.path === '/settings/users'"
+          :active="route.path === '/parametres/utilisateurs'"
           :nested="true"
         />
         <TheSidebarItem
           v-if="isSuperAdmin"
           label="Roles"
-          to="/settings/roles"
+          to="/parametres/roles"
           :icon="ShieldCheckIcon"
           :collapsed="false"
-          :active="route.path === '/settings/roles'"
+          :active="route.path === '/parametres/roles'"
           :nested="true"
         />
       </TheSidebarGroup>

@@ -17,7 +17,7 @@ import { computed } from 'vue';
 import AppSpinner from './AppSpinner.vue';
 
 interface Props {
-  variant?: 'primary' | 'secondary' | 'danger' | 'outline';
+  variant?: 'primary' | 'secondary' | 'danger' | 'outline' | 'ghost' | 'success';
   size?: 'sm' | 'md' | 'lg';
   loading?: boolean;
   disabled?: boolean;
