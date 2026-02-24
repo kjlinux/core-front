@@ -64,7 +64,7 @@ onMounted(async () => {
   try {
     const data = await store.fetchInconsistencies()
     if (data && (data as any[]).length > 0) {
-      inconsistencies.value = data as Inconsistency[]
+      inconsistencies.value = data as unknown as Inconsistency[]
     } else {
       inconsistencies.value = mockData
     }
@@ -128,7 +128,7 @@ onMounted(async () => {
                 </AppBadge>
               </td>
               <td class="px-4 py-3">
-                <AppBadge :variant="item.biometricStatus === 'enrolled' ? 'success' : 'default'">
+                <AppBadge :variant="item.biometricStatus === 'enrolled' ? 'success' : 'neutral'">
                   {{ item.biometricStatus === 'enrolled' ? 'Inscrit' : 'Non inscrit' }}
                 </AppBadge>
               </td>

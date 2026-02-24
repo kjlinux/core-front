@@ -26,14 +26,14 @@ async function handleSubmit() {
   try {
     await companyStore.createCompany(formData.value)
     toast.success('Succès', 'Entreprise créée avec succès')
-    router.push({ name: 'rfid-company-list' })
+    router.push({ name: 'rfid-companies' })
   } catch (error: any) {
     toast.error('Erreur', error.message || 'Erreur lors de la création de l\'entreprise')
   }
 }
 
 function handleCancel() {
-  router.push({ name: 'rfid-company-list' })
+  router.push({ name: 'rfid-companies' })
 }
 </script>
 

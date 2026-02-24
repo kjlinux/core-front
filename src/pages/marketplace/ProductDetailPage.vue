@@ -81,7 +81,7 @@ onMounted(async () => {
           <AppBadge :variant="product.stockQuantity > 0 ? 'success' : 'danger'">
             {{ product.stockQuantity > 0 ? `En stock (${product.stockQuantity})` : 'Rupture de stock' }}
           </AppBadge>
-          <AppBadge v-if="product.customizable" variant="default">Personnalisable</AppBadge>
+          <AppBadge v-if="product.customizable" variant="neutral">Personnalisable</AppBadge>
         </div>
 
         <p class="text-3xl font-bold text-primary">{{ formatPrice(product.price, product.currency) }}</p>

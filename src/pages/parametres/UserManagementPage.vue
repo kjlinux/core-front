@@ -8,6 +8,7 @@ import AppModal from '@/components/ui/AppModal.vue'
 import AppInput from '@/components/ui/AppInput.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
+import { PencilIcon, EyeIcon, EyeSlashIcon, KeyIcon, UserPlusIcon } from '@heroicons/vue/24/outline'
 
 const permissions = usePermissions()
 const toast = useToast()
@@ -65,20 +66,20 @@ function openEditModal(user: any) {
 
 function toggleActive(user: any) {
   user.isActive = !user.isActive
-  toast.showSuccess(user.isActive ? 'Utilisateur active' : 'Utilisateur desactive')
+  toast.success(user.isActive ? 'Utilisateur active' : 'Utilisateur desactive')
 }
 
 function resetPassword(user: any) {
-  toast.showSuccess(`Email de reinitialisation envoye a ${user.email}`)
+  toast.success(`Email de reinitialisation envoye a ${user.email}`)
 }
 
 function handleCreate() {
   if (!createForm.value.firstName || !createForm.value.email || !createForm.value.role) {
-    toast.showError('Veuillez remplir tous les champs obligatoires')
+    toast.error('Veuillez remplir tous les champs obligatoires')
     return
   }
   if (createForm.value.password !== createForm.value.confirmPassword) {
-    toast.showError('Les mots de passe ne correspondent pas')
+    toast.error('Les mots de passe ne correspondent pas')
     return
   }
   mockUsers.value.push({
@@ -86,12 +87,12 @@ function handleCreate() {
     firstName: createForm.value.firstName,
     lastName: createForm.value.lastName,
     email: createForm.value.email,
-    role: createForm.value.role,
+    role: createForm.value.role as 'super_admin' | 'admin_enterprise' | 'manager',
     companyName: createForm.value.companyName || '-',
     isActive: true,
-    createdAt: new Date().toISOString().split('T')[0],
+    createdAt: new Date().toISOString().split('T')[0]!,
   })
-  toast.showSuccess('Utilisateur cree avec succes')
+  toast.success('Utilisateur cree avec succes')
   showCreateModal.value = false
   createForm.value = { firstName: '', lastName: '', email: '', role: '', companyName: '', password: '', confirmPassword: '' }
 }
@@ -101,7 +102,7 @@ function handleEditSave() {
   if (index !== -1) {
     mockUsers.value[index] = { ...editingUser.value }
   }
-  toast.showSuccess('Utilisateur mis a jour')
+  toast.success('Utilisateur mis a jour')
   showEditModal.value = false
 }
 </script>
@@ -114,6 +115,7 @@ function handleEditSave() {
         <p class="text-sm text-gray-500 mt-1">{{ mockUsers.length }} utilisateur(s) dans le systeme</p>
       </div>
       <AppButton variant="primary" @click="showCreateModal = true">
+        <UserPlusIcon class="w-4 h-4 mr-1" />
         Creer un utilisateur
       </AppButton>
     </div>
@@ -141,18 +143,23 @@ function handleEditSave() {
               </td>
               <td class="px-4 py-3 text-sm text-gray-600">{{ user.companyName }}</td>
               <td class="px-4 py-3">
-                <AppBadge :variant="user.isActive ? 'success' : 'default'">
+                <AppBadge :variant="user.isActive ? 'success' : 'neutral'">
                   {{ user.isActive ? 'Actif' : 'Inactif' }}
                 </AppBadge>
               </td>
               <td class="px-4 py-3 text-sm text-gray-600">{{ formatDate(user.createdAt) }}</td>
               <td class="px-4 py-3">
-                <div class="flex gap-2">
-                  <AppButton size="sm" variant="ghost" @click="openEditModal(user)">Modifier</AppButton>
-                  <AppButton size="sm" variant="secondary" @click="toggleActive(user)">
-                    {{ user.isActive ? 'Desactiver' : 'Activer' }}
+                <div class="flex gap-1">
+                  <AppButton size="sm" variant="ghost" @click="openEditModal(user)" title="Modifier">
+                    <PencilIcon class="w-4 h-4" />
                   </AppButton>
-                  <AppButton size="sm" variant="ghost" @click="resetPassword(user)">Reset MDP</AppButton>
+                  <AppButton size="sm" variant="ghost" :class="user.isActive ? 'text-red-600 hover:text-red-700' : 'text-green-600 hover:text-green-700'" @click="toggleActive(user)" :title="user.isActive ? 'Desactiver' : 'Activer'">
+                    <EyeSlashIcon v-if="user.isActive" class="w-4 h-4" />
+                    <EyeIcon v-else class="w-4 h-4" />
+                  </AppButton>
+                  <AppButton size="sm" variant="ghost" @click="resetPassword(user)" title="Reinitialiser le mot de passe">
+                    <KeyIcon class="w-4 h-4" />
+                  </AppButton>
                 </div>
               </td>
             </tr>

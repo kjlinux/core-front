@@ -35,7 +35,7 @@ const subscriptionLabels: Record<string, string> = {
 }
 
 const subscriptionVariants: Record<string, string> = {
-  basic: 'default',
+  basic: 'neutral',
   premium: 'info',
   enterprise: 'success',
 }
@@ -61,7 +61,7 @@ onMounted(async () => {
   if (userCompanyId) {
     await companyStore.fetchCompany(userCompanyId)
   } else if (companyStore.companies.length > 0) {
-    await companyStore.fetchCompany(companyStore.companies[0].id)
+    await companyStore.fetchCompany(companyStore.companies[0]!.id)
   }
   if (company.value) {
     form.value.name = company.value.name
@@ -90,8 +90,8 @@ onMounted(async () => {
 
           <div>
             <p class="text-sm font-medium text-gray-700 mb-1">Abonnement</p>
-            <AppBadge :variant="(subscriptionVariants[company.subscriptionPlan] ?? 'default') as any">
-              {{ subscriptionLabels[company.subscriptionPlan] ?? company.subscriptionPlan }}
+            <AppBadge :variant="(subscriptionVariants[company.subscription] ?? 'neutral') as any">
+              {{ subscriptionLabels[company.subscription] ?? company.subscription }}
             </AppBadge>
             <p class="text-xs text-gray-400 mt-1">Pour changer de plan, contactez le support</p>
           </div>
@@ -143,7 +143,8 @@ onMounted(async () => {
     </div>
 
     <AppConfirmDialog
-      v-model="showDeactivateDialog"
+      :open="showDeactivateDialog"
+      @cancel="showDeactivateDialog = false"
       title="Desactiver l'entreprise"
       message="Etes-vous sur de vouloir desactiver cette entreprise ? Tous les acces seront suspendus."
       @confirm="handleDeactivate"

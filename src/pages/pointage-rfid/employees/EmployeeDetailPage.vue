@@ -7,6 +7,7 @@ import { usePermissions } from '@/composables/usePermissions'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
+import { ArrowLeftIcon, PencilIcon } from '@heroicons/vue/24/outline'
 
 const router = useRouter()
 const route = useRoute()
@@ -86,7 +87,7 @@ const handleEdit = () => {
 }
 
 const handleBack = () => {
-  router.push({ name: 'rfid-employee-list' })
+  router.push({ name: 'rfid-employees' })
 }
 
 const handleAssignCard = () => {
@@ -104,9 +105,11 @@ const closeAssignCardModal = () => {
       <h1 class="text-2xl font-bold text-gray-900">Details de l'employe</h1>
       <div class="flex space-x-3">
         <AppButton variant="secondary" @click="handleBack">
+          <ArrowLeftIcon class="w-4 h-4 mr-1" />
           Retour
         </AppButton>
         <AppButton v-if="canEdit && employee" @click="handleEdit">
+          <PencilIcon class="w-4 h-4 mr-1" />
           Modifier
         </AppButton>
       </div>
@@ -132,7 +135,7 @@ const closeAssignCardModal = () => {
               <h2 class="text-3xl font-bold text-gray-900">
                 {{ employee.firstName }} {{ employee.lastName }}
               </h2>
-              <AppBadge :variant="employee.isActive ? 'success' : 'secondary'">
+              <AppBadge :variant="employee.isActive ? 'success' : 'neutral'">
                 {{ employee.isActive ? 'Actif' : 'Inactif' }}
               </AppBadge>
             </div>
@@ -203,7 +206,7 @@ const closeAssignCardModal = () => {
 
               <div class="flex items-center space-x-2">
                 <span class="text-sm font-medium text-gray-900">Biometrie:</span>
-                <AppBadge :variant="employee.biometricEnrolled ? 'success' : 'secondary'">
+                <AppBadge :variant="employee.biometricEnrolled ? 'success' : 'neutral'">
                   {{ employee.biometricEnrolled ? 'Enrolee' : 'Non enrolee' }}
                 </AppBadge>
               </div>

@@ -125,7 +125,7 @@ onMounted(async () => {
             <div class="space-y-3">
               <div>
                 <p class="text-xs text-gray-500">Statut actuel</p>
-                <AppBadge :variant="(statusVariants[order.status] ?? 'default') as any">
+                <AppBadge :variant="(statusVariants[order.status] ?? 'neutral') as any">
                   {{ statusLabels[order.status] }}
                 </AppBadge>
               </div>

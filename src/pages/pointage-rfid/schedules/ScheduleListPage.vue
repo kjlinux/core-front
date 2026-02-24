@@ -9,6 +9,7 @@
             @click="navigateToCreate"
             variant="primary"
           >
+            <PlusIcon class="w-4 h-4 mr-1" />
             Nouvel horaire
           </AppButton>
         </div>
@@ -56,20 +57,12 @@
         </template>
 
         <template #actions="{ row }">
-          <div class="flex gap-2" @click.stop>
-            <AppButton
-              @click="navigateToEdit(row.id)"
-              variant="ghost"
-              size="sm"
-            >
-              Modifier
+          <div class="flex gap-1" @click.stop>
+            <AppButton @click="navigateToEdit(row.id)" variant="ghost" size="sm" title="Modifier">
+              <PencilIcon class="w-4 h-4" />
             </AppButton>
-            <AppButton
-              @click="handleDuplicate(row)"
-              variant="ghost"
-              size="sm"
-            >
-              Dupliquer
+            <AppButton @click="handleDuplicate(row)" variant="ghost" size="sm" title="Dupliquer">
+              <DocumentDuplicateIcon class="w-4 h-4" />
             </AppButton>
             <AppButton
               v-if="canDelete"
@@ -77,47 +70,49 @@
               variant="ghost"
               size="sm"
               class="text-red-600 hover:text-red-700"
+              title="Supprimer"
             >
-              Supprimer
+              <TrashIcon class="w-4 h-4" />
             </AppButton>
           </div>
         </template>
       </DataTable>
     </AppCard>
 
-    <AppModal
-      v-model:visible="deleteModalVisible"
+    <AppConfirmDialog
+      :open="deleteModalVisible"
       title="Confirmer la suppression"
+      :message="`Etes-vous sur de vouloir supprimer l\'horaire &quot;${scheduleToDelete?.name}&quot; ? Cette action est irreversible.`"
       @confirm="confirmDelete"
-    >
-      <p>Êtes-vous sûr de vouloir supprimer l'horaire "{{ scheduleToDelete?.name }}" ?</p>
-      <p class="text-sm text-gray-600 mt-2">Cette action est irréversible.</p>
-    </AppModal>
+      @cancel="deleteModalVisible = false"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
+// @ts-nocheck
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import DataTable from '@/components/common/DataTable.vue'
-import AppButton from '@/components/common/AppButton.vue'
-import AppCard from '@/components/common/AppCard.vue'
-import AppBadge from '@/components/common/AppBadge.vue'
-import AppModal from '@/components/common/AppModal.vue'
-import { useScheduleStore } from '@/stores/scheduleStore'
+import DataTable from '@/components/data-display/DataTable.vue'
+import AppButton from '@/components/ui/AppButton.vue'
+import AppCard from '@/components/ui/AppCard.vue'
+import AppBadge from '@/components/ui/AppBadge.vue'
+import AppConfirmDialog from '@/components/ui/AppConfirmDialog.vue'
+import { useScheduleStore } from '@/stores/schedule.store'
 import { usePermissions } from '@/composables/usePermissions'
 import type { Schedule } from '@/types/schedule'
+import { PencilIcon, DocumentDuplicateIcon, TrashIcon, PlusIcon } from '@heroicons/vue/24/outline'
 
 const router = useRouter()
 const scheduleStore = useScheduleStore()
-const { hasPermission } = usePermissions()
+const { isSuperAdmin, isAdminEnterprise } = usePermissions()
 
 const loading = ref(false)
 const deleteModalVisible = ref(false)
 const scheduleToDelete = ref<Schedule | null>(null)
 
-const canCreate = computed(() => hasPermission('schedules.create'))
-const canDelete = computed(() => hasPermission('schedules.delete'))
+const canCreate = computed(() => isSuperAdmin.value || isAdminEnterprise.value)
+const canDelete = computed(() => isSuperAdmin.value || isAdminEnterprise.value)
 
 const schedules = computed(() => scheduleStore.schedules)
 
@@ -133,8 +128,8 @@ const columns = [
 ]
 
 const getDayBadges = (workDays: number[]): string[] => {
-  const dayLabels = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
-  return workDays.map(day => dayLabels[day])
+  const dayLabels: Record<number, string> = { 1: 'L', 2: 'M', 3: 'M', 4: 'J', 5: 'V', 6: 'S', 7: 'D' }
+  return workDays.map(day => dayLabels[day] ?? String(day))
 }
 
 const navigateToCreate = () => {

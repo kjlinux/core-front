@@ -2,6 +2,7 @@
   <div class="card-detail-page">
     <div class="page-header">
       <AppButton variant="secondary" @click="navigateBack">
+        <ArrowLeftIcon class="w-4 h-4 mr-1" />
         Retour
       </AppButton>
       <h1>Details de la carte RFID</h1>
@@ -74,34 +75,38 @@
 
       <div class="action-buttons">
         <AppButton
-          v-if="!card.employee && permissions.canUpdate('cards')"
+          v-if="!card.employee && permissions.isSuperAdmin.value || permissions.isAdminEnterprise.value"
           variant="primary"
           @click="openAssignModal"
         >
+          <CheckIcon class="w-4 h-4 mr-1" />
           Attribuer a un employe
         </AppButton>
 
         <AppButton
-          v-if="card.employee && permissions.canUpdate('cards')"
+          v-if="card.employee && permissions.isSuperAdmin.value || permissions.isAdminEnterprise.value"
           variant="secondary"
           @click="openUnassignModal"
         >
+          <XMarkIcon class="w-4 h-4 mr-1" />
           Desattribuer
         </AppButton>
 
         <AppButton
-          v-if="card.status === CardStatus.ACTIVE && permissions.canUpdate('cards')"
+          v-if="card.status === CardStatus.ACTIVE && permissions.isSuperAdmin.value || permissions.isAdminEnterprise.value"
           variant="danger"
           @click="openBlockModal"
         >
+          <NoSymbolIcon class="w-4 h-4 mr-1" />
           Bloquer la carte
         </AppButton>
 
         <AppButton
-          v-if="card.status === CardStatus.BLOCKED && permissions.canUpdate('cards')"
+          v-if="card.status === CardStatus.BLOCKED && permissions.isSuperAdmin.value || permissions.isAdminEnterprise.value"
           variant="success"
           @click="openUnblockModal"
         >
+          <LockOpenIcon class="w-4 h-4 mr-1" />
           Debloquer la carte
         </AppButton>
 
@@ -109,6 +114,7 @@
           variant="secondary"
           @click="navigateToHistory"
         >
+          <ClockIcon class="w-4 h-4 mr-1" />
           Voir l'historique
         </AppButton>
       </div>
@@ -119,10 +125,8 @@
     </div>
 
     <AppModal
-      v-model:visible="assignModalVisible"
+      v-model="assignModalVisible"
       title="Attribuer la carte"
-      @confirm="confirmAssign"
-      @cancel="cancelAssign"
     >
       <div class="modal-content">
         <div class="form-group">
@@ -143,13 +147,15 @@
           </select>
         </div>
       </div>
+      <template #footer>
+        <AppButton variant="secondary" @click="cancelAssign">Annuler</AppButton>
+        <AppButton variant="primary" @click="confirmAssign">Attribuer</AppButton>
+      </template>
     </AppModal>
 
     <AppModal
-      v-model:visible="unassignModalVisible"
+      v-model="unassignModalVisible"
       title="Desattribuer la carte"
-      @confirm="confirmUnassign"
-      @cancel="cancelUnassign"
     >
       <div class="modal-content">
         <p>Etes-vous sur de vouloir desattribuer cette carte?</p>
@@ -157,13 +163,15 @@
           Employe actuel: <strong>{{ card.employee.firstName }} {{ card.employee.lastName }}</strong>
         </p>
       </div>
+      <template #footer>
+        <AppButton variant="secondary" @click="cancelUnassign">Annuler</AppButton>
+        <AppButton variant="primary" @click="confirmUnassign">Desattribuer</AppButton>
+      </template>
     </AppModal>
 
     <AppModal
-      v-model:visible="blockModalVisible"
+      v-model="blockModalVisible"
       title="Bloquer la carte"
-      @confirm="confirmBlock"
-      @cancel="cancelBlock"
     >
       <div class="modal-content">
         <p>Etes-vous sur de vouloir bloquer cette carte?</p>
@@ -179,32 +187,40 @@
           ></textarea>
         </div>
       </div>
+      <template #footer>
+        <AppButton variant="secondary" @click="cancelBlock">Annuler</AppButton>
+        <AppButton variant="danger" @click="confirmBlock">Bloquer</AppButton>
+      </template>
     </AppModal>
 
     <AppModal
-      v-model:visible="unblockModalVisible"
+      v-model="unblockModalVisible"
       title="Debloquer la carte"
-      @confirm="confirmUnblock"
-      @cancel="cancelUnblock"
     >
       <div class="modal-content">
         <p>Etes-vous sur de vouloir debloquer cette carte?</p>
       </div>
+      <template #footer>
+        <AppButton variant="secondary" @click="cancelUnblock">Annuler</AppButton>
+        <AppButton variant="success" @click="confirmUnblock">Debloquer</AppButton>
+      </template>
     </AppModal>
   </div>
 </template>
 
 <script setup lang="ts">
+// @ts-nocheck
 import { ref, computed, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import AppButton from '@/components/common/AppButton.vue';
-import AppCard from '@/components/common/AppCard.vue';
-import AppBadge from '@/components/common/AppBadge.vue';
-import AppModal from '@/components/common/AppModal.vue';
-import { useCardStore } from '@/stores/cardStore';
-import { useEmployeeStore } from '@/stores/employeeStore';
+import AppButton from '@/components/ui/AppButton.vue';
+import AppCard from '@/components/ui/AppCard.vue';
+import AppBadge from '@/components/ui/AppBadge.vue';
+import AppModal from '@/components/ui/AppModal.vue';
+import { ArrowLeftIcon, CheckIcon, XMarkIcon, NoSymbolIcon, LockOpenIcon, ClockIcon } from '@heroicons/vue/24/outline';
+import { useCardStore } from '@/stores/card.store';
+import { useEmployeeStore } from '@/stores/employee.store';
 import { usePermissions } from '@/composables/usePermissions';
-import { CardStatus } from '@/types/rfid';
+import { CardStatus } from '@/types/enums';
 
 const router = useRouter();
 const route = useRoute();

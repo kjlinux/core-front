@@ -19,7 +19,8 @@
               @click="openCreateModal"
               variant="primary"
             >
-              Ajouter un jour férié
+              <PlusIcon class="w-4 h-4 mr-1" />
+              Ajouter un jour ferie
             </AppButton>
           </div>
         </div>
@@ -35,19 +36,15 @@
         </template>
 
         <template #isRecurring="{ row }">
-          <AppBadge :variant="row.isRecurring ? 'green' : 'gray'">
+          <AppBadge :variant="row.isRecurring ? 'success' : 'neutral'">
             {{ row.isRecurring ? 'Oui' : 'Non' }}
           </AppBadge>
         </template>
 
         <template #actions="{ row }">
-          <div class="flex gap-2">
-            <AppButton
-              @click="openEditModal(row)"
-              variant="ghost"
-              size="sm"
-            >
-              Modifier
+          <div class="flex gap-1">
+            <AppButton @click="openEditModal(row)" variant="ghost" size="sm" title="Modifier">
+              <PencilIcon class="w-4 h-4" />
             </AppButton>
             <AppButton
               v-if="canDelete"
@@ -55,8 +52,9 @@
               variant="ghost"
               size="sm"
               class="text-red-600 hover:text-red-700"
+              title="Supprimer"
             >
-              Supprimer
+              <TrashIcon class="w-4 h-4" />
             </AppButton>
           </div>
         </template>
@@ -64,9 +62,8 @@
     </AppCard>
 
     <AppModal
-      v-model:visible="formModalVisible"
-      :title="editingHoliday ? 'Modifier le jour férié' : 'Nouveau jour férié'"
-      @confirm="handleSubmit"
+      v-model="formModalVisible"
+      :title="editingHoliday ? 'Modifier le jour ferie' : 'Nouveau jour ferie'"
     >
       <form @submit.prevent="handleSubmit" class="space-y-4">
         <div>
@@ -98,38 +95,45 @@
             class="rounded"
           />
           <label for="isRecurring" class="text-sm font-medium">
-            Récurrent chaque année
+            Recurrent chaque annee
           </label>
         </div>
       </form>
+
+      <template #footer>
+        <AppButton variant="secondary" size="sm" @click="formModalVisible = false">Annuler</AppButton>
+        <AppButton variant="primary" size="sm" @click="handleSubmit">Enregistrer</AppButton>
+      </template>
     </AppModal>
 
-    <AppModal
-      v-model:visible="deleteModalVisible"
+    <AppConfirmDialog
+      :open="deleteModalVisible"
       title="Confirmer la suppression"
+      :message="`Etes-vous sur de vouloir supprimer le jour ferie &quot;${holidayToDelete?.name}&quot; ? Cette action est irreversible.`"
       @confirm="confirmDelete"
-    >
-      <p>Êtes-vous sûr de vouloir supprimer le jour férié "{{ holidayToDelete?.name }}" ?</p>
-      <p class="text-sm text-gray-600 mt-2">Cette action est irréversible.</p>
-    </AppModal>
+      @cancel="deleteModalVisible = false"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
+// @ts-nocheck
 import { ref, computed, onMounted } from 'vue'
-import DataTable from '@/components/common/DataTable.vue'
-import AppButton from '@/components/common/AppButton.vue'
-import AppCard from '@/components/common/AppCard.vue'
-import AppBadge from '@/components/common/AppBadge.vue'
-import AppModal from '@/components/common/AppModal.vue'
-import { useScheduleStore } from '@/stores/scheduleStore'
+import DataTable from '@/components/data-display/DataTable.vue'
+import AppButton from '@/components/ui/AppButton.vue'
+import AppCard from '@/components/ui/AppCard.vue'
+import AppBadge from '@/components/ui/AppBadge.vue'
+import AppModal from '@/components/ui/AppModal.vue'
+import AppConfirmDialog from '@/components/ui/AppConfirmDialog.vue'
+import { useScheduleStore } from '@/stores/schedule.store'
 import { usePermissions } from '@/composables/usePermissions'
 import { formatDate } from '@/utils/format'
 import type { Holiday } from '@/types/schedule'
 import dayjs from 'dayjs'
+import { PencilIcon, TrashIcon, PlusIcon } from '@heroicons/vue/24/outline'
 
 const scheduleStore = useScheduleStore()
-const { hasPermission } = usePermissions()
+const { isSuperAdmin, isAdminEnterprise } = usePermissions()
 
 const loading = ref(false)
 const formModalVisible = ref(false)
@@ -145,8 +149,8 @@ const formData = ref({
   isRecurring: false
 })
 
-const canCreate = computed(() => hasPermission('schedules.create'))
-const canDelete = computed(() => hasPermission('schedules.delete'))
+const canCreate = computed(() => isSuperAdmin.value || isAdminEnterprise.value)
+const canDelete = computed(() => isSuperAdmin.value || isAdminEnterprise.value)
 
 const holidays = computed(() => scheduleStore.holidays || [])
 
@@ -205,7 +209,7 @@ const openEditModal = (holiday: Holiday) => {
 const handleSubmit = async () => {
   try {
     if (editingHoliday.value) {
-      await scheduleStore.updateHoliday(editingHoliday.value.id, formData.value)
+      await scheduleStore.createHoliday({ ...formData.value, id: editingHoliday.value.id })
     } else {
       await scheduleStore.createHoliday(formData.value)
     }

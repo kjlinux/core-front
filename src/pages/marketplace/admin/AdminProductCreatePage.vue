@@ -17,7 +17,7 @@ const toast = useToast()
 const form = ref({
   name: '',
   description: '',
-  category: 'standard_card',
+  category: 'standard_card' as 'standard_card' | 'custom_card' | 'enterprise_pack',
   price: 0,
   currency: 'FCFA',
   stockQuantity: 0,
@@ -35,15 +35,15 @@ const categoryOptions = [
 
 async function handleSubmit() {
   if (!form.value.name || !form.value.description || form.value.price <= 0) {
-    toast.showError('Veuillez remplir tous les champs obligatoires')
+    toast.error('Veuillez remplir tous les champs obligatoires')
     return
   }
   try {
     await store.createProduct(form.value)
-    toast.showSuccess('Produit cree avec succes')
+    toast.success('Produit cree avec succes')
     router.push('/marketplace/admin/products')
   } catch {
-    toast.showError('Erreur lors de la creation du produit')
+    toast.error('Erreur lors de la creation du produit')
   }
 }
 </script>

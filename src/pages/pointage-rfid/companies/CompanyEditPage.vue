@@ -33,7 +33,7 @@ onMounted(async () => {
     }
   } catch (error: any) {
     toast.error('Erreur', error.message || 'Erreur lors du chargement de l\'entreprise')
-    router.push({ name: 'rfid-company-list' })
+    router.push({ name: 'rfid-companies' })
   }
 })
 

@@ -136,7 +136,8 @@
                   column.align === 'right' && 'text-right'
                 ]"
               >
-                {{ getCellValue(row, column) }}
+                <slot v-if="$slots[column.key]" :name="column.key" :row="row" :value="row[column.key]" />
+                <template v-else>{{ getCellValue(row, column) }}</template>
               </td>
             </tr>
           </template>
@@ -196,7 +197,8 @@ const sortColumn = ref<string>('');
 const sortDirection = ref<'asc' | 'desc'>('asc');
 
 // Selection State
-const selectedRows = ref<T[]>([]);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const selectedRows = ref<any[]>([]);
 
 // Computed
 const perPageValue = computed(() => props.pagination?.perPage || 10);

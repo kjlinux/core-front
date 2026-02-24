@@ -42,7 +42,7 @@ function getTypeVariant(type: string) {
     case 'threshold_exceeded': return 'danger'
     case 'device_offline': return 'warning'
     case 'low_battery': return 'warning'
-    default: return 'default'
+    default: return 'neutral'
   }
 }
 
@@ -133,7 +133,7 @@ onMounted(async () => {
             </div>
           </div>
           <div class="flex items-center gap-2 flex-shrink-0">
-            <AppBadge :variant="alert.isRead ? 'default' : 'warning'">
+            <AppBadge :variant="alert.isRead ? 'neutral' : 'warning'">
               {{ alert.isRead ? 'Lu' : 'Non lu' }}
             </AppBadge>
             <AppButton v-if="!alert.isRead" size="sm" variant="ghost" @click="markAsRead(alert)">

@@ -1,7 +1,8 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { employeeApi } from '@/services/api/employee.api'
-import type { Employee, EmployeeFilters, PaginatedResponse } from '@/types'
+import type { Employee } from '@/types'
+import type { EmployeeFilters } from '@/services/api/employee.api'
 
 export const useEmployeeStore = defineStore('employee', () => {
   const employees = ref<Employee[]>([])
@@ -24,9 +25,7 @@ export const useEmployeeStore = defineStore('employee', () => {
     }
     isLoading.value = true
     try {
-      const response: PaginatedResponse<Employee> = await employeeApi.getAll(filters.value)
-      employees.value = response.data
-      pagination.value = response.meta
+      employees.value = await employeeApi.getAll(filters.value)
     } finally {
       isLoading.value = false
     }

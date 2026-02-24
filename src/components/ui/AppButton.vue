@@ -54,6 +54,10 @@ const variantClasses = computed(() => {
       return 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500';
     case 'outline':
       return 'bg-transparent text-gray-700 border border-gray-300 hover:bg-gray-50 focus:ring-gray-500';
+    case 'ghost':
+      return 'bg-transparent text-gray-700 hover:bg-gray-100 focus:ring-gray-500';
+    case 'success':
+      return 'bg-green-600 text-white hover:bg-green-700 focus:ring-green-500';
     default:
       return '';
   }

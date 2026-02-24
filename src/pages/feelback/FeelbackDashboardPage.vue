@@ -48,6 +48,7 @@ const lineSeries = computed(() => [
   { name: 'Neutre', data: [20, 18, 22, 19, 24, 18, 21] },
   { name: 'Mauvais', data: [12, 8, 15, 10, 11, 9, 14] },
 ])
+const lineData = computed(() => lineXData.map((name, i) => ({ name, value: (lineSeries.value[0]?.data[i] ?? 0) })))
 
 const topSites = [
   { name: 'Siege Social', responses: 234, bon: 78, neutre: 15, mauvais: 7 },
@@ -71,7 +72,7 @@ function getAlertVariant(type: string) {
     case 'threshold_exceeded': return 'danger'
     case 'device_offline': return 'warning'
     case 'low_battery': return 'warning'
-    default: return 'default'
+    default: return 'neutral'
   }
 }
 
@@ -131,7 +132,7 @@ onMounted(async () => {
 
     <!-- Trends -->
     <AppCard title="Evolution hebdomadaire">
-      <LineChart :x-data="lineXData" :series="lineSeries" title="Tendances" />
+      <LineChart :data="lineData" title="Tendances" />
     </AppCard>
 
     <!-- Top sites -->

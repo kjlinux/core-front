@@ -8,6 +8,7 @@ import AppButton from '@/components/ui/AppButton.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
 import AppInput from '@/components/ui/AppInput.vue'
+import { EyeIcon, ArrowDownTrayIcon } from '@heroicons/vue/24/outline'
 
 const router = useRouter()
 const store = useOrderStore()
@@ -40,7 +41,7 @@ const statusVariants: Record<string, string> = {
 }
 
 const paymentVariants: Record<string, string> = {
-  pending: 'warning', paid: 'success', failed: 'danger', refunded: 'default',
+  pending: 'warning', paid: 'success', failed: 'danger', refunded: 'neutral',
 }
 
 const statusLabels: Record<string, string> = {
@@ -55,7 +56,8 @@ const filteredOrders = computed(() => {
   return list
 })
 
-function formatPrice(amount: number, currency = 'FCFA') {
+function formatPrice(amount: number | undefined, currency = 'FCFA') {
+  if (amount == null) return `-- ${currency}`
   return `${amount.toLocaleString('fr-FR')} ${currency}`
 }
 
@@ -76,7 +78,10 @@ onMounted(async () => {
   <div class="space-y-6">
     <div class="flex items-center justify-between">
       <h1 class="text-2xl font-bold text-gray-900">Toutes les commandes</h1>
-      <AppButton variant="secondary" @click="handleExport">Exporter</AppButton>
+      <AppButton variant="secondary" @click="handleExport">
+        <ArrowDownTrayIcon class="w-4 h-4 mr-1" />
+        Exporter
+      </AppButton>
     </div>
 
     <AppCard>
@@ -112,18 +117,18 @@ onMounted(async () => {
               <td class="px-4 py-3 text-sm text-gray-600">{{ formatDate(order.createdAt) }}</td>
               <td class="px-4 py-3 text-sm font-semibold text-primary">{{ formatPrice(order.total, order.currency) }}</td>
               <td class="px-4 py-3">
-                <AppBadge :variant="(statusVariants[order.status] ?? 'default') as any">
+                <AppBadge :variant="(statusVariants[order.status] ?? 'neutral') as any">
                   {{ statusLabels[order.status] ?? order.status }}
                 </AppBadge>
               </td>
               <td class="px-4 py-3">
-                <AppBadge :variant="(paymentVariants[order.paymentStatus] ?? 'default') as any">
+                <AppBadge :variant="(paymentVariants[order.paymentStatus] ?? 'neutral') as any">
                   {{ order.paymentStatus }}
                 </AppBadge>
               </td>
               <td class="px-4 py-3">
-                <AppButton size="sm" variant="ghost" @click="router.push(`/marketplace/admin/orders/${order.id}`)">
-                  Voir
+                <AppButton size="sm" variant="ghost" @click="router.push(`/marketplace/admin/orders/${order.id}`)" title="Voir">
+                  <EyeIcon class="w-4 h-4" />
                 </AppButton>
               </td>
             </tr>

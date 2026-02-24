@@ -44,7 +44,7 @@ const pieData = computed(() => {
 
 const siteBarXData = ['Siege', 'Nord', 'Est', 'Sud', 'Ouest', 'Centre']
 const siteBarSeries = [
-  { name: 'Bon', data: [45, 38, 52, 41, 35, 48], color: '#22c55e' },
+  { name: 'Bon', data: [45, 38, 52, 41, 35, 48] as number[], color: '#22c55e' },
   { name: 'Neutre', data: [20, 25, 18, 22, 28, 19], color: '#f59e0b' },
   { name: 'Mauvais', data: [12, 18, 10, 15, 20, 11], color: '#ef4444' },
 ]
@@ -60,6 +60,10 @@ const hourlyXData = Array.from({ length: 11 }, (_, i) => `${8 + i}h`)
 const hourlyBarSeries = [
   { name: 'Reponses', data: [12, 28, 45, 52, 61, 48, 55, 63, 42, 35, 18] },
 ]
+
+const siteBarData = computed(() => siteBarXData.map((name, i) => ({ name, value: siteBarSeries[0]?.data[i] ?? 0 })))
+const lineData = computed(() => lineXData.map((name, i) => ({ name, value: lineSeries[0]?.data[i] ?? 0 })))
+const hourlyBarData = computed(() => hourlyXData.map((name, i) => ({ name, value: hourlyBarSeries[0]?.data[i] ?? 0 })))
 
 const siteResults = [
   { name: 'Siege Social', total: 234, bon: 78, neutre: 15, mauvais: 7, rate: 78 },
@@ -102,16 +106,16 @@ onMounted(async () => {
         <PieChart :data="pieData" title="Bon / Neutre / Mauvais" />
       </AppCard>
       <AppCard title="Par site">
-        <BarChart :x-data="siteBarXData" :series="siteBarSeries" title="Reponses par site" />
+        <BarChart :data="siteBarData" title="Reponses par site" />
       </AppCard>
     </div>
 
     <AppCard title="Evolution dans le temps">
-      <LineChart :x-data="lineXData" :series="lineSeries" title="Tendances mensuelles" />
+      <LineChart :data="lineData" title="Tendances mensuelles" />
     </AppCard>
 
     <AppCard title="Distribution horaire">
-      <BarChart :x-data="hourlyXData" :series="hourlyBarSeries" title="Reponses par heure" />
+      <BarChart :data="hourlyBarData" title="Reponses par heure" />
     </AppCard>
 
     <AppCard title="Resultats par site">

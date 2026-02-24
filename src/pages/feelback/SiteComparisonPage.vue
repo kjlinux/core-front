@@ -41,6 +41,7 @@ const barSeries = computed(() => [
   { name: 'Neutre', data: selectedSites.value.map((s) => s.neutre), color: '#f59e0b' },
   { name: 'Mauvais', data: selectedSites.value.map((s) => s.mauvais), color: '#ef4444' },
 ])
+const barData = computed(() => selectedSites.value.map((s) => ({ name: s.name, value: s.bon })))
 
 const sortedSites = computed(() =>
   [...selectedSites.value].sort((a, b) => b.rate - a.rate),
@@ -65,10 +66,10 @@ const worstSite = computed(() => sortedSites.value[sortedSites.value.length - 1]
         <button
           v-for="site in allSites"
           :key="site.id"
-          class="px-4 py-2 rounded-lg border text-sm font-medium transition-all"
+          class="px-4 py-2 rounded-lg border text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none"
           :class="selectedSiteIds.includes(site.id)
-            ? 'border-primary bg-primary text-white'
-            : 'border-gray-300 text-gray-600 hover:border-primary'"
+            ? 'border-primary-600 bg-primary-600 text-white'
+            : 'border-gray-300 text-gray-600 bg-white hover:border-primary-600'"
           :disabled="!selectedSiteIds.includes(site.id) && selectedSiteIds.length >= 5"
           @click="toggleSite(site.id)"
         >
@@ -79,7 +80,7 @@ const worstSite = computed(() => sortedSites.value[sortedSites.value.length - 1]
     </AppCard>
 
     <AppCard v-if="selectedSites.length > 0" title="Comparaison graphique">
-      <BarChart :x-data="barXData" :series="barSeries" title="Bon / Neutre / Mauvais par site" />
+      <BarChart :data="barData" title="Bon / Neutre / Mauvais par site" />
     </AppCard>
 
     <AppCard v-if="sortedSites.length > 0" title="Classement des sites selectionnes">

@@ -10,7 +10,7 @@
               iconBgClass,
             ]"
           >
-            <span :class="['text-lg', iconColorClass]">{{ icon }}</span>
+            <component :is="icon" :class="['w-5 h-5', iconColorClass]" />
           </div>
           <p class="text-sm font-medium text-gray-600">{{ title }}</p>
         </div>
@@ -49,6 +49,8 @@
 </template>
 
 <script setup lang="ts">
+import type { Component } from 'vue'
+
 interface Trend {
   value: number
   isPositive: boolean
@@ -57,7 +59,7 @@ interface Trend {
 interface Props {
   title: string
   value: number | string
-  icon?: string
+  icon?: Component
   trend?: Trend
   suffix?: string
   iconBgClass?: string

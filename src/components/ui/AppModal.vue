@@ -2,14 +2,14 @@
   <Teleport to="body">
     <Transition name="modal">
       <div
-        v-if="isOpen"
+        v-if="isVisible"
         class="fixed inset-0 z-50 overflow-y-auto"
         @click.self="handleOverlayClick"
       >
         <div class="flex min-h-full items-center justify-center p-4">
           <Transition name="modal-inner">
             <div
-              v-if="isOpen"
+              v-if="isVisible"
               :class="modalClasses"
               class="relative bg-white rounded-lg shadow-xl transform transition-all"
               @click.stop
@@ -49,21 +49,28 @@
 import { computed, watch } from 'vue';
 
 interface Props {
-  isOpen: boolean;
+  isOpen?: boolean;
+  modelValue?: boolean;
   title: string;
   size?: 'sm' | 'md' | 'lg' | 'xl';
 }
 
 const props = withDefaults(defineProps<Props>(), {
+  isOpen: false,
+  modelValue: false,
   size: 'md',
 });
 
 const emit = defineEmits<{
   close: [];
+  'update:modelValue': [value: boolean];
 }>();
+
+const isVisible = computed(() => props.modelValue || props.isOpen);
 
 const handleClose = () => {
   emit('close');
+  emit('update:modelValue', false);
 };
 
 const handleOverlayClick = () => {
@@ -80,7 +87,7 @@ const modalClasses = computed(() => {
   return `w-full ${sizeClasses[props.size]}`;
 });
 
-watch(() => props.isOpen, (isOpen) => {
+watch(isVisible, (isOpen) => {
   if (isOpen) {
     document.body.style.overflow = 'hidden';
   } else {

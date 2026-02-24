@@ -9,20 +9,26 @@ import AppButton from '@/components/ui/AppButton.vue'
 import AppCheckbox from '@/components/ui/AppCheckbox.vue'
 
 const props = defineProps<{
-  modelValue: Partial<Schedule>
+  modelValue?: Partial<Schedule>
+  initialData?: Partial<Schedule>
   loading: boolean
 }>()
 
 const emit = defineEmits<{
   'update:modelValue': [value: Partial<Schedule>]
-  submit: []
+  submit: [data: Partial<Schedule>]
 }>()
 
 const errors = ref<Record<string, string>>({})
 
+const internalData = ref<Partial<Schedule>>(props.modelValue ?? props.initialData ?? {})
+
 const localValue = computed({
-  get: () => props.modelValue,
-  set: (value) => emit('update:modelValue', value)
+  get: () => internalData.value,
+  set: (value) => {
+    internalData.value = value
+    emit('update:modelValue', value)
+  },
 })
 
 const updateField = (field: keyof Schedule, value: any) => {
@@ -96,7 +102,7 @@ const validate = (): boolean => {
 
 const handleSubmit = () => {
   if (validate()) {
-    emit('submit')
+    emit('submit', internalData.value)
   }
 }
 </script>
@@ -178,7 +184,7 @@ const handleSubmit = () => {
       >
         <AppInput
           :model-value="localValue.lateTolerance?.toString() || '0'"
-          @update:model-value="updateField('lateTolerance', parseInt($event) || 0)"
+          @update:model-value="updateField('lateTolerance', parseInt(String($event)) || 0)"
           type="number"
           min="0"
           placeholder="0"

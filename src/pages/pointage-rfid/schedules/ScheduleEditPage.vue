@@ -9,6 +9,7 @@
             @click="showDeleteModal = true"
             variant="danger"
           >
+            <TrashIcon class="w-4 h-4 mr-1" />
             Supprimer
           </AppButton>
         </div>
@@ -21,6 +22,7 @@
       <ScheduleForm
         v-else-if="schedule"
         :initial-data="schedule"
+        v-model="scheduleFormData"
         :loading="loading"
         @submit="handleSubmit"
         @cancel="handleCancel"
@@ -31,39 +33,41 @@
       </div>
     </AppCard>
 
-    <AppModal
-      v-model:visible="showDeleteModal"
+    <AppConfirmDialog
+      :open="showDeleteModal"
       title="Confirmer la suppression"
+      :message="`Etes-vous sur de vouloir supprimer l\'horaire &quot;${schedule?.name}&quot; ? Cette action est irreversible.`"
       @confirm="handleDelete"
-    >
-      <p>Êtes-vous sûr de vouloir supprimer l'horaire "{{ schedule?.name }}" ?</p>
-      <p class="text-sm text-gray-600 mt-2">Cette action est irréversible.</p>
-    </AppModal>
+      @cancel="showDeleteModal = false"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
+// @ts-nocheck
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import AppCard from '@/components/common/AppCard.vue'
-import AppButton from '@/components/common/AppButton.vue'
-import AppModal from '@/components/common/AppModal.vue'
-import ScheduleForm from '@/components/pointage-rfid/ScheduleForm.vue'
-import { useScheduleStore } from '@/stores/scheduleStore'
+import AppCard from '@/components/ui/AppCard.vue'
+import AppButton from '@/components/ui/AppButton.vue'
+import AppConfirmDialog from '@/components/ui/AppConfirmDialog.vue'
+import ScheduleForm from '@/components/forms/ScheduleForm.vue'
+import { useScheduleStore } from '@/stores/schedule.store'
 import { usePermissions } from '@/composables/usePermissions'
 import type { Schedule } from '@/types/schedule'
+import { TrashIcon } from '@heroicons/vue/24/outline'
 
 const router = useRouter()
 const route = useRoute()
 const scheduleStore = useScheduleStore()
-const { hasPermission } = usePermissions()
+const { isSuperAdmin, isAdminEnterprise } = usePermissions()
 
 const loading = ref(false)
 const loadingSchedule = ref(false)
 const showDeleteModal = ref(false)
 const schedule = ref<Schedule | null>(null)
+const scheduleFormData = ref<Partial<Schedule>>({})
 
-const canDelete = computed(() => hasPermission('schedules.delete'))
+const canDelete = computed(() => isSuperAdmin.value || isAdminEnterprise.value)
 
 const scheduleId = computed(() => Number(route.params.id))
 

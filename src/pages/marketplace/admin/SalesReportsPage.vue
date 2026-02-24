@@ -19,6 +19,7 @@ const revenueByMonth = {
   xData: ['Jan', 'Fev', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aou', 'Sep', 'Oct', 'Nov', 'Dec'],
   series: [{ name: 'Revenus (FCFA)', data: [850000, 1200000, 950000, 1400000, 1800000, 1600000, 2100000, 1900000, 2300000, 2500000, 2200000, 2800000] }],
 }
+const revenueData = revenueByMonth.xData.map((name, i) => ({ name, value: revenueByMonth.series[0]?.data[i] ?? 0 }))
 
 const statusPieData = [
   { name: 'Livrees', value: 145 },
@@ -31,6 +32,7 @@ const topProducts = {
   xData: ['Carte Std', 'Carte Perso', 'Pack Pro', 'Pack Enterprise', 'Accessoires'],
   series: [{ name: 'Quantite vendue', data: [520, 340, 180, 95, 210] }],
 }
+const topProductsData = topProducts.xData.map((name, i) => ({ name, value: topProducts.series[0]?.data[i] ?? 0 }))
 
 const monthlyData = [
   { month: 'Octobre 2024', orders: 45, revenue: 2500000 },
@@ -71,7 +73,7 @@ onMounted(async () => {
     </div>
 
     <AppCard title="Revenus par mois">
-      <BarChart :x-data="revenueByMonth.xData" :series="revenueByMonth.series" title="Revenus mensuels" />
+      <BarChart :data="revenueData" title="Revenus mensuels" />
     </AppCard>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -79,7 +81,7 @@ onMounted(async () => {
         <PieChart :data="statusPieData" title="Repartition" />
       </AppCard>
       <AppCard title="Top produits vendus">
-        <BarChart :x-data="topProducts.xData" :series="topProducts.series" title="Quantites vendues" />
+        <BarChart :data="topProductsData" title="Quantites vendues" />
       </AppCard>
     </div>
 

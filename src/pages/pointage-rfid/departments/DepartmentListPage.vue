@@ -48,7 +48,7 @@
       size="lg"
       @close="closeCreateModal"
     >
-      <form @submit.prevent="handleCreateDepartment">
+      <form id="dept-list-form" @submit.prevent="handleCreateDepartment">
         <div class="space-y-4">
           <AppInput
             v-model="formData.name"
@@ -81,23 +81,24 @@
             placeholder="Selectionner un manager"
           />
         </div>
-
-        <template #footer>
-          <AppButton
-            variant="outline"
-            @click="closeCreateModal"
-          >
-            Annuler
-          </AppButton>
-          <AppButton
-            type="submit"
-            variant="primary"
-            :loading="isSubmitting"
-          >
-            Creer
-          </AppButton>
-        </template>
       </form>
+
+      <template #footer>
+        <AppButton
+          variant="outline"
+          @click="closeCreateModal"
+        >
+          Annuler
+        </AppButton>
+        <AppButton
+          form="dept-list-form"
+          type="submit"
+          variant="primary"
+          :loading="isSubmitting"
+        >
+          Creer
+        </AppButton>
+      </template>
     </AppModal>
   </div>
 </template>

@@ -60,6 +60,10 @@ async function cancelOrder() {
   }
 }
 
+const openInvoice = (url?: string) => {
+  if (url) window.open(url, '_blank')
+}
+
 onMounted(async () => {
   await store.fetchOrder(orderId)
 })
@@ -174,7 +178,7 @@ onMounted(async () => {
                 v-if="order.invoiceUrl"
                 variant="secondary"
                 class="w-full"
-                @click="window.open(order.invoiceUrl, '_blank')"
+                @click="openInvoice(order.invoiceUrl)"
               >
                 Telecharger la facture
               </AppButton>

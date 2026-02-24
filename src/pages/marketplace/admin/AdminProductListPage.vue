@@ -8,6 +8,7 @@ import AppButton from '@/components/ui/AppButton.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import AppModal from '@/components/ui/AppModal.vue'
 import AppInput from '@/components/ui/AppInput.vue'
+import { PencilIcon, QueueListIcon, EyeIcon, EyeSlashIcon, PlusIcon } from '@heroicons/vue/24/outline'
 
 const router = useRouter()
 const store = useMarketplaceStore()
@@ -65,6 +66,7 @@ onMounted(async () => {
         <p class="text-sm text-gray-500 mt-1">{{ store.products.length }} produit(s) dans le catalogue</p>
       </div>
       <AppButton variant="primary" @click="router.push('/marketplace/admin/products/create')">
+        <PlusIcon class="w-4 h-4 mr-1" />
         Ajouter un produit
       </AppButton>
     </div>
@@ -96,7 +98,7 @@ onMounted(async () => {
                 {{ product.stockQuantity }}
               </td>
               <td class="px-4 py-3">
-                <AppBadge :variant="product.isActive ? 'success' : 'default'">
+                <AppBadge :variant="product.isActive ? 'success' : 'neutral'">
                   {{ product.isActive ? 'Actif' : 'Inactif' }}
                 </AppBadge>
               </td>
@@ -105,15 +107,16 @@ onMounted(async () => {
                 <span v-else class="text-sm text-gray-400">Non</span>
               </td>
               <td class="px-4 py-3">
-                <div class="flex gap-2">
-                  <AppButton size="sm" variant="ghost" @click="router.push(`/marketplace/admin/products/${product.id}/edit`)">
-                    Modifier
+                <div class="flex gap-1">
+                  <AppButton size="sm" variant="ghost" @click="router.push(`/marketplace/admin/products/${product.id}/edit`)" title="Modifier">
+                    <PencilIcon class="w-4 h-4" />
                   </AppButton>
-                  <AppButton size="sm" variant="secondary" @click="openStockModal(product.id, product.stockQuantity)">
-                    Stock
+                  <AppButton size="sm" variant="ghost" @click="openStockModal(product.id, product.stockQuantity)" title="Gerer le stock">
+                    <QueueListIcon class="w-4 h-4" />
                   </AppButton>
-                  <AppButton size="sm" :variant="product.isActive ? 'danger' : 'primary'" @click="toggleActive(product.id, product)">
-                    {{ product.isActive ? 'Desactiver' : 'Activer' }}
+                  <AppButton size="sm" variant="ghost" :class="product.isActive ? 'text-red-600 hover:text-red-700' : 'text-green-600 hover:text-green-700'" @click="toggleActive(product.id, product)" :title="product.isActive ? 'Desactiver' : 'Activer'">
+                    <EyeSlashIcon v-if="product.isActive" class="w-4 h-4" />
+                    <EyeIcon v-else class="w-4 h-4" />
                   </AppButton>
                 </div>
               </td>

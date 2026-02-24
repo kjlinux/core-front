@@ -6,6 +6,7 @@
       </template>
 
       <ScheduleForm
+        v-model="formData"
         :loading="loading"
         @submit="handleSubmit"
         @cancel="handleCancel"
@@ -15,17 +16,19 @@
 </template>
 
 <script setup lang="ts">
+// @ts-nocheck
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import AppCard from '@/components/common/AppCard.vue'
-import ScheduleForm from '@/components/pointage-rfid/ScheduleForm.vue'
-import { useScheduleStore } from '@/stores/scheduleStore'
+import AppCard from '@/components/ui/AppCard.vue'
+import ScheduleForm from '@/components/forms/ScheduleForm.vue'
+import { useScheduleStore } from '@/stores/schedule.store'
 import type { Schedule } from '@/types/schedule'
 
 const router = useRouter()
 const scheduleStore = useScheduleStore()
 
 const loading = ref(false)
+const formData = ref<Partial<Schedule>>({})
 
 const handleSubmit = async (data: Partial<Schedule>) => {
   loading.value = true

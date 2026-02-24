@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { companyApi } from '@/services/api/company.api'
-import type { Company, PaginatedResponse } from '@/types'
+import type { Company } from '@/types'
 
 export const useCompanyStore = defineStore('company', () => {
   const companies = ref<Company[]>([])
@@ -17,9 +17,7 @@ export const useCompanyStore = defineStore('company', () => {
   async function fetchCompanies(params?: Record<string, unknown>) {
     isLoading.value = true
     try {
-      const response: PaginatedResponse<Company> = await companyApi.getAll(params)
-      companies.value = response.data
-      pagination.value = response.meta
+      companies.value = await companyApi.getAll(params)
     } finally {
       isLoading.value = false
     }

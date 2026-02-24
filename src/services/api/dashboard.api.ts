@@ -1,12 +1,12 @@
 import apiClient from './client'
-import type { ApiResponse, GlobalDashboardStats, TrendData } from '@/types'
+import type { GlobalDashboardStats, TrendData } from '@/types'
 
 export const dashboardApi = {
-  getStats(): Promise<ApiResponse<GlobalDashboardStats>> {
-    return apiClient.get('/dashboard/stats').then((r) => r.data)
+  getStats(): Promise<GlobalDashboardStats> {
+    return apiClient.get('/dashboard/stats').then((r) => r.data?.data ?? r.data)
   },
 
-  getTrends(period: string): Promise<ApiResponse<TrendData[]>> {
-    return apiClient.get('/dashboard/trends', { params: { period } }).then((r) => r.data)
+  getTrends(period: string): Promise<TrendData[]> {
+    return apiClient.get('/dashboard/trends', { params: { period } }).then((r) => r.data?.data ?? r.data)
   },
 }

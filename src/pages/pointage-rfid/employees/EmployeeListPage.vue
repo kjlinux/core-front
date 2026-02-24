@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useEmployeeStore } from '@/stores/employee.store'
 import { usePermissions } from '@/composables/usePermissions'
+import { EyeIcon, PlusIcon } from '@heroicons/vue/24/outline'
 
 const router = useRouter()
 const employeeStore = useEmployeeStore()
@@ -29,8 +30,9 @@ function viewEmployee(id: string) {
       <button
         v-if="canCreate()"
         @click="createEmployee"
-        class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700"
+        class="inline-flex items-center gap-1 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700"
       >
+        <PlusIcon class="w-4 h-4" />
         Nouvel employe
       </button>
     </div>
@@ -71,9 +73,10 @@ function viewEmployee(id: string) {
             <td class="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
               <button
                 @click="viewEmployee(employee.id)"
-                class="text-primary-600 hover:text-primary-900"
+                class="inline-flex items-center gap-1 text-primary-600 hover:text-primary-900"
+                title="Voir"
               >
-                Voir
+                <EyeIcon class="w-4 h-4" />
               </button>
             </td>
           </tr>

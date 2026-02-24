@@ -40,7 +40,7 @@
       size="lg"
       @close="closeCreateModal"
     >
-      <form @submit.prevent="handleCreateSite">
+      <form id="site-form" @submit.prevent="handleCreateSite">
         <div class="space-y-4">
           <AppInput
             v-model="formData.name"
@@ -64,23 +64,24 @@
             required
           />
         </div>
-
-        <template #footer>
-          <AppButton
-            variant="outline"
-            @click="closeCreateModal"
-          >
-            Annuler
-          </AppButton>
-          <AppButton
-            type="submit"
-            variant="primary"
-            :loading="isSubmitting"
-          >
-            Creer
-          </AppButton>
-        </template>
       </form>
+
+      <template #footer>
+        <AppButton
+          variant="outline"
+          @click="closeCreateModal"
+        >
+          Annuler
+        </AppButton>
+        <AppButton
+          form="site-form"
+          type="submit"
+          variant="primary"
+          :loading="isSubmitting"
+        >
+          Creer
+        </AppButton>
+      </template>
     </AppModal>
   </div>
 </template>

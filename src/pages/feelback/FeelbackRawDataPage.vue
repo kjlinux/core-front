@@ -50,7 +50,7 @@ function getLevelVariant(level: string) {
     case 'bon': return 'success'
     case 'neutre': return 'warning'
     case 'mauvais': return 'danger'
-    default: return 'default'
+    default: return 'neutral'
   }
 }
 

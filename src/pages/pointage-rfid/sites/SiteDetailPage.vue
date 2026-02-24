@@ -77,7 +77,7 @@
       size="lg"
       @close="closeCreateDepartmentModal"
     >
-      <form @submit.prevent="handleCreateDepartment">
+      <form id="dept-form" @submit.prevent="handleCreateDepartment">
         <div class="space-y-4">
           <AppInput
             v-model="departmentFormData.name"
@@ -93,23 +93,24 @@
             placeholder="Selectionner un manager"
           />
         </div>
-
-        <template #footer>
-          <AppButton
-            variant="outline"
-            @click="closeCreateDepartmentModal"
-          >
-            Annuler
-          </AppButton>
-          <AppButton
-            type="submit"
-            variant="primary"
-            :loading="isSubmitting"
-          >
-            Creer
-          </AppButton>
-        </template>
       </form>
+
+      <template #footer>
+        <AppButton
+          variant="outline"
+          @click="closeCreateDepartmentModal"
+        >
+          Annuler
+        </AppButton>
+        <AppButton
+          form="dept-form"
+          type="submit"
+          variant="primary"
+          :loading="isSubmitting"
+        >
+          Creer
+        </AppButton>
+      </template>
     </AppModal>
   </div>
 </template>
@@ -155,7 +156,7 @@ const canCreate = computed(() =>
 
 const companyName = computed(() => {
   if (!site.value) return '-'
-  const company = companyStore.companies.find(c => c.id === site.value.companyId)
+  const company = companyStore.companies.find(c => c.id === site.value!.companyId)
   return company?.name || '-'
 })
 

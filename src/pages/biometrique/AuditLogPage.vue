@@ -39,7 +39,7 @@ function getActionVariant(action: string) {
   if (action.includes('enrolled') || action.includes('created')) return 'success'
   if (action.includes('deleted') || action.includes('removed')) return 'danger'
   if (action.includes('failed')) return 'warning'
-  return 'default'
+  return 'neutral'
 }
 
 function formatDate(date: string) {

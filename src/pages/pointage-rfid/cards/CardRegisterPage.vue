@@ -6,6 +6,8 @@
 
     <AppCard>
       <CardForm
+        v-model="formData"
+        :employees="employeeStore.employees"
         :loading="loading"
         @submit="handleSubmit"
         @cancel="handleCancel"
@@ -15,21 +17,31 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import AppCard from '@/components/common/AppCard.vue';
-import CardForm from '@/components/pointage-rfid/CardForm.vue';
-import { useCardStore } from '@/stores/cardStore';
+import AppCard from '@/components/ui/AppCard.vue';
+import CardForm from '@/components/forms/CardForm.vue';
+import { useCardStore } from '@/stores/card.store';
+import { useEmployeeStore } from '@/stores/employee.store';
+import type { RfidCard } from '@/types';
 
 const router = useRouter();
 const cardStore = useCardStore();
+const employeeStore = useEmployeeStore();
 
 const loading = ref(false);
+const formData = ref<Partial<RfidCard>>({ status: 'active' });
 
-const handleSubmit = async (formData: any) => {
+onMounted(() => {
+  if (employeeStore.employees.length === 0) {
+    employeeStore.fetchEmployees();
+  }
+});
+
+const handleSubmit = async () => {
   loading.value = true;
   try {
-    await cardStore.registerCard(formData);
+    await cardStore.registerCard(formData.value);
     router.push('/pointage-rfid/cards');
   } catch (error) {
     console.error('Failed to register card:', error);

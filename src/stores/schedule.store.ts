@@ -9,6 +9,17 @@ export const useScheduleStore = defineStore('schedule', () => {
   const currentSchedule = ref<Schedule | null>(null)
   const isLoading = ref(false)
 
+  async function fetchScheduleById(id: string) {
+    isLoading.value = true
+    try {
+      const response = await scheduleApi.getById(id)
+      currentSchedule.value = response.data
+      return response.data
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   async function fetchSchedules() {
     isLoading.value = true
     try {
@@ -94,5 +105,5 @@ export const useScheduleStore = defineStore('schedule', () => {
     }
   }
 
-  return { schedules, holidays, currentSchedule, isLoading, fetchSchedules, createSchedule, updateSchedule, deleteSchedule, fetchHolidays, createHoliday, deleteHoliday }
+  return { schedules, holidays, currentSchedule, isLoading, fetchScheduleById, fetchSchedules, createSchedule, updateSchedule, deleteSchedule, fetchHolidays, createHoliday, deleteHoliday }
 })

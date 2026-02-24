@@ -42,12 +42,12 @@ onMounted(async () => {
     await companyStore.fetchCompany(companyId.value)
   } catch (error: any) {
     toast.error('Erreur', error.message || 'Erreur lors du chargement de l\'entreprise')
-    router.push({ name: 'rfid-company-list' })
+    router.push({ name: 'rfid-companies' })
   }
 })
 
 function handleBack() {
-  router.push({ name: 'rfid-company-list' })
+  router.push({ name: 'rfid-companies' })
 }
 
 function handleEdit() {

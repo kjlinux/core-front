@@ -7,6 +7,7 @@ import type { Employee, Company, Site, Department } from '@/types'
 import EmployeeForm from '@/components/forms/EmployeeForm.vue'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
+import { ArrowLeftIcon } from '@heroicons/vue/24/outline'
 
 const router = useRouter()
 const route = useRoute()
@@ -75,6 +76,7 @@ const handleCancel = () => {
     <div class="mb-6 flex items-center justify-between">
       <h1 class="text-2xl font-bold text-gray-900">Modifier employe</h1>
       <AppButton variant="secondary" @click="handleCancel">
+        <ArrowLeftIcon class="w-4 h-4 mr-1" />
         Retour
       </AppButton>
     </div>

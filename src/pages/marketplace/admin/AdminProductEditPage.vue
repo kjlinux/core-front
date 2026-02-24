@@ -9,6 +9,7 @@ import AppInput from '@/components/ui/AppInput.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
 import AppToggle from '@/components/ui/AppToggle.vue'
 import AppTextarea from '@/components/ui/AppTextarea.vue'
+import { ArrowLeftIcon } from '@heroicons/vue/24/outline'
 
 const route = useRoute()
 const router = useRouter()
@@ -20,7 +21,7 @@ const productId = route.params.id as string
 const form = ref({
   name: '',
   description: '',
-  category: 'standard_card',
+  category: 'standard_card' as 'standard_card' | 'custom_card' | 'enterprise_pack',
   price: 0,
   currency: 'FCFA',
   stockQuantity: 0,
@@ -38,10 +39,10 @@ const categoryOptions = [
 async function handleSubmit() {
   try {
     await store.updateProduct(productId, form.value)
-    toast.showSuccess('Produit mis a jour')
+    toast.success('Produit mis a jour')
     router.push('/marketplace/admin/products')
   } catch {
-    toast.showError('Erreur lors de la mise a jour')
+    toast.error('Erreur lors de la mise a jour')
   }
 }
 
@@ -67,7 +68,10 @@ onMounted(async () => {
 <template>
   <div class="space-y-6">
     <div class="flex items-center gap-4">
-      <AppButton variant="ghost" @click="router.push('/marketplace/admin/products')">&larr; Retour</AppButton>
+      <AppButton variant="ghost" @click="router.push('/marketplace/admin/products')">
+        <ArrowLeftIcon class="w-4 h-4 mr-1" />
+        Retour
+      </AppButton>
       <h1 class="text-2xl font-bold text-gray-900">Modifier le produit</h1>
     </div>
 

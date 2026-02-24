@@ -8,6 +8,8 @@ import { setupAttendanceHandlers } from './handlers/attendance.handler'
 import { setupFeelbackHandlers } from './handlers/feelback.handler'
 import { setupMarketplaceHandlers } from './handlers/marketplace.handler'
 import { setupDashboardHandlers } from './handlers/dashboard.handler'
+import { setupBiometricHandlers } from './handlers/biometric.handler'
+import { setupScheduleHandlers } from './handlers/schedule.handler'
 
 export function setupMock() {
   const mock = new MockAdapter(apiClient, { delayResponse: 300 })
@@ -20,6 +22,8 @@ export function setupMock() {
   setupFeelbackHandlers(mock)
   setupMarketplaceHandlers(mock)
   setupDashboardHandlers(mock)
+  setupBiometricHandlers(mock)
+  setupScheduleHandlers(mock)
 
   return mock
 }

@@ -1,6 +1,6 @@
 <template>
   <AppModal
-    :open="open"
+    :isOpen="open"
     :title="title"
     size="sm"
     @close="$emit('cancel')"

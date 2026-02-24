@@ -25,10 +25,11 @@ const agents = [
   { id: '5', name: 'Bakary Sawadogo', site: 'Agence Nord', total: 128, bon: 55, neutre: 28, mauvais: 17, rate: 55 },
 ]
 
-const barXData = agents.slice(0, 5).map((a) => a.name.split(' ')[0])
+const barXData = agents.slice(0, 5).map((a) => a.name.split(' ')[0] || a.name)
 const barSeries = [
   { name: 'Taux satisfaction (%)', data: agents.slice(0, 5).map((a) => a.rate) },
 ]
+const barData: Array<{name: string, value: number}> = barXData.map((name, i) => ({ name, value: barSeries[0]?.data[i] ?? 0 }))
 </script>
 
 <template>
@@ -50,7 +51,7 @@ const barSeries = [
     </div>
 
     <AppCard title="Classement par satisfaction">
-      <BarChart :x-data="barXData" :series="barSeries" title="Top 5 agents" />
+      <BarChart :data="barData" title="Top 5 agents" />
     </AppCard>
 
     <AppCard title="Detail par agent">

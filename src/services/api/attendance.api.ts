@@ -1,49 +1,43 @@
 import apiClient from './client'
-import type { ApiResponse, PaginatedResponse } from '@/types'
+import type { AttendanceRecord, AttendanceDailyReport, AttendanceSummary } from '@/types'
 
 export interface AttendanceFilters {
-  companyId?: number
-  siteId?: number
-  departmentId?: number
-  employeeId?: number
+  companyId?: string
+  siteId?: string
+  departmentId?: string
+  employeeId?: string
   status?: string
   page?: number
   perPage?: number
 }
 
 export interface DateRange {
-  startDate: string
-  endDate: string
+  start: string
+  end: string
 }
 
 export const attendanceApi = {
-  getDailyReport(date: string, filters?: AttendanceFilters): Promise<ApiResponse<unknown>> {
-    return apiClient.get('/attendance/daily', { params: { date, ...filters } }).then((r) => r.data)
+  getDailyReport(date: string, filters?: AttendanceFilters): Promise<AttendanceDailyReport> {
+    return apiClient.get('/attendance/daily', { params: { date, ...filters } }).then((r) => r.data?.data ?? r.data)
   },
 
-  getMonthlyReport(month: string, filters?: AttendanceFilters): Promise<ApiResponse<unknown>> {
-    return apiClient.get('/attendance/monthly', { params: { month, ...filters } }).then((r) => r.data)
+  getMonthlyReport(month: string, filters?: AttendanceFilters): Promise<AttendanceSummary[]> {
+    return apiClient.get('/attendance/monthly', { params: { month, ...filters } }).then((r) => r.data?.data ?? r.data)
   },
 
-  getByEmployee(
-    employeeId: number,
-    dateRange: DateRange
-  ): Promise<PaginatedResponse<unknown>> {
+  getByEmployee(employeeId: string, dateRange: DateRange): Promise<AttendanceRecord[]> {
     return apiClient
       .get(`/attendance/employee/${employeeId}`, { params: dateRange })
-      .then((r) => r.data)
+      .then((r) => r.data?.data ?? r.data)
   },
 
-  getByDepartment(
-    departmentId: number,
-    dateRange: DateRange
-  ): Promise<PaginatedResponse<unknown>> {
+  getByDepartment(departmentId: string, dateRange: DateRange): Promise<AttendanceRecord[]> {
     return apiClient
       .get(`/attendance/department/${departmentId}`, { params: dateRange })
-      .then((r) => r.data)
+      .then((r) => r.data?.data ?? r.data)
   },
 
-  getSummary(filters?: AttendanceFilters): Promise<ApiResponse<unknown>> {
-    return apiClient.get('/attendance/summary', { params: filters }).then((r) => r.data)
+  getSummary(filters?: AttendanceFilters): Promise<AttendanceSummary[]> {
+    return apiClient.get('/attendance/summary', { params: filters }).then((r) => r.data?.data ?? r.data)
   },
 }

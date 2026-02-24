@@ -51,14 +51,14 @@ onMounted(async () => {
 const handleSubmit = async () => {
   try {
     const created = await employeeStore.createEmployee(formData.value)
-    router.push({ name: 'rfid-employee-list' })
+    router.push({ name: 'rfid-employees' })
   } catch (error) {
     console.error('Error creating employee:', error)
   }
 }
 
 const handleCancel = () => {
-  router.push({ name: 'rfid-employee-list' })
+  router.push({ name: 'rfid-employees' })
 }
 </script>
 

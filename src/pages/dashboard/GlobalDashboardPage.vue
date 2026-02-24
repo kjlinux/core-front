@@ -19,7 +19,7 @@
       <StatCard
         title="Entreprises actives"
         :value="dashboardStore.stats.activeCompanies"
-        icon="🏢"
+        :icon="BuildingOffice2Icon"
         icon-bg-class="bg-blue-100"
         icon-color-class="text-blue-600"
       />
@@ -27,7 +27,7 @@
       <StatCard
         title="Equipements connectes"
         :value="dashboardStore.stats.connectedDevices"
-        icon="📱"
+        :icon="DevicePhoneMobileIcon"
         icon-bg-class="bg-purple-100"
         icon-color-class="text-purple-600"
       />
@@ -35,7 +35,7 @@
       <StatCard
         title="Employes enregistres"
         :value="dashboardStore.stats.totalEmployees"
-        icon="👥"
+        :icon="UsersIcon"
         icon-bg-class="bg-green-100"
         icon-color-class="text-green-600"
       />
@@ -44,7 +44,7 @@
         title="Taux satisfaction global"
         :value="dashboardStore.stats.globalSatisfactionRate"
         suffix="%"
-        icon="⭐"
+        :icon="StarIcon"
         icon-bg-class="bg-yellow-100"
         icon-color-class="text-yellow-600"
         :trend="{ value: 5.2, isPositive: true }"
@@ -53,7 +53,7 @@
       <StatCard
         title="Cartes RFID vendues"
         :value="dashboardStore.stats.rfidCardsSold"
-        icon="💳"
+        :icon="CreditCardIcon"
         icon-bg-class="bg-indigo-100"
         icon-color-class="text-indigo-600"
       />
@@ -62,7 +62,7 @@
         title="Revenus marketplace"
         :value="dashboardStore.stats.marketplaceRevenue"
         suffix="XOF"
-        icon="💰"
+        :icon="BanknotesIcon"
         icon-bg-class="bg-emerald-100"
         icon-color-class="text-emerald-600"
         :trend="{ value: 12.8, isPositive: true }"
@@ -71,7 +71,7 @@
       <StatCard
         title="Alertes techniques"
         :value="dashboardStore.stats.technicalAlerts"
-        icon="⚠️"
+        :icon="ExclamationTriangleIcon"
         icon-bg-class="bg-red-100"
         icon-color-class="text-red-600"
         :trend="{ value: 3.1, isPositive: false }"
@@ -93,6 +93,15 @@ import { onMounted } from 'vue'
 import { useDashboardStore } from '@/stores/dashboard.store'
 import StatCard from '@/components/data-display/StatCard.vue'
 import AppSpinner from '@/components/ui/AppSpinner.vue'
+import {
+  BuildingOffice2Icon,
+  DevicePhoneMobileIcon,
+  UsersIcon,
+  StarIcon,
+  CreditCardIcon,
+  BanknotesIcon,
+  ExclamationTriangleIcon,
+} from '@heroicons/vue/24/outline'
 
 const dashboardStore = useDashboardStore()
 

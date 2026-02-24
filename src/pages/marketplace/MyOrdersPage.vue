@@ -8,6 +8,7 @@ import AppButton from '@/components/ui/AppButton.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
 import AppConfirmDialog from '@/components/ui/AppConfirmDialog.vue'
+import { EyeIcon, XMarkIcon } from '@heroicons/vue/24/outline'
 
 const router = useRouter()
 const store = useOrderStore()
@@ -56,7 +57,7 @@ const paymentVariants: Record<string, string> = {
   pending: 'warning',
   paid: 'success',
   failed: 'danger',
-  refunded: 'default',
+  refunded: 'neutral',
 }
 
 const filteredOrders = computed(() => {
@@ -64,7 +65,8 @@ const filteredOrders = computed(() => {
   return store.orders.filter((o) => o.status === filterStatus.value)
 })
 
-function formatPrice(amount: number, currency = 'FCFA') {
+function formatPrice(amount: number | undefined, currency = 'FCFA') {
+  if (amount == null) return `-- ${currency}`
   return `${amount.toLocaleString('fr-FR')} ${currency}`
 }
 
@@ -131,27 +133,29 @@ onMounted(async () => {
               <td class="px-4 py-3 text-sm text-gray-600">{{ order.items.length }} article(s)</td>
               <td class="px-4 py-3 text-sm font-semibold text-primary">{{ formatPrice(order.total, order.currency) }}</td>
               <td class="px-4 py-3">
-                <AppBadge :variant="(statusVariants[order.status] ?? 'default') as any">
+                <AppBadge :variant="(statusVariants[order.status] ?? 'neutral') as any">
                   {{ statusLabels[order.status] ?? order.status }}
                 </AppBadge>
               </td>
               <td class="px-4 py-3">
-                <AppBadge :variant="(paymentVariants[order.paymentStatus] ?? 'default') as any">
+                <AppBadge :variant="(paymentVariants[order.paymentStatus] ?? 'neutral') as any">
                   {{ paymentLabels[order.paymentStatus] ?? order.paymentStatus }}
                 </AppBadge>
               </td>
               <td class="px-4 py-3">
-                <div class="flex gap-2">
-                  <AppButton size="sm" variant="ghost" @click="router.push(`/marketplace/orders/${order.id}`)">
-                    Voir
+                <div class="flex gap-1">
+                  <AppButton size="sm" variant="ghost" @click="router.push(`/marketplace/orders/${order.id}`)" title="Voir">
+                    <EyeIcon class="w-4 h-4" />
                   </AppButton>
                   <AppButton
                     v-if="order.status === 'pending'"
                     size="sm"
-                    variant="danger"
+                    variant="ghost"
+                    class="text-red-600 hover:text-red-700"
                     @click="openCancelDialog(order.id)"
+                    title="Annuler"
                   >
-                    Annuler
+                    <XMarkIcon class="w-4 h-4" />
                   </AppButton>
                 </div>
               </td>
@@ -162,7 +166,8 @@ onMounted(async () => {
     </AppCard>
 
     <AppConfirmDialog
-      v-model="showCancelDialog"
+      :open="showCancelDialog"
+      @cancel="showCancelDialog = false"
       title="Annuler la commande"
       message="Etes-vous sur de vouloir annuler cette commande ? Cette action est irreversible."
       @confirm="confirmCancel"

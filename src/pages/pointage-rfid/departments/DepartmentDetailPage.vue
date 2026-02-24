@@ -95,13 +95,13 @@ const department = computed(() => departmentStore.currentDepartment)
 
 const siteName = computed(() => {
   if (!department.value) return '-'
-  const site = siteStore.sites.find(s => s.id === department.value.siteId)
+  const site = siteStore.sites.find(s => s.id === department.value!.siteId)
   return site?.name || '-'
 })
 
 const companyName = computed(() => {
   if (!department.value) return '-'
-  const company = companyStore.companies.find(c => c.id === department.value.companyId)
+  const company = companyStore.companies.find(c => c.id === department.value!.companyId)
   return company?.name || '-'
 })
 
