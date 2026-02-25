@@ -1,20 +1,18 @@
 <template>
   <div class="schedule-edit-page">
-    <AppCard>
-      <template #header>
-        <div class="flex justify-between items-center">
-          <h1 class="text-2xl font-bold">Modifier horaire</h1>
-          <AppButton
-            v-if="canDelete && schedule"
-            @click="showDeleteModal = true"
-            variant="danger"
-          >
-            <TrashIcon class="w-4 h-4 mr-1" />
-            Supprimer
-          </AppButton>
-        </div>
-      </template>
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-2xl font-bold">Modifier horaire</h1>
+      <AppButton
+        v-if="canDelete && schedule"
+        @click="showDeleteModal = true"
+        variant="danger"
+      >
+        <TrashIcon class="w-4 h-4 mr-1" />
+        Supprimer
+      </AppButton>
+    </div>
 
+    <AppCard>
       <div v-if="loadingSchedule" class="flex justify-center py-8">
         <p>Chargement...</p>
       </div>
@@ -22,7 +20,6 @@
       <ScheduleForm
         v-else-if="schedule"
         :initial-data="schedule"
-        v-model="scheduleFormData"
         :loading="loading"
         @submit="handleSubmit"
         @cancel="handleCancel"
@@ -65,11 +62,10 @@ const loading = ref(false)
 const loadingSchedule = ref(false)
 const showDeleteModal = ref(false)
 const schedule = ref<Schedule | null>(null)
-const scheduleFormData = ref<Partial<Schedule>>({})
 
 const canDelete = computed(() => isSuperAdmin.value || isAdminEnterprise.value)
 
-const scheduleId = computed(() => Number(route.params.id))
+const scheduleId = computed(() => String(route.params.id))
 
 const handleSubmit = async (data: Partial<Schedule>) => {
   loading.value = true

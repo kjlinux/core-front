@@ -10,6 +10,7 @@ import AppBadge from '@/components/ui/AppBadge.vue'
 import AppModal from '@/components/ui/AppModal.vue'
 import AppInput from '@/components/ui/AppInput.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
+import { ArrowPathIcon, TrashIcon } from '@heroicons/vue/24/outline'
 
 const deviceStore = useFeelbackDeviceStore()
 const companyStore = useCompanyStore()
@@ -158,8 +159,12 @@ onMounted(async () => {
               <td class="px-4 py-3 text-sm text-gray-600">{{ device.assignedAgent ?? '-' }}</td>
               <td class="px-4 py-3">
                 <div class="flex gap-2" v-if="canManage">
-                  <AppButton size="sm" variant="secondary" @click="handleRestart(device.id)">Restart</AppButton>
-                  <AppButton size="sm" variant="danger" @click="handleDelete(device.id)">Supprimer</AppButton>
+                  <AppButton size="sm" variant="ghost" @click="handleRestart(device.id)" title="Redemarrer">
+                    <ArrowPathIcon class="w-4 h-4" />
+                  </AppButton>
+                  <AppButton size="sm" variant="ghost" class="text-red-600 hover:text-red-700" @click="handleDelete(device.id)" title="Supprimer">
+                    <TrashIcon class="w-4 h-4" />
+                  </AppButton>
                 </div>
               </td>
             </tr>

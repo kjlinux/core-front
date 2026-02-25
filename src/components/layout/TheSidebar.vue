@@ -164,6 +164,7 @@ const sidebarClasses = computed(() => [
           :nested="true"
         />
         <TheSidebarItem
+          v-if="isAdminOrSuper"
           label="Terminaux"
           to="/biometrique/devices"
           :icon="DevicePhoneMobileIcon"
@@ -172,6 +173,7 @@ const sidebarClasses = computed(() => [
           :nested="true"
         />
         <TheSidebarItem
+          v-if="isAdminOrSuper"
           label="Inscriptions"
           to="/biometrique/enrollment"
           :icon="HandRaisedIcon"
@@ -180,6 +182,7 @@ const sidebarClasses = computed(() => [
           :nested="true"
         />
         <TheSidebarItem
+          v-if="isAdminOrSuper"
           label="Incoherences"
           to="/biometrique/inconsistencies"
           :icon="ExclamationTriangleIcon"
@@ -188,11 +191,20 @@ const sidebarClasses = computed(() => [
           :nested="true"
         />
         <TheSidebarItem
+          v-if="isAdminOrSuper"
           label="Journal d'audit"
           to="/biometrique/audit-log"
           :icon="BookOpenIcon"
           :collapsed="false"
           :active="route.path === '/biometrique/audit-log'"
+          :nested="true"
+        />
+        <TheSidebarItem
+          label="Pointage"
+          to="/biometrique/attendance"
+          :icon="ClockIcon"
+          :collapsed="false"
+          :active="route.path === '/biometrique/attendance'"
           :nested="true"
         />
       </TheSidebarGroup>
@@ -229,19 +241,12 @@ const sidebarClasses = computed(() => [
           :nested="true"
         />
         <TheSidebarItem
+          v-if="isAdminOrSuper"
           label="Terminaux"
           to="/feelback/devices"
           :icon="DevicePhoneMobileIcon"
           :collapsed="false"
           :active="route.path.startsWith('/feelback/devices')"
-          :nested="true"
-        />
-        <TheSidebarItem
-          label="Alertes"
-          to="/feelback/alerts"
-          :icon="BellAlertIcon"
-          :collapsed="false"
-          :active="route.path.startsWith('/feelback/alerts')"
           :nested="true"
         />
         <TheSidebarItem

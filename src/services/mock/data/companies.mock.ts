@@ -19,9 +19,9 @@ export const mockCompanies: Company[] = [
         name: 'Siege Ouaga',
         address: 'Avenue de la Nation, Ouagadougou',
         departments: [
-          { id: 'd1', siteId: 's1', companyId: 'c1', name: 'Direction Generale', employeeCount: 15 },
-          { id: 'd2', siteId: 's1', companyId: 'c1', name: 'Commercial', employeeCount: 30 },
-          { id: 'd3', siteId: 's1', companyId: 'c1', name: 'Technique', employeeCount: 25 },
+          { id: 'd1', siteId: 's1', companyId: 'c1', name: 'Direction Generale', employeeCount: 2, managerId: 'e1' },
+          { id: 'd2', siteId: 's1', companyId: 'c1', name: 'Commercial', employeeCount: 3, managerId: 'e3' },
+          { id: 'd3', siteId: 's1', companyId: 'c1', name: 'Technique', employeeCount: 2, managerId: 'e6' },
         ],
       },
       {
@@ -30,9 +30,9 @@ export const mockCompanies: Company[] = [
         name: 'Agence Bobo',
         address: 'Boulevard de la Revolution, Bobo-Dioulasso',
         departments: [
-          { id: 'd4', siteId: 's2', companyId: 'c1', name: 'Direction Regionale', employeeCount: 8 },
-          { id: 'd5', siteId: 's2', companyId: 'c1', name: 'Commercial', employeeCount: 22 },
-          { id: 'd6', siteId: 's2', companyId: 'c1', name: 'Technique', employeeCount: 20 },
+          { id: 'd4', siteId: 's2', companyId: 'c1', name: 'Direction Regionale', employeeCount: 1, managerId: 'e8' },
+          { id: 'd5', siteId: 's2', companyId: 'c1', name: 'Commercial', employeeCount: 1, managerId: 'e9' },
+          { id: 'd6', siteId: 's2', companyId: 'c1', name: 'Technique', employeeCount: 1, managerId: 'e10' },
         ],
       },
     ],
@@ -55,9 +55,9 @@ export const mockCompanies: Company[] = [
         name: 'Siege Ouaga',
         address: 'Avenue Kwame Nkrumah, Ouagadougou',
         departments: [
-          { id: 'd7', siteId: 's3', companyId: 'c2', name: 'Direction Generale', employeeCount: 12 },
-          { id: 'd8', siteId: 's3', companyId: 'c2', name: 'Commercial', employeeCount: 28 },
-          { id: 'd9', siteId: 's3', companyId: 'c2', name: 'Technique', employeeCount: 18 },
+          { id: 'd7', siteId: 's3', companyId: 'c2', name: 'Direction Generale', employeeCount: 1, managerId: 'e11' },
+          { id: 'd8', siteId: 's3', companyId: 'c2', name: 'Commercial', employeeCount: 2, managerId: 'e12' },
+          { id: 'd9', siteId: 's3', companyId: 'c2', name: 'Technique', employeeCount: 1, managerId: 'e14' },
         ],
       },
       {

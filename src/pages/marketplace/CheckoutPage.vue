@@ -21,10 +21,6 @@ const selectedOrderId = ref('')
 const isSubmitting = ref(false)
 const selectedPaymentMethod = ref<string>('mobile_money')
 const mobileNumber = ref('')
-const cardNumber = ref('')
-const cardExpiry = ref('')
-const cardCvv = ref('')
-
 const DELIVERY_FEE = 2000
 
 const deliveryAddress = ref<DeliveryAddress>({
@@ -160,34 +156,6 @@ async function confirmOrder() {
 
             <div v-if="selectedPaymentMethod === 'mobile_money'" class="px-4 pb-2">
               <AppInput v-model="mobileNumber" label="Numero de telephone Mobile Money" type="tel" placeholder="+226 XX XX XX XX" />
-            </div>
-
-            <!-- Carte bancaire -->
-            <label
-              class="flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-colors"
-              :class="selectedPaymentMethod === 'bank_card' ? 'border-primary-600 bg-primary-50' : 'border-gray-200 hover:border-gray-300'"
-            >
-              <input v-model="selectedPaymentMethod" type="radio" value="bank_card" class="sr-only" />
-              <div class="w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center"
-                :class="selectedPaymentMethod === 'bank_card' ? 'border-primary-600' : 'border-gray-300'">
-                <div v-if="selectedPaymentMethod === 'bank_card'" class="w-2 h-2 rounded-full bg-primary-600"></div>
-              </div>
-              <div class="flex items-center gap-2">
-                <div class="w-10 h-6 bg-blue-600 rounded text-white text-xs font-bold flex items-center justify-center">VISA</div>
-                <div class="w-10 h-6 bg-red-500 rounded text-white text-xs font-bold flex items-center justify-center">MC</div>
-              </div>
-              <div>
-                <p class="font-semibold text-gray-900">Carte bancaire</p>
-                <p class="text-sm text-gray-500">Visa, Mastercard</p>
-              </div>
-            </label>
-
-            <div v-if="selectedPaymentMethod === 'bank_card'" class="px-4 pb-2 space-y-3">
-              <AppInput v-model="cardNumber" label="Numero de carte" placeholder="XXXX XXXX XXXX XXXX" maxlength="19" />
-              <div class="grid grid-cols-2 gap-3">
-                <AppInput v-model="cardExpiry" label="Date d'expiration" placeholder="MM/AA" maxlength="5" />
-                <AppInput v-model="cardCvv" label="CVV" placeholder="XXX" maxlength="3" type="password" />
-              </div>
             </div>
 
             <!-- Paiement manuel -->

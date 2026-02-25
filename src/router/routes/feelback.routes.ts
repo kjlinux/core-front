@@ -1,4 +1,5 @@
 import type { RouteRecordRaw } from 'vue-router'
+import { UserRole } from '@/types/enums'
 
 const feelbackRoutes: RouteRecordRaw[] = [
   {
@@ -27,19 +28,19 @@ const feelbackRoutes: RouteRecordRaw[] = [
         path: 'devices',
         name: 'feelback-devices',
         component: () => import('@/pages/feelback/DeviceManagementPage.vue'),
-        meta: { title: 'Terminaux Feelback' },
+        meta: { title: 'Terminaux Feelback', roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE] },
       },
       {
         path: 'alerts',
         name: 'feelback-alerts',
         component: () => import('@/pages/feelback/AlertManagementPage.vue'),
-        meta: { title: 'Alertes Feelback' },
+        meta: { title: 'Alertes Feelback', roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE] },
       },
       {
         path: 'agents',
         name: 'feelback-agents',
         component: () => import('@/pages/feelback/AgentPerformancePage.vue'),
-        meta: { title: 'Performance des agents' },
+        meta: { title: 'Performance des agents', roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE] },
       },
       {
         path: 'comparison',
@@ -57,7 +58,7 @@ const feelbackRoutes: RouteRecordRaw[] = [
         path: 'settings',
         name: 'feelback-settings',
         component: () => import('@/pages/feelback/FeelbackSettingsPage.vue'),
-        meta: { title: 'Configuration Feelback' },
+        meta: { title: 'Configuration Feelback', roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE] },
       },
     ],
   },

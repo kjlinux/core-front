@@ -18,17 +18,17 @@
         <StatCard
           title="Total Employes"
           :value="department.employeeCount || 0"
-          icon="👥"
+          :icon="UsersIcon"
         />
         <StatCard
           title="Employes Actifs"
           :value="activeEmployeesCount"
-          icon="✓"
+          :icon="CheckCircleIcon"
         />
         <StatCard
           title="Site"
           :value="siteName"
-          icon="🏢"
+          :icon="MapPinIcon"
         />
       </div>
 
@@ -62,6 +62,7 @@
           :data="employeeTableData"
           :loading="employeeStore.isLoading"
           :pagination="employeeStore.pagination"
+          @row-click="handleEmployeeClick"
           @page-change="handleEmployeePageChange"
         />
       </AppCard>
@@ -70,7 +71,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useDepartmentStore } from '@/stores/department.store'
 import { useCompanyStore } from '@/stores/company.store'
@@ -81,6 +82,7 @@ import StatCard from '@/components/data-display/StatCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppCard from '@/components/ui/AppCard.vue'
 import type { TableColumn } from '@/types/common'
+import { UsersIcon, CheckCircleIcon, MapPinIcon } from '@heroicons/vue/24/outline'
 
 const router = useRouter()
 const route = useRoute()
@@ -90,7 +92,6 @@ const siteStore = useSiteStore()
 const employeeStore = useEmployeeStore()
 
 const departmentId = computed(() => route.params.id as string)
-
 const department = computed(() => departmentStore.currentDepartment)
 
 const siteName = computed(() => {
@@ -105,15 +106,16 @@ const companyName = computed(() => {
   return company?.name || '-'
 })
 
+// Cherche le manager parmi tous les employes charges (du site)
 const managerName = computed(() => {
   if (!department.value?.managerId) return '-'
-  const manager = employeeStore.employees.find(e => e.id === department.value?.managerId)
-  return manager ? `${manager.firstName} ${manager.lastName}` : 'Manager assigne'
+  const manager = employeeStore.employees.find(e => e.id === department.value!.managerId)
+  return manager ? `${manager.firstName} ${manager.lastName}` : '-'
 })
 
 const activeEmployeesCount = computed(() => {
   return employeeStore.employees.filter(e =>
-    e.departmentId === departmentId.value && e.isActive
+    e.departmentId === departmentId.value && e.isActive,
   ).length
 })
 
@@ -137,6 +139,7 @@ const employeeTableData = computed(() => {
 })
 
 onMounted(async () => {
+  // Charger departement + donnees de contexte en parallele
   await Promise.all([
     companyStore.fetchCompanies({ perPage: 100 }),
     siteStore.fetchSites({ perPage: 100 }),
@@ -144,13 +147,18 @@ onMounted(async () => {
   ])
 
   if (department.value) {
+    // Charger TOUS les employes du site (pas seulement du dept)
+    // pour pouvoir resoudre le nom du manager meme s'il est dans un autre departement
     await employeeStore.fetchEmployees({
-      departmentId: department.value.id,
-      perPage: 10,
-      page: 1,
+      siteId: department.value.siteId,
+      perPage: 200,
     })
   }
 })
+
+function handleEmployeeClick(row: any) {
+  router.push({ name: 'rfid-employee-detail', params: { id: row.id } })
+}
 
 function handleEmployeePageChange(page: number) {
   if (!department.value) return

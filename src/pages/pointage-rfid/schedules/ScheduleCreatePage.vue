@@ -1,12 +1,9 @@
 <template>
   <div class="schedule-create-page">
-    <AppCard>
-      <template #header>
-        <h1 class="text-2xl font-bold">Nouvel horaire</h1>
-      </template>
+    <h1 class="text-2xl font-bold mb-6">Nouvel horaire</h1>
 
+    <AppCard>
       <ScheduleForm
-        v-model="formData"
         :loading="loading"
         @submit="handleSubmit"
         @cancel="handleCancel"
@@ -28,7 +25,6 @@ const router = useRouter()
 const scheduleStore = useScheduleStore()
 
 const loading = ref(false)
-const formData = ref<Partial<Schedule>>({})
 
 const handleSubmit = async (data: Partial<Schedule>) => {
   loading.value = true

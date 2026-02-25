@@ -9,6 +9,12 @@ import AppBadge from '@/components/ui/AppBadge.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppSpinner from '@/components/ui/AppSpinner.vue'
 import type { TableColumn } from '@/types/common'
+import {
+  DevicePhoneMobileIcon,
+  SignalIcon,
+  HandRaisedIcon,
+  ClockIcon,
+} from '@heroicons/vue/24/outline'
 
 const router = useRouter()
 const biometricStore = useBiometricStore()
@@ -62,24 +68,28 @@ onMounted(() => {
       <StatCard
         title="Total terminaux"
         :value="totalDevices"
+        :icon="DevicePhoneMobileIcon"
         icon-bg-class="bg-blue-100"
         icon-color-class="text-blue-600"
       />
       <StatCard
         title="Terminaux en ligne"
         :value="onlineDevices"
+        :icon="SignalIcon"
         icon-bg-class="bg-green-100"
         icon-color-class="text-green-600"
       />
       <StatCard
         title="Total inscriptions"
         :value="totalEnrollments"
+        :icon="HandRaisedIcon"
         icon-bg-class="bg-purple-100"
         icon-color-class="text-purple-600"
       />
       <StatCard
         title="Inscriptions en attente"
         :value="pendingEnrollments"
+        :icon="ClockIcon"
         icon-bg-class="bg-yellow-100"
         icon-color-class="text-yellow-600"
       />

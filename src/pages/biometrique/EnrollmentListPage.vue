@@ -7,6 +7,7 @@ import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
+import { ArrowPathIcon, TrashIcon } from '@heroicons/vue/24/outline'
 
 const router = useRouter()
 const store = useBiometricStore()
@@ -133,13 +134,14 @@ onMounted(async () => {
                   <AppButton
                     v-if="enrollment.status === 'failed'"
                     size="sm"
-                    variant="secondary"
+                    variant="ghost"
                     @click="router.push('/biometrique/enrollment/new')"
+                    title="Recommencer"
                   >
-                    Recommencer
+                    <ArrowPathIcon class="w-4 h-4" />
                   </AppButton>
-                  <AppButton size="sm" variant="danger" @click="handleDelete(enrollment.id)">
-                    Supprimer
+                  <AppButton size="sm" variant="ghost" class="text-red-600 hover:text-red-700" @click="handleDelete(enrollment.id)" title="Supprimer">
+                    <TrashIcon class="w-4 h-4" />
                   </AppButton>
                 </div>
               </td>

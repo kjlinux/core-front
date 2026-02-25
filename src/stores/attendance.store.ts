@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { attendanceApi } from '@/services/api/attendance.api'
 import type { AttendanceRecord, AttendanceDailyReport, AttendanceSummary } from '@/types'
@@ -15,10 +15,29 @@ export const useAttendanceStore = defineStore('attendance', () => {
     end: '',
   })
 
-  async function fetchDailyAttendance(date: string, filters?: Record<string, unknown>) {
+  // Aliases pour la compatibilité avec AttendanceDailyPage
+  const dailyAttendance = computed(() => dailyReport.value?.records ?? [])
+  const dailyAttendanceTotal = computed(() => dailyReport.value?.records?.length ?? 0)
+  const dailyStats = computed(() => {
+    if (!dailyReport.value) return null
+    return {
+      totalEmployees: dailyReport.value.totalEmployees,
+      present: dailyReport.value.present,
+      absent: dailyReport.value.absent,
+      late: dailyReport.value.late,
+      averageEntryTime: (dailyReport.value as any).averageEntryTime ?? '00:00',
+      earlyDepartures: (dailyReport.value as any).earlyDepartures ?? 0,
+      doubleBadgeCount: (dailyReport.value as any).doubleBadgeCount ?? 0,
+    }
+  })
+
+  async function fetchDailyAttendance(params: { date?: string; department?: string; site?: string; status?: string; page?: number; perPage?: number } | string, filters?: Record<string, unknown>) {
     isLoading.value = true
     try {
-      dailyReport.value = await attendanceApi.getDailyReport(date, filters)
+      // Supporte l'ancienne signature (date: string) et la nouvelle (objet params)
+      const date = typeof params === 'string' ? params : (params.date ?? new Date().toISOString().split('T')[0])
+      const extraFilters = typeof params === 'string' ? filters : params
+      dailyReport.value = await attendanceApi.getDailyReport(date, extraFilters as any)
       if (dailyReport.value) {
         records.value = dailyReport.value.records
       }
@@ -79,5 +98,31 @@ export const useAttendanceStore = defineStore('attendance', () => {
     }
   }
 
-  return { records, dailyReport, summaries, recentActivity, isLoading, dateRange, fetchDailyAttendance, fetchMonthlyReport, fetchByEmployee, fetchByDepartment, fetchDailyStats, fetchRecentActivity }
+  async function fetchBiometricAttendance(date: string) {
+    isLoading.value = true
+    try {
+      return await attendanceApi.getBiometricReport(date)
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  return {
+    records,
+    dailyReport,
+    dailyAttendance,
+    dailyAttendanceTotal,
+    dailyStats,
+    summaries,
+    recentActivity,
+    isLoading,
+    dateRange,
+    fetchDailyAttendance,
+    fetchMonthlyReport,
+    fetchByEmployee,
+    fetchByDepartment,
+    fetchDailyStats,
+    fetchRecentActivity,
+    fetchBiometricAttendance,
+  }
 })

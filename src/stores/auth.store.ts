@@ -22,6 +22,7 @@ export const useAuthStore = defineStore('auth', () => {
       user.value = response.user
       localStorage.setItem('access_token', response.accessToken)
       localStorage.setItem('refresh_token', response.refreshToken)
+      localStorage.setItem('auth_user', JSON.stringify(response.user))
     } finally {
       isLoading.value = false
     }
@@ -32,6 +33,7 @@ export const useAuthStore = defineStore('auth', () => {
     accessToken.value = null
     localStorage.removeItem('access_token')
     localStorage.removeItem('refresh_token')
+    localStorage.removeItem('auth_user')
   }
 
   function loadFromStorage() {

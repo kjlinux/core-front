@@ -18,17 +18,17 @@
         <StatCard
           title="Total Departements"
           :value="site.departments?.length || 0"
-          icon="🏢"
+          :icon="RectangleGroupIcon"
         />
         <StatCard
           title="Total Employes"
           :value="totalEmployees"
-          icon="👥"
+          :icon="UsersIcon"
         />
         <StatCard
           title="Entreprise"
           :value="companyName"
-          icon="🏛️"
+          :icon="BuildingOffice2Icon"
         />
       </div>
 
@@ -51,12 +51,12 @@
         </div>
       </AppCard>
 
-      <AppCard>
+      <AppCard title="Departements">
         <template #actions>
           <AppButton
             v-if="canCreate"
             variant="primary"
-            @click="showCreateDepartmentModal = true"
+            @click="openCreateDepartmentModal"
           >
             Nouveau Departement
           </AppButton>
@@ -121,6 +121,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useSiteStore } from '@/stores/site.store'
 import { useCompanyStore } from '@/stores/company.store'
 import { useDepartmentStore } from '@/stores/department.store'
+import { useEmployeeStore } from '@/stores/employee.store'
 import { usePermissions } from '@/composables/usePermissions'
 import DataTable from '@/components/data-display/DataTable.vue'
 import StatCard from '@/components/data-display/StatCard.vue'
@@ -130,12 +131,14 @@ import AppModal from '@/components/ui/AppModal.vue'
 import AppInput from '@/components/ui/AppInput.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
 import type { TableColumn } from '@/types/common'
+import { RectangleGroupIcon, UsersIcon, BuildingOffice2Icon } from '@heroicons/vue/24/outline'
 
 const router = useRouter()
 const route = useRoute()
 const siteStore = useSiteStore()
 const companyStore = useCompanyStore()
 const departmentStore = useDepartmentStore()
+const employeeStore = useEmployeeStore()
 const permissions = usePermissions()
 
 const showCreateDepartmentModal = ref(false)
@@ -147,7 +150,6 @@ const departmentFormData = ref({
 })
 
 const siteId = computed(() => route.params.id as string)
-
 const site = computed(() => siteStore.currentSite)
 
 const canCreate = computed(() =>
@@ -165,9 +167,20 @@ const totalEmployees = computed(() => {
   return site.value.departments.reduce((sum, dept) => sum + (dept.employeeCount || 0), 0)
 })
 
-const managerOptions = computed(() => [
-  { value: '', label: 'Aucun manager' },
-])
+// Options du select manager : tous les employes actifs du site
+const managerOptions = computed(() => {
+  const opts = employeeStore.employees
+    .filter(e => e.isActive)
+    .map(e => ({ value: e.id, label: `${e.firstName} ${e.lastName} — ${e.position}` }))
+  return [{ value: '', label: 'Aucun manager' }, ...opts]
+})
+
+// Helper pour resoudre le nom d'un manager par son id
+function getManagerName(managerId?: string): string {
+  if (!managerId) return '-'
+  const emp = employeeStore.employees.find(e => e.id === managerId)
+  return emp ? `${emp.firstName} ${emp.lastName}` : '-'
+}
 
 const departmentColumns: TableColumn[] = [
   { key: 'name', label: 'Nom', sortable: true },
@@ -181,15 +194,27 @@ const departmentTableData = computed(() => {
     id: dept.id,
     name: dept.name,
     employeeCount: dept.employeeCount || 0,
-    manager: dept.managerId ? 'Manager assigne' : '-',
+    manager: getManagerName(dept.managerId),
   }))
 })
+
+async function openCreateDepartmentModal() {
+  // Charger les employes du site pour alimenter le select manager
+  if (site.value) {
+    await employeeStore.fetchEmployees({ siteId: site.value.id, perPage: 100 })
+  }
+  showCreateDepartmentModal.value = true
+}
 
 onMounted(async () => {
   await Promise.all([
     companyStore.fetchCompanies({ perPage: 100 }),
     siteStore.fetchSite(siteId.value),
   ])
+  // Charger les employes du site pour afficher les noms des managers dans le tableau
+  if (site.value) {
+    await employeeStore.fetchEmployees({ siteId: site.value.id, perPage: 100 })
+  }
 })
 
 function handleDepartmentClick(row: any) {
@@ -219,9 +244,6 @@ async function handleCreateDepartment() {
 
 function closeCreateDepartmentModal() {
   showCreateDepartmentModal.value = false
-  departmentFormData.value = {
-    name: '',
-    managerId: '',
-  }
+  departmentFormData.value = { name: '', managerId: '' }
 }
 </script>

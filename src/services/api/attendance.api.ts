@@ -40,4 +40,8 @@ export const attendanceApi = {
   getSummary(filters?: AttendanceFilters): Promise<AttendanceSummary[]> {
     return apiClient.get('/attendance/summary', { params: filters }).then((r) => r.data?.data ?? r.data)
   },
+
+  getBiometricReport(date: string, filters?: AttendanceFilters): Promise<AttendanceDailyReport> {
+    return apiClient.get('/attendance/biometric', { params: { date, ...filters } }).then((r) => r.data?.data ?? r.data)
+  },
 }

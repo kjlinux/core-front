@@ -1,20 +1,18 @@
 <template>
   <div class="schedule-list-page">
-    <AppCard>
-      <template #header>
-        <div class="flex justify-between items-center">
-          <h1 class="text-2xl font-bold">Horaires de travail</h1>
-          <AppButton
-            v-if="canCreate"
-            @click="navigateToCreate"
-            variant="primary"
-          >
-            <PlusIcon class="w-4 h-4 mr-1" />
-            Nouvel horaire
-          </AppButton>
-        </div>
-      </template>
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-2xl font-bold">Horaires de travail</h1>
+      <AppButton
+        v-if="canCreate"
+        @click="navigateToCreate"
+        variant="primary"
+      >
+        <PlusIcon class="w-4 h-4 mr-1" />
+        Nouvel horaire
+      </AppButton>
+    </div>
 
+    <AppCard>
       <DataTable
         :data="schedules"
         :columns="columns"
@@ -136,7 +134,7 @@ const navigateToCreate = () => {
   router.push('/pointage-rfid/schedules/create')
 }
 
-const navigateToEdit = (id: number) => {
+const navigateToEdit = (id: string) => {
   router.push(`/pointage-rfid/schedules/${id}/edit`)
 }
 

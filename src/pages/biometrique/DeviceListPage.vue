@@ -12,6 +12,7 @@ import AppModal from '@/components/ui/AppModal.vue'
 import AppInput from '@/components/ui/AppInput.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
 import type { BiometricDevice } from '@/types'
+import { EyeIcon, ArrowPathIcon } from '@heroicons/vue/24/outline'
 
 const router = useRouter()
 const store = useBiometricStore()
@@ -153,11 +154,11 @@ onMounted(async () => {
               <td class="px-4 py-3 text-sm text-gray-600">{{ formatDate(device.lastSyncAt) }}</td>
               <td class="px-4 py-3" @click.stop>
                 <div class="flex gap-2">
-                  <AppButton size="sm" variant="ghost" @click="router.push(`/biometrique/devices/${device.id}`)">
-                    Voir
+                  <AppButton size="sm" variant="ghost" @click="router.push(`/biometrique/devices/${device.id}`)" title="Voir">
+                    <EyeIcon class="w-4 h-4" />
                   </AppButton>
-                  <AppButton v-if="canManage" size="sm" variant="secondary" @click="handleSync(device)">
-                    Sync
+                  <AppButton v-if="canManage" size="sm" variant="ghost" @click="handleSync(device)" title="Synchroniser">
+                    <ArrowPathIcon class="w-4 h-4" />
                   </AppButton>
                 </div>
               </td>

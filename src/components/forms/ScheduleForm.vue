@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { ref, watch } from 'vue'
 import type { Schedule } from '@/types'
 import FormSection from './FormSection.vue'
 import FormRow from './FormRow.vue'
@@ -9,91 +9,93 @@ import AppButton from '@/components/ui/AppButton.vue'
 import AppCheckbox from '@/components/ui/AppCheckbox.vue'
 
 const props = defineProps<{
-  modelValue?: Partial<Schedule>
   initialData?: Partial<Schedule>
   loading: boolean
 }>()
 
 const emit = defineEmits<{
-  'update:modelValue': [value: Partial<Schedule>]
   submit: [data: Partial<Schedule>]
+  cancel: []
 }>()
 
 const errors = ref<Record<string, string>>({})
 
-const internalData = ref<Partial<Schedule>>(props.modelValue ?? props.initialData ?? {})
-
-const localValue = computed({
-  get: () => internalData.value,
-  set: (value) => {
-    internalData.value = value
-    emit('update:modelValue', value)
-  },
+const form = ref<Partial<Schedule>>({
+  name: '',
+  type: 'standard',
+  startTime: '',
+  endTime: '',
+  breakStart: '',
+  breakEnd: '',
+  workDays: [],
+  lateTolerance: 0,
 })
 
-const updateField = (field: keyof Schedule, value: any) => {
-  localValue.value = { ...localValue.value, [field]: value }
-}
+// Pré-remplissage quand initialData arrive (chargement async en édition)
+watch(
+  () => props.initialData,
+  (data) => {
+    if (data && Object.keys(data).length > 0) {
+      form.value = {
+        name: data.name ?? '',
+        type: data.type ?? 'standard',
+        startTime: data.startTime ?? '',
+        endTime: data.endTime ?? '',
+        breakStart: data.breakStart ?? '',
+        breakEnd: data.breakEnd ?? '',
+        workDays: data.workDays ? [...data.workDays] : [],
+        lateTolerance: data.lateTolerance ?? 0,
+      }
+    }
+  },
+  { immediate: true },
+)
 
 const typeOptions = [
   { label: 'Standard', value: 'standard' },
-  { label: 'Personnalisé', value: 'custom' }
+  { label: 'Personnalisé', value: 'custom' },
 ]
 
 const weekDays = [
-  { label: 'Dimanche', value: 0 },
   { label: 'Lundi', value: 1 },
   { label: 'Mardi', value: 2 },
   { label: 'Mercredi', value: 3 },
   { label: 'Jeudi', value: 4 },
   { label: 'Vendredi', value: 5 },
-  { label: 'Samedi', value: 6 }
+  { label: 'Samedi', value: 6 },
+  { label: 'Dimanche', value: 7 },
 ]
 
-const workDays = computed({
-  get: () => localValue.value.workDays || [],
-  set: (value) => updateField('workDays', value)
-})
-
 const toggleDay = (day: number) => {
-  const days = [...workDays.value]
-  const index = days.indexOf(day)
-
-  if (index > -1) {
-    days.splice(index, 1)
+  const days = [...(form.value.workDays ?? [])]
+  const idx = days.indexOf(day)
+  if (idx > -1) {
+    days.splice(idx, 1)
   } else {
     days.push(day)
   }
-
-  workDays.value = days
+  form.value = { ...form.value, workDays: days }
 }
 
 const validate = (): boolean => {
   errors.value = {}
 
-  if (!localValue.value.name?.trim()) {
+  if (!form.value.name?.trim()) {
     errors.value.name = 'Le nom est requis'
   }
-
-  if (!localValue.value.type) {
+  if (!form.value.type) {
     errors.value.type = 'Le type est requis'
   }
-
-  if (!localValue.value.startTime?.trim()) {
+  if (!form.value.startTime?.trim()) {
     errors.value.startTime = "L'heure de début est requise"
   }
-
-  if (!localValue.value.endTime?.trim()) {
+  if (!form.value.endTime?.trim()) {
     errors.value.endTime = "L'heure de fin est requise"
   }
-
-  if (localValue.value.startTime && localValue.value.endTime) {
-    if (localValue.value.startTime >= localValue.value.endTime) {
-      errors.value.endTime = "L'heure de fin doit être après l'heure de début"
-    }
+  if (form.value.startTime && form.value.endTime && form.value.startTime >= form.value.endTime) {
+    errors.value.endTime = "L'heure de fin doit être après l'heure de début"
   }
-
-  if (!workDays.value.length) {
+  if (!form.value.workDays?.length) {
     errors.value.workDays = 'Sélectionner au moins un jour de travail'
   }
 
@@ -102,7 +104,7 @@ const validate = (): boolean => {
 
 const handleSubmit = () => {
   if (validate()) {
-    emit('submit', internalData.value)
+    emit('submit', { ...form.value })
   }
 }
 </script>
@@ -112,8 +114,7 @@ const handleSubmit = () => {
     <FormSection title="Horaire de travail">
       <FormRow label="Nom" :required="true" :error="errors.name">
         <AppInput
-          :model-value="localValue.name || ''"
-          @update:model-value="updateField('name', $event)"
+          v-model="form.name"
           placeholder="Horaire standard, Horaire d'été, etc."
           :disabled="loading"
         />
@@ -121,8 +122,7 @@ const handleSubmit = () => {
 
       <FormRow label="Type" :required="true" :error="errors.type">
         <AppSelect
-          :model-value="localValue.type || 'standard'"
-          @update:model-value="updateField('type', $event)"
+          v-model="form.type"
           :options="typeOptions"
           :disabled="loading"
         />
@@ -130,8 +130,7 @@ const handleSubmit = () => {
 
       <FormRow label="Heure de début" :required="true" :error="errors.startTime">
         <AppInput
-          :model-value="localValue.startTime || ''"
-          @update:model-value="updateField('startTime', $event)"
+          v-model="form.startTime"
           type="time"
           :disabled="loading"
         />
@@ -139,8 +138,7 @@ const handleSubmit = () => {
 
       <FormRow label="Heure de fin" :required="true" :error="errors.endTime">
         <AppInput
-          :model-value="localValue.endTime || ''"
-          @update:model-value="updateField('endTime', $event)"
+          v-model="form.endTime"
           type="time"
           :disabled="loading"
         />
@@ -148,8 +146,7 @@ const handleSubmit = () => {
 
       <FormRow label="Début de pause" :error="errors.breakStart">
         <AppInput
-          :model-value="localValue.breakStart || ''"
-          @update:model-value="updateField('breakStart', $event)"
+          v-model="form.breakStart"
           type="time"
           :disabled="loading"
         />
@@ -157,19 +154,18 @@ const handleSubmit = () => {
 
       <FormRow label="Fin de pause" :error="errors.breakEnd">
         <AppInput
-          :model-value="localValue.breakEnd || ''"
-          @update:model-value="updateField('breakEnd', $event)"
+          v-model="form.breakEnd"
           type="time"
           :disabled="loading"
         />
       </FormRow>
 
       <FormRow label="Jours de travail" :required="true" :error="errors.workDays">
-        <div class="space-y-2">
+        <div class="flex flex-wrap gap-3">
           <AppCheckbox
             v-for="day in weekDays"
             :key="day.value"
-            :model-value="workDays.includes(day.value)"
+            :model-value="(form.workDays ?? []).includes(day.value)"
             @update:model-value="toggleDay(day.value)"
             :label="day.label"
             :disabled="loading"
@@ -183,8 +179,8 @@ const handleSubmit = () => {
         help="Nombre de minutes de tolérance avant qu'un retard soit comptabilisé"
       >
         <AppInput
-          :model-value="localValue.lateTolerance?.toString() || '0'"
-          @update:model-value="updateField('lateTolerance', parseInt(String($event)) || 0)"
+          :model-value="form.lateTolerance?.toString() ?? '0'"
+          @update:model-value="form.lateTolerance = parseInt(String($event)) || 0"
           type="number"
           min="0"
           placeholder="0"
@@ -193,7 +189,10 @@ const handleSubmit = () => {
       </FormRow>
     </FormSection>
 
-    <div class="flex justify-end">
+    <div class="flex justify-end gap-3">
+      <AppButton type="button" variant="ghost" :disabled="loading" @click="emit('cancel')">
+        Annuler
+      </AppButton>
       <AppButton type="submit" :loading="loading">
         Enregistrer
       </AppButton>

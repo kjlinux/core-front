@@ -6,6 +6,7 @@ import { useToast } from '@/composables/useToast'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
+import { ArrowPathIcon, TrashIcon } from '@heroicons/vue/24/outline'
 
 const route = useRoute()
 const router = useRouter()
@@ -91,7 +92,10 @@ onMounted(async () => {
               <p class="mt-1 text-gray-900">{{ formatDate(device.lastSyncAt) }}</p>
             </div>
           </div>
-          <AppButton variant="primary" @click="handleSync">Synchroniser</AppButton>
+          <AppButton variant="primary" @click="handleSync">
+            <ArrowPathIcon class="w-4 h-4 mr-1" />
+            Synchroniser
+          </AppButton>
         </div>
       </AppCard>
 
@@ -123,8 +127,8 @@ onMounted(async () => {
                   {{ enrollment.enrolledAt ? formatDate(enrollment.enrolledAt) : '-' }}
                 </td>
                 <td class="px-4 py-3">
-                  <AppButton size="sm" variant="danger" @click="handleDeleteEnrollment(enrollment.id)">
-                    Supprimer
+                  <AppButton size="sm" variant="ghost" class="text-red-600 hover:text-red-700" @click="handleDeleteEnrollment(enrollment.id)" title="Supprimer">
+                    <TrashIcon class="w-4 h-4" />
                   </AppButton>
                 </td>
               </tr>

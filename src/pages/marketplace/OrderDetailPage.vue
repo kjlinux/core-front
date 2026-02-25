@@ -90,14 +90,14 @@ onMounted(async () => {
             <div class="flex flex-col items-center gap-1 flex-shrink-0">
               <div
                 class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold"
-                :class="index <= getCurrentStepIndex() ? 'bg-primary text-white' : 'bg-gray-200 text-gray-400'"
+                :class="index <= getCurrentStepIndex() ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-400'"
               >{{ index + 1 }}</div>
-              <span class="text-xs text-center" :class="index <= getCurrentStepIndex() ? 'text-primary font-medium' : 'text-gray-400'">
+              <span class="text-xs text-center" :class="index <= getCurrentStepIndex() ? 'text-primary-600 font-medium' : 'text-gray-400'">
                 {{ stepLabels[status] }}
               </span>
             </div>
             <div v-if="index < statusSteps.length - 1" class="h-0.5 flex-1 min-w-8"
-              :class="index < getCurrentStepIndex() ? 'bg-primary' : 'bg-gray-200'"></div>
+              :class="index < getCurrentStepIndex() ? 'bg-primary-600' : 'bg-gray-200'"></div>
           </template>
         </div>
       </AppCard>

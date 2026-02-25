@@ -39,7 +39,7 @@
             </div>
           </Transition>
         </div>
-        <div class="fixed inset-0 bg-black bg-opacity-50 -z-10"></div>
+        <div class="fixed inset-0 bg-black/20 backdrop-blur-sm -z-10"></div>
       </div>
     </Transition>
   </Teleport>
