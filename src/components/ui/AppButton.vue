@@ -47,7 +47,7 @@ const baseClasses = 'relative inline-flex items-center justify-center font-mediu
 const variantClasses = computed(() => {
   switch (props.variant) {
     case 'primary':
-      return 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500';
+      return 'bg-primary-800 text-white hover:bg-primary-900 focus:ring-primary-600';
     case 'secondary':
       return 'bg-gray-600 text-white hover:bg-gray-700 focus:ring-gray-500';
     case 'danger':

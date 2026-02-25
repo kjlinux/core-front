@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { biometricApi } from '@/services/api/biometric.api'
+import { getEcho } from '@/services/echo'
 import type { BiometricDevice, FingerprintEnrollment, BiometricAuditEntry } from '@/types'
 
 export const useBiometricStore = defineStore('biometric', () => {
@@ -91,6 +92,33 @@ export const useBiometricStore = defineStore('biometric', () => {
     }
   }
 
+  function subscribeRealtime() {
+    const echo = getEcho()
+    if (!echo) return
+
+    echo.channel('devices').listen('.device.status.updated', (data: {
+      deviceType: string
+      deviceId: string
+      status: string
+      data: Record<string, unknown>
+      timestamp: string
+    }) => {
+      if (data.deviceType === 'biometric') {
+        const device = devices.value.find((d) => d.id === data.deviceId)
+        if (device) {
+          device.isOnline = data.status === 'online'
+          device.lastSyncAt = data.timestamp
+        }
+      }
+    })
+  }
+
+  function unsubscribeRealtime() {
+    const echo = getEcho()
+    if (!echo) return
+    echo.leave('devices')
+  }
+
   return {
     devices,
     currentDevice,
@@ -105,5 +133,7 @@ export const useBiometricStore = defineStore('biometric', () => {
     fetchAuditLog,
     fetchInconsistencies,
     syncDevice,
+    subscribeRealtime,
+    unsubscribeRealtime,
   }
 })

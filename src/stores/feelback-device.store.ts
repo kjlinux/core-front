@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { feelbackDeviceApi } from '@/services/api/feelback-device.api'
+import { getEcho } from '@/services/echo'
 import type { FeelbackDevice } from '@/types'
 
 export const useFeelbackDeviceStore = defineStore('feelback-device', () => {
@@ -77,6 +78,36 @@ export const useFeelbackDeviceStore = defineStore('feelback-device', () => {
     }
   }
 
+  function subscribeRealtime() {
+    const echo = getEcho()
+    if (!echo) return
+
+    echo.channel('devices').listen('.device.status.updated', (data: {
+      deviceType: string
+      deviceId: string
+      status: string
+      data: Record<string, unknown>
+      timestamp: string
+    }) => {
+      if (data.deviceType === 'feelback') {
+        const device = devices.value.find((d) => d.id === data.deviceId)
+        if (device) {
+          device.isOnline = data.status === 'online'
+          device.lastPingAt = data.timestamp
+          if (data.data?.batteryLevel !== undefined) {
+            device.batteryLevel = data.data.batteryLevel as number
+          }
+        }
+      }
+    })
+  }
+
+  function unsubscribeRealtime() {
+    const echo = getEcho()
+    if (!echo) return
+    echo.leave('devices')
+  }
+
   return {
     devices,
     currentDevice,
@@ -87,5 +118,7 @@ export const useFeelbackDeviceStore = defineStore('feelback-device', () => {
     updateDevice,
     deleteDevice,
     restartDevice,
+    subscribeRealtime,
+    unsubscribeRealtime,
   }
 })

@@ -60,7 +60,7 @@ const baseClasses = 'block w-full rounded-lg border shadow-sm transition-colors 
 const inputClasses = computed(() => {
   const errorClasses = props.error
     ? 'border-red-300 text-red-900 placeholder-red-300 focus:border-red-500 focus:ring-red-500'
-    : 'border-gray-300 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500';
+    : 'border-gray-300 text-gray-900 placeholder-gray-400 focus:border-primary-700 focus:ring-primary-700';
 
   return `${baseClasses} ${errorClasses} px-3 py-2 text-sm`;
 });

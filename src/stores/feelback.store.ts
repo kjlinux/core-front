@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { feelbackApi } from '@/services/api/feelback.api'
+import { getEcho } from '@/services/echo'
 import type { FeelbackEntry, SatisfactionStats, FeelbackAlert } from '@/types'
 
 export const useFeelbackStore = defineStore('feelback', () => {
@@ -59,5 +60,52 @@ export const useFeelbackStore = defineStore('feelback', () => {
     }
   }
 
-  return { entries, stats, statsByAgency, alerts, isLoading, fetchStats, fetchEntries, fetchStatsByAgency, fetchAlerts, updateAlertSettings }
+  function subscribeRealtime() {
+    const echo = getEcho()
+    if (!echo) return
+
+    echo.channel('feelback').listen('.feelback.received', (data: {
+      id: string
+      deviceId: string
+      level: string
+      siteName: string
+      agentName: string
+      timestamp: string
+    }) => {
+      const entry: FeelbackEntry = {
+        id: data.id,
+        deviceId: data.deviceId,
+        level: data.level as FeelbackEntry['level'],
+        siteName: data.siteName,
+        agentName: data.agentName,
+        createdAt: data.timestamp,
+      } as FeelbackEntry
+
+      entries.value.unshift(entry)
+      if (entries.value.length > 100) {
+        entries.value.pop()
+      }
+    })
+  }
+
+  function unsubscribeRealtime() {
+    const echo = getEcho()
+    if (!echo) return
+    echo.leave('feelback')
+  }
+
+  return {
+    entries,
+    stats,
+    statsByAgency,
+    alerts,
+    isLoading,
+    fetchStats,
+    fetchEntries,
+    fetchStatsByAgency,
+    fetchAlerts,
+    updateAlertSettings,
+    subscribeRealtime,
+    unsubscribeRealtime,
+  }
 })

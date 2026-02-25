@@ -1,70 +1,58 @@
 <template>
-  <div class="min-h-screen bg-gray-50 flex items-center justify-center px-4 sm:px-6 lg:px-8">
-    <div class="w-full max-w-md">
-      <AppCard class="shadow-lg">
-        <div class="space-y-6">
-          <!-- Logo -->
-          <div class="text-center">
-            <h1 class="text-3xl font-bold text-primary-600">CORE TANGA GROUP</h1>
-            <p class="mt-2 text-sm text-gray-600">Connectez-vous a votre compte</p>
-          </div>
-
-          <!-- Error Message -->
-          <div
-            v-if="errorMessage"
-            class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm"
-          >
-            {{ errorMessage }}
-          </div>
-
-          <!-- Login Form -->
-          <form @submit.prevent="handleLogin" class="space-y-4">
-            <AppInput
-              v-model="formData.email"
-              type="email"
-              label="Email"
-              placeholder="admin@tanga.com"
-              :error="errors.email"
-              :disabled="authStore.isLoading"
-            />
-
-            <AppInput
-              v-model="formData.password"
-              type="password"
-              label="Mot de passe"
-              placeholder="••••••••"
-              :error="errors.password"
-              :disabled="authStore.isLoading"
-            />
-
-            <div class="text-right">
-              <router-link
-                to="/auth/forgot-password"
-                class="text-sm text-primary-600 hover:text-primary-700"
-              >
-                Mot de passe oublie?
-              </router-link>
-            </div>
-
-            <AppButton
-              type="submit"
-              variant="primary"
-              class="w-full"
-              :loading="authStore.isLoading"
-              :disabled="authStore.isLoading"
-            >
-              Se connecter
-            </AppButton>
-          </form>
-
-          <!-- Test Credentials Hint -->
-          <div class="text-center text-xs text-gray-500 bg-gray-50 rounded-lg p-3">
-            <p class="font-medium mb-1">Identifiants de test:</p>
-            <p>admin@tanga.com / admin123</p>
-          </div>
-        </div>
-      </AppCard>
+  <div class="space-y-6">
+    <!-- Form Header -->
+    <div>
+      <h2 class="text-2xl font-bold text-primary-900">Connexion</h2>
+      <p class="mt-1 text-sm text-primary-500">Connectez-vous à votre compte</p>
     </div>
+
+    <!-- Error Message -->
+    <div
+      v-if="errorMessage"
+      class="bg-danger-50 border border-danger-200 text-danger-600 px-4 py-3 rounded-lg text-sm"
+    >
+      {{ errorMessage }}
+    </div>
+
+    <!-- Login Form -->
+    <form @submit.prevent="handleLogin" class="space-y-5">
+      <AppInput
+        v-model="formData.email"
+        type="email"
+        label="Email"
+        placeholder="admin@tanga.com"
+        :error="errors.email"
+        :disabled="authStore.isLoading"
+      />
+
+      <AppInput
+        v-model="formData.password"
+        type="password"
+        label="Mot de passe"
+        placeholder="••••••••"
+        :error="errors.password"
+        :disabled="authStore.isLoading"
+      />
+
+      <div class="flex items-center justify-end">
+        <router-link
+          to="/forgot-password"
+          class="text-sm text-primary-600 hover:text-primary-800 font-medium transition-colors"
+        >
+          Mot de passe oublié ?
+        </router-link>
+      </div>
+
+      <AppButton
+        type="submit"
+        variant="primary"
+        class="w-full"
+        :loading="authStore.isLoading"
+        :disabled="authStore.isLoading"
+      >
+        Se connecter
+      </AppButton>
+    </form>
   </div>
 </template>
 
@@ -72,7 +60,6 @@
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
-import AppCard from '@/components/ui/AppCard.vue'
 import AppInput from '@/components/ui/AppInput.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 
@@ -125,13 +112,10 @@ async function handleLogin() {
       password: formData.password,
     })
 
-    // Persist user data
     authStore.persistUser()
-
-    // Navigate to dashboard on success
     router.push('/')
   } catch (error: any) {
-    errorMessage.value = error.message || 'Echec de la connexion. Verifiez vos identifiants.'
+    errorMessage.value = error.response?.data?.message || error.message || 'Echec de la connexion. Verifiez vos identifiants.'
   }
 }
 </script>

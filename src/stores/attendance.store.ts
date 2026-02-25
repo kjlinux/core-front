@@ -1,6 +1,7 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { attendanceApi } from '@/services/api/attendance.api'
+import { getEcho } from '@/services/echo'
 import type { AttendanceRecord, AttendanceDailyReport, AttendanceSummary } from '@/types'
 import type { DateRange } from '@/services/api/attendance.api'
 
@@ -107,6 +108,56 @@ export const useAttendanceStore = defineStore('attendance', () => {
     }
   }
 
+  function subscribeRealtime() {
+    const echo = getEcho()
+    if (!echo) return
+
+    echo.channel('attendance').listen('.attendance.recorded', (data: {
+      id: string
+      employeeId: string
+      employeeName: string
+      date: string
+      entryTime: string | null
+      exitTime: string | null
+      status: string
+      source: string
+    }) => {
+      // Add to recent activity
+      const record: AttendanceRecord = {
+        id: data.id,
+        employeeId: data.employeeId,
+        employeeName: data.employeeName,
+        date: data.date,
+        entryTime: data.entryTime ?? '',
+        exitTime: data.exitTime ?? '',
+        status: data.status as AttendanceRecord['status'],
+        source: data.source as AttendanceRecord['source'],
+      } as AttendanceRecord
+
+      recentActivity.value.unshift(record)
+      if (recentActivity.value.length > 20) {
+        recentActivity.value.pop()
+      }
+
+      // Also update records list if viewing today
+      const today = new Date().toISOString().split('T')[0]
+      if (data.date === today) {
+        const existingIdx = records.value.findIndex((r) => r.id === data.id)
+        if (existingIdx !== -1) {
+          records.value[existingIdx] = record
+        } else {
+          records.value.unshift(record)
+        }
+      }
+    })
+  }
+
+  function unsubscribeRealtime() {
+    const echo = getEcho()
+    if (!echo) return
+    echo.leave('attendance')
+  }
+
   return {
     records,
     dailyReport,
@@ -124,5 +175,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
     fetchDailyStats,
     fetchRecentActivity,
     fetchBiometricAttendance,
+    subscribeRealtime,
+    unsubscribeRealtime,
   }
 })

@@ -1,6 +1,7 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { authApi } from '@/services/api/auth.api'
+import { initEcho, disconnectEcho } from '@/services/echo'
 import type { User, LoginPayload } from '@/types'
 import type { UserRole } from '@/types/enums'
 
@@ -23,12 +24,14 @@ export const useAuthStore = defineStore('auth', () => {
       localStorage.setItem('access_token', response.accessToken)
       localStorage.setItem('refresh_token', response.refreshToken)
       localStorage.setItem('auth_user', JSON.stringify(response.user))
+      initEcho()
     } finally {
       isLoading.value = false
     }
   }
 
   function logout() {
+    disconnectEcho()
     user.value = null
     accessToken.value = null
     localStorage.removeItem('access_token')

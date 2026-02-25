@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import { useUiStore } from '@/stores/ui.store'
+import { useRealtimeSubscriptions } from '@/composables/useRealtimeSubscriptions'
 import TheSidebar from '@/components/layout/TheSidebar.vue'
 import TheHeader from '@/components/layout/TheHeader.vue'
 
 const ui = useUiStore()
+
+// Initialize all real-time WebSocket subscriptions
+useRealtimeSubscriptions()
 </script>
 
 <template>

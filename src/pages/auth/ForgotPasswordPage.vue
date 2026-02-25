@@ -1,67 +1,60 @@
 <template>
-  <div class="min-h-screen bg-gray-50 flex items-center justify-center px-4 sm:px-6 lg:px-8">
-    <div class="w-full max-w-md">
-      <AppCard class="shadow-lg">
-        <div class="space-y-6">
-          <!-- Header -->
-          <div class="text-center">
-            <h1 class="text-2xl font-bold text-gray-900">Mot de passe oublie</h1>
-            <p class="mt-2 text-sm text-gray-600">
-              Entrez votre email pour recevoir un lien de reinitialisation
-            </p>
-          </div>
+  <div class="space-y-6">
+    <!-- Header -->
+    <div>
+      <h2 class="text-2xl font-bold text-primary-900">Mot de passe oublie</h2>
+      <p class="mt-1 text-sm text-primary-500">
+        Entrez votre email pour recevoir un lien de reinitialisation
+      </p>
+    </div>
 
-          <!-- Success Message -->
-          <div
-            v-if="successMessage"
-            class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm"
-          >
-            {{ successMessage }}
-          </div>
+    <!-- Success Message -->
+    <div
+      v-if="successMessage"
+      class="bg-primary-100 border border-primary-300 text-primary-700 px-4 py-3 rounded-lg text-sm"
+    >
+      {{ successMessage }}
+    </div>
 
-          <!-- Form -->
-          <form v-if="!successMessage" @submit.prevent="handleSubmit" class="space-y-4">
-            <AppInput
-              v-model="email"
-              type="email"
-              label="Email"
-              placeholder="votre.email@example.com"
-              :error="emailError"
-              :disabled="isLoading"
-            />
+    <!-- Form -->
+    <form v-if="!successMessage" @submit.prevent="handleSubmit" class="space-y-5">
+      <AppInput
+        v-model="email"
+        type="email"
+        label="Email"
+        placeholder="votre.email@example.com"
+        :error="emailError"
+        :disabled="isLoading"
+      />
 
-            <AppButton
-              type="submit"
-              variant="primary"
-              class="w-full"
-              :loading="isLoading"
-              :disabled="isLoading"
-            >
-              Envoyer le lien
-            </AppButton>
-          </form>
+      <AppButton
+        type="submit"
+        variant="primary"
+        class="w-full"
+        :loading="isLoading"
+        :disabled="isLoading"
+      >
+        Envoyer le lien
+      </AppButton>
+    </form>
 
-          <!-- Back to Login -->
-          <div class="text-center">
-            <router-link
-              to="/auth/login"
-              class="text-sm text-primary-600 hover:text-primary-700 inline-flex items-center gap-1"
-            >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-              Retour a la connexion
-            </router-link>
-          </div>
-        </div>
-      </AppCard>
+    <!-- Back to Login -->
+    <div class="text-center">
+      <router-link
+        to="/login"
+        class="text-sm text-primary-600 hover:text-primary-800 font-medium inline-flex items-center gap-1 transition-colors"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        Retour a la connexion
+      </router-link>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import AppCard from '@/components/ui/AppCard.vue'
 import AppInput from '@/components/ui/AppInput.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 
@@ -93,7 +86,6 @@ async function handleSubmit() {
 
   isLoading.value = true
 
-  // Mock API call
   setTimeout(() => {
     isLoading.value = false
     successMessage.value = `Un lien de reinitialisation a ete envoye a ${email.value}. Veuillez verifier votre boite de reception.`

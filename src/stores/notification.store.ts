@@ -1,12 +1,15 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { notificationApi } from '@/services/api/notification.api'
+import { getEcho } from '@/services/echo'
 
 interface Notification {
   id: string
+  type?: string
   title: string
   message: string
   isRead: boolean
+  data?: Record<string, unknown>
   createdAt: string
 }
 
@@ -41,5 +44,38 @@ export const useNotificationStore = defineStore('notification', () => {
     })
   }
 
-  return { notifications, isLoading, unreadCount, fetchNotifications, markAsRead, markAllAsRead }
+  function subscribeRealtime() {
+    const echo = getEcho()
+    if (!echo) return
+
+    echo.channel('notifications').listen('.notification.received', (data: Notification) => {
+      // Add to the top of the list
+      notifications.value.unshift({
+        id: data.id,
+        type: data.type,
+        title: data.title,
+        message: data.message,
+        isRead: false,
+        data: data.data,
+        createdAt: data.createdAt,
+      })
+    })
+  }
+
+  function unsubscribeRealtime() {
+    const echo = getEcho()
+    if (!echo) return
+    echo.leave('notifications')
+  }
+
+  return {
+    notifications,
+    isLoading,
+    unreadCount,
+    fetchNotifications,
+    markAsRead,
+    markAllAsRead,
+    subscribeRealtime,
+    unsubscribeRealtime,
+  }
 })

@@ -42,7 +42,14 @@ async function bootstrap() {
   app.use(router)
 
   // Hydrate auth store from localStorage before first navigation guard runs
-  useAuthStore().loadFromStorage()
+  const authStore = useAuthStore()
+  authStore.loadFromStorage()
+
+  // Initialize Echo for real-time WebSocket if user is authenticated
+  if (authStore.isAuthenticated) {
+    const { initEcho } = await import('./services/echo')
+    initEcho()
+  }
 
   app.mount('#app')
 }

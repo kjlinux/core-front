@@ -18,13 +18,25 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 )
 
-// Response interceptor: on 401, remove token and redirect to /login
+// Response interceptor: auto-unwrap { success, data } wrapper from API responses
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    const body = response.data
+    console.log('[API Response]', response.config.url, body)
+    if (body && typeof body === 'object' && 'success' in body && 'data' in body) {
+      response.data = body.data
+    }
+    return response
+  },
   (error) => {
+    console.error('[API Error]', error.config?.url, error.response?.status, error.response?.data)
     if (error.response?.status === 401) {
-      localStorage.removeItem('access_token')
-      window.location.href = '/login'
+      // Ne pas rediriger si c'est l'endpoint login lui-meme
+      const url = error.config?.url || ''
+      if (!url.includes('/auth/login') && !window.location.pathname.includes('/login')) {
+        localStorage.removeItem('access_token')
+        window.location.href = '/login'
+      }
     }
     return Promise.reject(error)
   }

@@ -3,7 +3,7 @@ import type { LoginPayload, AuthResponse, ApiResponse, User } from '@/types'
 
 export const authApi = {
   login(payload: LoginPayload): Promise<AuthResponse> {
-    return apiClient.post('/auth/login', payload).then((r) => r.data.data)
+    return apiClient.post('/auth/login', payload).then((r) => r.data)
   },
 
   logout(): Promise<void> {

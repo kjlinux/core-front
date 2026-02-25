@@ -121,7 +121,6 @@ onUnmounted(() => {
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date/Heure</th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Site</th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Avis</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Agent</th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Terminal</th>
             </tr>
           </thead>
@@ -134,7 +133,6 @@ onUnmounted(() => {
                   {{ getLevelLabel(entry.level) }}
                 </AppBadge>
               </td>
-              <td class="px-4 py-3 text-sm text-gray-600">{{ entry.agentName ?? '-' }}</td>
               <td class="px-4 py-3 text-sm font-mono text-gray-500">{{ entry.deviceId }}</td>
             </tr>
           </tbody>
