@@ -47,7 +47,6 @@
         :icon="StarIcon"
         icon-bg-class="bg-yellow-100"
         icon-color-class="text-yellow-600"
-        :trend="{ value: 5.2, isPositive: true }"
       />
 
       <StatCard
@@ -65,17 +64,8 @@
         :icon="BanknotesIcon"
         icon-bg-class="bg-emerald-100"
         icon-color-class="text-emerald-600"
-        :trend="{ value: 12.8, isPositive: true }"
       />
 
-      <StatCard
-        title="Alertes techniques"
-        :value="dashboardStore.stats.technicalAlerts"
-        :icon="ExclamationTriangleIcon"
-        icon-bg-class="bg-red-100"
-        icon-color-class="text-red-600"
-        :trend="{ value: 3.1, isPositive: false }"
-      />
     </div>
 
     <!-- Empty State -->
@@ -100,7 +90,6 @@ import {
   StarIcon,
   CreditCardIcon,
   BanknotesIcon,
-  ExclamationTriangleIcon,
 } from '@heroicons/vue/24/outline'
 
 const dashboardStore = useDashboardStore()

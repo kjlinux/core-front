@@ -62,7 +62,6 @@ function getAlertTypeLabel(type: string) {
   switch (type) {
     case 'threshold_exceeded': return 'Seuil depasse'
     case 'device_offline': return 'Terminal hors ligne'
-    case 'low_battery': return 'Batterie faible'
     default: return type
   }
 }
@@ -71,7 +70,6 @@ function getAlertVariant(type: string) {
   switch (type) {
     case 'threshold_exceeded': return 'danger'
     case 'device_offline': return 'warning'
-    case 'low_battery': return 'warning'
     default: return 'neutral'
   }
 }

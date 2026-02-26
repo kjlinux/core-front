@@ -7,9 +7,7 @@ export interface FeelbackDevice {
   siteId: string
   siteName: string
   isOnline: boolean
-  batteryLevel: number
   lastPingAt: string
-  assignedAgent?: string
 }
 
 export interface FeelbackEntry {
@@ -19,8 +17,6 @@ export interface FeelbackEntry {
   timestamp: string
   siteId: string
   siteName: string
-  agentId?: string
-  agentName?: string
 }
 
 export interface SatisfactionStats {
@@ -39,7 +35,7 @@ export interface FeelbackAlert {
   deviceId: string
   siteId: string
   siteName: string
-  type: 'threshold_exceeded' | 'device_offline' | 'low_battery'
+  type: 'threshold_exceeded' | 'device_offline'
   message: string
   threshold?: number
   currentValue?: number

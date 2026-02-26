@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, provide, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useUiStore } from '@/stores/ui.store'
 import { useAuthStore } from '@/stores/auth.store'
@@ -44,6 +44,19 @@ const isAdminOrSuper = computed(
   () => auth.user?.role === UserRole.SUPER_ADMIN || auth.user?.role === UserRole.ADMIN_ENTERPRISE,
 )
 
+function getActiveGroupId(): string | null {
+  const path = route.path
+  if (path.startsWith('/pointage-rfid')) return 'pointage-rfid'
+  if (path.startsWith('/biometrique')) return 'biometrique'
+  if (path.startsWith('/feelback')) return 'feelback'
+  if (path.startsWith('/marketplace')) return 'marketplace'
+  if (path.startsWith('/parametres')) return 'parametres'
+  return null
+}
+
+const openGroupId = ref<string | null>(getActiveGroupId())
+provide('sidebarOpenGroupId', openGroupId)
+
 const sidebarClasses = computed(() => [
   'fixed inset-y-0 left-0 z-50 flex flex-col bg-sidebar text-white transition-all duration-300 lg:relative',
   ui.sidebarCollapsed ? 'w-20' : 'w-64',
@@ -76,6 +89,7 @@ const sidebarClasses = computed(() => [
 
       <!-- Pointage RFID -->
       <TheSidebarGroup
+        group-id="pointage-rfid"
         label="Pointage RFID"
         :icon="CreditCardIcon"
         :collapsed="ui.sidebarCollapsed"
@@ -150,6 +164,7 @@ const sidebarClasses = computed(() => [
 
       <!-- Biometrique -->
       <TheSidebarGroup
+        group-id="biometrique"
         label="Biometrique"
         :icon="FingerPrintIcon"
         :collapsed="ui.sidebarCollapsed"
@@ -211,6 +226,7 @@ const sidebarClasses = computed(() => [
 
       <!-- Feelback -->
       <TheSidebarGroup
+        group-id="feelback"
         label="Feelback"
         :icon="FaceSmileIcon"
         :collapsed="ui.sidebarCollapsed"
@@ -269,6 +285,7 @@ const sidebarClasses = computed(() => [
 
       <!-- Marketplace -->
       <TheSidebarGroup
+        group-id="marketplace"
         label="Marketplace"
         :icon="ShoppingCartIcon"
         :collapsed="ui.sidebarCollapsed"
@@ -338,6 +355,7 @@ const sidebarClasses = computed(() => [
 
       <!-- Parametres -->
       <TheSidebarGroup
+        group-id="parametres"
         label="Parametres"
         :icon="Cog6ToothIcon"
         :collapsed="ui.sidebarCollapsed"

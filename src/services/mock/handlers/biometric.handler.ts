@@ -177,4 +177,14 @@ export function setupBiometricHandlers(mock: MockAdapter) {
   mock.onGet('/biometric/inconsistencies').reply(200, { data: mockInconsistencies, success: true })
 
   mock.onGet('/biometric/audit-log').reply(200, { data: mockAuditLog, success: true })
+
+  // MQTT commands (shared by biometric and feelback)
+  mock.onPost('/mqtt/send-command').reply((config) => {
+    const data = JSON.parse(config.data)
+    return [200, {
+      data: { topic: `core/${data.device_type}/sensor/response`, command: data.command },
+      message: 'Commande envoyee avec succes',
+      success: true,
+    }]
+  })
 }

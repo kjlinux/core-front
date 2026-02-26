@@ -5,6 +5,8 @@ import { useBiometricStore } from '@/stores/biometric.store'
 import { useCompanyStore } from '@/stores/company.store'
 import { usePermissions } from '@/composables/usePermissions'
 import { useToast } from '@/composables/useToast'
+import { mqttApi } from '@/services/api/mqtt.api'
+import type { DeviceCommand } from '@/services/api/mqtt.api'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
@@ -12,7 +14,13 @@ import AppModal from '@/components/ui/AppModal.vue'
 import AppInput from '@/components/ui/AppInput.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
 import type { BiometricDevice } from '@/types'
-import { EyeIcon, ArrowPathIcon } from '@heroicons/vue/24/outline'
+import {
+  EyeIcon,
+  ArrowPathIcon,
+  ArrowPathRoundedSquareIcon,
+  SignalIcon,
+  PowerIcon,
+} from '@heroicons/vue/24/outline'
 
 const router = useRouter()
 const store = useBiometricStore()
@@ -24,6 +32,7 @@ const showAddModal = ref(false)
 const filterCompany = ref('')
 const filterStatus = ref('')
 const isSubmitting = ref(false)
+const sendingCommand = ref<string | null>(null)
 
 const newDevice = ref({
   name: '',
@@ -59,8 +68,27 @@ const filteredDevices = computed(() => {
 
 const canManage = computed(() => permissions.isSuperAdmin.value || permissions.isAdminEnterprise.value)
 
+const commandLabels: Record<DeviceCommand, string> = {
+  REBOOT: 'Reboot',
+  RESET: 'Reset',
+  STATUS: 'Statut',
+  RESTART: 'Restart',
+}
+
 function formatDate(date: string) {
   return new Date(date).toLocaleString('fr-FR')
+}
+
+async function handleCommand(deviceId: string, command: DeviceCommand) {
+  sendingCommand.value = `${deviceId}-${command}`
+  try {
+    await mqttApi.sendCommand(deviceId, 'biometric', command)
+    toast.showSuccess(`Commande ${commandLabels[command]} envoyee`)
+  } catch {
+    toast.showError(`Erreur lors de l'envoi de la commande ${commandLabels[command]}`)
+  } finally {
+    sendingCommand.value = null
+  }
 }
 
 async function handleSync(device: BiometricDevice) {
@@ -132,6 +160,7 @@ onMounted(async () => {
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Inscrits</th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Firmware</th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Derniere synchro</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Commandes</th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
             </tr>
           </thead>
@@ -152,6 +181,46 @@ onMounted(async () => {
               <td class="px-4 py-3 text-sm text-gray-600">{{ device.enrolledCount }}</td>
               <td class="px-4 py-3 text-sm text-gray-600">{{ device.firmwareVersion }}</td>
               <td class="px-4 py-3 text-sm text-gray-600">{{ formatDate(device.lastSyncAt) }}</td>
+              <td class="px-4 py-3" @click.stop>
+                <div class="flex gap-1" v-if="canManage">
+                  <AppButton
+                    size="sm"
+                    variant="ghost"
+                    :disabled="sendingCommand === `${device.id}-REBOOT`"
+                    title="Reboot"
+                    @click="handleCommand(device.id, 'REBOOT')"
+                  >
+                    <PowerIcon class="w-4 h-4" />
+                  </AppButton>
+                  <AppButton
+                    size="sm"
+                    variant="ghost"
+                    :disabled="sendingCommand === `${device.id}-RESET`"
+                    title="Reset"
+                    @click="handleCommand(device.id, 'RESET')"
+                  >
+                    <ArrowPathRoundedSquareIcon class="w-4 h-4" />
+                  </AppButton>
+                  <AppButton
+                    size="sm"
+                    variant="ghost"
+                    :disabled="sendingCommand === `${device.id}-STATUS`"
+                    title="Statut"
+                    @click="handleCommand(device.id, 'STATUS')"
+                  >
+                    <SignalIcon class="w-4 h-4" />
+                  </AppButton>
+                  <AppButton
+                    size="sm"
+                    variant="ghost"
+                    :disabled="sendingCommand === `${device.id}-RESTART`"
+                    title="Restart"
+                    @click="handleCommand(device.id, 'RESTART')"
+                  >
+                    <ArrowPathIcon class="w-4 h-4" />
+                  </AppButton>
+                </div>
+              </td>
               <td class="px-4 py-3" @click.stop>
                 <div class="flex gap-2">
                   <AppButton size="sm" variant="ghost" @click="router.push(`/biometrique/devices/${device.id}`)" title="Voir">

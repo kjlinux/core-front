@@ -94,9 +94,6 @@ export const useFeelbackDeviceStore = defineStore('feelback-device', () => {
         if (device) {
           device.isOnline = data.status === 'online'
           device.lastPingAt = data.timestamp
-          if (data.data?.batteryLevel !== undefined) {
-            device.batteryLevel = data.data.batteryLevel as number
-          }
         }
       }
     })

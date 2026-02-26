@@ -16,7 +16,6 @@ const showSettingsModal = ref(false)
 
 const alertSettings = ref({
   thresholdMauvais: 30,
-  batteryThreshold: 15,
   offlineDelayMinutes: 60,
 })
 
@@ -32,7 +31,6 @@ function getTypeLabel(type: string) {
   switch (type) {
     case 'threshold_exceeded': return 'Seuil depasse'
     case 'device_offline': return 'Hors ligne'
-    case 'low_battery': return 'Batterie faible'
     default: return type
   }
 }
@@ -41,7 +39,6 @@ function getTypeVariant(type: string) {
   switch (type) {
     case 'threshold_exceeded': return 'danger'
     case 'device_offline': return 'warning'
-    case 'low_battery': return 'warning'
     default: return 'neutral'
   }
 }
@@ -63,7 +60,6 @@ function markAllAsRead() {
 async function saveSettings() {
   await store.updateAlertSettings({
     thresholdMauvais: alertSettings.value.thresholdMauvais,
-    batteryThreshold: alertSettings.value.batteryThreshold,
     offlineDelayMinutes: alertSettings.value.offlineDelayMinutes,
   })
   toast.showSuccess('Parametres d\'alerte enregistres')
@@ -154,13 +150,6 @@ onMounted(async () => {
           :min="0"
           :max="100"
           help="Une alerte est declenchee si le taux mauvais depasse ce seuil"
-        />
-        <AppInput
-          v-model.number="alertSettings.batteryThreshold"
-          label="Seuil batterie critique (%)"
-          type="number"
-          :min="0"
-          :max="100"
         />
         <AppInput
           v-model.number="alertSettings.offlineDelayMinutes"

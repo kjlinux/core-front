@@ -37,12 +37,6 @@ const feelbackRoutes: RouteRecordRaw[] = [
         meta: { title: 'Alertes Feelback', roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE] },
       },
       {
-        path: 'agents',
-        name: 'feelback-agents',
-        component: () => import('@/pages/feelback/AgentPerformancePage.vue'),
-        meta: { title: 'Performance des agents', roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE] },
-      },
-      {
         path: 'comparison',
         name: 'feelback-comparison',
         component: () => import('@/pages/feelback/SiteComparisonPage.vue'),

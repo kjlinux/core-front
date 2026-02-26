@@ -4,13 +4,21 @@ import { useFeelbackDeviceStore } from '@/stores/feelback-device.store'
 import { useCompanyStore } from '@/stores/company.store'
 import { usePermissions } from '@/composables/usePermissions'
 import { useToast } from '@/composables/useToast'
+import { mqttApi } from '@/services/api/mqtt.api'
+import type { DeviceCommand } from '@/services/api/mqtt.api'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import AppModal from '@/components/ui/AppModal.vue'
 import AppInput from '@/components/ui/AppInput.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
-import { ArrowPathIcon, TrashIcon } from '@heroicons/vue/24/outline'
+import {
+  TrashIcon,
+  ArrowPathIcon,
+  ArrowPathRoundedSquareIcon,
+  SignalIcon,
+  PowerIcon,
+} from '@heroicons/vue/24/outline'
 
 const deviceStore = useFeelbackDeviceStore()
 const companyStore = useCompanyStore()
@@ -20,12 +28,12 @@ const toast = useToast()
 const showAddModal = ref(false)
 const filterCompany = ref('')
 const filterStatus = ref('')
+const sendingCommand = ref<string | null>(null)
 
 const newDevice = ref({
   serialNumber: '',
   companyId: '',
   siteId: '',
-  assignedAgent: '',
 })
 
 const statusOptions = [
@@ -54,22 +62,26 @@ const filteredDevices = computed(() => {
 
 const canManage = computed(() => permissions.isSuperAdmin.value || permissions.isAdminEnterprise.value)
 
-function getBatteryClass(level: number) {
-  if (level > 50) return 'text-green-600'
-  if (level > 20) return 'text-amber-600'
-  return 'text-red-600'
+const commandLabels: Record<DeviceCommand, string> = {
+  REBOOT: 'Reboot',
+  RESET: 'Reset',
+  STATUS: 'Statut',
+  RESTART: 'Restart',
 }
 
 function formatDate(date: string) {
   return new Date(date).toLocaleString('fr-FR')
 }
 
-async function handleRestart(id: string) {
+async function handleCommand(deviceId: string, command: DeviceCommand) {
+  sendingCommand.value = `${deviceId}-${command}`
   try {
-    await deviceStore.restartDevice(id)
-    toast.showSuccess('Redemarrage du terminal lance')
+    await mqttApi.sendCommand(deviceId, 'feelback', command)
+    toast.showSuccess(`Commande ${commandLabels[command]} envoyee`)
   } catch {
-    toast.showError('Erreur lors du redemarrage')
+    toast.showError(`Erreur lors de l'envoi de la commande ${commandLabels[command]}`)
+  } finally {
+    sendingCommand.value = null
   }
 }
 
@@ -91,7 +103,7 @@ async function handleAddDevice() {
     await deviceStore.registerDevice(newDevice.value)
     toast.showSuccess('Terminal Feelback ajoute')
     showAddModal.value = false
-    newDevice.value = { serialNumber: '', companyId: '', siteId: '', assignedAgent: '' }
+    newDevice.value = { serialNumber: '', companyId: '', siteId: '' }
   } catch {
     toast.showError("Erreur lors de l'ajout")
   }
@@ -135,9 +147,8 @@ onMounted(async () => {
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Serie</th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Site</th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Statut</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Batterie</th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Dernier ping</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Agent</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Commandes</th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
             </tr>
           </thead>
@@ -150,18 +161,49 @@ onMounted(async () => {
                   {{ device.isOnline ? 'En ligne' : 'Hors ligne' }}
                 </AppBadge>
               </td>
-              <td class="px-4 py-3">
-                <span class="text-sm font-medium" :class="getBatteryClass(device.batteryLevel)">
-                  {{ device.batteryLevel }}%
-                </span>
-              </td>
               <td class="px-4 py-3 text-sm text-gray-600">{{ formatDate(device.lastPingAt) }}</td>
-              <td class="px-4 py-3 text-sm text-gray-600">{{ device.assignedAgent ?? '-' }}</td>
               <td class="px-4 py-3">
-                <div class="flex gap-2" v-if="canManage">
-                  <AppButton size="sm" variant="ghost" @click="handleRestart(device.id)" title="Redemarrer">
+                <div class="flex gap-1" v-if="canManage">
+                  <AppButton
+                    size="sm"
+                    variant="ghost"
+                    :disabled="sendingCommand === `${device.id}-REBOOT`"
+                    title="Reboot"
+                    @click="handleCommand(device.id, 'REBOOT')"
+                  >
+                    <PowerIcon class="w-4 h-4" />
+                  </AppButton>
+                  <AppButton
+                    size="sm"
+                    variant="ghost"
+                    :disabled="sendingCommand === `${device.id}-RESET`"
+                    title="Reset"
+                    @click="handleCommand(device.id, 'RESET')"
+                  >
+                    <ArrowPathRoundedSquareIcon class="w-4 h-4" />
+                  </AppButton>
+                  <AppButton
+                    size="sm"
+                    variant="ghost"
+                    :disabled="sendingCommand === `${device.id}-STATUS`"
+                    title="Statut"
+                    @click="handleCommand(device.id, 'STATUS')"
+                  >
+                    <SignalIcon class="w-4 h-4" />
+                  </AppButton>
+                  <AppButton
+                    size="sm"
+                    variant="ghost"
+                    :disabled="sendingCommand === `${device.id}-RESTART`"
+                    title="Restart"
+                    @click="handleCommand(device.id, 'RESTART')"
+                  >
                     <ArrowPathIcon class="w-4 h-4" />
                   </AppButton>
+                </div>
+              </td>
+              <td class="px-4 py-3">
+                <div v-if="canManage">
                   <AppButton size="sm" variant="ghost" class="text-red-600 hover:text-red-700" @click="handleDelete(device.id)" title="Supprimer">
                     <TrashIcon class="w-4 h-4" />
                   </AppButton>
@@ -178,7 +220,6 @@ onMounted(async () => {
         <AppInput v-model="newDevice.serialNumber" label="Numero de serie *" placeholder="Ex: FLB-2024-001" />
         <AppSelect v-model="newDevice.companyId" label="Entreprise" :options="companyOptions" />
         <AppInput v-model="newDevice.siteId" label="ID du site" />
-        <AppInput v-model="newDevice.assignedAgent" label="Agent responsable" placeholder="Nom de l'agent" />
       </div>
       <template #footer>
         <div class="flex justify-end gap-3">

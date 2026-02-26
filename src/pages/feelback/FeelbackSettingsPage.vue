@@ -14,7 +14,6 @@ const toast = useToast()
 const alertSettings = ref({
   thresholdMauvais: 30,
   offlineDelayMinutes: 60,
-  batteryThreshold: 15,
 })
 
 const notificationSettings = ref({
@@ -64,13 +63,6 @@ function saveSchedule() {
           label="Delai alerte hors ligne (minutes)"
           type="number"
           :min="1"
-        />
-        <AppInput
-          v-model.number="alertSettings.batteryThreshold"
-          label="Seuil batterie critique (%)"
-          type="number"
-          :min="0"
-          :max="100"
         />
         <AppButton variant="primary" @click="saveAlertSettings">Enregistrer</AppButton>
       </div>

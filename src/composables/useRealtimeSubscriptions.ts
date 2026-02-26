@@ -50,7 +50,6 @@ export function useRealtimeSubscriptions() {
     echo.channel('feelback').listen('.feelback.received', (data: {
       level: string
       siteName: string
-      agentName: string
     }) => {
       const levelLabels: Record<string, string> = {
         bon: 'Bon',
@@ -61,22 +60,8 @@ export function useRealtimeSubscriptions() {
       ui.addToast({
         type,
         title: `Feelback - ${levelLabels[data.level] ?? data.level}`,
-        message: `${data.siteName} - ${data.agentName}`,
+        message: data.siteName,
       })
-    })
-
-    echo.channel('devices').listen('.device.status.updated', (data: {
-      deviceType: string
-      status: string
-      deviceId: string
-    }) => {
-      if (data.status === 'low_battery') {
-        ui.addToast({
-          type: 'warning',
-          title: 'Batterie faible',
-          message: `Appareil ${data.deviceType} ${data.deviceId}`,
-        })
-      }
     })
   }
 

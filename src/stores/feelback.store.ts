@@ -69,7 +69,6 @@ export const useFeelbackStore = defineStore('feelback', () => {
       deviceId: string
       level: string
       siteName: string
-      agentName: string
       timestamp: string
     }) => {
       const entry: FeelbackEntry = {
@@ -77,7 +76,6 @@ export const useFeelbackStore = defineStore('feelback', () => {
         deviceId: data.deviceId,
         level: data.level as FeelbackEntry['level'],
         siteName: data.siteName,
-        agentName: data.agentName,
         createdAt: data.timestamp,
       } as FeelbackEntry
 

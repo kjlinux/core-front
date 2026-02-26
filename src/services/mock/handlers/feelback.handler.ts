@@ -8,11 +8,11 @@ export function setupFeelbackHandlers(mock: MockAdapter) {
 
   mock.onGet('/feelback/entries').reply(200, {
     data: [
-      { id: 'fe-1', timestamp: '2026-02-24T08:15:00.000Z', level: 'bon', siteName: 'Agence Centrale', agentName: 'Kofi Mensah', deviceId: 'DEV-001', siteId: 'site-1' },
-      { id: 'fe-2', timestamp: '2026-02-24T09:32:00.000Z', level: 'mauvais', siteName: 'Agence Nord', agentName: 'Ama Boateng', deviceId: 'DEV-002', siteId: 'site-2' },
-      { id: 'fe-3', timestamp: '2026-02-24T10:45:00.000Z', level: 'neutre', siteName: 'Agence Sud', agentName: null, deviceId: 'DEV-003', siteId: 'site-3' },
-      { id: 'fe-4', timestamp: '2026-02-24T11:20:00.000Z', level: 'bon', siteName: 'Agence Est', agentName: 'Kwame Asante', deviceId: 'DEV-001', siteId: 'site-1' },
-      { id: 'fe-5', timestamp: '2026-02-24T13:05:00.000Z', level: 'bon', siteName: 'Agence Centrale', agentName: 'Abena Osei', deviceId: 'DEV-004', siteId: 'site-1' },
+      { id: 'fe-1', timestamp: '2026-02-24T08:15:00.000Z', level: 'bon', siteName: 'Agence Centrale', deviceId: 'DEV-001', siteId: 'site-1' },
+      { id: 'fe-2', timestamp: '2026-02-24T09:32:00.000Z', level: 'mauvais', siteName: 'Agence Nord', deviceId: 'DEV-002', siteId: 'site-2' },
+      { id: 'fe-3', timestamp: '2026-02-24T10:45:00.000Z', level: 'neutre', siteName: 'Agence Sud', deviceId: 'DEV-003', siteId: 'site-3' },
+      { id: 'fe-4', timestamp: '2026-02-24T11:20:00.000Z', level: 'bon', siteName: 'Agence Est', deviceId: 'DEV-001', siteId: 'site-1' },
+      { id: 'fe-5', timestamp: '2026-02-24T13:05:00.000Z', level: 'bon', siteName: 'Agence Centrale', deviceId: 'DEV-004', siteId: 'site-1' },
     ],
     success: true,
   })
@@ -30,8 +30,6 @@ export function setupFeelbackHandlers(mock: MockAdapter) {
     success: true,
   })
   mock.onGet('/feelback/comparison').reply(200, { data: [], success: true })
-  mock.onGet('/feelback/agents').reply(200, { data: [], success: true })
-  mock.onGet(/\/feelback\/agents\/[^/]+/).reply(200, { data: {}, success: true })
   mock.onGet('/feelback/reports').reply(200, { data: [], success: true })
   mock.onGet('/feelback/settings').reply(200, { data: { threshold: 60, emailNotifications: true, recipients: [] }, success: true })
   mock.onPut('/feelback/settings').reply(200, { data: {}, success: true })
