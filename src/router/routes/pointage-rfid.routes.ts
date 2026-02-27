@@ -79,6 +79,18 @@ const pointageRfidRoutes: RouteRecordRaw[] = [
         meta: { title: 'Modifier employe', roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE] },
       },
       {
+        path: 'devices',
+        name: 'rfid-devices',
+        component: () => import('@/pages/pointage-rfid/devices/DeviceListPage.vue'),
+        meta: { title: 'Terminaux RFID', roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE] },
+      },
+      {
+        path: 'devices/:id',
+        name: 'rfid-device-detail',
+        component: () => import('@/pages/pointage-rfid/devices/DeviceDetailPage.vue'),
+        meta: { title: 'Detail terminal RFID', roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE] },
+      },
+      {
         path: 'cards',
         name: 'rfid-cards',
         component: () => import('@/pages/pointage-rfid/cards/CardListPage.vue'),

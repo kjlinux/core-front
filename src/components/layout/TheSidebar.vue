@@ -129,6 +129,15 @@ const sidebarClasses = computed(() => [
           :nested="true"
         />
         <TheSidebarItem
+          v-if="isAdminOrSuper"
+          label="Terminaux RFID"
+          to="/pointage-rfid/devices"
+          :icon="DevicePhoneMobileIcon"
+          :collapsed="false"
+          :active="route.path.startsWith('/pointage-rfid/devices')"
+          :nested="true"
+        />
+        <TheSidebarItem
           label="Cartes RFID"
           to="/pointage-rfid/cards"
           :icon="CreditCardIcon"

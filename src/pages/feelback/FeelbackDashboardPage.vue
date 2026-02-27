@@ -2,9 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useFeelbackStore } from '@/stores/feelback.store'
 import { useCompanyStore } from '@/stores/company.store'
-import { useToast } from '@/composables/useToast'
 import AppCard from '@/components/ui/AppCard.vue'
-import AppButton from '@/components/ui/AppButton.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
 import StatCard from '@/components/data-display/StatCard.vue'
@@ -14,7 +12,6 @@ import LineChart from '@/components/charts/LineChart.vue'
 
 const store = useFeelbackStore()
 const companyStore = useCompanyStore()
-const toast = useToast()
 
 const selectedPeriod = ref('week')
 const selectedCompany = ref('')
@@ -42,21 +39,28 @@ const pieData = computed(() => {
   ]
 })
 
-const lineXData = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
-const lineSeries = computed(() => [
-  { name: 'Bon', data: [45, 52, 48, 61, 58, 42, 39] },
-  { name: 'Neutre', data: [20, 18, 22, 19, 24, 18, 21] },
-  { name: 'Mauvais', data: [12, 8, 15, 10, 11, 9, 14] },
-])
-const lineData = computed(() => lineXData.map((name, i) => ({ name, value: (lineSeries.value[0]?.data[i] ?? 0) })))
+const lineData = computed(() => {
+  if (!stats.value) return []
+  return [
+    { name: 'Bon', value: stats.value.bon },
+    { name: 'Neutre', value: stats.value.neutre },
+    { name: 'Mauvais', value: stats.value.mauvais },
+  ]
+})
 
-const topSites = [
-  { name: 'Siege Social', responses: 234, bon: 78, neutre: 15, mauvais: 7 },
-  { name: 'Agence Nord', responses: 187, bon: 72, neutre: 18, mauvais: 10 },
-  { name: 'Agence Est', responses: 156, bon: 65, neutre: 22, mauvais: 13 },
-  { name: 'Agence Sud', responses: 143, bon: 61, neutre: 25, mauvais: 14 },
-  { name: 'Agence Ouest', responses: 128, bon: 55, neutre: 28, mauvais: 17 },
-]
+const topSites = computed(() =>
+  store.comparison
+    .filter((s) => s.totalResponses > 0)
+    .sort((a, b) => b.satisfactionRate - a.satisfactionRate)
+    .slice(0, 5)
+    .map((s) => ({
+      name: s.siteName ?? '',
+      responses: s.totalResponses,
+      bon: s.totalResponses > 0 ? Math.round((s.bon / s.totalResponses) * 100) : 0,
+      neutre: s.totalResponses > 0 ? Math.round((s.neutre / s.totalResponses) * 100) : 0,
+      mauvais: s.totalResponses > 0 ? Math.round((s.mauvais / s.totalResponses) * 100) : 0,
+    }))
+)
 
 function getAlertTypeLabel(type: string) {
   switch (type) {
@@ -82,6 +86,7 @@ onMounted(async () => {
   await Promise.all([
     store.fetchStats(),
     store.fetchAlerts(),
+    store.fetchComparison(),
     companyStore.fetchCompanies(),
   ])
 })

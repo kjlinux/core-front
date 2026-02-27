@@ -57,21 +57,6 @@ export function setupMarketplaceHandlers(mock: MockAdapter) {
     return [200, { data: JSON.parse(config.data), success: true }]
   })
 
-  // Orders via /marketplace/orders (legacy)
-  mock.onGet('/marketplace/orders').reply(200, { data: mockOrders, meta: { total: mockOrders.length, currentPage: 1, perPage: 20, totalPages: 1 }, success: true })
-  mock.onGet(/\/marketplace\/orders\/[^/]+$/).reply((config) => {
-    const id = config.url?.split('/').pop()
-    const order = mockOrders.find((o) => o.id === id) ?? mockOrders[0]
-    return [200, { data: order, success: true }]
-  })
-  mock.onPost('/marketplace/orders').reply((config) => {
-    const data = JSON.parse(config.data)
-    const newOrder = { ...data, id: 'ord-' + Date.now(), status: 'pending', createdAt: new Date().toISOString() }
-    mockOrders.push(newOrder)
-    return [201, { data: newOrder, success: true }]
-  })
-  mock.onPatch(/\/marketplace\/orders\/[^/]+\/status/).reply(200, { data: {}, success: true })
-
   // Orders via /orders (orderApi)
   mock.onGet('/orders').reply(200, { data: mockOrders, meta: { total: mockOrders.length, currentPage: 1, perPage: 20, totalPages: 1 }, success: true })
   mock.onGet(/\/orders\/[^/]+$/).reply((config) => {
@@ -95,11 +80,4 @@ export function setupMarketplaceHandlers(mock: MockAdapter) {
 
   // Admin orders
   mock.onGet('/admin/orders').reply(200, { data: mockOrders, meta: { total: mockOrders.length, currentPage: 1, perPage: 20, totalPages: 1 }, success: true })
-
-  mock.onGet('/marketplace/cart').reply(200, { data: { items: [], total: 0 }, success: true })
-  mock.onPost('/marketplace/cart/add').reply(200, { data: {}, success: true })
-  mock.onDelete(/\/marketplace\/cart\/[^/]+/).reply(200, { success: true })
-  mock.onPatch('/marketplace/cart/update').reply(200, { data: {}, success: true })
-  mock.onPost('/marketplace/payment/initiate').reply(200, { data: { paymentUrl: 'https://mock-payment.com' }, success: true })
-  mock.onGet(/\/marketplace\/payment\/[^/]+\/status/).reply(200, { data: { status: 'success' }, success: true })
 }

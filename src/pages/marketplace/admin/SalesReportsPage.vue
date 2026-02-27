@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useOrderStore } from '@/stores/order.store'
+import { ref, computed, watch, onMounted } from 'vue'
+import { salesReportApi, type SalesReportData } from '@/services/api/sales-report.api'
 import { useToast } from '@/composables/useToast'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
@@ -9,47 +9,58 @@ import StatCard from '@/components/data-display/StatCard.vue'
 import BarChart from '@/components/charts/BarChart.vue'
 import PieChart from '@/components/charts/PieChart.vue'
 
-const store = useOrderStore()
 const toast = useToast()
 
 const startDate = ref('')
 const endDate = ref('')
+const isLoading = ref(false)
+const report = ref<SalesReportData | null>(null)
 
-const revenueByMonth = {
-  xData: ['Jan', 'Fev', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aou', 'Sep', 'Oct', 'Nov', 'Dec'],
-  series: [{ name: 'Revenus (FCFA)', data: [850000, 1200000, 950000, 1400000, 1800000, 1600000, 2100000, 1900000, 2300000, 2500000, 2200000, 2800000] }],
-}
-const revenueData = revenueByMonth.xData.map((name, i) => ({ name, value: revenueByMonth.series[0]?.data[i] ?? 0 }))
+const revenueChartData = computed(() => {
+  if (!report.value) return []
+  return report.value.revenueByMonth.map((item) => ({
+    name: item.month,
+    value: item.revenue,
+  }))
+})
 
-const statusPieData = [
-  { name: 'Livrees', value: 145 },
-  { name: 'En cours', value: 32 },
-  { name: 'Annulees', value: 12 },
-  { name: 'En attente', value: 18 },
-]
+const statusPieData = computed(() => report.value?.ordersByStatus ?? [])
 
-const topProducts = {
-  xData: ['Carte Std', 'Carte Perso', 'Pack Pro', 'Pack Enterprise', 'Accessoires'],
-  series: [{ name: 'Quantite vendue', data: [520, 340, 180, 95, 210] }],
-}
-const topProductsData = topProducts.xData.map((name, i) => ({ name, value: topProducts.series[0]?.data[i] ?? 0 }))
+const topProductsData = computed(() => report.value?.topProducts ?? [])
 
-const monthlyData = [
-  { month: 'Octobre 2024', orders: 45, revenue: 2500000 },
-  { month: 'Novembre 2024', orders: 52, revenue: 2800000 },
-  { month: 'Decembre 2024', orders: 61, revenue: 3400000 },
-]
+const monthlyData = computed(() => report.value?.revenueByMonth ?? [])
 
 function formatPrice(amount: number) {
   return `${amount.toLocaleString('fr-FR')} FCFA`
+}
+
+async function fetchReport() {
+  isLoading.value = true
+  try {
+    const params: Record<string, string> = {}
+    if (startDate.value) params.start_date = startDate.value
+    if (endDate.value) params.end_date = endDate.value
+    const response = await salesReportApi.getReport(params)
+    report.value = response.data
+  } catch {
+    toast.showError('Erreur lors du chargement du rapport')
+  } finally {
+    isLoading.value = false
+  }
 }
 
 function exportReport() {
   toast.showSuccess('Export du rapport en cours...')
 }
 
-onMounted(async () => {
-  await store.fetchAllOrders()
+watch([startDate, endDate], () => {
+  if (startDate.value && endDate.value) {
+    fetchReport()
+  }
+})
+
+onMounted(() => {
+  fetchReport()
 })
 </script>
 
@@ -66,14 +77,14 @@ onMounted(async () => {
     </div>
 
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      <StatCard title="Total commandes" :value="store.orders.length" />
-      <StatCard title="Revenue total" value="21 850 000 FCFA" />
-      <StatCard title="Panier moyen" value="103 000 FCFA" />
-      <StatCard title="Commandes en attente" :value="store.orders.filter((o) => o.status === 'pending').length" />
+      <StatCard title="Total commandes" :value="report?.totalOrders ?? 0" />
+      <StatCard title="Revenue total" :value="formatPrice(report?.totalRevenue ?? 0)" />
+      <StatCard title="Panier moyen" :value="formatPrice(report?.averageBasket ?? 0)" />
+      <StatCard title="Commandes en attente" :value="report?.pendingOrders ?? 0" />
     </div>
 
     <AppCard title="Revenus par mois">
-      <BarChart :data="revenueData" title="Revenus mensuels" />
+      <BarChart :data="revenueChartData" title="Revenus mensuels" />
     </AppCard>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">

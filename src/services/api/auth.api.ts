@@ -17,4 +17,8 @@ export const authApi = {
   getCurrentUser(): Promise<ApiResponse<User>> {
     return apiClient.get('/auth/me').then((r) => r.data)
   },
+
+  forgotPassword(email: string): Promise<ApiResponse<void>> {
+    return apiClient.post('/auth/forgot-password', { email }).then((r) => r.data)
+  },
 }

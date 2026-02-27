@@ -51,6 +51,18 @@ export const useFeelbackStore = defineStore('feelback', () => {
     }
   }
 
+  const comparison = ref<SatisfactionStats[]>([])
+
+  async function fetchComparison(params?: Record<string, unknown>) {
+    isLoading.value = true
+    try {
+      const response = await feelbackApi.getComparison(params)
+      comparison.value = response.data
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   async function updateAlertSettings(settings: Record<string, unknown>) {
     isLoading.value = true
     try {
@@ -96,11 +108,13 @@ export const useFeelbackStore = defineStore('feelback', () => {
     entries,
     stats,
     statsByAgency,
+    comparison,
     alerts,
     isLoading,
     fetchStats,
     fetchEntries,
     fetchStatsByAgency,
+    fetchComparison,
     fetchAlerts,
     updateAlertSettings,
     subscribeRealtime,

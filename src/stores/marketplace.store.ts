@@ -75,5 +75,18 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
     }
   }
 
-  return { products, currentProduct, isLoading, fetchProducts, fetchProduct, createProduct, updateProduct, updateStock }
+  async function deleteProduct(id: string) {
+    isLoading.value = true
+    try {
+      await marketplaceApi.deleteProduct(id)
+      products.value = products.value.filter((p) => p.id !== id)
+      if (currentProduct.value?.id === id) {
+        currentProduct.value = null
+      }
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  return { products, currentProduct, isLoading, fetchProducts, fetchProduct, createProduct, updateProduct, updateStock, deleteProduct }
 })

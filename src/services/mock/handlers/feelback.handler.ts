@@ -29,9 +29,14 @@ export function setupFeelbackHandlers(mock: MockAdapter) {
     data: { totalResponses: 320, bon: 230, neutre: 55, mauvais: 35, satisfactionRate: 71.9 },
     success: true,
   })
-  mock.onGet('/feelback/comparison').reply(200, { data: [], success: true })
-  mock.onGet('/feelback/reports').reply(200, { data: [], success: true })
-  mock.onGet('/feelback/settings').reply(200, { data: { threshold: 60, emailNotifications: true, recipients: [] }, success: true })
-  mock.onPut('/feelback/settings').reply(200, { data: {}, success: true })
-  mock.onGet('/feelback/analytics').reply(200, { data: {}, success: true })
+  mock.onGet('/feelback/comparison').reply(200, {
+    data: [
+      { siteId: 'site-1', siteName: 'Siege Social', totalResponses: 234, bon: 183, neutre: 35, mauvais: 16, satisfactionRate: 78.2 },
+      { siteId: 'site-2', siteName: 'Agence Nord', totalResponses: 187, bon: 135, neutre: 34, mauvais: 18, satisfactionRate: 72.2 },
+      { siteId: 'site-3', siteName: 'Agence Est', totalResponses: 156, bon: 101, neutre: 34, mauvais: 21, satisfactionRate: 64.7 },
+      { siteId: 'site-4', siteName: 'Agence Sud', totalResponses: 143, bon: 87, neutre: 36, mauvais: 20, satisfactionRate: 60.8 },
+      { siteId: 'site-5', siteName: 'Agence Ouest', totalResponses: 128, bon: 70, neutre: 36, mauvais: 22, satisfactionRate: 54.7 },
+    ],
+    success: true,
+  })
 }

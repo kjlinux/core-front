@@ -55,6 +55,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { authApi } from '@/services/api/auth.api'
 import AppInput from '@/components/ui/AppInput.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 
@@ -86,9 +87,13 @@ async function handleSubmit() {
 
   isLoading.value = true
 
-  setTimeout(() => {
-    isLoading.value = false
+  try {
+    await authApi.forgotPassword(email.value)
     successMessage.value = `Un lien de reinitialisation a ete envoye a ${email.value}. Veuillez verifier votre boite de reception.`
-  }, 1500)
+  } catch {
+    emailError.value = 'Une erreur est survenue. Veuillez reessayer.'
+  } finally {
+    isLoading.value = false
+  }
 }
 </script>

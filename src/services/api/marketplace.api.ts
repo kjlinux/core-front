@@ -18,6 +18,10 @@ export const marketplaceApi = {
     return apiClient.put(`/marketplace/products/${id}`, data).then((r) => r.data)
   },
 
+  deleteProduct(id: string): Promise<ApiResponse<void>> {
+    return apiClient.delete(`/marketplace/products/${id}`).then((r) => r.data)
+  },
+
   updateStock(id: string, quantity: number): Promise<ApiResponse<Product>> {
     return apiClient.patch(`/marketplace/products/${id}/stock`, { quantity }).then((r) => r.data)
   },

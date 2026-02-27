@@ -10,6 +10,8 @@ import { setupMarketplaceHandlers } from './handlers/marketplace.handler'
 import { setupDashboardHandlers } from './handlers/dashboard.handler'
 import { setupBiometricHandlers } from './handlers/biometric.handler'
 import { setupScheduleHandlers } from './handlers/schedule.handler'
+import { setupRfidDeviceHandlers } from './handlers/rfid-device.handler'
+import { setupSalesReportHandlers } from './handlers/sales-report.handler'
 
 export function setupMock() {
   const mock = new MockAdapter(apiClient, { delayResponse: 300 })
@@ -24,6 +26,8 @@ export function setupMock() {
   setupDashboardHandlers(mock)
   setupBiometricHandlers(mock)
   setupScheduleHandlers(mock)
+  setupRfidDeviceHandlers(mock)
+  setupSalesReportHandlers(mock)
 
   return mock
 }
