@@ -69,15 +69,6 @@ export const useFeelbackDeviceStore = defineStore('feelback-device', () => {
     }
   }
 
-  async function restartDevice(id: string) {
-    isLoading.value = true
-    try {
-      await feelbackDeviceApi.restart(id)
-    } finally {
-      isLoading.value = false
-    }
-  }
-
   function subscribeRealtime() {
     const echo = getEcho()
     if (!echo) return
@@ -114,7 +105,6 @@ export const useFeelbackDeviceStore = defineStore('feelback-device', () => {
     registerDevice,
     updateDevice,
     deleteDevice,
-    restartDevice,
     subscribeRealtime,
     unsubscribeRealtime,
   }

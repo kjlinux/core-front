@@ -2,6 +2,8 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { salesReportApi, type SalesReportData } from '@/services/api/sales-report.api'
 import { useToast } from '@/composables/useToast'
+import { formatCurrency } from '@/utils/format'
+import { exportToPdf, exportToExcel } from '@/utils/export-helpers'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppInput from '@/components/ui/AppInput.vue'
@@ -30,10 +32,6 @@ const topProductsData = computed(() => report.value?.topProducts ?? [])
 
 const monthlyData = computed(() => report.value?.revenueByMonth ?? [])
 
-function formatPrice(amount: number) {
-  return `${amount.toLocaleString('fr-FR')} FCFA`
-}
-
 async function fetchReport() {
   isLoading.value = true
   try {
@@ -49,8 +47,59 @@ async function fetchReport() {
   }
 }
 
-function exportReport() {
-  toast.showSuccess('Export du rapport en cours...')
+const periodLabel = computed(() => {
+  if (startDate.value && endDate.value) return `Periode: ${startDate.value} au ${endDate.value}`
+  return 'Toutes les periodes'
+})
+
+async function handleExportPdf() {
+  if (!report.value) return
+  await exportToPdf({
+    filename: `ventes-rapport-${startDate.value || 'complet'}`,
+    title: 'Rapport de ventes - Marketplace',
+    subtitle: periodLabel.value,
+    summaryRows: [
+      { label: 'Total commandes', value: report.value.totalOrders },
+      { label: 'Revenue total', value: formatCurrency(report.value.totalRevenue) },
+      { label: 'Panier moyen', value: formatCurrency(report.value.averageBasket) },
+      { label: 'Commandes en attente', value: report.value.pendingOrders },
+    ],
+    columns: [
+      { header: 'Mois', key: 'month' },
+      { header: 'Nb commandes', key: 'orders' },
+      { header: 'Revenue', key: 'revenueFormatted' },
+    ],
+    data: report.value.revenueByMonth.map((r) => ({
+      ...r,
+      revenueFormatted: formatCurrency(r.revenue),
+    })),
+  })
+  toast.showSuccess('Le fichier PDF a ete telecharge')
+}
+
+async function handleExportExcel() {
+  if (!report.value) return
+  await exportToExcel({
+    filename: `ventes-rapport-${startDate.value || 'complet'}`,
+    title: 'Rapport de ventes - Marketplace',
+    subtitle: periodLabel.value,
+    summaryRows: [
+      { label: 'Total commandes', value: report.value.totalOrders },
+      { label: 'Revenue total', value: formatCurrency(report.value.totalRevenue) },
+      { label: 'Panier moyen', value: formatCurrency(report.value.averageBasket) },
+      { label: 'Commandes en attente', value: report.value.pendingOrders },
+    ],
+    columns: [
+      { header: 'Mois', key: 'month', width: 20 },
+      { header: 'Nb commandes', key: 'orders', width: 18 },
+      { header: 'Revenue', key: 'revenueFormatted', width: 22 },
+    ],
+    data: report.value.revenueByMonth.map((r) => ({
+      ...r,
+      revenueFormatted: formatCurrency(r.revenue),
+    })),
+  })
+  toast.showSuccess('Le fichier Excel a ete telecharge')
 }
 
 watch([startDate, endDate], () => {
@@ -68,7 +117,14 @@ onMounted(() => {
   <div class="space-y-6">
     <div class="flex items-center justify-between">
       <h1 class="text-2xl font-bold text-gray-900">Rapports de ventes</h1>
-      <AppButton variant="secondary" @click="exportReport">Exporter</AppButton>
+      <div class="flex gap-2">
+        <AppButton variant="outline" size="sm" :disabled="!report" @click="handleExportPdf">
+          Exporter PDF
+        </AppButton>
+        <AppButton variant="outline" size="sm" :disabled="!report" @click="handleExportExcel">
+          Exporter Excel
+        </AppButton>
+      </div>
     </div>
 
     <div class="flex gap-4">
@@ -78,8 +134,8 @@ onMounted(() => {
 
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
       <StatCard title="Total commandes" :value="report?.totalOrders ?? 0" />
-      <StatCard title="Revenue total" :value="formatPrice(report?.totalRevenue ?? 0)" />
-      <StatCard title="Panier moyen" :value="formatPrice(report?.averageBasket ?? 0)" />
+      <StatCard title="Revenue total" :value="formatCurrency(report?.totalRevenue ?? 0)" />
+      <StatCard title="Panier moyen" :value="formatCurrency(report?.averageBasket ?? 0)" />
       <StatCard title="Commandes en attente" :value="report?.pendingOrders ?? 0" />
     </div>
 
@@ -110,7 +166,7 @@ onMounted(() => {
             <tr v-for="row in monthlyData" :key="row.month" class="hover:bg-gray-50">
               <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ row.month }}</td>
               <td class="px-4 py-3 text-sm text-gray-600">{{ row.orders }}</td>
-              <td class="px-4 py-3 text-sm font-semibold text-primary">{{ formatPrice(row.revenue) }}</td>
+              <td class="px-4 py-3 text-sm font-semibold text-primary">{{ formatCurrency(row.revenue) }}</td>
             </tr>
           </tbody>
         </table>

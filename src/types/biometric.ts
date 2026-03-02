@@ -8,6 +8,7 @@ export interface BiometricDevice {
   lastSyncAt: string
   firmwareVersion: string
   enrolledCount: number
+  mqttTopic?: string
 }
 
 export interface FingerprintEnrollment {

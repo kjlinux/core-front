@@ -6,6 +6,14 @@
       <p class="mt-1 text-sm text-primary-500">Connectez-vous à votre compte</p>
     </div>
 
+    <!-- Session Expired Message -->
+    <div
+      v-if="sessionExpired"
+      class="bg-warning-50 border border-warning-200 text-warning-700 px-4 py-3 rounded-lg text-sm"
+    >
+      Votre session a expire. Veuillez vous reconnecter.
+    </div>
+
     <!-- Error Message -->
     <div
       v-if="errorMessage"
@@ -57,14 +65,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, reactive, computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
 import AppInput from '@/components/ui/AppInput.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
+
+const sessionExpired = computed(() => route.query.expired === '1')
 
 const formData = reactive({
   email: '',
@@ -113,7 +124,8 @@ async function handleLogin() {
     })
 
     authStore.persistUser()
-    router.push('/')
+    const redirect = route.query.redirect as string
+    router.push(redirect || '/')
   } catch (error: any) {
     errorMessage.value = error.response?.data?.message || error.message || 'Echec de la connexion. Verifiez vos identifiants.'
   }

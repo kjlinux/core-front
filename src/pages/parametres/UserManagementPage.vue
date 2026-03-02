@@ -27,7 +27,7 @@ const createForm = ref({
   confirmPassword: '',
 })
 
-const mockUsers = ref([
+const users = ref([
   { id: '1', firstName: 'Admin', lastName: 'System', email: 'admin@tanga.com', role: 'super_admin', companyName: '-', isActive: true, createdAt: '2024-01-01' },
   { id: '2', firstName: 'Moussa', lastName: 'Traore', email: 'moussa@company.com', role: 'admin_enterprise', companyName: 'TechBurk SARL', isActive: true, createdAt: '2024-02-15' },
   { id: '3', firstName: 'Fatou', lastName: 'Coulibaly', email: 'fatou@company.com', role: 'manager', companyName: 'TechBurk SARL', isActive: true, createdAt: '2024-03-20' },
@@ -82,8 +82,8 @@ function handleCreate() {
     toast.error('Les mots de passe ne correspondent pas')
     return
   }
-  mockUsers.value.push({
-    id: String(mockUsers.value.length + 1),
+  users.value.push({
+    id: String(users.value.length + 1),
     firstName: createForm.value.firstName,
     lastName: createForm.value.lastName,
     email: createForm.value.email,
@@ -98,9 +98,9 @@ function handleCreate() {
 }
 
 function handleEditSave() {
-  const index = mockUsers.value.findIndex((u) => u.id === editingUser.value.id)
+  const index = users.value.findIndex((u) => u.id === editingUser.value.id)
   if (index !== -1) {
-    mockUsers.value[index] = { ...editingUser.value }
+    users.value[index] = { ...editingUser.value }
   }
   toast.success('Utilisateur mis a jour')
   showEditModal.value = false
@@ -112,7 +112,7 @@ function handleEditSave() {
     <div class="flex items-center justify-between">
       <div>
         <h1 class="text-2xl font-bold text-gray-900">Gestion des utilisateurs</h1>
-        <p class="text-sm text-gray-500 mt-1">{{ mockUsers.length }} utilisateur(s) dans le systeme</p>
+        <p class="text-sm text-gray-500 mt-1">{{ users.length }} utilisateur(s) dans le systeme</p>
       </div>
       <AppButton variant="primary" @click="showCreateModal = true">
         <UserPlusIcon class="w-4 h-4 mr-1" />
@@ -135,7 +135,7 @@ function handleEditSave() {
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-100">
-            <tr v-for="user in mockUsers" :key="user.id" class="hover:bg-gray-50">
+            <tr v-for="user in users" :key="user.id" class="hover:bg-gray-50">
               <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ user.firstName }} {{ user.lastName }}</td>
               <td class="px-4 py-3 text-sm text-gray-600">{{ user.email }}</td>
               <td class="px-4 py-3">

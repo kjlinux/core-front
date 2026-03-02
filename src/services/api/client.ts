@@ -1,9 +1,11 @@
 import axios from 'axios'
+import router from '@/router'
+import { useAuthStore } from '@/stores/auth.store'
 
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
   timeout: 15000,
-  headers: { 'Content-Type': 'application/json' },
+  headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
 })
 
 // Request interceptor: attach JWT token from localStorage
@@ -33,9 +35,10 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401) {
       // Ne pas rediriger si c'est l'endpoint login lui-meme
       const url = error.config?.url || ''
-      if (!url.includes('/auth/login') && !window.location.pathname.includes('/login')) {
-        localStorage.removeItem('access_token')
-        window.location.href = '/login'
+      if (!url.includes('/auth/login') && !router.currentRoute.value.path.includes('/login')) {
+        const auth = useAuthStore()
+        auth.logout()
+        router.push({ name: 'login', query: { redirect: router.currentRoute.value.fullPath, expired: '1' } })
       }
     }
     return Promise.reject(error)

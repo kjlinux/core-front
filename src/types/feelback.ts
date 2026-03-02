@@ -8,6 +8,7 @@ export interface FeelbackDevice {
   siteName: string
   isOnline: boolean
   lastPingAt: string
+  mqttTopic?: string
 }
 
 export interface FeelbackEntry {

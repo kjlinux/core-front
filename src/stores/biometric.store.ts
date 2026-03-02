@@ -53,6 +53,53 @@ export const useBiometricStore = defineStore('biometric', () => {
     }
   }
 
+  async function enrollViaDevice(employeeId: string, deviceId: string) {
+    const response = await biometricApi.enrollViaDevice(employeeId, deviceId)
+    return response.data
+  }
+
+  async function pollEnrollmentStatus(
+    enrollmentId: string,
+    onUpdate: (enrollment: FingerprintEnrollment) => void,
+    options: { interval?: number; timeout?: number } = {},
+  ) {
+    const interval = options.interval ?? 2000
+    const timeout = options.timeout ?? 60000
+    const startTime = Date.now()
+
+    return new Promise<FingerprintEnrollment>((resolve, reject) => {
+      const poll = async () => {
+        if (Date.now() - startTime > timeout) {
+          reject(new Error('Delai d\'attente depasse pour l\'enrolement'))
+          return
+        }
+
+        try {
+          const response = await biometricApi.getEnrollment(enrollmentId)
+          const enrollment = response.data
+          onUpdate(enrollment)
+
+          if (enrollment.status === 'enrolled') {
+            enrollments.value.push(enrollment)
+            resolve(enrollment)
+            return
+          }
+
+          if (enrollment.status === 'failed') {
+            reject(new Error('L\'enrolement a echoue'))
+            return
+          }
+
+          setTimeout(poll, interval)
+        } catch (error) {
+          reject(error)
+        }
+      }
+
+      setTimeout(poll, interval)
+    })
+  }
+
   async function deleteEnrollment(id: string) {
     isLoading.value = true
     try {
@@ -129,6 +176,8 @@ export const useBiometricStore = defineStore('biometric', () => {
     fetchDevice,
     fetchEnrollments,
     startEnrollment,
+    enrollViaDevice,
+    pollEnrollmentStatus,
     deleteEnrollment,
     fetchAuditLog,
     fetchInconsistencies,

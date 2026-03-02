@@ -10,10 +10,11 @@ import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import {
-  ArrowPathIcon,
   ArrowPathRoundedSquareIcon,
-  SignalIcon,
   PowerIcon,
+  SunIcon,
+  MoonIcon,
+  SignalIcon,
 } from '@heroicons/vue/24/outline'
 import { ref } from 'vue'
 
@@ -29,11 +30,12 @@ const sendingCommand = ref<string | null>(null)
 const device = computed(() => store.devices.find((d) => d.id === deviceId) ?? store.currentDevice)
 const canManage = computed(() => permissions.isSuperAdmin.value || permissions.isAdminEnterprise.value)
 
-const commandLabels: Record<DeviceCommand, string> = {
-  REBOOT: 'Reboot',
+const commandLabels: Record<string, string> = {
   RESET: 'Reset',
+  REBOOT: 'Reboot',
+  WAKE_UP: 'Reveil',
+  SLEEP: 'Veille',
   STATUS: 'Statut',
-  RESTART: 'Restart',
 }
 
 function formatDate(date: string) {
@@ -117,14 +119,6 @@ onMounted(async () => {
         <div class="flex flex-wrap gap-3">
           <AppButton
             variant="secondary"
-            :disabled="sendingCommand === 'REBOOT'"
-            @click="handleCommand('REBOOT')"
-          >
-            <PowerIcon class="w-4 h-4 mr-2" />
-            Reboot
-          </AppButton>
-          <AppButton
-            variant="secondary"
             :disabled="sendingCommand === 'RESET'"
             @click="handleCommand('RESET')"
           >
@@ -133,19 +127,35 @@ onMounted(async () => {
           </AppButton>
           <AppButton
             variant="secondary"
+            :disabled="sendingCommand === 'REBOOT'"
+            @click="handleCommand('REBOOT')"
+          >
+            <PowerIcon class="w-4 h-4 mr-2" />
+            Reboot
+          </AppButton>
+          <AppButton
+            variant="secondary"
+            :disabled="sendingCommand === 'WAKE_UP'"
+            @click="handleCommand('WAKE_UP')"
+          >
+            <SunIcon class="w-4 h-4 mr-2" />
+            Reveil
+          </AppButton>
+          <AppButton
+            variant="secondary"
+            :disabled="sendingCommand === 'SLEEP'"
+            @click="handleCommand('SLEEP')"
+          >
+            <MoonIcon class="w-4 h-4 mr-2" />
+            Veille
+          </AppButton>
+          <AppButton
+            variant="secondary"
             :disabled="sendingCommand === 'STATUS'"
             @click="handleCommand('STATUS')"
           >
             <SignalIcon class="w-4 h-4 mr-2" />
             Statut
-          </AppButton>
-          <AppButton
-            variant="secondary"
-            :disabled="sendingCommand === 'RESTART'"
-            @click="handleCommand('RESTART')"
-          >
-            <ArrowPathIcon class="w-4 h-4 mr-2" />
-            Restart
           </AppButton>
         </div>
       </AppCard>

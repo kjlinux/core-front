@@ -7,4 +7,5 @@ export interface RfidDevice {
   siteName: string
   isOnline: boolean
   lastPingAt: string
+  mqttTopic?: string
 }

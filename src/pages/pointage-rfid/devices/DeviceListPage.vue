@@ -16,10 +16,11 @@ import AppSelect from '@/components/ui/AppSelect.vue'
 import {
   EyeIcon,
   TrashIcon,
-  ArrowPathIcon,
   ArrowPathRoundedSquareIcon,
-  SignalIcon,
   PowerIcon,
+  SunIcon,
+  MoonIcon,
+  SignalIcon,
 } from '@heroicons/vue/24/outline'
 
 const router = useRouter()
@@ -67,11 +68,12 @@ const filteredDevices = computed(() => {
 
 const canManage = computed(() => permissions.isSuperAdmin.value || permissions.isAdminEnterprise.value)
 
-const commandLabels: Record<DeviceCommand, string> = {
-  REBOOT: 'Reboot',
+const commandLabels: Record<string, string> = {
   RESET: 'Reset',
+  REBOOT: 'Reboot',
+  WAKE_UP: 'Reveil',
+  SLEEP: 'Veille',
   STATUS: 'Statut',
-  RESTART: 'Restart',
 }
 
 function formatDate(date: string) {
@@ -182,15 +184,6 @@ onMounted(async () => {
                   <AppButton
                     size="sm"
                     variant="ghost"
-                    :disabled="sendingCommand === `${device.id}-REBOOT`"
-                    title="Reboot"
-                    @click="handleCommand(device.id, 'REBOOT')"
-                  >
-                    <PowerIcon class="w-4 h-4" />
-                  </AppButton>
-                  <AppButton
-                    size="sm"
-                    variant="ghost"
                     :disabled="sendingCommand === `${device.id}-RESET`"
                     title="Reset"
                     @click="handleCommand(device.id, 'RESET')"
@@ -200,20 +193,38 @@ onMounted(async () => {
                   <AppButton
                     size="sm"
                     variant="ghost"
+                    :disabled="sendingCommand === `${device.id}-REBOOT`"
+                    title="Reboot"
+                    @click="handleCommand(device.id, 'REBOOT')"
+                  >
+                    <PowerIcon class="w-4 h-4" />
+                  </AppButton>
+                  <AppButton
+                    size="sm"
+                    variant="ghost"
+                    :disabled="sendingCommand === `${device.id}-WAKE_UP`"
+                    title="Reveil"
+                    @click="handleCommand(device.id, 'WAKE_UP')"
+                  >
+                    <SunIcon class="w-4 h-4" />
+                  </AppButton>
+                  <AppButton
+                    size="sm"
+                    variant="ghost"
+                    :disabled="sendingCommand === `${device.id}-SLEEP`"
+                    title="Veille"
+                    @click="handleCommand(device.id, 'SLEEP')"
+                  >
+                    <MoonIcon class="w-4 h-4" />
+                  </AppButton>
+                  <AppButton
+                    size="sm"
+                    variant="ghost"
                     :disabled="sendingCommand === `${device.id}-STATUS`"
                     title="Statut"
                     @click="handleCommand(device.id, 'STATUS')"
                   >
                     <SignalIcon class="w-4 h-4" />
-                  </AppButton>
-                  <AppButton
-                    size="sm"
-                    variant="ghost"
-                    :disabled="sendingCommand === `${device.id}-RESTART`"
-                    title="Restart"
-                    @click="handleCommand(device.id, 'RESTART')"
-                  >
-                    <ArrowPathIcon class="w-4 h-4" />
                   </AppButton>
                 </div>
               </td>

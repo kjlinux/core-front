@@ -24,33 +24,6 @@ interface Inconsistency {
 
 const inconsistencies = ref<Inconsistency[]>([])
 
-const mockData: Inconsistency[] = [
-  {
-    employeeName: 'Moussa Traore',
-    rfidStatus: 'active',
-    biometricStatus: 'not_enrolled',
-    lastRfidScan: '2024-11-15T08:30:00Z',
-    lastBiometricScan: '',
-    discrepancyType: 'Carte active sans empreinte',
-  },
-  {
-    employeeName: 'Fatou Coulibaly',
-    rfidStatus: 'inactive',
-    biometricStatus: 'enrolled',
-    lastRfidScan: '2024-10-20T09:15:00Z',
-    lastBiometricScan: '2024-11-14T08:45:00Z',
-    discrepancyType: 'Carte inactive mais empreinte enregistree',
-  },
-  {
-    employeeName: 'Ibrahim Sawadogo',
-    rfidStatus: 'blocked',
-    biometricStatus: 'enrolled',
-    lastRfidScan: '2024-11-01T08:00:00Z',
-    lastBiometricScan: '2024-11-14T07:55:00Z',
-    discrepancyType: 'Carte bloquee mais pointage biometrique actif',
-  },
-]
-
 function formatDate(date: string) {
   if (!date) return '-'
   return new Date(date).toLocaleString('fr-FR')
@@ -63,13 +36,11 @@ function handleExport() {
 onMounted(async () => {
   try {
     const data = await store.fetchInconsistencies()
-    if (data && (data as any[]).length > 0) {
+    if (data) {
       inconsistencies.value = data as unknown as Inconsistency[]
-    } else {
-      inconsistencies.value = mockData
     }
   } catch {
-    inconsistencies.value = mockData
+    // Error handled by store
   }
 })
 </script>

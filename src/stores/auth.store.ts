@@ -43,8 +43,7 @@ export const useAuthStore = defineStore('auth', () => {
     const token = localStorage.getItem('access_token')
     if (token) {
       accessToken.value = token
-      // In real app, decode JWT or call getCurrentUser
-      // For mock, we store user in localStorage too
+      // Restore user from localStorage until getCurrentUser API call
       const storedUser = localStorage.getItem('auth_user')
       if (storedUser) {
         user.value = JSON.parse(storedUser)

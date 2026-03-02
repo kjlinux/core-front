@@ -18,8 +18,11 @@ import {
   EyeIcon,
   ArrowPathIcon,
   ArrowPathRoundedSquareIcon,
-  SignalIcon,
   PowerIcon,
+  SunIcon,
+  MoonIcon,
+  SignalIcon,
+  FingerPrintIcon,
 } from '@heroicons/vue/24/outline'
 
 const router = useRouter()
@@ -68,11 +71,13 @@ const filteredDevices = computed(() => {
 
 const canManage = computed(() => permissions.isSuperAdmin.value || permissions.isAdminEnterprise.value)
 
-const commandLabels: Record<DeviceCommand, string> = {
-  REBOOT: 'Reboot',
+const commandLabels: Record<string, string> = {
   RESET: 'Reset',
+  REBOOT: 'Reboot',
+  WAKE_UP: 'Reveil',
+  SLEEP: 'Veille',
   STATUS: 'Statut',
-  RESTART: 'Restart',
+  ENROLE: 'Enrolement',
 }
 
 function formatDate(date: string) {
@@ -186,6 +191,15 @@ onMounted(async () => {
                   <AppButton
                     size="sm"
                     variant="ghost"
+                    :disabled="sendingCommand === `${device.id}-RESET`"
+                    title="Reset"
+                    @click="handleCommand(device.id, 'RESET')"
+                  >
+                    <ArrowPathRoundedSquareIcon class="w-4 h-4" />
+                  </AppButton>
+                  <AppButton
+                    size="sm"
+                    variant="ghost"
                     :disabled="sendingCommand === `${device.id}-REBOOT`"
                     title="Reboot"
                     @click="handleCommand(device.id, 'REBOOT')"
@@ -195,11 +209,20 @@ onMounted(async () => {
                   <AppButton
                     size="sm"
                     variant="ghost"
-                    :disabled="sendingCommand === `${device.id}-RESET`"
-                    title="Reset"
-                    @click="handleCommand(device.id, 'RESET')"
+                    :disabled="sendingCommand === `${device.id}-WAKE_UP`"
+                    title="Reveil"
+                    @click="handleCommand(device.id, 'WAKE_UP')"
                   >
-                    <ArrowPathRoundedSquareIcon class="w-4 h-4" />
+                    <SunIcon class="w-4 h-4" />
+                  </AppButton>
+                  <AppButton
+                    size="sm"
+                    variant="ghost"
+                    :disabled="sendingCommand === `${device.id}-SLEEP`"
+                    title="Veille"
+                    @click="handleCommand(device.id, 'SLEEP')"
+                  >
+                    <MoonIcon class="w-4 h-4" />
                   </AppButton>
                   <AppButton
                     size="sm"
@@ -213,11 +236,10 @@ onMounted(async () => {
                   <AppButton
                     size="sm"
                     variant="ghost"
-                    :disabled="sendingCommand === `${device.id}-RESTART`"
-                    title="Restart"
-                    @click="handleCommand(device.id, 'RESTART')"
+                    title="Enrolement"
+                    @click="router.push({ name: 'bio-enrollment-new', query: { deviceId: device.id } })"
                   >
-                    <ArrowPathIcon class="w-4 h-4" />
+                    <FingerPrintIcon class="w-4 h-4" />
                   </AppButton>
                 </div>
               </td>

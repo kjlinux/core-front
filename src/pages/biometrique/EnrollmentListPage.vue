@@ -132,11 +132,11 @@ onMounted(async () => {
               <td class="px-4 py-3">
                 <div class="flex gap-2">
                   <AppButton
-                    v-if="enrollment.status === 'failed'"
+                    v-if="enrollment.status === 'pending' || enrollment.status === 'failed'"
                     size="sm"
                     variant="ghost"
-                    @click="router.push('/biometrique/enrollment/new')"
-                    title="Recommencer"
+                    @click="router.push({ name: 'bio-enrollment-new', query: { deviceId: enrollment.deviceId, employeeId: enrollment.employeeId } })"
+                    :title="enrollment.status === 'pending' ? 'Reprendre' : 'Recommencer'"
                   >
                     <ArrowPathIcon class="w-4 h-4" />
                   </AppButton>

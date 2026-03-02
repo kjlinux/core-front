@@ -1,8 +1,6 @@
 export const API_BASE_URL: string =
   (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? '/api'
 
-export const USE_MOCK: boolean = import.meta.env.VITE_USE_MOCK === 'true'
-
 export const ROLE_LABELS: Record<string, string> = {
   super_admin: 'Super Admin',
   admin_enterprise: 'Admin Entreprise',

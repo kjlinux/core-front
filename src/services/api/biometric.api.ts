@@ -31,6 +31,17 @@ export const biometricApi = {
     return apiClient.post('/biometric/enrollments', data).then((r) => r.data)
   },
 
+  enrollViaDevice(employeeId: string, deviceId: string): Promise<ApiResponse<FingerprintEnrollment>> {
+    return apiClient.post('/biometric/enrollments/enroll', {
+      employee_id: employeeId,
+      device_id: deviceId,
+    }).then((r) => r.data)
+  },
+
+  getEnrollment(id: string): Promise<ApiResponse<FingerprintEnrollment>> {
+    return apiClient.get(`/biometric/enrollments/${id}`).then((r) => r.data)
+  },
+
   deleteEnrollment(id: string): Promise<ApiResponse<void>> {
     return apiClient.delete(`/biometric/enrollments/${id}`).then((r) => r.data)
   },

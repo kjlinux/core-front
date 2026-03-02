@@ -29,12 +29,6 @@ use([
 ])
 
 async function bootstrap() {
-  // Setup mock before mounting so all handlers are registered first
-  if (import.meta.env.VITE_USE_MOCK === 'true') {
-    const { setupMock } = await import('./services/mock')
-    setupMock()
-  }
-
   const app = createApp(App)
   const pinia = createPinia()
 

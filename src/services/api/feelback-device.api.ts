@@ -23,7 +23,4 @@ export const feelbackDeviceApi = {
     return apiClient.delete(`/feelback/devices/${id}`).then((r) => r.data)
   },
 
-  restart(id: string): Promise<ApiResponse<void>> {
-    return apiClient.post(`/feelback/devices/${id}/restart`).then((r) => r.data)
-  },
 }

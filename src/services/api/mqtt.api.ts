@@ -1,8 +1,10 @@
 import apiClient from './client'
 import type { ApiResponse } from '@/types'
 
-export type DeviceCommand = 'REBOOT' | 'RESET' | 'STATUS' | 'RESTART'
-export type DeviceType = 'biometric' | 'feelback' | 'rfid'
+export type RfidCommand = 'RESET' | 'REBOOT' | 'WAKE_UP' | 'SLEEP' | 'STATUS'
+export type BiometricCommand = RfidCommand | 'ENROLE'
+export type DeviceCommand = RfidCommand | BiometricCommand
+export type DeviceType = 'biometric' | 'rfid'
 
 interface SendCommandResponse {
   topic: string
