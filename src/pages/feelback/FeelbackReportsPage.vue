@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useToast } from '@/composables/useToast'
 import { feelbackReportApi, type FeelbackReportData } from '@/services/api/feelback-report.api'
+import { siteApi } from '@/services/api/site.api'
 import { exportToPdf, exportToExcel } from '@/utils/export-helpers'
 import { formatPercent } from '@/utils/format'
 import AppCard from '@/components/ui/AppCard.vue'
@@ -37,14 +38,29 @@ const reportTypes = [
   { label: 'Rapport par periode', value: 'period' },
 ]
 
-const siteOptions = [
-  { label: 'Tous les sites', value: '' },
-  { label: 'Siege Social', value: 'site-1' },
-  { label: 'Agence Nord', value: 'site-2' },
-  { label: 'Agence Est', value: 'site-3' },
-  { label: 'Agence Sud', value: 'site-4' },
-  { label: 'Agence Ouest', value: 'site-5' },
-]
+const siteOptions = ref([{ label: 'Tous les sites', value: '' }])
+
+async function loadSites() {
+  try {
+    const result = await siteApi.getAll()
+    // L'intercepteur unwrap { success, data } -> data contient { data: Site[], meta }
+    const raw = result as unknown as Record<string, unknown>
+    const sites = (Array.isArray(raw) ? raw : (raw.data as { id: string; name: string }[]) ?? []) as {
+      id: string
+      name: string
+    }[]
+    siteOptions.value = [
+      { label: 'Tous les sites', value: '' },
+      ...sites.map((s) => ({ label: s.name, value: s.id })),
+    ]
+  } catch {
+    // Garder l'option par defaut si l'API echoue
+  }
+}
+
+onMounted(() => {
+  loadSites()
+})
 
 const frequencyOptions = [
   { label: 'Quotidien', value: 'daily' },
@@ -112,8 +128,8 @@ async function generateReport() {
       type: reportType.value,
     }
     if (selectedSite.value) params.site_id = selectedSite.value
-    const response = await feelbackReportApi.getReport(params)
-    report.value = response.data
+    const data = await feelbackReportApi.getReport(params)
+    report.value = data as unknown as FeelbackReportData
     reportGenerated.value = true
     toast.showSuccess('Rapport genere avec succes')
   } catch {

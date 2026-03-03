@@ -2,13 +2,13 @@ import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { biometricApi } from '@/services/api/biometric.api'
 import { getEcho } from '@/services/echo'
-import type { BiometricDevice, FingerprintEnrollment, BiometricAuditEntry } from '@/types'
+import type { BiometricDevice, FingerprintEnrollment } from '@/types'
 
 export const useBiometricStore = defineStore('biometric', () => {
   const devices = ref<BiometricDevice[]>([])
   const currentDevice = ref<BiometricDevice | null>(null)
   const enrollments = ref<FingerprintEnrollment[]>([])
-  const auditLog = ref<BiometricAuditEntry[]>([])
+
   const isLoading = ref(false)
 
   async function fetchDevices() {
@@ -25,8 +25,9 @@ export const useBiometricStore = defineStore('biometric', () => {
     isLoading.value = true
     try {
       const response = await biometricApi.getDevice(id)
-      currentDevice.value = response.data
-      return response.data
+      const device = (response.data ?? response) as BiometricDevice
+      currentDevice.value = device
+      return device
     } finally {
       isLoading.value = false
     }
@@ -46,8 +47,9 @@ export const useBiometricStore = defineStore('biometric', () => {
     isLoading.value = true
     try {
       const response = await biometricApi.startEnrollment(data)
-      enrollments.value.push(response.data)
-      return response.data
+      const enrollment = (response.data ?? response) as FingerprintEnrollment
+      enrollments.value.push(enrollment)
+      return enrollment
     } finally {
       isLoading.value = false
     }
@@ -55,7 +57,10 @@ export const useBiometricStore = defineStore('biometric', () => {
 
   async function enrollViaDevice(employeeId: string, deviceId: string) {
     const response = await biometricApi.enrollViaDevice(employeeId, deviceId)
-    return response.data
+    // L'interceptor + .then(r => r.data) dans l'API unwrap deja { success, data }
+    // response est directement l'objet FingerprintEnrollment (ou { data: ... } pour paginated)
+    const enrollment = response.data ?? response
+    return enrollment as FingerprintEnrollment
   }
 
   async function pollEnrollmentStatus(
@@ -76,7 +81,7 @@ export const useBiometricStore = defineStore('biometric', () => {
 
         try {
           const response = await biometricApi.getEnrollment(enrollmentId)
-          const enrollment = response.data
+          const enrollment = (response.data ?? response) as FingerprintEnrollment
           onUpdate(enrollment)
 
           if (enrollment.status === 'enrolled') {
@@ -110,25 +115,6 @@ export const useBiometricStore = defineStore('biometric', () => {
     }
   }
 
-  async function fetchAuditLog() {
-    isLoading.value = true
-    try {
-      const response = await biometricApi.getAuditLog()
-      auditLog.value = response.data
-    } finally {
-      isLoading.value = false
-    }
-  }
-
-  async function fetchInconsistencies() {
-    isLoading.value = true
-    try {
-      const response = await biometricApi.getInconsistencies()
-      return response.data
-    } finally {
-      isLoading.value = false
-    }
-  }
 
   async function syncDevice(id: string) {
     isLoading.value = true
@@ -170,7 +156,7 @@ export const useBiometricStore = defineStore('biometric', () => {
     devices,
     currentDevice,
     enrollments,
-    auditLog,
+
     isLoading,
     fetchDevices,
     fetchDevice,
@@ -179,8 +165,6 @@ export const useBiometricStore = defineStore('biometric', () => {
     enrollViaDevice,
     pollEnrollmentStatus,
     deleteEnrollment,
-    fetchAuditLog,
-    fetchInconsistencies,
     syncDevice,
     subscribeRealtime,
     unsubscribeRealtime,

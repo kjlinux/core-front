@@ -1,14 +1,43 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { BellIcon } from '@heroicons/vue/24/outline'
+import { ref, onMounted } from 'vue'
+import { BellIcon, CheckIcon } from '@heroicons/vue/24/outline'
 import { onClickOutside } from '@vueuse/core'
+import { useNotificationStore } from '@/stores/notification.store'
+import type { AppNotification } from '@/stores/notification.store'
+import dayjs from 'dayjs'
 
+const notificationStore = useNotificationStore()
 const isOpen = ref(false)
 const panelRef = ref<HTMLElement | null>(null)
 
 onClickOutside(panelRef, () => {
   isOpen.value = false
 })
+
+onMounted(() => {
+  notificationStore.fetchNotifications()
+})
+
+function formatTimeAgo(dateStr: string): string {
+  const now = dayjs()
+  const date = dayjs(dateStr)
+  const diffSec = now.diff(date, 'second')
+
+  if (diffSec < 60) return 'A l\'instant'
+  const diffMin = now.diff(date, 'minute')
+  if (diffMin < 60) return `Il y a ${diffMin} min`
+  const diffHour = now.diff(date, 'hour')
+  if (diffHour < 24) return `Il y a ${diffHour}h`
+  const diffDay = now.diff(date, 'day')
+  if (diffDay < 7) return `Il y a ${diffDay}j`
+  return date.format('DD/MM/YYYY')
+}
+
+function getTypeColor(notification: AppNotification): string {
+  if (notification.type === 'feelback') return 'bg-amber-500'
+  if (notification.type === 'attendance') return 'bg-primary-500'
+  return 'bg-gray-500'
+}
 </script>
 
 <template>
@@ -20,21 +49,70 @@ onClickOutside(panelRef, () => {
     >
       <BellIcon class="h-5 w-5" />
       <span
-        class="absolute right-1 top-1 h-2 w-2 rounded-full bg-danger-500"
-      />
+        v-if="notificationStore.unreadCount > 0"
+        class="absolute right-0.5 top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-danger-500 text-[10px] font-bold text-white"
+      >
+        {{ notificationStore.unreadCount > 9 ? '9+' : notificationStore.unreadCount }}
+      </span>
     </button>
 
     <div
       v-if="isOpen"
-      class="absolute right-0 top-full z-50 mt-1 w-80 rounded-lg border border-gray-200 bg-white shadow-lg"
+      class="absolute right-0 top-full z-50 mt-1 w-96 rounded-lg border border-gray-200 bg-white shadow-lg"
     >
-      <div class="border-b border-gray-200 px-4 py-3">
-        <h3 class="text-sm font-semibold text-gray-800">Notifications</h3>
+      <div class="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+        <h3 class="text-sm font-semibold text-gray-800">
+          Notifications
+          <span
+            v-if="notificationStore.unreadCount > 0"
+            class="ml-1.5 inline-flex items-center rounded-full bg-danger-50 px-2 py-0.5 text-xs font-medium text-danger-700"
+          >
+            {{ notificationStore.unreadCount }}
+          </span>
+        </h3>
+        <button
+          v-if="notificationStore.unreadCount > 0"
+          type="button"
+          class="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700"
+          @click="notificationStore.markAllAsRead()"
+        >
+          <CheckIcon class="h-3.5 w-3.5" />
+          Tout marquer comme lu
+        </button>
       </div>
-      <div class="max-h-64 overflow-y-auto py-2">
-        <p class="px-4 py-6 text-center text-sm text-gray-500">
+
+      <div class="max-h-80 overflow-y-auto">
+        <p
+          v-if="notificationStore.notifications.length === 0"
+          class="px-4 py-8 text-center text-sm text-gray-500"
+        >
           Aucune notification
         </p>
+
+        <button
+          v-for="notification in notificationStore.notifications"
+          :key="notification.id"
+          type="button"
+          class="flex w-full gap-3 px-4 py-3 text-left transition-colors hover:bg-gray-50"
+          :class="{ 'bg-primary-50/50': !notification.isRead }"
+          @click="notificationStore.markAsRead(notification.id)"
+        >
+          <span
+            class="mt-1.5 h-2 w-2 flex-shrink-0 rounded-full"
+            :class="notification.isRead ? 'bg-transparent' : getTypeColor(notification)"
+          />
+          <div class="min-w-0 flex-1">
+            <p class="text-sm font-medium text-gray-800 truncate">
+              {{ notification.title }}
+            </p>
+            <p class="text-sm text-gray-600 truncate">
+              {{ notification.message }}
+            </p>
+            <p class="mt-0.5 text-xs text-gray-400">
+              {{ formatTimeAgo(notification.createdAt) }}
+            </p>
+          </div>
+        </button>
       </div>
     </div>
   </div>

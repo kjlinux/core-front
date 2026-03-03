@@ -14,6 +14,9 @@ import {
   SignalIcon,
   HandRaisedIcon,
   ClockIcon,
+  EyeIcon,
+  ArrowPathIcon,
+  ArrowRightIcon,
 } from '@heroicons/vue/24/outline'
 
 const router = useRouter()
@@ -100,6 +103,7 @@ onMounted(() => {
       <template #actions>
         <AppButton size="sm" variant="secondary" @click="router.push('/biometrique/devices')">
           Voir tous
+          <ArrowRightIcon class="w-4 h-4 ml-1" />
         </AppButton>
       </template>
 
@@ -172,11 +176,11 @@ onMounted(() => {
               </td>
               <td class="whitespace-nowrap px-4 py-4 text-right">
                 <div class="flex items-center justify-end gap-2">
-                  <AppButton size="sm" variant="outline" @click="viewDevice(device.id)">
-                    Detail
+                  <AppButton size="sm" variant="ghost" @click="viewDevice(device.id)" title="Detail">
+                    <EyeIcon class="w-4 h-4" />
                   </AppButton>
-                  <AppButton size="sm" variant="secondary" @click="syncDevice(device.id)">
-                    Synchroniser
+                  <AppButton size="sm" variant="ghost" @click="syncDevice(device.id)" title="Synchroniser">
+                    <ArrowPathIcon class="w-4 h-4" />
                   </AppButton>
                 </div>
               </td>

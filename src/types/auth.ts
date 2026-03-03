@@ -5,8 +5,10 @@ export interface User {
   email: string
   firstName: string
   lastName: string
+  phone?: string
   role: UserRole
   companyId: string | null
+  companyName?: string
   avatar?: string
   isActive: boolean
   createdAt: string

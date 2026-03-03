@@ -2,8 +2,9 @@ import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { notificationApi } from '@/services/api/notification.api'
 import { getEcho } from '@/services/echo'
+import { useNotificationSound } from '@/composables/useNotificationSound'
 
-interface Notification {
+export interface AppNotification {
   id: string
   type?: string
   title: string
@@ -14,8 +15,9 @@ interface Notification {
 }
 
 export const useNotificationStore = defineStore('notification', () => {
-  const notifications = ref<Notification[]>([])
+  const notifications = ref<AppNotification[]>([])
   const isLoading = ref(false)
+  const { play: playSound } = useNotificationSound()
 
   const unreadCount = computed(() => notifications.value.filter((n) => !n.isRead).length)
 
@@ -44,12 +46,27 @@ export const useNotificationStore = defineStore('notification', () => {
     })
   }
 
+  function addLocalNotification(notification: Omit<AppNotification, 'id' | 'isRead' | 'createdAt'>) {
+    notifications.value.unshift({
+      ...notification,
+      id: `local-${Date.now()}`,
+      isRead: false,
+      createdAt: new Date().toISOString(),
+    })
+
+    // Keep max 50 notifications
+    if (notifications.value.length > 50) {
+      notifications.value.pop()
+    }
+
+    playSound()
+  }
+
   function subscribeRealtime() {
     const echo = getEcho()
     if (!echo) return
 
-    echo.channel('notifications').listen('.notification.received', (data: Notification) => {
-      // Add to the top of the list
+    echo.channel('notifications').listen('.notification.received', (data: AppNotification) => {
       notifications.value.unshift({
         id: data.id,
         type: data.type,
@@ -59,6 +76,8 @@ export const useNotificationStore = defineStore('notification', () => {
         data: data.data,
         createdAt: data.createdAt,
       })
+
+      playSound()
     })
   }
 
@@ -75,6 +94,7 @@ export const useNotificationStore = defineStore('notification', () => {
     fetchNotifications,
     markAsRead,
     markAllAsRead,
+    addLocalNotification,
     subscribeRealtime,
     unsubscribeRealtime,
   }

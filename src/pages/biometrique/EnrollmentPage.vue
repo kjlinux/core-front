@@ -8,6 +8,12 @@ import { useToast } from '@/composables/useToast'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
+import {
+  CheckCircleIcon,
+  XCircleIcon,
+  FingerPrintIcon,
+  ArrowLeftIcon,
+} from '@heroicons/vue/24/outline'
 
 const router = useRouter()
 const route = useRoute()
@@ -131,7 +137,8 @@ onMounted(async () => {
   <div class="space-y-6">
     <div class="flex items-center gap-4">
       <AppButton variant="ghost" @click="router.push('/biometrique/enrollment')">
-        &larr; Retour
+        <ArrowLeftIcon class="w-4 h-4 mr-1" />
+        Retour
       </AppButton>
       <h1 class="text-2xl font-bold text-gray-900">Nouvelle inscription biometrique</h1>
     </div>
@@ -206,10 +213,10 @@ onMounted(async () => {
               'border-red-400 bg-red-50': captureStatus === 'error',
             }"
           >
-            <div class="text-5xl">
-              <span v-if="captureStatus === 'success'" class="text-green-500">&#10003;</span>
-              <span v-else-if="captureStatus === 'error'" class="text-red-500">&#10007;</span>
-              <span v-else class="text-gray-400">[~]</span>
+            <div>
+              <CheckCircleIcon v-if="captureStatus === 'success'" class="w-16 h-16 text-green-500" />
+              <XCircleIcon v-else-if="captureStatus === 'error'" class="w-16 h-16 text-red-500" />
+              <FingerPrintIcon v-else class="w-16 h-16 text-gray-400" />
             </div>
             <p class="text-sm text-center font-medium px-2" :class="{
               'text-gray-500': captureStatus === 'idle',

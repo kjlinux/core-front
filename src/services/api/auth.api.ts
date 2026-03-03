@@ -21,4 +21,12 @@ export const authApi = {
   forgotPassword(email: string): Promise<ApiResponse<void>> {
     return apiClient.post('/auth/forgot-password', { email }).then((r) => r.data)
   },
+
+  updateProfile(data: { firstName: string; lastName: string }): Promise<ApiResponse<User>> {
+    return apiClient.put('/auth/profile', data).then((r) => r.data)
+  },
+
+  changePassword(data: { currentPassword: string; newPassword: string; newPassword_confirmation: string }): Promise<ApiResponse<void>> {
+    return apiClient.put('/auth/password', data).then((r) => r.data)
+  },
 }

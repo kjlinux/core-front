@@ -96,11 +96,6 @@ onMounted(async () => {
             <p class="text-xs text-gray-400 mt-1">Pour changer de plan, contactez le support</p>
           </div>
 
-          <div>
-            <p class="text-sm font-medium text-gray-700 mb-1">Logo de l'entreprise</p>
-            <input type="file" accept="image/*" class="text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200" />
-          </div>
-
           <AppButton variant="primary" @click="saveSettings">Enregistrer</AppButton>
         </div>
       </AppCard>

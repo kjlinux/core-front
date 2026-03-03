@@ -37,18 +37,6 @@ const biometriqueRoutes: RouteRecordRaw[] = [
         meta: { title: 'Nouvelle inscription', roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE] },
       },
       {
-        path: 'inconsistencies',
-        name: 'bio-inconsistencies',
-        component: () => import('@/pages/biometrique/InconsistenciesPage.vue'),
-        meta: { title: 'Incoherences biometriques', roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE] },
-      },
-      {
-        path: 'audit-log',
-        name: 'bio-audit',
-        component: () => import('@/pages/biometrique/AuditLogPage.vue'),
-        meta: { title: "Journal d'audit", roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE] },
-      },
-      {
         path: 'attendance',
         name: 'bio-attendance',
         component: () => import('@/pages/biometrique/BiometricAttendancePage.vue'),

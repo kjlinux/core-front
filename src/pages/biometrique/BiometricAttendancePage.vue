@@ -16,6 +16,7 @@
           @change="fetchData"
         />
         <AppButton variant="secondary" size="sm" @click="fetchData">
+          <ArrowPathIcon class="w-4 h-4 mr-1" />
           Actualiser
         </AppButton>
       </div>
@@ -26,24 +27,28 @@
       <StatCard
         title="Total pointages"
         :value="stats.totalEmployees"
+        :icon="ClipboardDocumentListIcon"
         icon-bg-class="bg-blue-100"
         icon-color-class="text-blue-600"
       />
       <StatCard
-        title="Présents"
+        title="Presents"
         :value="stats.present"
+        :icon="CheckCircleIcon"
         icon-bg-class="bg-green-100"
         icon-color-class="text-green-600"
       />
       <StatCard
         title="En retard"
         :value="stats.late"
+        :icon="ClockIcon"
         icon-bg-class="bg-orange-100"
         icon-color-class="text-orange-600"
       />
       <StatCard
-        title="Double badge détecté"
+        title="Double badge detecte"
         :value="stats.doubleBadgeCount"
+        :icon="ExclamationTriangleIcon"
         icon-bg-class="bg-red-100"
         icon-color-class="text-red-600"
       />
@@ -144,6 +149,13 @@ import AppCard from '@/components/ui/AppCard.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppSpinner from '@/components/ui/AppSpinner.vue'
+import {
+  ClipboardDocumentListIcon,
+  CheckCircleIcon,
+  ClockIcon,
+  ExclamationTriangleIcon,
+  ArrowPathIcon,
+} from '@heroicons/vue/24/outline'
 
 const attendanceStore = useAttendanceStore()
 

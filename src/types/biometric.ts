@@ -20,13 +20,3 @@ export interface FingerprintEnrollment {
   enrolledAt?: string
   templateHash: string
 }
-
-export interface BiometricAuditEntry {
-  id: string
-  userId: string
-  userName: string
-  action: string
-  target: string
-  timestamp: string
-  details?: string
-}

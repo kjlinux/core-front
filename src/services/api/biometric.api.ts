@@ -1,6 +1,6 @@
 import apiClient from './client'
 import type { ApiResponse, PaginatedResponse, PaginationParams } from '@/types'
-import type { BiometricDevice, FingerprintEnrollment, BiometricAuditEntry } from '@/types'
+import type { BiometricDevice, FingerprintEnrollment } from '@/types'
 
 export const biometricApi = {
   getDevices(params?: PaginationParams): Promise<PaginatedResponse<BiometricDevice>> {
@@ -46,11 +46,4 @@ export const biometricApi = {
     return apiClient.delete(`/biometric/enrollments/${id}`).then((r) => r.data)
   },
 
-  getInconsistencies(params?: PaginationParams): Promise<PaginatedResponse<Record<string, unknown>>> {
-    return apiClient.get('/biometric/inconsistencies', { params }).then((r) => r.data)
-  },
-
-  getAuditLog(params?: PaginationParams): Promise<PaginatedResponse<BiometricAuditEntry>> {
-    return apiClient.get('/biometric/audit-log', { params }).then((r) => r.data)
-  },
 }

@@ -83,7 +83,7 @@ function formatDate(date: string) {
 }
 
 onMounted(async () => {
-  await Promise.all([
+  await Promise.allSettled([
     store.fetchStats(),
     store.fetchAlerts(),
     store.fetchComparison(),

@@ -55,6 +55,16 @@ export const useAuthStore = defineStore('auth', () => {
     return user.value?.role === role
   }
 
+  async function updateProfile(data: { firstName: string; lastName: string }) {
+    const response = await authApi.updateProfile(data)
+    user.value = response.data
+    persistUser()
+  }
+
+  async function changePassword(data: { currentPassword: string; newPassword: string; newPassword_confirmation: string }) {
+    await authApi.changePassword(data)
+  }
+
   // On login success, also persist user
   function persistUser() {
     if (user.value) {
@@ -62,5 +72,5 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  return { user, accessToken, isLoading, isAuthenticated, userRole, userCompanyId, fullName, login, logout, loadFromStorage, hasRole, persistUser }
+  return { user, accessToken, isLoading, isAuthenticated, userRole, userCompanyId, fullName, login, logout, loadFromStorage, hasRole, persistUser, updateProfile, changePassword }
 })

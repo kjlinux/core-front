@@ -31,7 +31,7 @@ export function useRealtimeSubscriptions() {
     biometricStore.subscribeRealtime()
     feelbackDeviceStore.subscribeRealtime()
 
-    // Global toast notifications for key events
+    // Global toast + notification for attendance events
     echo.channel('attendance').listen('.attendance.recorded', (data: {
       employeeName: string
       status: string
@@ -40,13 +40,19 @@ export function useRealtimeSubscriptions() {
     }) => {
       const sourceName = data.source === 'rfid' ? 'RFID' : 'Biometrique'
       const action = data.exitTime ? 'Sortie' : 'Entree'
-      ui.addToast({
-        type: 'info',
-        title: `Pointage ${sourceName}`,
-        message: `${data.employeeName} - ${action}`,
+      const title = `Pointage ${sourceName}`
+      const message = `${data.employeeName} - ${action}`
+
+      ui.addToast({ type: 'info', title, message })
+
+      notificationStore.addLocalNotification({
+        type: 'attendance',
+        title,
+        message,
       })
     })
 
+    // Global toast + notification for feelback events
     echo.channel('feelback').listen('.feelback.received', (data: {
       level: string
       siteName: string
@@ -56,11 +62,16 @@ export function useRealtimeSubscriptions() {
         neutre: 'Neutre',
         mauvais: 'Mauvais',
       }
-      const type = data.level === 'mauvais' ? 'warning' : 'info'
-      ui.addToast({
-        type,
-        title: `Feelback - ${levelLabels[data.level] ?? data.level}`,
-        message: data.siteName,
+      const toastType = data.level === 'mauvais' ? 'warning' as const : 'info' as const
+      const title = `Feelback - ${levelLabels[data.level] ?? data.level}`
+      const message = data.siteName
+
+      ui.addToast({ type: toastType, title, message })
+
+      notificationStore.addLocalNotification({
+        type: 'feelback',
+        title,
+        message,
       })
     })
   }

@@ -7,7 +7,7 @@ import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
-import { ArrowPathIcon, TrashIcon } from '@heroicons/vue/24/outline'
+import { ArrowPathIcon, TrashIcon, PlusIcon } from '@heroicons/vue/24/outline'
 
 const router = useRouter()
 const store = useBiometricStore()
@@ -86,6 +86,7 @@ onMounted(async () => {
         <p class="text-sm text-gray-500 mt-1">Liste des empreintes digitales enregistrees</p>
       </div>
       <AppButton variant="primary" @click="router.push('/biometrique/enrollment/new')">
+        <PlusIcon class="w-4 h-4 mr-1" />
         Nouvelle inscription
       </AppButton>
     </div>

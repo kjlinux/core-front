@@ -56,10 +56,10 @@
 
         <template #actions="{ row }">
           <div class="flex gap-1" @click.stop>
-            <AppButton @click="navigateToEdit(row.id)" variant="ghost" size="sm" title="Modifier">
+            <AppButton v-if="canEdit" @click="navigateToEdit(row.id)" variant="ghost" size="sm" title="Modifier">
               <PencilIcon class="w-4 h-4" />
             </AppButton>
-            <AppButton @click="handleDuplicate(row)" variant="ghost" size="sm" title="Dupliquer">
+            <AppButton v-if="canCreate" @click="handleDuplicate(row)" variant="ghost" size="sm" title="Dupliquer">
               <DocumentDuplicateIcon class="w-4 h-4" />
             </AppButton>
             <AppButton
@@ -110,6 +110,7 @@ const deleteModalVisible = ref(false)
 const scheduleToDelete = ref<Schedule | null>(null)
 
 const canCreate = computed(() => isSuperAdmin.value || isAdminEnterprise.value)
+const canEdit = computed(() => isSuperAdmin.value || isAdminEnterprise.value)
 const canDelete = computed(() => isSuperAdmin.value || isAdminEnterprise.value)
 
 const schedules = computed(() => scheduleStore.schedules)

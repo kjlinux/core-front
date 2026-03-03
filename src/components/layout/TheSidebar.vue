@@ -31,8 +31,6 @@ import {
   UserIcon,
   ShieldCheckIcon,
   ServerStackIcon,
-  ExclamationTriangleIcon,
-  BookOpenIcon,
 } from '@heroicons/vue/24/outline'
 
 const ui = useUiStore()
@@ -203,24 +201,6 @@ const sidebarClasses = computed(() => [
           :icon="HandRaisedIcon"
           :collapsed="false"
           :active="route.path.startsWith('/biometrique/enrollment')"
-          :nested="true"
-        />
-        <TheSidebarItem
-          v-if="isAdminOrSuper"
-          label="Incoherences"
-          to="/biometrique/inconsistencies"
-          :icon="ExclamationTriangleIcon"
-          :collapsed="false"
-          :active="route.path === '/biometrique/inconsistencies'"
-          :nested="true"
-        />
-        <TheSidebarItem
-          v-if="isAdminOrSuper"
-          label="Journal d'audit"
-          to="/biometrique/audit-log"
-          :icon="BookOpenIcon"
-          :collapsed="false"
-          :active="route.path === '/biometrique/audit-log'"
           :nested="true"
         />
         <TheSidebarItem
@@ -397,7 +377,7 @@ const sidebarClasses = computed(() => [
           :nested="true"
         />
         <TheSidebarItem
-          v-if="isSuperAdmin"
+          v-if="isAdminOrSuper"
           label="Roles"
           to="/parametres/roles"
           :icon="ShieldCheckIcon"

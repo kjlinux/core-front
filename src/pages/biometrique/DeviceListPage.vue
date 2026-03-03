@@ -23,6 +23,7 @@ import {
   MoonIcon,
   SignalIcon,
   FingerPrintIcon,
+  PlusIcon,
 } from '@heroicons/vue/24/outline'
 
 const router = useRouter()
@@ -137,6 +138,7 @@ onMounted(async () => {
         <p class="text-sm text-gray-500 mt-1">Gestion des lecteurs d'empreintes digitales</p>
       </div>
       <AppButton v-if="canManage" variant="primary" @click="showAddModal = true">
+        <PlusIcon class="w-4 h-4 mr-1" />
         Ajouter un terminal
       </AppButton>
     </div>

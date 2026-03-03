@@ -5,13 +5,13 @@ import { useToast } from '@/composables/useToast'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppInput from '@/components/ui/AppInput.vue'
-import AppSelect from '@/components/ui/AppSelect.vue'
-import AppToggle from '@/components/ui/AppToggle.vue'
 
 const authStore = useAuthStore()
 const toast = useToast()
 
 const user = computed(() => authStore.user)
+const isSavingProfile = ref(false)
+const isSavingPassword = ref(false)
 
 const profileForm = ref({
   firstName: '',
@@ -23,12 +23,6 @@ const passwordForm = ref({
   currentPassword: '',
   newPassword: '',
   confirmPassword: '',
-})
-
-const preferences = ref({
-  language: 'fr',
-  timezone: 'Africa/Ouaga',
-  emailNotifications: true,
 })
 
 const roleLabels: Record<string, string> = {
@@ -43,22 +37,22 @@ const initials = computed(() => {
   return (first + last).toUpperCase()
 })
 
-const languageOptions = [
-  { label: 'Francais', value: 'fr' },
-  { label: 'English', value: 'en' },
-]
-
-const timezoneOptions = [
-  { label: 'Africa/Ouagadougou (GMT+0)', value: 'Africa/Ouaga' },
-  { label: 'Africa/Dakar (GMT+0)', value: 'Africa/Dakar' },
-  { label: 'Africa/Abidjan (GMT+0)', value: 'Africa/Abidjan' },
-]
-
-function saveProfile() {
-  toast.showSuccess('Profil mis a jour avec succes')
+async function saveProfile() {
+  isSavingProfile.value = true
+  try {
+    await authStore.updateProfile({
+      firstName: profileForm.value.firstName,
+      lastName: profileForm.value.lastName,
+    })
+    toast.showSuccess('Profil mis a jour avec succes')
+  } catch {
+    toast.showError('Erreur lors de la mise a jour du profil')
+  } finally {
+    isSavingProfile.value = false
+  }
 }
 
-function changePassword() {
+async function changePassword() {
   if (!passwordForm.value.currentPassword) {
     toast.showError('Veuillez saisir votre mot de passe actuel')
     return
@@ -67,16 +61,36 @@ function changePassword() {
     toast.showError('Le nouveau mot de passe doit contenir au moins 8 caracteres')
     return
   }
+  if (!/[A-Z]/.test(passwordForm.value.newPassword)) {
+    toast.showError('Le mot de passe doit contenir au moins une majuscule')
+    return
+  }
+  if (!/[a-z]/.test(passwordForm.value.newPassword)) {
+    toast.showError('Le mot de passe doit contenir au moins une minuscule')
+    return
+  }
+  if (!/\d/.test(passwordForm.value.newPassword)) {
+    toast.showError('Le mot de passe doit contenir au moins un chiffre')
+    return
+  }
   if (passwordForm.value.newPassword !== passwordForm.value.confirmPassword) {
     toast.showError('Les mots de passe ne correspondent pas')
     return
   }
-  toast.showSuccess('Mot de passe mis a jour avec succes')
-  passwordForm.value = { currentPassword: '', newPassword: '', confirmPassword: '' }
-}
-
-function savePreferences() {
-  toast.showSuccess('Preferences enregistrees')
+  isSavingPassword.value = true
+  try {
+    await authStore.changePassword({
+      currentPassword: passwordForm.value.currentPassword,
+      newPassword: passwordForm.value.newPassword,
+      newPassword_confirmation: passwordForm.value.confirmPassword,
+    })
+    toast.showSuccess('Mot de passe mis a jour avec succes')
+    passwordForm.value = { currentPassword: '', newPassword: '', confirmPassword: '' }
+  } catch {
+    toast.showError('Erreur lors du changement de mot de passe')
+  } finally {
+    isSavingPassword.value = false
+  }
 }
 
 onMounted(() => {
@@ -94,15 +108,12 @@ onMounted(() => {
 
     <AppCard title="Informations personnelles">
       <div class="flex items-start gap-6 mb-6">
-        <div class="w-20 h-20 rounded-full bg-primary flex items-center justify-center text-white text-2xl font-bold flex-shrink-0">
+        <div class="w-20 h-20 rounded-full bg-primary flex items-center justify-center text-white text-2xl font-bold shrink-0">
           {{ initials || 'U' }}
         </div>
         <div>
           <p class="font-semibold text-gray-900">{{ profileForm.firstName }} {{ profileForm.lastName }}</p>
           <p class="text-sm text-gray-500">{{ profileForm.email }}</p>
-          <AppButton variant="ghost" size="sm" class="mt-2" @click="toast.showInfo('Bientot disponible')">
-            Changer la photo
-          </AppButton>
         </div>
       </div>
 
@@ -127,7 +138,7 @@ onMounted(() => {
       </div>
 
       <div class="mt-6">
-        <AppButton variant="primary" @click="saveProfile">Enregistrer les modifications</AppButton>
+        <AppButton variant="primary" :loading="isSavingProfile" @click="saveProfile">Enregistrer les modifications</AppButton>
       </div>
     </AppCard>
 
@@ -143,22 +154,7 @@ onMounted(() => {
           <p>- Au moins une minuscule</p>
           <p>- Au moins un chiffre</p>
         </div>
-        <AppButton variant="primary" @click="changePassword">Modifier le mot de passe</AppButton>
-      </div>
-    </AppCard>
-
-    <AppCard title="Preferences">
-      <div class="space-y-4 max-w-sm">
-        <AppSelect v-model="preferences.language" label="Langue" :options="languageOptions" />
-        <AppSelect v-model="preferences.timezone" label="Fuseau horaire" :options="timezoneOptions" />
-        <div class="flex items-center justify-between py-2">
-          <div>
-            <p class="text-sm font-medium text-gray-700">Notifications email</p>
-            <p class="text-xs text-gray-500">Recevoir les alertes par email</p>
-          </div>
-          <AppToggle v-model="preferences.emailNotifications" />
-        </div>
-        <AppButton variant="primary" @click="savePreferences">Enregistrer les preferences</AppButton>
+        <AppButton variant="primary" :loading="isSavingPassword" @click="changePassword">Modifier le mot de passe</AppButton>
       </div>
     </AppCard>
   </div>

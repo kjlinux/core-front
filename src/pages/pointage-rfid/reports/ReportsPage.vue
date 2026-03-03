@@ -327,7 +327,7 @@ const handleExport = async () => {
 
       <!-- Data Table -->
       <AppCard :title="currentReportLabel">
-        <template #header-actions>
+        <template #actions>
           <div class="flex items-center gap-2">
             <AppSelect
               v-model="exportFormat"

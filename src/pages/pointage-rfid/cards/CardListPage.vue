@@ -74,7 +74,7 @@
               <EyeIcon class="w-4 h-4" />
             </AppButton>
             <AppButton
-              v-if="!row.employee && permissions.isSuperAdmin.value || permissions.isAdminEnterprise.value"
+              v-if="!row.employee && (permissions.isSuperAdmin.value || permissions.isAdminEnterprise.value)"
               size="sm"
               variant="ghost"
               class="text-blue-600 hover:text-blue-700"
@@ -84,7 +84,7 @@
               <CheckIcon class="w-4 h-4" />
             </AppButton>
             <AppButton
-              v-if="row.status === CardStatus.ACTIVE && permissions.isSuperAdmin.value || permissions.isAdminEnterprise.value"
+              v-if="row.status === CardStatus.ACTIVE && (permissions.isSuperAdmin.value || permissions.isAdminEnterprise.value)"
               size="sm"
               variant="ghost"
               class="text-red-600 hover:text-red-700"
@@ -94,7 +94,7 @@
               <NoSymbolIcon class="w-4 h-4" />
             </AppButton>
             <AppButton
-              v-if="row.status === CardStatus.BLOCKED && permissions.isSuperAdmin.value || permissions.isAdminEnterprise.value"
+              v-if="row.status === CardStatus.BLOCKED && (permissions.isSuperAdmin.value || permissions.isAdminEnterprise.value)"
               size="sm"
               variant="ghost"
               class="text-green-600 hover:text-green-700"

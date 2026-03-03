@@ -6,7 +6,7 @@ import { useToast } from '@/composables/useToast'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
-import { ArrowPathIcon, TrashIcon } from '@heroicons/vue/24/outline'
+import { ArrowPathIcon, TrashIcon, ArrowLeftIcon } from '@heroicons/vue/24/outline'
 
 const route = useRoute()
 const router = useRouter()
@@ -52,7 +52,8 @@ onMounted(async () => {
   <div class="space-y-6">
     <div class="flex items-center gap-4">
       <AppButton variant="ghost" @click="router.push('/biometrique/devices')">
-        &larr; Retour
+        <ArrowLeftIcon class="w-4 h-4 mr-1" />
+        Retour
       </AppButton>
       <h1 class="text-2xl font-bold text-gray-900">Detail du terminal</h1>
     </div>
