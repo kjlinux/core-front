@@ -92,10 +92,12 @@ import AppCard from '@/components/ui/AppCard.vue';
 import AppBadge from '@/components/ui/AppBadge.vue';
 import { useCardStore } from '@/stores/card.store';
 import { CardStatus } from '@/types/enums';
+import { useToast } from '@/composables/useToast';
 
 const router = useRouter();
 const route = useRoute();
 const cardStore = useCardStore();
+const toast = useToast();
 
 const loading = ref(false);
 
@@ -196,8 +198,8 @@ onMounted(async () => {
       cardStore.fetchCard(cardId.value),
       cardStore.fetchHistory(cardId.value)
     ]);
-  } catch (error) {
-    console.error('Failed to load card history:', error);
+  } catch {
+    toast.error('Erreur', 'Impossible de charger l\'historique de la carte');
   } finally {
     loading.value = false;
   }

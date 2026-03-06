@@ -12,8 +12,7 @@ export const useOrderStore = defineStore('order', () => {
   async function createOrder(data: Partial<Order>) {
     isLoading.value = true
     try {
-      const response = await orderApi.create(data)
-      const created = response.data
+      const created = await orderApi.create(data)
       orders.value.unshift(created)
       currentOrder.value = created
       return created
@@ -35,8 +34,7 @@ export const useOrderStore = defineStore('order', () => {
   async function fetchOrder(id: string) {
     isLoading.value = true
     try {
-      const response = await orderApi.getById(id)
-      currentOrder.value = response.data
+      currentOrder.value = await orderApi.getById(id)
     } finally {
       isLoading.value = false
     }
@@ -45,8 +43,7 @@ export const useOrderStore = defineStore('order', () => {
   async function cancelOrder(id: string) {
     isLoading.value = true
     try {
-      const response = await orderApi.cancel(id)
-      const updated = response.data
+      const updated = await orderApi.cancel(id)
       const index = orders.value.findIndex((o) => o.id === id)
       if (index !== -1) {
         orders.value[index] = updated
@@ -63,8 +60,7 @@ export const useOrderStore = defineStore('order', () => {
   async function initiatePayment(orderId: string, method: PaymentMethod) {
     isLoading.value = true
     try {
-      const response = await orderApi.initiatePayment(orderId, method)
-      return response.data
+      return await orderApi.initiatePayment(orderId, method)
     } finally {
       isLoading.value = false
     }

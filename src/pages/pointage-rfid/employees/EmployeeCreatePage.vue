@@ -3,7 +3,10 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useEmployeeStore } from '@/stores/employee.store'
 import { useCompanyStore } from '@/stores/company.store'
-import type { Employee, Company, Site, Department } from '@/types'
+import { useSiteStore } from '@/stores/site.store'
+import { useDepartmentStore } from '@/stores/department.store'
+import { useToast } from '@/composables/useToast'
+import type { Employee } from '@/types'
 import EmployeeForm from '@/components/forms/EmployeeForm.vue'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
@@ -11,38 +14,24 @@ import AppButton from '@/components/ui/AppButton.vue'
 const router = useRouter()
 const employeeStore = useEmployeeStore()
 const companyStore = useCompanyStore()
+const siteStore = useSiteStore()
+const departmentStore = useDepartmentStore()
+const toast = useToast()
 
 const formData = ref<Partial<Employee>>({
   isActive: true,
 })
 
-const companies = ref<Company[]>([])
-const sites = ref<Site[]>([])
-const departments = ref<Department[]>([])
 const isLoadingData = ref(false)
 
 onMounted(async () => {
   isLoadingData.value = true
   try {
-    await companyStore.fetchCompanies({ perPage: 1000 })
-    companies.value = companyStore.companies
-
-    const allSites: Site[] = []
-    const allDepartments: Department[] = []
-
-    companies.value.forEach((company) => {
-      if (company.sites) {
-        allSites.push(...company.sites)
-        company.sites.forEach((site) => {
-          if (site.departments) {
-            allDepartments.push(...site.departments)
-          }
-        })
-      }
-    })
-
-    sites.value = allSites
-    departments.value = allDepartments
+    await Promise.all([
+      companyStore.fetchCompanies({ perPage: 100 }),
+      siteStore.fetchSites({ perPage: 200 }),
+      departmentStore.fetchDepartments({ perPage: 200 }),
+    ])
   } finally {
     isLoadingData.value = false
   }
@@ -50,10 +39,11 @@ onMounted(async () => {
 
 const handleSubmit = async () => {
   try {
-    const created = await employeeStore.createEmployee(formData.value)
+    await employeeStore.createEmployee(formData.value)
+    toast.success('Succes', 'Employe cree avec succes')
     router.push({ name: 'rfid-employees' })
-  } catch (error) {
-    console.error('Error creating employee:', error)
+  } catch (error: any) {
+    toast.error('Erreur', error.message || "Erreur lors de la creation de l'employe")
   }
 }
 
@@ -80,9 +70,9 @@ const handleCancel = () => {
       <div v-else>
         <EmployeeForm
           v-model="formData"
-          :companies="companies"
-          :sites="sites"
-          :departments="departments"
+          :companies="companyStore.companies"
+          :sites="siteStore.sites"
+          :departments="departmentStore.departments"
           :loading="employeeStore.isLoading"
           @submit="handleSubmit"
         />
@@ -90,6 +80,9 @@ const handleCancel = () => {
         <div class="mt-6 flex justify-end space-x-3">
           <AppButton variant="secondary" @click="handleCancel" :disabled="employeeStore.isLoading">
             Annuler
+          </AppButton>
+          <AppButton :loading="employeeStore.isLoading" @click="handleSubmit">
+            Creer l'employe
           </AppButton>
         </div>
       </div>

@@ -23,7 +23,7 @@ export const cardApi = {
   },
 
   block(cardId: string, reason?: string): Promise<RfidCard> {
-    return apiClient.patch(`/cards/${cardId}/block`, { reason }).then((r) => r.data?.data ?? r.data)
+    return apiClient.patch(`/cards/${cardId}/block`, { blockReason: reason }).then((r) => r.data?.data ?? r.data)
   },
 
   unblock(cardId: string): Promise<RfidCard> {

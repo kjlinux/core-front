@@ -29,19 +29,37 @@ const localValue = computed({
 })
 
 const updateField = (field: keyof Employee, value: any) => {
-  localValue.value = { ...localValue.value, [field]: value }
+  const updated = { ...localValue.value, [field]: value }
+  if (field === 'companyId') {
+    updated.siteId = ''
+    updated.departmentId = ''
+  }
+  if (field === 'siteId') {
+    updated.departmentId = ''
+  }
+  localValue.value = updated
 }
 
 const companyOptions = computed(() =>
   props.companies.map((c) => ({ label: c.name, value: c.id }))
 )
 
+const filteredSites = computed(() => {
+  if (!localValue.value.companyId) return []
+  return props.sites.filter(s => s.companyId === localValue.value.companyId)
+})
+
 const siteOptions = computed(() =>
-  props.sites.map((s) => ({ label: s.name, value: s.id }))
+  filteredSites.value.map((s) => ({ label: s.name, value: s.id }))
 )
 
+const filteredDepartments = computed(() => {
+  if (!localValue.value.siteId) return []
+  return props.departments.filter(d => d.siteId === localValue.value.siteId)
+})
+
 const departmentOptions = computed(() =>
-  props.departments.map((d) => ({ label: d.name, value: d.id }))
+  filteredDepartments.value.map((d) => ({ label: d.name, value: d.id }))
 )
 
 const validate = (): boolean => {
@@ -65,8 +83,24 @@ const validate = (): boolean => {
     errors.value.employeeNumber = 'Le matricule est requis'
   }
 
+  if (!localValue.value.phone?.trim()) {
+    errors.value.phone = 'Le telephone est requis'
+  }
+
+  if (!localValue.value.position?.trim()) {
+    errors.value.position = 'Le poste est requis'
+  }
+
+  if (!localValue.value.hireDate) {
+    errors.value.hireDate = "La date d'embauche est requise"
+  }
+
   if (!localValue.value.companyId) {
     errors.value.companyId = "L'entreprise est requise"
+  }
+
+  if (!localValue.value.departmentId) {
+    errors.value.departmentId = 'Le departement est requis'
   }
 
   return Object.keys(errors.value).length === 0
@@ -110,7 +144,7 @@ const handleSubmit = () => {
         />
       </FormRow>
 
-      <FormRow label="Téléphone" :error="errors.phone">
+      <FormRow label="Téléphone" :required="true" :error="errors.phone">
         <AppInput
           :model-value="localValue.phone || ''"
           @update:model-value="updateField('phone', $event)"
@@ -129,7 +163,7 @@ const handleSubmit = () => {
         />
       </FormRow>
 
-      <FormRow label="Poste" :error="errors.position">
+      <FormRow label="Poste" :required="true" :error="errors.position">
         <AppInput
           :model-value="localValue.position || ''"
           @update:model-value="updateField('position', $event)"
@@ -160,7 +194,7 @@ const handleSubmit = () => {
         />
       </FormRow>
 
-      <FormRow label="Département" :error="errors.departmentId">
+      <FormRow label="Département" :required="true" :error="errors.departmentId">
         <AppSelect
           :model-value="localValue.departmentId"
           @update:model-value="updateField('departmentId', $event)"
@@ -170,7 +204,7 @@ const handleSubmit = () => {
         />
       </FormRow>
 
-      <FormRow label="Date d'embauche" :error="errors.hireDate">
+      <FormRow label="Date d'embauche" :required="true" :error="errors.hireDate">
         <AppInput
           :model-value="localValue.hireDate || ''"
           @update:model-value="updateField('hireDate', $event)"
@@ -189,10 +223,5 @@ const handleSubmit = () => {
       </FormRow>
     </FormSection>
 
-    <div class="flex justify-end">
-      <AppButton type="submit" :loading="loading">
-        Enregistrer
-      </AppButton>
-    </div>
   </form>
 </template>

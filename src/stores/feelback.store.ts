@@ -14,8 +14,7 @@ export const useFeelbackStore = defineStore('feelback', () => {
   async function fetchStats(params?: Record<string, unknown>) {
     isLoading.value = true
     try {
-      const response = await feelbackApi.getStats(params)
-      stats.value = response?.data ?? null
+      stats.value = await feelbackApi.getStats(params)
     } finally {
       isLoading.value = false
     }
@@ -25,7 +24,7 @@ export const useFeelbackStore = defineStore('feelback', () => {
     isLoading.value = true
     try {
       const response = await feelbackApi.getEntries(params)
-      entries.value = response?.data ?? []
+      entries.value = response.data
     } finally {
       isLoading.value = false
     }
@@ -34,8 +33,8 @@ export const useFeelbackStore = defineStore('feelback', () => {
   async function fetchStatsByAgency(agencyId: string, params?: Record<string, unknown>) {
     isLoading.value = true
     try {
-      const response = await feelbackApi.getStatsByAgency(agencyId, params)
-      statsByAgency.value = response?.data ? [response.data] : []
+      const result = await feelbackApi.getStatsByAgency(agencyId, params)
+      statsByAgency.value = [result]
     } finally {
       isLoading.value = false
     }
@@ -45,7 +44,7 @@ export const useFeelbackStore = defineStore('feelback', () => {
     isLoading.value = true
     try {
       const response = await feelbackApi.getAlerts()
-      alerts.value = response?.data ?? []
+      alerts.value = response.data
     } finally {
       isLoading.value = false
     }
@@ -56,8 +55,7 @@ export const useFeelbackStore = defineStore('feelback', () => {
   async function fetchComparison(params?: Record<string, unknown>) {
     isLoading.value = true
     try {
-      const response = await feelbackApi.getComparison(params)
-      comparison.value = response?.data ?? []
+      comparison.value = await feelbackApi.getComparison(params)
     } finally {
       isLoading.value = false
     }

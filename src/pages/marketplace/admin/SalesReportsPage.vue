@@ -38,8 +38,7 @@ async function fetchReport() {
     const params: Record<string, string> = {}
     if (startDate.value) params.start_date = startDate.value
     if (endDate.value) params.end_date = endDate.value
-    const response = await salesReportApi.getReport(params)
-    report.value = response.data
+    report.value = await salesReportApi.getReport(params)
   } catch {
     toast.showError('Erreur lors du chargement du rapport')
   } finally {

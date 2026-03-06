@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useRfidDeviceStore } from '@/stores/rfid-device.store'
 import { useCompanyStore } from '@/stores/company.store'
+import { useSiteStore } from '@/stores/site.store'
 import { usePermissions } from '@/composables/usePermissions'
 import { useToast } from '@/composables/useToast'
 import { mqttApi } from '@/services/api/mqtt.api'
@@ -26,6 +27,7 @@ import {
 const router = useRouter()
 const deviceStore = useRfidDeviceStore()
 const companyStore = useCompanyStore()
+const siteStore = useSiteStore()
 const permissions = usePermissions()
 const toast = useToast()
 
@@ -52,6 +54,13 @@ const companyOptions = computed(() => [
   { label: 'Toutes les entreprises', value: '' },
   ...companyStore.companies.map((c) => ({ label: c.name, value: c.id })),
 ])
+
+const siteOptionsForForm = computed(() => {
+  if (!newDevice.value.companyId) return []
+  return siteStore.sites
+    .filter(s => s.companyId === newDevice.value.companyId)
+    .map(s => ({ label: s.name, value: s.id }))
+})
 
 const filteredDevices = computed(() => {
   let list = deviceStore.devices
@@ -120,7 +129,11 @@ async function handleAddDevice() {
 }
 
 onMounted(async () => {
-  await Promise.all([deviceStore.fetchDevices(), companyStore.fetchCompanies()])
+  await Promise.all([
+    deviceStore.fetchDevices(),
+    companyStore.fetchCompanies({ perPage: 100 }),
+    siteStore.fetchSites({ perPage: 200 }),
+  ])
 })
 </script>
 
@@ -248,8 +261,19 @@ onMounted(async () => {
       <div class="space-y-4">
         <AppInput v-model="newDevice.name" label="Nom du terminal *" placeholder="Ex: Lecteur Entree principale" />
         <AppInput v-model="newDevice.serialNumber" label="Numero de serie *" placeholder="Ex: RFID-2026-001" />
-        <AppSelect v-model="newDevice.companyId" label="Entreprise" :options="companyOptions" />
-        <AppInput v-model="newDevice.siteId" label="ID du site" />
+        <AppSelect
+          v-model="newDevice.companyId"
+          label="Entreprise"
+          :options="companyOptions"
+          @update:model-value="newDevice.siteId = ''"
+        />
+        <AppSelect
+          v-model="newDevice.siteId"
+          label="Site"
+          :options="siteOptionsForForm"
+          placeholder="Selectionner un site"
+          :disabled="!newDevice.companyId"
+        />
       </div>
       <template #footer>
         <div class="flex justify-end gap-3">

@@ -17,12 +17,6 @@ const adjustForm = ref({ newQuantity: 0, reason: '' })
 
 const hasLowStock = computed(() => store.products.some((p) => p.stockQuantity < 10))
 
-const stockHistory = [
-  { date: '2024-11-20', product: 'Carte RFID Standard', oldQty: 50, newQty: 100, reason: 'Reapprovisionnement', user: 'Admin' },
-  { date: '2024-11-18', product: 'Pack Enterprise Pro', oldQty: 15, newQty: 5, reason: 'Ventes', user: 'Systeme' },
-  { date: '2024-11-15', product: 'Carte Personnalisee', oldQty: 80, newQty: 150, reason: 'Nouveau stock', user: 'Admin' },
-]
-
 function getStockStatus(qty: number) {
   if (qty === 0) return { label: 'Rupture', variant: 'danger' }
   if (qty <= 10) return { label: 'Critique', variant: 'danger' }
@@ -48,10 +42,6 @@ async function saveAdjustment() {
   } catch {
     toast.showError("Erreur lors de l'ajustement")
   }
-}
-
-function formatDate(date: string) {
-  return new Date(date).toLocaleDateString('fr-FR')
 }
 
 onMounted(async () => {
@@ -82,7 +72,6 @@ onMounted(async () => {
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Produit</th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Categorie</th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stock actuel</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Quantite min.</th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Statut</th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
             </tr>
@@ -99,7 +88,6 @@ onMounted(async () => {
               <td class="px-4 py-3 text-sm font-bold" :class="product.stockQuantity < 10 ? 'text-red-600' : 'text-gray-900'">
                 {{ product.stockQuantity }}
               </td>
-              <td class="px-4 py-3 text-sm text-gray-600">{{ product.minQuantity }}</td>
               <td class="px-4 py-3">
                 <AppBadge :variant="(getStockStatus(product.stockQuantity).variant) as any">
                   {{ getStockStatus(product.stockQuantity).label }}
@@ -110,35 +98,6 @@ onMounted(async () => {
                   Ajuster stock
                 </AppButton>
               </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </AppCard>
-
-    <AppCard title="Historique des ajustements">
-      <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-          <thead class="bg-gray-50">
-            <tr>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Produit</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ancien stock</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nouveau stock</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Raison</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Utilisateur</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-100">
-            <tr v-for="entry in stockHistory" :key="entry.date + entry.product" class="hover:bg-gray-50">
-              <td class="px-4 py-3 text-sm text-gray-600">{{ formatDate(entry.date) }}</td>
-              <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ entry.product }}</td>
-              <td class="px-4 py-3 text-sm text-gray-600">{{ entry.oldQty }}</td>
-              <td class="px-4 py-3 text-sm font-semibold" :class="entry.newQty > entry.oldQty ? 'text-green-600' : 'text-red-600'">
-                {{ entry.newQty }}
-              </td>
-              <td class="px-4 py-3 text-sm text-gray-600">{{ entry.reason }}</td>
-              <td class="px-4 py-3 text-sm text-gray-600">{{ entry.user }}</td>
             </tr>
           </tbody>
         </table>

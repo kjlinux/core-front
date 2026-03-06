@@ -28,9 +28,9 @@ export const useDepartmentStore = defineStore('department', () => {
   async function fetchDepartment(id: string) {
     isLoading.value = true
     try {
-      const response = await departmentApi.getById(id)
-      currentDepartment.value = response.data
-      return response.data
+      const dept = await departmentApi.getById(id)
+      currentDepartment.value = dept
+      return dept
     } finally {
       isLoading.value = false
     }
@@ -39,9 +39,9 @@ export const useDepartmentStore = defineStore('department', () => {
   async function createDepartment(data: Partial<Department>) {
     isLoading.value = true
     try {
-      const response = await departmentApi.create(data)
-      departments.value.push(response.data)
-      return response.data
+      const created = await departmentApi.create(data)
+      departments.value.push(created)
+      return created
     } finally {
       isLoading.value = false
     }
@@ -50,15 +50,15 @@ export const useDepartmentStore = defineStore('department', () => {
   async function updateDepartment(id: string, data: Partial<Department>) {
     isLoading.value = true
     try {
-      const response = await departmentApi.update(id, data)
+      const updated = await departmentApi.update(id, data)
       const index = departments.value.findIndex((d) => d.id === id)
       if (index !== -1) {
-        departments.value[index] = response.data
+        departments.value[index] = updated
       }
       if (currentDepartment.value?.id === id) {
-        currentDepartment.value = response.data
+        currentDepartment.value = updated
       }
-      return response.data
+      return updated
     } finally {
       isLoading.value = false
     }

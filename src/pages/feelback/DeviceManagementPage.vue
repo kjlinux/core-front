@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useFeelbackDeviceStore } from '@/stores/feelback-device.store'
 import { useCompanyStore } from '@/stores/company.store'
+import { useSiteStore } from '@/stores/site.store'
 import { usePermissions } from '@/composables/usePermissions'
 import { useToast } from '@/composables/useToast'
 import AppCard from '@/components/ui/AppCard.vue'
@@ -14,6 +15,7 @@ import { TrashIcon } from '@heroicons/vue/24/outline'
 
 const deviceStore = useFeelbackDeviceStore()
 const companyStore = useCompanyStore()
+const siteStore = useSiteStore()
 const permissions = usePermissions()
 const toast = useToast()
 
@@ -50,6 +52,16 @@ const filteredDevices = computed(() => {
   return list
 })
 
+const siteOptionsForForm = computed(() => {
+  const filtered = newDevice.value.companyId
+    ? siteStore.sites.filter((s) => s.companyId === newDevice.value.companyId)
+    : siteStore.sites
+  return [
+    { label: 'Selectionner un site', value: '' },
+    ...filtered.map((s) => ({ label: s.name, value: s.id })),
+  ]
+})
+
 const canManage = computed(() => permissions.isSuperAdmin.value || permissions.isAdminEnterprise.value)
 
 function formatDate(date: string) {
@@ -81,7 +93,7 @@ async function handleAddDevice() {
 }
 
 onMounted(async () => {
-  await Promise.all([deviceStore.fetchDevices(), companyStore.fetchCompanies()])
+  await Promise.all([deviceStore.fetchDevices(), companyStore.fetchCompanies(), siteStore.fetchSites()])
 })
 </script>
 
@@ -148,8 +160,8 @@ onMounted(async () => {
     <AppModal v-model="showAddModal" title="Ajouter un terminal Feelback" size="md">
       <div class="space-y-4">
         <AppInput v-model="newDevice.serialNumber" label="Numero de serie *" placeholder="Ex: FLB-2024-001" />
-        <AppSelect v-model="newDevice.companyId" label="Entreprise" :options="companyOptions" />
-        <AppInput v-model="newDevice.siteId" label="ID du site" />
+        <AppSelect v-model="newDevice.companyId" label="Entreprise" :options="companyOptions" @update:model-value="newDevice.siteId = ''" />
+        <AppSelect v-model="newDevice.siteId" label="Site" :options="siteOptionsForForm" />
       </div>
       <template #footer>
         <div class="flex justify-end gap-3">

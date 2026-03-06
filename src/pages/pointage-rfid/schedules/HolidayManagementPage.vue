@@ -127,6 +127,7 @@ import AppModal from '@/components/ui/AppModal.vue'
 import AppConfirmDialog from '@/components/ui/AppConfirmDialog.vue'
 import { useScheduleStore } from '@/stores/schedule.store'
 import { usePermissions } from '@/composables/usePermissions'
+import { useToast } from '@/composables/useToast'
 import { formatDate } from '@/utils/format'
 import type { Holiday } from '@/types/schedule'
 import dayjs from 'dayjs'
@@ -134,6 +135,7 @@ import { PencilIcon, TrashIcon, PlusIcon } from '@heroicons/vue/24/outline'
 
 const scheduleStore = useScheduleStore()
 const { isSuperAdmin, isAdminEnterprise } = usePermissions()
+const toast = useToast()
 
 const loading = ref(false)
 const formModalVisible = ref(false)
@@ -215,8 +217,8 @@ const handleSubmit = async () => {
     }
     formModalVisible.value = false
     resetForm()
-  } catch (error) {
-    console.error('Failed to save holiday:', error)
+  } catch (error: unknown) {
+    toast.error('Erreur', (error as Error)?.message || 'Erreur lors de la sauvegarde du jour ferie')
   }
 }
 
@@ -231,8 +233,8 @@ const confirmDelete = async () => {
       await scheduleStore.deleteHoliday(holidayToDelete.value.id)
       deleteModalVisible.value = false
       holidayToDelete.value = null
-    } catch (error) {
-      console.error('Failed to delete holiday:', error)
+    } catch (error: unknown) {
+      toast.error('Erreur', (error as Error)?.message || 'Erreur lors de la suppression du jour ferie')
     }
   }
 }

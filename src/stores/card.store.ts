@@ -55,6 +55,23 @@ export const useCardStore = defineStore('card', () => {
     }
   }
 
+  async function unassignCard(cardId: string) {
+    isLoading.value = true
+    try {
+      const updated = await cardApi.unassign(cardId)
+      const index = cards.value.findIndex((c) => c.id === cardId)
+      if (index !== -1) {
+        cards.value[index] = updated
+      }
+      if (currentCard.value?.id === cardId) {
+        currentCard.value = updated
+      }
+      return updated
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   async function blockCard(id: string, reason: string) {
     isLoading.value = true
     try {
@@ -98,5 +115,5 @@ export const useCardStore = defineStore('card', () => {
     }
   }
 
-  return { cards, currentCard, cardHistory, isLoading, fetchCards, fetchCard, registerCard, assignCard, blockCard, unblockCard, fetchHistory }
+  return { cards, currentCard, cardHistory, isLoading, fetchCards, fetchCard, registerCard, assignCard, unassignCard, blockCard, unblockCard, fetchHistory }
 })

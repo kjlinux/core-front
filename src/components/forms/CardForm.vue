@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import type { RfidCard, Employee } from '@/types'
+import type { RfidCard, Employee, Company } from '@/types'
 import FormSection from './FormSection.vue'
 import FormRow from './FormRow.vue'
 import AppInput from '@/components/ui/AppInput.vue'
@@ -9,7 +9,8 @@ import AppButton from '@/components/ui/AppButton.vue'
 
 const props = defineProps<{
   modelValue: Partial<RfidCard>
-  employees: Employee[]
+  companies: Company[]
+  employees?: Employee[]
   loading: boolean
 }>()
 
@@ -29,8 +30,12 @@ const updateField = (field: keyof RfidCard, value: any) => {
   localValue.value = { ...localValue.value, [field]: value }
 }
 
+const companyOptions = computed(() =>
+  props.companies.map((c) => ({ label: c.name, value: c.id }))
+)
+
 const employeeOptions = computed(() =>
-  props.employees.map((e) => ({
+  (props.employees || []).map((e) => ({
     label: `${e.firstName} ${e.lastName} (${e.employeeNumber})`,
     value: e.id
   }))
@@ -51,12 +56,8 @@ const validate = (): boolean => {
     errors.value.uid = 'Le UID est requis'
   }
 
-  if (!localValue.value.employeeId) {
-    errors.value.employeeId = "L'employé est requis"
-  }
-
-  if (!localValue.value.status) {
-    errors.value.status = 'Le statut est requis'
+  if (!localValue.value.companyId) {
+    errors.value.companyId = "L'entreprise est requise"
   }
 
   return Object.keys(errors.value).length === 0
@@ -87,22 +88,12 @@ const handleSubmit = () => {
         />
       </FormRow>
 
-      <FormRow label="Employé" :required="true" :error="errors.employeeId">
+      <FormRow label="Entreprise" :required="true" :error="errors.companyId">
         <AppSelect
-          :model-value="localValue.employeeId"
-          @update:model-value="updateField('employeeId', $event)"
-          :options="employeeOptions"
-          placeholder="Sélectionner un employé"
-          :disabled="loading"
-        />
-      </FormRow>
-
-      <FormRow label="Statut" :required="true" :error="errors.status">
-        <AppSelect
-          :model-value="localValue.status || 'active'"
-          @update:model-value="updateField('status', $event)"
-          :options="statusOptions"
-          placeholder="Sélectionner un statut"
+          :model-value="localValue.companyId"
+          @update:model-value="updateField('companyId', $event)"
+          :options="companyOptions"
+          placeholder="Selectionner une entreprise"
           :disabled="loading"
         />
       </FormRow>

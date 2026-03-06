@@ -255,6 +255,15 @@ const sidebarClasses = computed(() => [
           :nested="true"
         />
         <TheSidebarItem
+          v-if="isAdminOrSuper"
+          label="Alertes"
+          to="/feelback/alerts"
+          :icon="BellAlertIcon"
+          :collapsed="false"
+          :active="route.path.startsWith('/feelback/alerts')"
+          :nested="true"
+        />
+        <TheSidebarItem
           label="Comparaison sites"
           to="/feelback/comparison"
           :icon="ChartBarIcon"

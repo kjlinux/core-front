@@ -12,9 +12,9 @@ export const useScheduleStore = defineStore('schedule', () => {
   async function fetchScheduleById(id: string) {
     isLoading.value = true
     try {
-      const response = await scheduleApi.getById(id)
-      currentSchedule.value = response.data
-      return response.data
+      const schedule = await scheduleApi.getById(id)
+      currentSchedule.value = schedule
+      return schedule
     } finally {
       isLoading.value = false
     }
@@ -33,8 +33,7 @@ export const useScheduleStore = defineStore('schedule', () => {
   async function createSchedule(data: Partial<Schedule>) {
     isLoading.value = true
     try {
-      const response = await scheduleApi.create(data)
-      const created = response.data
+      const created = await scheduleApi.create(data)
       schedules.value.push(created)
       return created
     } finally {
@@ -45,8 +44,7 @@ export const useScheduleStore = defineStore('schedule', () => {
   async function updateSchedule(id: string, data: Partial<Schedule>) {
     isLoading.value = true
     try {
-      const response = await scheduleApi.update(id, data)
-      const updated = response.data
+      const updated = await scheduleApi.update(id, data)
       const index = schedules.value.findIndex((s) => s.id === id)
       if (index !== -1) {
         schedules.value[index] = updated
@@ -86,8 +84,7 @@ export const useScheduleStore = defineStore('schedule', () => {
   async function createHoliday(data: Partial<Holiday>) {
     isLoading.value = true
     try {
-      const response = await scheduleApi.createHoliday(data)
-      const created = response.data
+      const created = await scheduleApi.createHoliday(data)
       holidays.value.push(created)
       return created
     } finally {

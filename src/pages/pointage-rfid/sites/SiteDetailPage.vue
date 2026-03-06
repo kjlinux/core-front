@@ -123,6 +123,7 @@ import { useCompanyStore } from '@/stores/company.store'
 import { useDepartmentStore } from '@/stores/department.store'
 import { useEmployeeStore } from '@/stores/employee.store'
 import { usePermissions } from '@/composables/usePermissions'
+import { useToast } from '@/composables/useToast'
 import DataTable from '@/components/data-display/DataTable.vue'
 import StatCard from '@/components/data-display/StatCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
@@ -140,6 +141,7 @@ const companyStore = useCompanyStore()
 const departmentStore = useDepartmentStore()
 const employeeStore = useEmployeeStore()
 const permissions = usePermissions()
+const toast = useToast()
 
 const showCreateDepartmentModal = ref(false)
 const isSubmitting = ref(false)
@@ -235,8 +237,8 @@ async function handleCreateDepartment() {
     })
     closeCreateDepartmentModal()
     await siteStore.fetchSite(siteId.value)
-  } catch (error) {
-    console.error('Error creating department:', error)
+  } catch (error: unknown) {
+    toast.error('Erreur', (error as Error)?.message || 'Erreur lors de la creation du departement')
   } finally {
     isSubmitting.value = false
   }

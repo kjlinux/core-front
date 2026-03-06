@@ -24,8 +24,7 @@ export const useBiometricStore = defineStore('biometric', () => {
   async function fetchDevice(id: string) {
     isLoading.value = true
     try {
-      const response = await biometricApi.getDevice(id)
-      const device = (response.data ?? response) as BiometricDevice
+      const device = await biometricApi.getDevice(id)
       currentDevice.value = device
       return device
     } finally {
@@ -46,8 +45,7 @@ export const useBiometricStore = defineStore('biometric', () => {
   async function startEnrollment(data: Partial<FingerprintEnrollment>) {
     isLoading.value = true
     try {
-      const response = await biometricApi.startEnrollment(data)
-      const enrollment = (response.data ?? response) as FingerprintEnrollment
+      const enrollment = await biometricApi.startEnrollment(data)
       enrollments.value.push(enrollment)
       return enrollment
     } finally {
@@ -56,11 +54,7 @@ export const useBiometricStore = defineStore('biometric', () => {
   }
 
   async function enrollViaDevice(employeeId: string, deviceId: string) {
-    const response = await biometricApi.enrollViaDevice(employeeId, deviceId)
-    // L'interceptor + .then(r => r.data) dans l'API unwrap deja { success, data }
-    // response est directement l'objet FingerprintEnrollment (ou { data: ... } pour paginated)
-    const enrollment = response.data ?? response
-    return enrollment as FingerprintEnrollment
+    return await biometricApi.enrollViaDevice(employeeId, deviceId)
   }
 
   async function pollEnrollmentStatus(
@@ -80,8 +74,7 @@ export const useBiometricStore = defineStore('biometric', () => {
         }
 
         try {
-          const response = await biometricApi.getEnrollment(enrollmentId)
-          const enrollment = (response.data ?? response) as FingerprintEnrollment
+          const enrollment = await biometricApi.getEnrollment(enrollmentId)
           onUpdate(enrollment)
 
           if (enrollment.status === 'enrolled') {

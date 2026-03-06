@@ -183,6 +183,10 @@ const generateReport = async () => {
     error('Champs requis', 'Veuillez selectionner une periode')
     return
   }
+  if (isSuperAdmin.value && !selectedCompany.value) {
+    error('Champs requis', 'Veuillez selectionner une entreprise')
+    return
+  }
   loading.value = true
   try {
     const params: Record<string, string> = {
@@ -285,7 +289,7 @@ const handleExport = async () => {
           <AppSelect
             v-model="selectedCompany"
             :options="companies.map(c => ({ label: c.name, value: c.id }))"
-            placeholder="Toutes les entreprises"
+            placeholder="Selectionner une entreprise"
           />
         </div>
         <div v-if="sites.length > 0">

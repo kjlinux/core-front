@@ -1,5 +1,5 @@
 import apiClient from './client'
-import type { ApiResponse, PaginatedResponse, PaginationParams } from '@/types'
+import type { PaginatedResponse, PaginationParams } from '@/types'
 import type { FeelbackDevice } from '@/types'
 
 export const feelbackDeviceApi = {
@@ -7,19 +7,19 @@ export const feelbackDeviceApi = {
     return apiClient.get('/feelback/devices', { params }).then((r) => r.data)
   },
 
-  getById(id: string): Promise<ApiResponse<FeelbackDevice>> {
+  getById(id: string): Promise<FeelbackDevice> {
     return apiClient.get(`/feelback/devices/${id}`).then((r) => r.data)
   },
 
-  register(data: Partial<FeelbackDevice>): Promise<ApiResponse<FeelbackDevice>> {
+  register(data: Partial<FeelbackDevice>): Promise<FeelbackDevice> {
     return apiClient.post('/feelback/devices', data).then((r) => r.data)
   },
 
-  update(id: string, data: Partial<FeelbackDevice>): Promise<ApiResponse<FeelbackDevice>> {
+  update(id: string, data: Partial<FeelbackDevice>): Promise<FeelbackDevice> {
     return apiClient.put(`/feelback/devices/${id}`, data).then((r) => r.data)
   },
 
-  delete(id: string): Promise<ApiResponse<void>> {
+  delete(id: string): Promise<void> {
     return apiClient.delete(`/feelback/devices/${id}`).then((r) => r.data)
   },
 

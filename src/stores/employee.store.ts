@@ -25,7 +25,9 @@ export const useEmployeeStore = defineStore('employee', () => {
     }
     isLoading.value = true
     try {
-      employees.value = await employeeApi.getAll(filters.value)
+      const response = await employeeApi.getAll(filters.value)
+      employees.value = response.data
+      pagination.value = response.meta
     } finally {
       isLoading.value = false
     }
@@ -43,9 +45,7 @@ export const useEmployeeStore = defineStore('employee', () => {
   async function createEmployee(data: Partial<Employee>) {
     isLoading.value = true
     try {
-      const created = await employeeApi.create(data)
-      employees.value.push(created)
-      return created
+      return await employeeApi.create(data)
     } finally {
       isLoading.value = false
     }
@@ -81,5 +81,22 @@ export const useEmployeeStore = defineStore('employee', () => {
     }
   }
 
-  return { employees, currentEmployee, isLoading, filters, pagination, fetchEmployees, fetchEmployee, createEmployee, updateEmployee, deleteEmployee }
+  async function toggleActive(id: string) {
+    isLoading.value = true
+    try {
+      const updated = await employeeApi.toggleActive(id)
+      const index = employees.value.findIndex((e) => e.id === id)
+      if (index !== -1) {
+        employees.value[index] = updated
+      }
+      if (currentEmployee.value?.id === id) {
+        currentEmployee.value = updated
+      }
+      return updated
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  return { employees, currentEmployee, isLoading, filters, pagination, fetchEmployees, fetchEmployee, createEmployee, updateEmployee, deleteEmployee, toggleActive }
 })

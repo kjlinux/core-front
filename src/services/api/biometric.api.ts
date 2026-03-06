@@ -1,5 +1,5 @@
 import apiClient from './client'
-import type { ApiResponse, PaginatedResponse, PaginationParams } from '@/types'
+import type { PaginatedResponse, PaginationParams } from '@/types'
 import type { BiometricDevice, FingerprintEnrollment } from '@/types'
 
 export const biometricApi = {
@@ -7,19 +7,19 @@ export const biometricApi = {
     return apiClient.get('/biometric/devices', { params }).then((r) => r.data)
   },
 
-  getDevice(id: string): Promise<ApiResponse<BiometricDevice>> {
+  getDevice(id: string): Promise<BiometricDevice> {
     return apiClient.get(`/biometric/devices/${id}`).then((r) => r.data)
   },
 
-  createDevice(data: Partial<BiometricDevice>): Promise<ApiResponse<BiometricDevice>> {
+  createDevice(data: Partial<BiometricDevice>): Promise<BiometricDevice> {
     return apiClient.post('/biometric/devices', data).then((r) => r.data)
   },
 
-  deleteDevice(id: string): Promise<ApiResponse<void>> {
+  deleteDevice(id: string): Promise<void> {
     return apiClient.delete(`/biometric/devices/${id}`).then((r) => r.data)
   },
 
-  syncDevice(id: string): Promise<ApiResponse<void>> {
+  syncDevice(id: string): Promise<void> {
     return apiClient.post(`/biometric/devices/${id}/sync`).then((r) => r.data)
   },
 
@@ -27,22 +27,22 @@ export const biometricApi = {
     return apiClient.get('/biometric/enrollments', { params }).then((r) => r.data)
   },
 
-  startEnrollment(data: Partial<FingerprintEnrollment>): Promise<ApiResponse<FingerprintEnrollment>> {
+  startEnrollment(data: Partial<FingerprintEnrollment>): Promise<FingerprintEnrollment> {
     return apiClient.post('/biometric/enrollments', data).then((r) => r.data)
   },
 
-  enrollViaDevice(employeeId: string, deviceId: string): Promise<ApiResponse<FingerprintEnrollment>> {
+  enrollViaDevice(employeeId: string, deviceId: string): Promise<FingerprintEnrollment> {
     return apiClient.post('/biometric/enrollments/enroll', {
-      employee_id: employeeId,
-      device_id: deviceId,
+      employeeId,
+      deviceId,
     }).then((r) => r.data)
   },
 
-  getEnrollment(id: string): Promise<ApiResponse<FingerprintEnrollment>> {
+  getEnrollment(id: string): Promise<FingerprintEnrollment> {
     return apiClient.get(`/biometric/enrollments/${id}`).then((r) => r.data)
   },
 
-  deleteEnrollment(id: string): Promise<ApiResponse<void>> {
+  deleteEnrollment(id: string): Promise<void> {
     return apiClient.delete(`/biometric/enrollments/${id}`).then((r) => r.data)
   },
 

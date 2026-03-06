@@ -26,7 +26,6 @@ onMounted(async () => {
         email: companyStore.currentCompany.email,
         phone: companyStore.currentCompany.phone,
         address: companyStore.currentCompany.address,
-        logo: companyStore.currentCompany.logo,
         isActive: companyStore.currentCompany.isActive,
         subscription: companyStore.currentCompany.subscription,
       }

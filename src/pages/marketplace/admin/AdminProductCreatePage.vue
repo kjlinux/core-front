@@ -59,21 +59,9 @@ async function handleSubmit() {
       <div class="space-y-4 max-w-xl">
         <AppInput v-model="form.name" label="Nom du produit *" placeholder="Ex: Carte RFID Standard 13.56 MHz" />
         <AppTextarea v-model="form.description" label="Description *" placeholder="Description detaillee du produit..." :rows="3" />
-        <AppSelect v-model="form.category" label="Categorie" :options="categoryOptions" />
         <div class="grid grid-cols-2 gap-4">
-          <AppInput v-model.number="form.price" label="Prix *" type="number" :min="0" />
-          <AppInput v-model="form.currency" label="Devise" placeholder="FCFA" />
-        </div>
-        <div class="grid grid-cols-2 gap-4">
+          <AppInput v-model.number="form.price" label="Prix (FCFA) *" type="number" :min="0" />
           <AppInput v-model.number="form.stockQuantity" label="Stock initial" type="number" :min="0" />
-          <AppInput v-model.number="form.minQuantity" label="Quantite minimum" type="number" :min="1" />
-        </div>
-        <div class="flex items-center justify-between py-2">
-          <div>
-            <p class="text-sm font-medium text-gray-800">Personnalisable</p>
-            <p class="text-xs text-gray-500">Le client peut personnaliser ce produit</p>
-          </div>
-          <AppToggle v-model="form.customizable" />
         </div>
         <div class="flex items-center justify-between py-2">
           <div>

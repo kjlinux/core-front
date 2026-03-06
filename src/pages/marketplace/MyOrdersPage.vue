@@ -95,10 +95,7 @@ onMounted(async () => {
 
 <template>
   <div class="space-y-6">
-    <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold text-gray-900">Mes commandes</h1>
-      <AppButton variant="secondary" @click="router.push('/marketplace')">Nouveau catalogue</AppButton>
-    </div>
+    <h1 class="text-2xl font-bold text-gray-900">Mes commandes</h1>
 
     <AppCard>
       <div class="mb-6">

@@ -1,5 +1,5 @@
 import apiClient from './client'
-import type { ApiResponse, PaginatedResponse, PaginationParams } from '@/types'
+import type { PaginatedResponse, PaginationParams } from '@/types'
 import type { RfidDevice } from '@/types'
 
 export const rfidDeviceApi = {
@@ -7,19 +7,19 @@ export const rfidDeviceApi = {
     return apiClient.get('/rfid/devices', { params }).then((r) => r.data)
   },
 
-  getById(id: string): Promise<ApiResponse<RfidDevice>> {
+  getById(id: string): Promise<RfidDevice> {
     return apiClient.get(`/rfid/devices/${id}`).then((r) => r.data)
   },
 
-  register(data: Partial<RfidDevice>): Promise<ApiResponse<RfidDevice>> {
+  register(data: Partial<RfidDevice>): Promise<RfidDevice> {
     return apiClient.post('/rfid/devices', data).then((r) => r.data)
   },
 
-  update(id: string, data: Partial<RfidDevice>): Promise<ApiResponse<RfidDevice>> {
+  update(id: string, data: Partial<RfidDevice>): Promise<RfidDevice> {
     return apiClient.put(`/rfid/devices/${id}`, data).then((r) => r.data)
   },
 
-  delete(id: string): Promise<ApiResponse<void>> {
+  delete(id: string): Promise<void> {
     return apiClient.delete(`/rfid/devices/${id}`).then((r) => r.data)
   },
 }

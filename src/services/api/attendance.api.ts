@@ -12,8 +12,8 @@ export interface AttendanceFilters {
 }
 
 export interface DateRange {
-  start: string
-  end: string
+  startDate: string
+  endDate: string
 }
 
 export const attendanceApi = {

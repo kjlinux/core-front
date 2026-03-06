@@ -11,9 +11,9 @@ export const useAttendanceStore = defineStore('attendance', () => {
   const summaries = ref<AttendanceSummary[]>([])
   const recentActivity = ref<AttendanceRecord[]>([])
   const isLoading = ref(false)
-  const dateRange = ref<{ start: string; end: string }>({
-    start: '',
-    end: '',
+  const dateRange = ref<{ startDate: string; endDate: string }>({
+    startDate: '',
+    endDate: '',
   })
 
   // Aliases pour la compatibilité avec AttendanceDailyPage
@@ -56,7 +56,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
     }
   }
 
-  async function fetchByEmployee(employeeId: string, range: { start: string; end: string }) {
+  async function fetchByEmployee(employeeId: string, range: { startDate: string; endDate: string }) {
     isLoading.value = true
     dateRange.value = range
     try {
@@ -66,7 +66,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
     }
   }
 
-  async function fetchByDepartment(departmentId: string, range: { start: string; end: string }) {
+  async function fetchByDepartment(departmentId: string, range: { startDate: string; endDate: string }) {
     isLoading.value = true
     dateRange.value = range
     try {

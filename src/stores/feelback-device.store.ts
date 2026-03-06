@@ -22,9 +22,9 @@ export const useFeelbackDeviceStore = defineStore('feelback-device', () => {
   async function fetchDevice(id: string) {
     isLoading.value = true
     try {
-      const response = await feelbackDeviceApi.getById(id)
-      currentDevice.value = response.data
-      return response.data
+      const device = await feelbackDeviceApi.getById(id)
+      currentDevice.value = device
+      return device
     } finally {
       isLoading.value = false
     }
@@ -33,9 +33,9 @@ export const useFeelbackDeviceStore = defineStore('feelback-device', () => {
   async function registerDevice(data: Partial<FeelbackDevice>) {
     isLoading.value = true
     try {
-      const response = await feelbackDeviceApi.register(data)
-      devices.value.push(response.data)
-      return response.data
+      const device = await feelbackDeviceApi.register(data)
+      devices.value.push(device)
+      return device
     } finally {
       isLoading.value = false
     }
@@ -44,8 +44,7 @@ export const useFeelbackDeviceStore = defineStore('feelback-device', () => {
   async function updateDevice(id: string, data: Partial<FeelbackDevice>) {
     isLoading.value = true
     try {
-      const response = await feelbackDeviceApi.update(id, data)
-      const updated = response.data
+      const updated = await feelbackDeviceApi.update(id, data)
       const index = devices.value.findIndex((d) => d.id === id)
       if (index !== -1) {
         devices.value[index] = updated

@@ -12,16 +12,29 @@
       </AppButton>
     </div>
 
+    <AppCard class="mb-6">
+      <AppSelect
+        v-model="filterCompanyId"
+        :options="companyOptions"
+        label="Entreprise"
+        class="w-full sm:w-64"
+      />
+    </AppCard>
+
     <AppCard>
       <DataTable
-        :data="schedules"
+        :data="filteredSchedules"
         :columns="columns"
         :loading="loading"
         @row-click="handleRowClick"
       >
+        <template #companyName="{ row }">
+          {{ row.companyName }}
+        </template>
+
         <template #type="{ row }">
           <AppBadge :variant="row.type === 'standard' ? 'blue' : 'purple'">
-            {{ row.type === 'standard' ? 'Standard' : 'Personnalisé' }}
+            {{ row.type === 'standard' ? 'Standard' : 'Personnalise' }}
           </AppBadge>
         </template>
 
@@ -95,34 +108,53 @@ import DataTable from '@/components/data-display/DataTable.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
+import AppSelect from '@/components/ui/AppSelect.vue'
 import AppConfirmDialog from '@/components/ui/AppConfirmDialog.vue'
 import { useScheduleStore } from '@/stores/schedule.store'
+import { useCompanyStore } from '@/stores/company.store'
 import { usePermissions } from '@/composables/usePermissions'
+import { useToast } from '@/composables/useToast'
 import type { Schedule } from '@/types/schedule'
 import { PencilIcon, DocumentDuplicateIcon, TrashIcon, PlusIcon } from '@heroicons/vue/24/outline'
 
 const router = useRouter()
 const scheduleStore = useScheduleStore()
+const companyStore = useCompanyStore()
 const { isSuperAdmin, isAdminEnterprise } = usePermissions()
+const toast = useToast()
 
 const loading = ref(false)
 const deleteModalVisible = ref(false)
 const scheduleToDelete = ref<Schedule | null>(null)
+const filterCompanyId = ref('')
 
 const canCreate = computed(() => isSuperAdmin.value || isAdminEnterprise.value)
 const canEdit = computed(() => isSuperAdmin.value || isAdminEnterprise.value)
 const canDelete = computed(() => isSuperAdmin.value || isAdminEnterprise.value)
 
-const schedules = computed(() => scheduleStore.schedules)
+const companyOptions = computed(() => [
+  { value: '', label: 'Toutes les entreprises' },
+  ...companyStore.companies.map(c => ({ value: c.id, label: c.name })),
+])
+
+const filteredSchedules = computed(() => {
+  const list = scheduleStore.schedules.map(s => ({
+    ...s,
+    companyName: companyStore.companies.find(c => c.id === s.companyId)?.name || '-',
+  }))
+  if (!filterCompanyId.value) return list
+  return list.filter(s => s.companyId === filterCompanyId.value)
+})
 
 const columns = [
   { key: 'name', label: 'Nom', sortable: true },
+  { key: 'companyName', label: 'Entreprise', sortable: true },
   { key: 'type', label: 'Type', sortable: true },
-  { key: 'startTime', label: 'Heure début', sortable: true },
+  { key: 'startTime', label: 'Heure debut', sortable: true },
   { key: 'endTime', label: 'Heure fin', sortable: true },
-  { key: 'workDays', label: 'Jours travaillés', sortable: false },
-  { key: 'lateTolerance', label: 'Tolérance retard', sortable: true },
-  { key: 'departmentCount', label: 'Départements', sortable: true },
+  { key: 'workDays', label: 'Jours travailles', sortable: false },
+  { key: 'lateTolerance', label: 'Tolerance retard', sortable: true },
+  { key: 'departmentCount', label: 'Departements', sortable: true },
   { key: 'actions', label: 'Actions', sortable: false }
 ]
 
@@ -151,8 +183,9 @@ const handleDuplicate = async (schedule: Schedule) => {
       id: undefined
     }
     await scheduleStore.createSchedule(duplicatedData)
-  } catch (error) {
-    console.error('Failed to duplicate schedule:', error)
+    toast.success('Succes', 'Horaire duplique avec succes')
+  } catch (error: any) {
+    toast.error('Erreur', error.message || 'Erreur lors de la duplication')
   }
 }
 
@@ -167,8 +200,8 @@ const confirmDelete = async () => {
       await scheduleStore.deleteSchedule(scheduleToDelete.value.id)
       deleteModalVisible.value = false
       scheduleToDelete.value = null
-    } catch (error) {
-      console.error('Failed to delete schedule:', error)
+    } catch (error: any) {
+      toast.error('Erreur', error.message || 'Erreur lors de la suppression')
     }
   }
 }
@@ -176,7 +209,10 @@ const confirmDelete = async () => {
 onMounted(async () => {
   loading.value = true
   try {
-    await scheduleStore.fetchSchedules()
+    await Promise.all([
+      scheduleStore.fetchSchedules(),
+      companyStore.fetchCompanies({ perPage: 100 }),
+    ])
   } finally {
     loading.value = false
   }

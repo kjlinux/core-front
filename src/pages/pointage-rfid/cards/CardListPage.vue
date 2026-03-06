@@ -48,13 +48,12 @@
         @row-click="handleRowClick"
       >
         <template #employee="{ row }">
-          <span v-if="row.employee">{{ row.employee.firstName }} {{ row.employee.lastName }}</span>
+          <span v-if="row.employeeName">{{ row.employeeName }}</span>
           <span v-else class="unassigned">Non attribuee</span>
         </template>
 
         <template #company="{ row }">
-          <span v-if="row.employee">{{ row.employee.company?.name || '-' }}</span>
-          <span v-else>-</span>
+          <span>{{ getCompanyName(row.companyId) }}</span>
         </template>
 
         <template #status="{ row }">
@@ -64,7 +63,7 @@
         </template>
 
         <template #assignedDate="{ row }">
-          <span v-if="row.assignedDate">{{ formatDate(row.assignedDate) }}</span>
+          <span v-if="row.assignedAt">{{ formatDate(row.assignedAt) }}</span>
           <span v-else>-</span>
         </template>
 
@@ -74,7 +73,7 @@
               <EyeIcon class="w-4 h-4" />
             </AppButton>
             <AppButton
-              v-if="!row.employee && (permissions.isSuperAdmin.value || permissions.isAdminEnterprise.value)"
+              v-if="!row.employeeId && (permissions.isSuperAdmin.value || permissions.isAdminEnterprise.value)"
               size="sm"
               variant="ghost"
               class="text-blue-600 hover:text-blue-700"
@@ -114,6 +113,24 @@
     >
       <div class="modal-content">
         <p>Carte UID: <strong>{{ selectedCard?.uid }}</strong></p>
+        <template v-if="permissions.isSuperAdmin.value">
+          <div class="form-group">
+            <AppSelect
+              v-model="assignFilterCompanyId"
+              label="Filtrer par entreprise"
+              :options="assignCompanyOptions"
+              @update:model-value="assignFilterSiteId = ''; selectedEmployeeId = ''"
+            />
+          </div>
+          <div class="form-group">
+            <AppSelect
+              v-model="assignFilterSiteId"
+              label="Filtrer par site"
+              :options="assignSiteOptions"
+              @update:model-value="selectedEmployeeId = ''"
+            />
+          </div>
+        </template>
         <div class="form-group">
           <label for="employee-select">Selectionner un employe</label>
           <select
@@ -127,7 +144,7 @@
               :key="employee.id"
               :value="employee.id"
             >
-              {{ employee.firstName }} {{ employee.lastName }} - {{ employee.company?.name }}
+              {{ employee.firstName }} {{ employee.lastName }}
             </option>
           </select>
         </div>
@@ -187,9 +204,13 @@ import AppButton from '@/components/ui/AppButton.vue';
 import AppCard from '@/components/ui/AppCard.vue';
 import AppBadge from '@/components/ui/AppBadge.vue';
 import AppModal from '@/components/ui/AppModal.vue';
+import AppSelect from '@/components/ui/AppSelect.vue';
 import { useCardStore } from '@/stores/card.store';
 import { useEmployeeStore } from '@/stores/employee.store';
+import { useCompanyStore } from '@/stores/company.store';
+import { useSiteStore } from '@/stores/site.store';
 import { usePermissions } from '@/composables/usePermissions';
+import { useToast } from '@/composables/useToast';
 import type { RfidCard } from '@/types/card'
 import { CardStatus } from '@/types/enums';
 import { EyeIcon, CheckIcon, NoSymbolIcon, LockOpenIcon, PlusIcon } from '@heroicons/vue/24/outline';
@@ -197,7 +218,10 @@ import { EyeIcon, CheckIcon, NoSymbolIcon, LockOpenIcon, PlusIcon } from '@heroi
 const router = useRouter();
 const cardStore = useCardStore();
 const employeeStore = useEmployeeStore();
+const companyStore = useCompanyStore();
+const siteStore = useSiteStore();
 const permissions = usePermissions();
+const toast = useToast();
 
 const loading = ref(false);
 const filters = ref({
@@ -211,6 +235,8 @@ const unblockModalVisible = ref(false);
 const selectedCard = ref<RfidCard | null>(null);
 const selectedEmployeeId = ref('');
 const blockReason = ref('');
+const assignFilterCompanyId = ref('');
+const assignFilterSiteId = ref('');
 
 const columns = [
   { key: 'uid', label: 'UID', sortable: true },
@@ -238,9 +264,37 @@ const filteredCards = computed(() => {
   return cards;
 });
 
-const availableEmployees = computed(() => {
-  return employeeStore.employees.filter(emp => !emp.rfidCard);
+const assignCompanyOptions = computed(() => [
+  { label: 'Toutes les entreprises', value: '' },
+  ...companyStore.companies.map((c) => ({ label: c.name, value: c.id })),
+]);
+
+const assignSiteOptions = computed(() => {
+  const sites = assignFilterCompanyId.value
+    ? siteStore.sites.filter((s) => s.companyId === assignFilterCompanyId.value)
+    : siteStore.sites;
+  return [
+    { label: 'Tous les sites', value: '' },
+    ...sites.map((s) => ({ label: s.name, value: s.id })),
+  ];
 });
+
+const availableEmployees = computed(() => {
+  let emps = employeeStore.employees.filter(emp => !emp.rfidCardId);
+  if (permissions.isSuperAdmin.value) {
+    if (assignFilterCompanyId.value) {
+      emps = emps.filter(e => e.companyId === assignFilterCompanyId.value);
+    }
+    if (assignFilterSiteId.value) {
+      emps = emps.filter(e => e.siteId === assignFilterSiteId.value);
+    }
+  }
+  return emps;
+});
+
+const getCompanyName = (companyId: string): string => {
+  return companyStore.companies.find(c => c.id === companyId)?.name || '-';
+};
 
 const getStatusVariant = (status: CardStatus): string => {
   switch (status) {
@@ -295,6 +349,8 @@ const handleRowClick = (card: RfidCard) => {
 const handleAssign = (card: RfidCard) => {
   selectedCard.value = card;
   selectedEmployeeId.value = '';
+  assignFilterCompanyId.value = '';
+  assignFilterSiteId.value = '';
   assignModalVisible.value = true;
 };
 
@@ -303,11 +359,12 @@ const confirmAssign = async () => {
 
   try {
     await cardStore.assignCard(selectedCard.value.id, selectedEmployeeId.value);
+    toast.success('Succes', 'Carte attribuee avec succes');
     assignModalVisible.value = false;
     selectedCard.value = null;
     selectedEmployeeId.value = '';
-  } catch (error) {
-    console.error('Failed to assign card:', error);
+  } catch (error: any) {
+    toast.error('Erreur', error.message || "Erreur lors de l'attribution");
   }
 };
 
@@ -315,6 +372,8 @@ const cancelAssign = () => {
   assignModalVisible.value = false;
   selectedCard.value = null;
   selectedEmployeeId.value = '';
+  assignFilterCompanyId.value = '';
+  assignFilterSiteId.value = '';
 };
 
 const handleBlock = (card: RfidCard) => {
@@ -328,11 +387,12 @@ const confirmBlock = async () => {
 
   try {
     await cardStore.blockCard(selectedCard.value.id, blockReason.value);
+    toast.success('Succes', 'Carte bloquee avec succes');
     blockModalVisible.value = false;
     selectedCard.value = null;
     blockReason.value = '';
-  } catch (error) {
-    console.error('Failed to block card:', error);
+  } catch (error: any) {
+    toast.error('Erreur', error.message || 'Erreur lors du blocage');
   }
 };
 
@@ -352,10 +412,11 @@ const confirmUnblock = async () => {
 
   try {
     await cardStore.unblockCard(selectedCard.value.id);
+    toast.success('Succes', 'Carte debloquee avec succes');
     unblockModalVisible.value = false;
     selectedCard.value = null;
-  } catch (error) {
-    console.error('Failed to unblock card:', error);
+  } catch (error: any) {
+    toast.error('Erreur', error.message || 'Erreur lors du deblocage');
   }
 };
 
@@ -368,11 +429,13 @@ onMounted(async () => {
   loading.value = true;
   try {
     await Promise.all([
-      cardStore.fetchCards(),
-      employeeStore.fetchEmployees()
+      cardStore.fetchCards({ perPage: 500 }),
+      employeeStore.fetchEmployees({ perPage: 500, companyId: undefined, siteId: undefined, departmentId: undefined, search: undefined }),
+      companyStore.fetchCompanies({ perPage: 100 }),
+      siteStore.fetchSites({ perPage: 500 }),
     ]);
-  } catch (error) {
-    console.error('Failed to load data:', error);
+  } catch {
+    toast.error('Erreur', 'Impossible de charger les donnees');
   } finally {
     loading.value = false;
   }

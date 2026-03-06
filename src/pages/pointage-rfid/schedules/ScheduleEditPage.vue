@@ -20,6 +20,8 @@
       <ScheduleForm
         v-else-if="schedule"
         :initial-data="schedule"
+        :companies="companyStore.companies"
+        :departments="departmentStore.departments"
         :loading="loading"
         @submit="handleSubmit"
         @cancel="handleCancel"
@@ -49,14 +51,20 @@ import AppButton from '@/components/ui/AppButton.vue'
 import AppConfirmDialog from '@/components/ui/AppConfirmDialog.vue'
 import ScheduleForm from '@/components/forms/ScheduleForm.vue'
 import { useScheduleStore } from '@/stores/schedule.store'
+import { useCompanyStore } from '@/stores/company.store'
+import { useDepartmentStore } from '@/stores/department.store'
 import { usePermissions } from '@/composables/usePermissions'
+import { useToast } from '@/composables/useToast'
 import type { Schedule } from '@/types/schedule'
 import { TrashIcon } from '@heroicons/vue/24/outline'
 
 const router = useRouter()
 const route = useRoute()
 const scheduleStore = useScheduleStore()
+const companyStore = useCompanyStore()
+const departmentStore = useDepartmentStore()
 const { isSuperAdmin, isAdminEnterprise } = usePermissions()
+const toast = useToast()
 
 const loading = ref(false)
 const loadingSchedule = ref(false)
@@ -71,9 +79,10 @@ const handleSubmit = async (data: Partial<Schedule>) => {
   loading.value = true
   try {
     await scheduleStore.updateSchedule(scheduleId.value, data)
+    toast.success('Succes', 'Horaire mis a jour')
     router.push('/pointage-rfid/schedules')
-  } catch (error) {
-    console.error('Failed to update schedule:', error)
+  } catch (error: any) {
+    toast.error('Erreur', error.message || 'Erreur lors de la mise a jour')
   } finally {
     loading.value = false
   }
@@ -88,17 +97,21 @@ const handleDelete = async () => {
     await scheduleStore.deleteSchedule(scheduleId.value)
     showDeleteModal.value = false
     router.push('/pointage-rfid/schedules')
-  } catch (error) {
-    console.error('Failed to delete schedule:', error)
+  } catch (error: any) {
+    toast.error('Erreur', error.message || 'Erreur lors de la suppression')
   }
 }
 
 onMounted(async () => {
   loadingSchedule.value = true
   try {
+    await Promise.all([
+      companyStore.fetchCompanies({ perPage: 100 }),
+      departmentStore.fetchDepartments({ perPage: 500 }),
+    ])
     schedule.value = await scheduleStore.fetchScheduleById(scheduleId.value)
-  } catch (error) {
-    console.error('Failed to load schedule:', error)
+  } catch {
+    toast.error('Erreur', "Impossible de charger l'horaire")
   } finally {
     loadingSchedule.value = false
   }

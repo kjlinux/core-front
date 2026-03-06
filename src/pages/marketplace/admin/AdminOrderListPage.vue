@@ -8,7 +8,7 @@ import AppButton from '@/components/ui/AppButton.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
 import AppInput from '@/components/ui/AppInput.vue'
-import { EyeIcon, ArrowDownTrayIcon } from '@heroicons/vue/24/outline'
+import { EyeIcon } from '@heroicons/vue/24/outline'
 
 const router = useRouter()
 const store = useOrderStore()
@@ -65,10 +65,6 @@ function formatDate(date: string) {
   return new Date(date).toLocaleDateString('fr-FR')
 }
 
-function handleExport() {
-  toast.showSuccess('Export en cours...')
-}
-
 onMounted(async () => {
   await store.fetchAllOrders()
 })
@@ -78,10 +74,6 @@ onMounted(async () => {
   <div class="space-y-6">
     <div class="flex items-center justify-between">
       <h1 class="text-2xl font-bold text-gray-900">Toutes les commandes</h1>
-      <AppButton variant="secondary" @click="handleExport">
-        <ArrowDownTrayIcon class="w-4 h-4 mr-1" />
-        Exporter
-      </AppButton>
     </div>
 
     <AppCard>

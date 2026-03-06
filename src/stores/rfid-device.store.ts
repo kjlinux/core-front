@@ -22,9 +22,9 @@ export const useRfidDeviceStore = defineStore('rfid-device', () => {
   async function fetchDevice(id: string) {
     isLoading.value = true
     try {
-      const response = await rfidDeviceApi.getById(id)
-      currentDevice.value = response.data
-      return response.data
+      const device = await rfidDeviceApi.getById(id)
+      currentDevice.value = device
+      return device
     } finally {
       isLoading.value = false
     }
@@ -33,9 +33,9 @@ export const useRfidDeviceStore = defineStore('rfid-device', () => {
   async function registerDevice(data: Partial<RfidDevice>) {
     isLoading.value = true
     try {
-      const response = await rfidDeviceApi.register(data)
-      devices.value.push(response.data)
-      return response.data
+      const created = await rfidDeviceApi.register(data)
+      devices.value.push(created)
+      return created
     } finally {
       isLoading.value = false
     }
@@ -44,8 +44,7 @@ export const useRfidDeviceStore = defineStore('rfid-device', () => {
   async function updateDevice(id: string, data: Partial<RfidDevice>) {
     isLoading.value = true
     try {
-      const response = await rfidDeviceApi.update(id, data)
-      const updated = response.data
+      const updated = await rfidDeviceApi.update(id, data)
       const index = devices.value.findIndex((d) => d.id === id)
       if (index !== -1) {
         devices.value[index] = updated

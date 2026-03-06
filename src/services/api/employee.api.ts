@@ -1,11 +1,10 @@
 import apiClient from './client'
-import type { Employee } from '@/types'
+import type { Employee, PaginatedResponse } from '@/types'
 
 export interface EmployeeFilters {
   companyId?: string
   siteId?: string
   departmentId?: string
-  status?: string
   search?: string
   isActive?: boolean
   page?: number
@@ -13,20 +12,20 @@ export interface EmployeeFilters {
 }
 
 export const employeeApi = {
-  getAll(params?: EmployeeFilters): Promise<Employee[]> {
-    return apiClient.get('/employees', { params }).then((r) => r.data?.data ?? r.data)
+  getAll(params?: EmployeeFilters): Promise<PaginatedResponse<Employee>> {
+    return apiClient.get('/employees', { params }).then((r) => r.data)
   },
 
   getById(id: string): Promise<Employee> {
-    return apiClient.get(`/employees/${id}`).then((r) => r.data?.data ?? r.data)
+    return apiClient.get(`/employees/${id}`).then((r) => r.data)
   },
 
   create(data: Partial<Employee>): Promise<Employee> {
-    return apiClient.post('/employees', data).then((r) => r.data?.data ?? r.data)
+    return apiClient.post('/employees', data).then((r) => r.data)
   },
 
   update(id: string, data: Partial<Employee>): Promise<Employee> {
-    return apiClient.put(`/employees/${id}`, data).then((r) => r.data?.data ?? r.data)
+    return apiClient.put(`/employees/${id}`, data).then((r) => r.data)
   },
 
   delete(id: string): Promise<void> {
@@ -34,6 +33,6 @@ export const employeeApi = {
   },
 
   toggleActive(id: string): Promise<Employee> {
-    return apiClient.patch(`/employees/${id}/toggle-active`).then((r) => r.data?.data ?? r.data)
+    return apiClient.patch(`/employees/${id}/toggle-active`).then((r) => r.data)
   },
 }

@@ -91,20 +91,6 @@ const handleSubmit = () => {
         />
       </FormRow>
 
-      <FormRow label="Logo" help="Fonctionnalité d'upload à venir">
-        <AppInput
-          type="file"
-          accept="image/*"
-          :disabled="true"
-          placeholder="Sélectionner un logo"
-        />
-      </FormRow>
     </FormSection>
-
-    <div class="flex justify-end">
-      <AppButton type="submit" :loading="loading">
-        Enregistrer
-      </AppButton>
-    </div>
   </form>
 </template>

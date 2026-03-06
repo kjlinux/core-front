@@ -48,12 +48,6 @@ const feelbackRoutes: RouteRecordRaw[] = [
         component: () => import('@/pages/feelback/FeelbackReportsPage.vue'),
         meta: { title: 'Rapports Feelback' },
       },
-      {
-        path: 'settings',
-        name: 'feelback-settings',
-        component: () => import('@/pages/feelback/FeelbackSettingsPage.vue'),
-        meta: { title: 'Configuration Feelback', roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE] },
-      },
     ],
   },
 ]

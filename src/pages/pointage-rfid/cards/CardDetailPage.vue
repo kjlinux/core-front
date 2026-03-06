@@ -75,7 +75,7 @@
 
       <div class="action-buttons">
         <AppButton
-          v-if="!card.employee && permissions.isSuperAdmin.value || permissions.isAdminEnterprise.value"
+          v-if="!card.employee && (permissions.isSuperAdmin.value || permissions.isAdminEnterprise.value)"
           variant="primary"
           @click="openAssignModal"
         >
@@ -84,7 +84,7 @@
         </AppButton>
 
         <AppButton
-          v-if="card.employee && permissions.isSuperAdmin.value || permissions.isAdminEnterprise.value"
+          v-if="card.employee && (permissions.isSuperAdmin.value || permissions.isAdminEnterprise.value)"
           variant="secondary"
           @click="openUnassignModal"
         >
@@ -93,7 +93,7 @@
         </AppButton>
 
         <AppButton
-          v-if="card.status === CardStatus.ACTIVE && permissions.isSuperAdmin.value || permissions.isAdminEnterprise.value"
+          v-if="card.status === CardStatus.ACTIVE && (permissions.isSuperAdmin.value || permissions.isAdminEnterprise.value)"
           variant="danger"
           @click="openBlockModal"
         >
@@ -102,7 +102,7 @@
         </AppButton>
 
         <AppButton
-          v-if="card.status === CardStatus.BLOCKED && permissions.isSuperAdmin.value || permissions.isAdminEnterprise.value"
+          v-if="card.status === CardStatus.BLOCKED && (permissions.isSuperAdmin.value || permissions.isAdminEnterprise.value)"
           variant="success"
           @click="openUnblockModal"
         >
@@ -129,6 +129,24 @@
       title="Attribuer la carte"
     >
       <div class="modal-content">
+        <!-- Filtres entreprise+site : super admin seulement -->
+        <template v-if="permissions.isSuperAdmin.value">
+          <div class="form-group">
+            <label>Entreprise</label>
+            <select v-model="assignFilterCompanyId" class="form-select" @change="handleAssignCompanyChange">
+              <option value="">Toutes les entreprises</option>
+              <option v-for="c in companyStore.companies" :key="c.id" :value="c.id">{{ c.name }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Site</label>
+            <select v-model="assignFilterSiteId" class="form-select" :disabled="!assignFilterCompanyId">
+              <option value="">Tous les sites</option>
+              <option v-for="s in assignSiteOptions" :key="s.id" :value="s.id">{{ s.name }}</option>
+            </select>
+          </div>
+        </template>
+
         <div class="form-group">
           <label for="employee-select">Selectionner un employe</label>
           <select
@@ -138,18 +156,21 @@
           >
             <option value="">-- Choisir un employe --</option>
             <option
-              v-for="employee in availableEmployees"
+              v-for="employee in filteredAvailableEmployees"
               :key="employee.id"
               :value="employee.id"
             >
-              {{ employee.firstName }} {{ employee.lastName }} - {{ employee.company?.name }}
+              {{ employee.firstName }} {{ employee.lastName }}{{ employee.employeeNumber ? ` (${employee.employeeNumber})` : '' }}
             </option>
           </select>
+          <p v-if="filteredAvailableEmployees.length === 0" class="mt-1 text-sm text-gray-500">
+            Aucun employe disponible{{ assignFilterCompanyId ? ' pour cette selection' : '' }}.
+          </p>
         </div>
       </div>
       <template #footer>
         <AppButton variant="secondary" @click="cancelAssign">Annuler</AppButton>
-        <AppButton variant="primary" @click="confirmAssign">Attribuer</AppButton>
+        <AppButton variant="primary" :disabled="!selectedEmployeeId" @click="confirmAssign">Attribuer</AppButton>
       </template>
     </AppModal>
 
@@ -219,14 +240,20 @@ import AppModal from '@/components/ui/AppModal.vue';
 import { ArrowLeftIcon, CheckIcon, XMarkIcon, NoSymbolIcon, LockOpenIcon, ClockIcon } from '@heroicons/vue/24/outline';
 import { useCardStore } from '@/stores/card.store';
 import { useEmployeeStore } from '@/stores/employee.store';
+import { useCompanyStore } from '@/stores/company.store';
+import { useSiteStore } from '@/stores/site.store';
 import { usePermissions } from '@/composables/usePermissions';
+import { useToast } from '@/composables/useToast';
 import { CardStatus } from '@/types/enums';
 
 const router = useRouter();
 const route = useRoute();
 const cardStore = useCardStore();
 const employeeStore = useEmployeeStore();
+const companyStore = useCompanyStore();
+const siteStore = useSiteStore();
 const permissions = usePermissions();
+const toast = useToast();
 
 const loading = ref(false);
 const assignModalVisible = ref(false);
@@ -236,13 +263,36 @@ const unblockModalVisible = ref(false);
 const selectedEmployeeId = ref('');
 const blockReason = ref('');
 
+// Filtres attribution (super admin seulement)
+const assignFilterCompanyId = ref('');
+const assignFilterSiteId = ref('');
+
 const cardId = computed(() => route.params.id as string);
 
 const card = computed(() => cardStore.currentCard);
 
-const availableEmployees = computed(() => {
-  return employeeStore.employees.filter(emp => !emp.rfidCard);
+const assignSiteOptions = computed(() => {
+  if (!assignFilterCompanyId.value) return [];
+  return siteStore.sites.filter(s => s.companyId === assignFilterCompanyId.value);
 });
+
+const filteredAvailableEmployees = computed(() => {
+  let employees = employeeStore.employees.filter(e => !e.rfidCardId);
+  if (permissions.isSuperAdmin.value) {
+    if (assignFilterCompanyId.value) {
+      employees = employees.filter(e => e.companyId === assignFilterCompanyId.value);
+    }
+    if (assignFilterSiteId.value) {
+      employees = employees.filter(e => e.siteId === assignFilterSiteId.value);
+    }
+  }
+  return employees;
+});
+
+function handleAssignCompanyChange() {
+  assignFilterSiteId.value = '';
+  selectedEmployeeId.value = '';
+}
 
 const getStatusVariant = (status: CardStatus): string => {
   switch (status) {
@@ -298,6 +348,8 @@ const navigateToHistory = () => {
 
 const openAssignModal = () => {
   selectedEmployeeId.value = '';
+  assignFilterCompanyId.value = '';
+  assignFilterSiteId.value = '';
   assignModalVisible.value = true;
 };
 
@@ -306,11 +358,12 @@ const confirmAssign = async () => {
 
   try {
     await cardStore.assignCard(cardId.value, selectedEmployeeId.value);
+    toast.success('Succes', 'Carte attribuee avec succes');
     assignModalVisible.value = false;
     selectedEmployeeId.value = '';
     await cardStore.fetchCard(cardId.value);
-  } catch (error) {
-    console.error('Failed to assign card:', error);
+  } catch (error: any) {
+    toast.error('Erreur', error.message || "Erreur lors de l'attribution");
   }
 };
 
@@ -326,10 +379,11 @@ const openUnassignModal = () => {
 const confirmUnassign = async () => {
   try {
     await cardStore.unassignCard(cardId.value);
+    toast.success('Succes', 'Carte desattribuee avec succes');
     unassignModalVisible.value = false;
     await cardStore.fetchCard(cardId.value);
-  } catch (error) {
-    console.error('Failed to unassign card:', error);
+  } catch (error: any) {
+    toast.error('Erreur', error.message || 'Erreur lors de la desattribution');
   }
 };
 
@@ -347,11 +401,12 @@ const confirmBlock = async () => {
 
   try {
     await cardStore.blockCard(cardId.value, blockReason.value);
+    toast.success('Succes', 'Carte bloquee avec succes');
     blockModalVisible.value = false;
     blockReason.value = '';
     await cardStore.fetchCard(cardId.value);
-  } catch (error) {
-    console.error('Failed to block card:', error);
+  } catch (error: any) {
+    toast.error('Erreur', error.message || 'Erreur lors du blocage');
   }
 };
 
@@ -367,10 +422,11 @@ const openUnblockModal = () => {
 const confirmUnblock = async () => {
   try {
     await cardStore.unblockCard(cardId.value);
+    toast.success('Succes', 'Carte debloquee avec succes');
     unblockModalVisible.value = false;
     await cardStore.fetchCard(cardId.value);
-  } catch (error) {
-    console.error('Failed to unblock card:', error);
+  } catch (error: any) {
+    toast.error('Erreur', error.message || 'Erreur lors du deblocage');
   }
 };
 
@@ -381,12 +437,17 @@ const cancelUnblock = () => {
 onMounted(async () => {
   loading.value = true;
   try {
-    await Promise.all([
+    const promises: Promise<any>[] = [
       cardStore.fetchCard(cardId.value),
-      employeeStore.fetchEmployees()
-    ]);
-  } catch (error) {
-    console.error('Failed to load card:', error);
+      employeeStore.fetchEmployees({ perPage: 500, companyId: undefined, siteId: undefined, departmentId: undefined, search: undefined, isActive: undefined }),
+    ];
+    if (permissions.isSuperAdmin.value) {
+      promises.push(companyStore.fetchCompanies({ perPage: 100 }));
+      promises.push(siteStore.fetchSites({ perPage: 200 }));
+    }
+    await Promise.all(promises);
+  } catch {
+    toast.error('Erreur', 'Impossible de charger les donnees de la carte');
   } finally {
     loading.value = false;
   }

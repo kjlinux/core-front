@@ -1,6 +1,5 @@
 import apiClient from './client'
 import type {
-  ApiResponse,
   PaginatedResponse,
   Department,
   PaginationParams,
@@ -17,19 +16,19 @@ export const departmentApi = {
     return apiClient.get('/departments', { params }).then((r) => r.data)
   },
 
-  getById(id: string): Promise<ApiResponse<Department>> {
+  getById(id: string): Promise<Department> {
     return apiClient.get(`/departments/${id}`).then((r) => r.data)
   },
 
-  create(data: Partial<Department>): Promise<ApiResponse<Department>> {
+  create(data: Partial<Department>): Promise<Department> {
     return apiClient.post('/departments', data).then((r) => r.data)
   },
 
-  update(id: string, data: Partial<Department>): Promise<ApiResponse<Department>> {
+  update(id: string, data: Partial<Department>): Promise<Department> {
     return apiClient.put(`/departments/${id}`, data).then((r) => r.data)
   },
 
-  delete(id: string): Promise<ApiResponse<void>> {
+  delete(id: string): Promise<void> {
     return apiClient.delete(`/departments/${id}`).then((r) => r.data)
   },
 }

@@ -4,7 +4,6 @@ import { useRouter } from 'vue-router'
 import { useMarketplaceStore } from '@/stores/marketplace.store'
 import { useCartStore } from '@/stores/cart.store'
 import { useToast } from '@/composables/useToast'
-import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import AppModal from '@/components/ui/AppModal.vue'
@@ -17,17 +16,9 @@ const cartStore = useCartStore()
 const toast = useToast()
 
 const search = ref('')
-const activeCategory = ref('all')
 const showAddModal = ref(false)
 const selectedProduct = ref<Product | null>(null)
 const quantity = ref(1)
-
-const categories = [
-  { label: 'Tous', value: 'all' },
-  { label: 'Cartes Standard', value: 'standard_card' },
-  { label: 'Cartes Personnalisees', value: 'custom_card' },
-  { label: 'Packs Entreprise', value: 'enterprise_pack' },
-]
 
 const categoryLabels: Record<string, string> = {
   standard_card: 'Carte Standard',
@@ -37,9 +28,6 @@ const categoryLabels: Record<string, string> = {
 
 const filteredProducts = computed(() => {
   let list = store.products
-  if (activeCategory.value !== 'all') {
-    list = list.filter((p) => p.category === activeCategory.value)
-  }
   if (search.value) {
     const q = search.value.toLowerCase()
     list = list.filter((p) => p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q))
@@ -85,19 +73,6 @@ onMounted(async () => {
       <AppSearchInput v-model="search" placeholder="Rechercher un produit..." class="flex-1" />
     </div>
 
-    <!-- Category tabs -->
-    <div class="flex gap-2 border-b border-gray-200 overflow-x-auto pb-px">
-      <button
-        v-for="cat in categories"
-        :key="cat.value"
-        class="px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-colors"
-        :class="activeCategory === cat.value ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'"
-        @click="activeCategory = cat.value"
-      >
-        {{ cat.label }}
-      </button>
-    </div>
-
     <div v-if="store.isLoading" class="flex justify-center py-12">
       <div class="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
     </div>
@@ -119,7 +94,6 @@ onMounted(async () => {
         <div class="p-4 space-y-3">
           <div class="flex items-start justify-between gap-2">
             <h3 class="font-semibold text-gray-900 leading-tight">{{ product.name }}</h3>
-            <AppBadge variant="info">{{ categoryLabels[product.category] ?? product.category }}</AppBadge>
           </div>
           <p class="text-sm text-gray-500 line-clamp-2">{{ product.description }}</p>
           <div class="flex items-center gap-2 flex-wrap">
@@ -129,20 +103,15 @@ onMounted(async () => {
             <AppBadge v-if="product.customizable" variant="neutral">Personnalisable</AppBadge>
           </div>
           <p class="text-xl font-bold text-primary">{{ formatPrice(product.price, product.currency) }}</p>
-          <div class="flex gap-2">
-            <AppButton
-              size="sm"
-              variant="primary"
-              :disabled="product.stockQuantity === 0"
-              class="flex-1"
-              @click="openAddToCart(product)"
-            >
-              Ajouter au panier
-            </AppButton>
-            <AppButton size="sm" variant="ghost" @click="router.push(`/marketplace/products/${product.id}`)">
-              Details
-            </AppButton>
-          </div>
+          <AppButton
+            size="sm"
+            variant="primary"
+            :disabled="product.stockQuantity === 0"
+            class="w-full"
+            @click="openAddToCart(product)"
+          >
+            Ajouter au panier
+          </AppButton>
         </div>
       </div>
     </div>

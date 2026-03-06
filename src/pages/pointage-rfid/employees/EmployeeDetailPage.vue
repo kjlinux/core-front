@@ -3,20 +3,27 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useEmployeeStore } from '@/stores/employee.store'
 import { useCompanyStore } from '@/stores/company.store'
+import { useCardStore } from '@/stores/card.store'
 import { usePermissions } from '@/composables/usePermissions'
+import { useToast } from '@/composables/useToast'
+import { attendanceApi } from '@/services/api/attendance.api'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
-import { ArrowLeftIcon, PencilIcon } from '@heroicons/vue/24/outline'
+import AppSelect from '@/components/ui/AppSelect.vue'
+import { ArrowLeftIcon, PencilIcon, NoSymbolIcon, CheckCircleIcon } from '@heroicons/vue/24/outline'
 
 const router = useRouter()
 const route = useRoute()
 const employeeStore = useEmployeeStore()
 const companyStore = useCompanyStore()
+const cardStore = useCardStore()
 const permissions = usePermissions()
+const toast = useToast()
 
 const employeeId = route.params.id as string
 const showAssignCardModal = ref(false)
+const selectedCardId = ref('')
 
 const canEdit = computed(() =>
   permissions.isSuperAdmin.value || permissions.isAdminEnterprise.value
@@ -68,17 +75,31 @@ const formattedHireDate = computed(() => {
   })
 })
 
-const totalAttendanceDays = ref(22)
-const lateDays = ref(3)
+const totalAttendanceDays = ref(0)
+const lateDays = ref(0)
 const onTimePercentage = computed(() => {
   if (totalAttendanceDays.value === 0) return 0
   return Math.round(((totalAttendanceDays.value - lateDays.value) / totalAttendanceDays.value) * 100)
 })
 
+async function loadAttendanceStats() {
+  const now = new Date()
+  const start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10)
+  const end = now.toISOString().slice(0, 10)
+  try {
+    const records = await attendanceApi.getByEmployee(employeeId, { startDate: start, endDate: end })
+    totalAttendanceDays.value = records.filter(r => r.status === 'present' || r.status === 'late').length
+    lateDays.value = records.filter(r => r.status === 'late').length
+  } catch {
+    // stats stay at 0 if API unavailable
+  }
+}
+
 onMounted(async () => {
   await Promise.all([
     employeeStore.fetchEmployee(employeeId),
-    companyStore.fetchCompanies({ perPage: 1000 })
+    companyStore.fetchCompanies({ perPage: 1000 }),
+    loadAttendanceStats(),
   ])
 })
 
@@ -90,12 +111,47 @@ const handleBack = () => {
   router.push({ name: 'rfid-employees' })
 }
 
-const handleAssignCard = () => {
+const availableCardOptions = computed(() => {
+  return cardStore.cards
+    .filter(c => {
+      if (c.employeeId || c.status === 'blocked') return false
+      if (employee.value?.companyId && c.companyId && c.companyId !== employee.value.companyId) return false
+      return true
+    })
+    .map(c => ({ label: `${c.uid}`, value: c.id }))
+})
+
+const handleAssignCard = async () => {
+  await cardStore.fetchCards({ perPage: 500, companyId: employee.value?.companyId || undefined })
+  selectedCardId.value = ''
   showAssignCardModal.value = true
+}
+
+const handleConfirmAssignCard = async () => {
+  if (!selectedCardId.value) return
+  try {
+    await cardStore.assignCard(selectedCardId.value, employeeId)
+    toast.success('Succes', 'Carte assignee avec succes')
+    closeAssignCardModal()
+    await employeeStore.fetchEmployee(employeeId)
+  } catch (error: any) {
+    toast.error('Erreur', error.message || "Erreur lors de l'assignation de la carte")
+  }
 }
 
 const closeAssignCardModal = () => {
   showAssignCardModal.value = false
+  selectedCardId.value = ''
+}
+
+async function handleToggleActive() {
+  if (!employee.value) return
+  try {
+    await employeeStore.toggleActive(employeeId)
+    toast.success('Succes', employee.value.isActive ? 'Employe desactive' : 'Employe active')
+  } catch (error: any) {
+    toast.error('Erreur', error.message || 'Erreur lors du changement de statut')
+  }
 }
 </script>
 
@@ -111,6 +167,15 @@ const closeAssignCardModal = () => {
         <AppButton v-if="canEdit && employee" @click="handleEdit">
           <PencilIcon class="w-4 h-4 mr-1" />
           Modifier
+        </AppButton>
+        <AppButton
+          v-if="canEdit && employee"
+          :variant="employee.isActive ? 'danger' : 'primary'"
+          @click="handleToggleActive"
+        >
+          <NoSymbolIcon v-if="employee.isActive" class="w-4 h-4 mr-1" />
+          <CheckCircleIcon v-else class="w-4 h-4 mr-1" />
+          {{ employee.isActive ? 'Desactiver' : 'Activer' }}
         </AppButton>
       </div>
     </div>
@@ -253,24 +318,27 @@ const closeAssignCardModal = () => {
       <div class="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
         <h3 class="text-lg font-semibold text-gray-900">Assigner une carte RFID</h3>
         <p class="mt-2 text-sm text-gray-500">
-          Scannez une carte RFID ou entrez son UID manuellement.
+          Selectionnez une carte disponible parmi les cartes non attribuees.
         </p>
 
         <div class="mt-4">
-          <label class="block text-sm font-medium text-gray-700">UID de la carte</label>
-          <input
-            type="text"
-            class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-primary-500"
-            placeholder="Ex: A1B2C3D4"
+          <AppSelect
+            v-model="selectedCardId"
+            :options="availableCardOptions"
+            label="Carte RFID"
+            placeholder="Selectionner une carte"
           />
+          <p v-if="availableCardOptions.length === 0" class="mt-2 text-sm text-gray-500">
+            Aucune carte disponible.
+          </p>
         </div>
 
         <div class="mt-6 flex justify-end space-x-3">
           <AppButton variant="secondary" @click="closeAssignCardModal">
             Annuler
           </AppButton>
-          <AppButton @click="closeAssignCardModal">
-            Enregistrer
+          <AppButton :disabled="!selectedCardId" @click="handleConfirmAssignCard">
+            Assigner
           </AppButton>
         </div>
       </div>

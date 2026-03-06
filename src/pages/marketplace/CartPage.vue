@@ -1,30 +1,19 @@
 <script setup lang="ts">
-import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCartStore } from '@/stores/cart.store'
 import { useToast } from '@/composables/useToast'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
-import AppInput from '@/components/ui/AppInput.vue'
 import AppEmptyState from '@/components/ui/AppEmptyState.vue'
 
 const router = useRouter()
 const cartStore = useCartStore()
 const toast = useToast()
 
-const promoCode = ref('')
 const DELIVERY_FEE = 2000
 
 function formatPrice(amount: number, currency = 'FCFA') {
   return `${amount.toLocaleString('fr-FR')} ${currency}`
-}
-
-function applyPromo() {
-  if (promoCode.value) {
-    toast.showSuccess('Code promo applique !')
-  } else {
-    toast.showError('Veuillez saisir un code promo')
-  }
 }
 
 function removeItem(productId: string) {
@@ -123,12 +112,6 @@ function removeItem(productId: string) {
           </AppButton>
         </AppCard>
 
-        <AppCard title="Code promo">
-          <div class="flex gap-2">
-            <AppInput v-model="promoCode" placeholder="Votre code promo" class="flex-1" />
-            <AppButton variant="secondary" @click="applyPromo">Appliquer</AppButton>
-          </div>
-        </AppCard>
       </div>
     </div>
   </div>

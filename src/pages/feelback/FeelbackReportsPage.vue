@@ -9,7 +9,6 @@ import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppInput from '@/components/ui/AppInput.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
-import AppModal from '@/components/ui/AppModal.vue'
 import StatCard from '@/components/data-display/StatCard.vue'
 import DataTable from '@/components/data-display/DataTable.vue'
 import type { TableColumn } from '@/types/common'
@@ -23,18 +22,10 @@ const selectedSite = ref('')
 const loading = ref(false)
 const reportGenerated = ref(false)
 const report = ref<FeelbackReportData | null>(null)
-const showScheduleModal = ref(false)
-
-const scheduleForm = ref({
-  frequency: 'weekly',
-  recipients: '',
-  format: 'pdf',
-})
 
 const reportTypes = [
   { label: 'Rapport global', value: 'global' },
   { label: 'Rapport par site', value: 'site' },
-  { label: 'Rapport par agent', value: 'agent' },
   { label: 'Rapport par periode', value: 'period' },
 ]
 
@@ -42,16 +33,10 @@ const siteOptions = ref([{ label: 'Tous les sites', value: '' }])
 
 async function loadSites() {
   try {
-    const result = await siteApi.getAll()
-    // L'intercepteur unwrap { success, data } -> data contient { data: Site[], meta }
-    const raw = result as unknown as Record<string, unknown>
-    const sites = (Array.isArray(raw) ? raw : (raw.data as { id: string; name: string }[]) ?? []) as {
-      id: string
-      name: string
-    }[]
+    const response = await siteApi.getAll()
     siteOptions.value = [
       { label: 'Tous les sites', value: '' },
-      ...sites.map((s) => ({ label: s.name, value: s.id })),
+      ...response.data.map((s) => ({ label: s.name, value: s.id })),
     ]
   } catch {
     // Garder l'option par defaut si l'API echoue
@@ -62,21 +47,6 @@ onMounted(() => {
   loadSites()
 })
 
-const frequencyOptions = [
-  { label: 'Quotidien', value: 'daily' },
-  { label: 'Hebdomadaire', value: 'weekly' },
-  { label: 'Mensuel', value: 'monthly' },
-]
-
-const formatOptions = [
-  { label: 'PDF', value: 'pdf' },
-  { label: 'Excel', value: 'excel' },
-]
-
-const scheduledReports = [
-  { id: '1', name: 'Rapport hebdomadaire global', frequency: 'Hebdomadaire', recipients: 'direction@company.com', format: 'PDF', nextRun: '2026-03-09' },
-  { id: '2', name: 'Rapport mensuel par site', frequency: 'Mensuel', recipients: 'managers@company.com', format: 'Excel', nextRun: '2026-04-01' },
-]
 
 const siteColumns: TableColumn[] = [
   { key: 'site', label: 'Site' },
@@ -87,23 +57,11 @@ const siteColumns: TableColumn[] = [
   { key: 'satisfactionRateFormatted', label: 'Taux satisfaction', align: 'center' },
 ]
 
-const agentColumns: TableColumn[] = [
-  { key: 'agent', label: 'Agent' },
-  { key: 'site', label: 'Site' },
-  { key: 'totalResponses', label: 'Total reponses', align: 'center' },
-  { key: 'bon', label: 'Bon', align: 'center' },
-  { key: 'neutre', label: 'Neutre', align: 'center' },
-  { key: 'mauvais', label: 'Mauvais', align: 'center' },
-  { key: 'satisfactionRateFormatted', label: 'Taux satisfaction', align: 'center' },
-]
-
-const activeColumns = computed(() => {
-  return reportType.value === 'agent' ? agentColumns : siteColumns
-})
+const activeColumns = computed(() => siteColumns)
 
 const tableData = computed(() => {
   if (!report.value) return []
-  const source = reportType.value === 'agent' ? report.value.byAgent : report.value.bySite
+  const source = report.value.bySite
   return source.map((row) => ({
     ...row,
     satisfactionRateFormatted: formatPercent(row.satisfactionRate),
@@ -128,8 +86,7 @@ async function generateReport() {
       type: reportType.value,
     }
     if (selectedSite.value) params.site_id = selectedSite.value
-    const data = await feelbackReportApi.getReport(params)
-    report.value = data as unknown as FeelbackReportData
+    report.value = await feelbackReportApi.getReport(params)
     reportGenerated.value = true
     toast.showSuccess('Rapport genere avec succes')
   } catch {
@@ -177,19 +134,12 @@ async function handleExportExcel() {
   toast.showSuccess('Le fichier Excel a ete telecharge')
 }
 
-function saveSchedule() {
-  toast.showSuccess('Rapport automatique configure')
-  showScheduleModal.value = false
-}
 </script>
 
 <template>
   <div class="space-y-6">
     <div class="flex items-center justify-between">
       <h1 class="text-2xl font-bold text-gray-900">Rapports Feelback</h1>
-      <AppButton variant="secondary" @click="showScheduleModal = true">
-        Configurer rapport automatique
-      </AppButton>
     </div>
 
     <!-- Filters -->
@@ -231,45 +181,5 @@ function saveSchedule() {
       </AppCard>
     </template>
 
-    <!-- Scheduled Reports -->
-    <AppCard title="Rapports automatiques configures">
-      <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-          <thead class="bg-gray-50">
-            <tr>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nom</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Frequence</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Destinataires</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Format</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Prochaine execution</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-100">
-            <tr v-for="r in scheduledReports" :key="r.id" class="hover:bg-gray-50">
-              <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ r.name }}</td>
-              <td class="px-4 py-3 text-sm text-gray-600">{{ r.frequency }}</td>
-              <td class="px-4 py-3 text-sm text-gray-600">{{ r.recipients }}</td>
-              <td class="px-4 py-3 text-sm text-gray-600">{{ r.format }}</td>
-              <td class="px-4 py-3 text-sm text-gray-600">{{ r.nextRun }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </AppCard>
-
-    <!-- Schedule Modal -->
-    <AppModal v-model="showScheduleModal" title="Configurer un rapport automatique" size="md">
-      <div class="space-y-4">
-        <AppSelect v-model="scheduleForm.frequency" label="Frequence" :options="frequencyOptions" />
-        <AppInput v-model="scheduleForm.recipients" label="Destinataires (emails)" type="email" placeholder="email1@company.com, email2@company.com" />
-        <AppSelect v-model="scheduleForm.format" label="Format" :options="formatOptions" />
-      </div>
-      <template #footer>
-        <div class="flex justify-end gap-3">
-          <AppButton variant="secondary" @click="showScheduleModal = false">Annuler</AppButton>
-          <AppButton variant="primary" @click="saveSchedule">Enregistrer</AppButton>
-        </div>
-      </template>
-    </AppModal>
   </div>
 </template>

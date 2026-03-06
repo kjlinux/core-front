@@ -1,5 +1,4 @@
 import apiClient from './client'
-import type { ApiResponse } from '@/types'
 
 export type RfidCommand = 'RESET' | 'REBOOT' | 'WAKE_UP' | 'SLEEP' | 'STATUS'
 export type BiometricCommand = RfidCommand | 'ENROLE'
@@ -12,11 +11,11 @@ interface SendCommandResponse {
 }
 
 export const mqttApi = {
-  testConnection(): Promise<ApiResponse<{ connected: boolean }>> {
+  testConnection(): Promise<{ connected: boolean }> {
     return apiClient.post('/mqtt/test').then((r) => r.data)
   },
 
-  sendCommand(deviceId: string, deviceType: DeviceType, command: DeviceCommand): Promise<ApiResponse<SendCommandResponse>> {
+  sendCommand(deviceId: string, deviceType: DeviceType, command: DeviceCommand): Promise<SendCommandResponse> {
     return apiClient.post('/mqtt/send-command', {
       device_id: deviceId,
       device_type: deviceType,

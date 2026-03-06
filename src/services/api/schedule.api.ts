@@ -1,6 +1,5 @@
 import apiClient from './client'
 import type {
-  ApiResponse,
   PaginatedResponse,
   Schedule,
   Holiday,
@@ -13,19 +12,19 @@ export const scheduleApi = {
     return apiClient.get('/schedules', { params }).then((r) => r.data)
   },
 
-  getById(id: string): Promise<ApiResponse<Schedule>> {
+  getById(id: string): Promise<Schedule> {
     return apiClient.get(`/schedules/${id}`).then((r) => r.data)
   },
 
-  create(data: Partial<Schedule>): Promise<ApiResponse<Schedule>> {
+  create(data: Partial<Schedule>): Promise<Schedule> {
     return apiClient.post('/schedules', data).then((r) => r.data)
   },
 
-  update(id: string, data: Partial<Schedule>): Promise<ApiResponse<Schedule>> {
+  update(id: string, data: Partial<Schedule>): Promise<Schedule> {
     return apiClient.put(`/schedules/${id}`, data).then((r) => r.data)
   },
 
-  delete(id: string): Promise<ApiResponse<void>> {
+  delete(id: string): Promise<void> {
     return apiClient.delete(`/schedules/${id}`).then((r) => r.data)
   },
 
@@ -34,15 +33,15 @@ export const scheduleApi = {
     return apiClient.get('/holidays', { params }).then((r) => r.data)
   },
 
-  createHoliday(data: Partial<Holiday>): Promise<ApiResponse<Holiday>> {
+  createHoliday(data: Partial<Holiday>): Promise<Holiday> {
     return apiClient.post('/holidays', data).then((r) => r.data)
   },
 
-  updateHoliday(id: string, data: Partial<Holiday>): Promise<ApiResponse<Holiday>> {
+  updateHoliday(id: string, data: Partial<Holiday>): Promise<Holiday> {
     return apiClient.put(`/holidays/${id}`, data).then((r) => r.data)
   },
 
-  deleteHoliday(id: string): Promise<ApiResponse<void>> {
+  deleteHoliday(id: string): Promise<void> {
     return apiClient.delete(`/holidays/${id}`).then((r) => r.data)
   },
 }

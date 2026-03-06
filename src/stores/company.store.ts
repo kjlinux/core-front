@@ -61,9 +61,19 @@ export const useCompanyStore = defineStore('company', () => {
   }
 
   async function toggleActive(id: string) {
-    const company = companies.value.find((c) => c.id === id)
-    if (company) {
-      await updateCompany(id, { isActive: !company.isActive })
+    isLoading.value = true
+    try {
+      const updated = await companyApi.toggleActive(id)
+      const index = companies.value.findIndex((c) => c.id === id)
+      if (index !== -1) {
+        companies.value[index] = updated
+      }
+      if (currentCompany.value?.id === id) {
+        currentCompany.value = updated
+      }
+      return updated
+    } finally {
+      isLoading.value = false
     }
   }
 

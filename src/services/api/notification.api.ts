@@ -1,5 +1,5 @@
 import apiClient from './client'
-import type { ApiResponse, PaginatedResponse, PaginationParams } from '@/types'
+import type { PaginatedResponse, PaginationParams } from '@/types'
 
 interface Notification {
   id: string
@@ -14,11 +14,11 @@ export const notificationApi = {
     return apiClient.get('/notifications', { params }).then((r) => r.data)
   },
 
-  markAsRead(id: string): Promise<ApiResponse<void>> {
+  markAsRead(id: string): Promise<void> {
     return apiClient.patch(`/notifications/${id}/read`).then((r) => r.data)
   },
 
-  markAllAsRead(): Promise<ApiResponse<void>> {
+  markAllAsRead(): Promise<void> {
     return apiClient.patch('/notifications/read-all').then((r) => r.data)
   },
 }

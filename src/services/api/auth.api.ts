@@ -1,5 +1,5 @@
 import apiClient from './client'
-import type { LoginPayload, AuthResponse, ApiResponse, User } from '@/types'
+import type { LoginPayload, AuthResponse, User } from '@/types'
 
 export const authApi = {
   login(payload: LoginPayload): Promise<AuthResponse> {
@@ -14,19 +14,19 @@ export const authApi = {
     return apiClient.post('/auth/refresh', { token }).then((r) => r.data)
   },
 
-  getCurrentUser(): Promise<ApiResponse<User>> {
+  getCurrentUser(): Promise<User> {
     return apiClient.get('/auth/me').then((r) => r.data)
   },
 
-  forgotPassword(email: string): Promise<ApiResponse<void>> {
+  forgotPassword(email: string): Promise<void> {
     return apiClient.post('/auth/forgot-password', { email }).then((r) => r.data)
   },
 
-  updateProfile(data: { firstName: string; lastName: string }): Promise<ApiResponse<User>> {
+  updateProfile(data: { firstName: string; lastName: string }): Promise<User> {
     return apiClient.put('/auth/profile', data).then((r) => r.data)
   },
 
-  changePassword(data: { currentPassword: string; newPassword: string; newPassword_confirmation: string }): Promise<ApiResponse<void>> {
+  changePassword(data: { currentPassword: string; newPassword: string; newPassword_confirmation: string }): Promise<void> {
     return apiClient.put('/auth/password', data).then((r) => r.data)
   },
 }

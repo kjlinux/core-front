@@ -6,7 +6,7 @@ import { useToast } from '@/composables/useToast'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
-import { ArrowPathIcon, TrashIcon, ArrowLeftIcon } from '@heroicons/vue/24/outline'
+import { TrashIcon, ArrowLeftIcon } from '@heroicons/vue/24/outline'
 
 const route = useRoute()
 const router = useRouter()
@@ -20,15 +20,6 @@ const deviceEnrollments = computed(() => store.enrollments.filter((e) => e.devic
 
 function formatDate(date: string) {
   return new Date(date).toLocaleString('fr-FR')
-}
-
-async function handleSync() {
-  try {
-    await store.syncDevice(deviceId)
-    toast.showSuccess('Synchronisation lancee')
-  } catch {
-    toast.showError('Erreur lors de la synchronisation')
-  }
 }
 
 async function handleDeleteEnrollment(enrollmentId: string) {
@@ -93,10 +84,6 @@ onMounted(async () => {
               <p class="mt-1 text-gray-900">{{ formatDate(device.lastSyncAt) }}</p>
             </div>
           </div>
-          <AppButton variant="primary" @click="handleSync">
-            <ArrowPathIcon class="w-4 h-4 mr-1" />
-            Synchroniser
-          </AppButton>
         </div>
       </AppCard>
 

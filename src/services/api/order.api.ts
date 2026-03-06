@@ -1,8 +1,8 @@
 import apiClient from './client'
-import type { Order, ApiResponse, PaginatedResponse, PaginationParams } from '@/types'
+import type { Order, PaginatedResponse, PaginationParams } from '@/types'
 
 export const orderApi = {
-  create(data: Record<string, unknown>): Promise<ApiResponse<Order>> {
+  create(data: Record<string, unknown>): Promise<Order> {
     return apiClient.post('/orders', data).then((r) => r.data)
   },
 
@@ -10,15 +10,15 @@ export const orderApi = {
     return apiClient.get('/orders', { params }).then((r) => r.data)
   },
 
-  getById(id: string): Promise<ApiResponse<Order>> {
+  getById(id: string): Promise<Order> {
     return apiClient.get(`/orders/${id}`).then((r) => r.data)
   },
 
-  cancel(id: string): Promise<ApiResponse<Order>> {
+  cancel(id: string): Promise<Order> {
     return apiClient.patch(`/orders/${id}/cancel`).then((r) => r.data)
   },
 
-  initiatePayment(orderId: string, method: string): Promise<ApiResponse<Order>> {
+  initiatePayment(orderId: string, method: string): Promise<Order> {
     return apiClient.post(`/orders/${orderId}/payment`, { method }).then((r) => r.data)
   },
 

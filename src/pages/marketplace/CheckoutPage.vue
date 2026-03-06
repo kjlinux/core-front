@@ -1,19 +1,20 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCartStore } from '@/stores/cart.store'
 import { useOrderStore } from '@/stores/order.store'
+import { useAuthStore } from '@/stores/auth.store'
 import { useToast } from '@/composables/useToast'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppInput from '@/components/ui/AppInput.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
 import type { DeliveryAddress } from '@/types'
-import { PaymentMethod } from '@/types/enums'
 
 const router = useRouter()
 const cartStore = useCartStore()
 const orderStore = useOrderStore()
+const authStore = useAuthStore()
 const toast = useToast()
 
 const step = ref(1)
@@ -24,8 +25,8 @@ const mobileNumber = ref('')
 const DELIVERY_FEE = 2000
 
 const deliveryAddress = ref<DeliveryAddress>({
-  fullName: '',
-  phone: '',
+  fullName: authStore.user ? `${authStore.user.firstName} ${authStore.user.lastName}` : '',
+  phone: authStore.user?.phone ?? '',
   street: '',
   city: '',
   country: 'Burkina Faso',

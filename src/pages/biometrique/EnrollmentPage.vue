@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useBiometricStore } from '@/stores/biometric.store'
 import { useCompanyStore } from '@/stores/company.store'
 import { useEmployeeStore } from '@/stores/employee.store'
+import { useSiteStore } from '@/stores/site.store'
 import { useToast } from '@/composables/useToast'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
@@ -20,47 +21,74 @@ const route = useRoute()
 const store = useBiometricStore()
 const companyStore = useCompanyStore()
 const employeeStore = useEmployeeStore()
+const siteStore = useSiteStore()
 const toast = useToast()
 
 const step = ref(1)
 const selectedCompanyId = ref('')
+const selectedSiteId = ref('')
 const selectedEmployeeId = ref('')
 const selectedDeviceId = ref('')
 
-// Pre-fill from query params (coming from device list or enrollment list)
 const prefillDeviceId = route.query.deviceId as string | undefined
 const prefillEmployeeId = route.query.employeeId as string | undefined
 const captureStatus = ref<'idle' | 'waiting' | 'capturing' | 'success' | 'error'>('idle')
 const captureError = ref('')
 const enrollmentId = ref<string | null>(null)
 
+// --- Cascading options ---
+
 const companyOptions = computed(() => [
   { label: 'Selectionner une entreprise', value: '' },
   ...companyStore.companies.map((c) => ({ label: c.name, value: c.id })),
 ])
 
+const siteOptions = computed(() => {
+  if (!selectedCompanyId.value) return [{ label: 'Selectionner un site', value: '' }]
+  const sites = siteStore.sites.filter((s) => s.companyId === selectedCompanyId.value)
+  return [
+    { label: 'Selectionner un site', value: '' },
+    ...sites.map((s) => ({ label: s.name, value: s.id })),
+  ]
+})
+
 const employeeOptions = computed(() => {
-  const list = selectedCompanyId.value
-    ? employeeStore.employees.filter((e) => e.companyId === selectedCompanyId.value)
-    : employeeStore.employees
+  if (!selectedSiteId.value) return [{ label: 'Selectionner un employe', value: '' }]
+  const list = employeeStore.employees.filter((e) => e.siteId === selectedSiteId.value)
   return [
     { label: 'Selectionner un employe', value: '' },
     ...list.map((e) => ({ label: `${e.firstName} ${e.lastName}`, value: e.id })),
   ]
 })
 
-const deviceOptions = computed(() => [
-  { label: 'Selectionner un terminal', value: '' },
-  ...store.devices.map((d) => ({ label: `${d.name} (${d.serialNumber})`, value: d.id })),
-])
+const deviceOptions = computed(() => {
+  if (!selectedCompanyId.value) return [{ label: 'Selectionner un terminal', value: '' }]
+  const devices = store.devices.filter((d) => d.companyId === selectedCompanyId.value)
+  return [
+    { label: 'Selectionner un terminal', value: '' },
+    ...devices.map((d) => ({ label: `${d.name} (${d.serialNumber})`, value: d.id })),
+  ]
+})
 
 const selectedEmployee = computed(() => employeeStore.employees.find((e) => e.id === selectedEmployeeId.value))
 const selectedDevice = computed(() => store.devices.find((d) => d.id === selectedDeviceId.value))
 
+// Reset downstream when company changes
+watch(selectedCompanyId, () => {
+  selectedSiteId.value = ''
+  selectedEmployeeId.value = ''
+  selectedDeviceId.value = ''
+})
+
+// Reset employee when site changes
+watch(selectedSiteId, () => {
+  selectedEmployeeId.value = ''
+})
+
 const captureStatusLabel = computed(() => {
   switch (captureStatus.value) {
     case 'waiting': return 'Envoi de la commande...'
-    case 'capturing': return 'En attente de l\'empreinte sur le terminal...'
+    case 'capturing': return "En attente de l'empreinte sur le terminal..."
     case 'success': return 'Empreinte capturee avec succes!'
     case 'error': return captureError.value || 'Erreur lors de la capture'
     default: return 'Pret'
@@ -83,22 +111,19 @@ async function launchCapture() {
   captureError.value = ''
 
   try {
-    // Step 1: Send ENROLE command via backend -> MQTT -> device
     const enrollment = await store.enrollViaDevice(selectedEmployeeId.value, selectedDeviceId.value)
     enrollmentId.value = enrollment.id
 
     captureStatus.value = 'capturing'
 
-    // Step 2: Poll enrollment status until device responds with template_hash
     await store.pollEnrollmentStatus(
       enrollment.id,
       (updated) => {
-        // Callback on each poll - status is still 'pending' or changed
         if (updated.status === 'enrolled') {
           captureStatus.value = 'success'
         } else if (updated.status === 'failed') {
           captureStatus.value = 'error'
-          captureError.value = 'Le terminal n\'a pas pu capturer l\'empreinte'
+          captureError.value = "Le terminal n'a pas pu capturer l'empreinte"
         }
       },
       { interval: 2000, timeout: 60000 },
@@ -122,14 +147,32 @@ function retryCapture() {
 
 onMounted(async () => {
   await Promise.all([
-    companyStore.fetchCompanies(),
-    employeeStore.fetchEmployees(),
+    companyStore.fetchCompanies({ perPage: 100 }),
+    employeeStore.fetchEmployees({ perPage: 500, companyId: undefined, siteId: undefined, departmentId: undefined, search: undefined }),
+    siteStore.fetchSites({ perPage: 200 }),
     store.fetchDevices(),
   ])
 
-  // Apply prefill after data is loaded
-  if (prefillDeviceId) selectedDeviceId.value = prefillDeviceId
-  if (prefillEmployeeId) selectedEmployeeId.value = prefillEmployeeId
+  // Apply prefills: employee drives company+site selection
+  if (prefillEmployeeId) {
+    const employee = employeeStore.employees.find((e) => e.id === prefillEmployeeId)
+    if (employee) {
+      selectedCompanyId.value = employee.companyId
+      // nextTick to let watchers reset before setting site
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      selectedSiteId.value = employee.siteId
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      selectedEmployeeId.value = prefillEmployeeId
+    }
+  }
+
+  if (prefillDeviceId) {
+    const device = store.devices.find((d) => d.id === prefillDeviceId)
+    if (device && !selectedCompanyId.value) {
+      selectedCompanyId.value = device.companyId
+    }
+    selectedDeviceId.value = prefillDeviceId
+  }
 })
 </script>
 
@@ -167,21 +210,39 @@ onMounted(async () => {
       <div class="space-y-4 max-w-md">
         <AppSelect
           v-model="selectedCompanyId"
-          label="Entreprise"
+          label="Entreprise *"
           :options="companyOptions"
         />
+
+        <AppSelect
+          v-model="selectedSiteId"
+          label="Site *"
+          :options="siteOptions"
+          :disabled="!selectedCompanyId"
+        />
+
         <AppSelect
           v-model="selectedEmployeeId"
           label="Employe *"
           :options="employeeOptions"
+          :disabled="!selectedSiteId"
         />
+
         <AppSelect
           v-model="selectedDeviceId"
           label="Terminal biometrique *"
           :options="deviceOptions"
+          :disabled="!selectedCompanyId"
         />
+
         <div class="pt-4">
-          <AppButton variant="primary" @click="goToStep2">Continuer</AppButton>
+          <AppButton
+            variant="primary"
+            :disabled="!selectedEmployeeId || !selectedDeviceId"
+            @click="goToStep2"
+          >
+            Continuer
+          </AppButton>
         </div>
       </div>
     </AppCard>
@@ -230,11 +291,14 @@ onMounted(async () => {
           </div>
 
           <div class="flex gap-3">
-            <AppButton variant="secondary" @click="step = 1" :disabled="captureStatus === 'waiting' || captureStatus === 'capturing'">
+            <AppButton
+              variant="secondary"
+              @click="step = 1"
+              :disabled="captureStatus === 'waiting' || captureStatus === 'capturing'"
+            >
               Retour
             </AppButton>
 
-            <!-- Idle: Start capture -->
             <AppButton
               v-if="captureStatus === 'idle'"
               variant="primary"
@@ -243,7 +307,6 @@ onMounted(async () => {
               Lancer la capture
             </AppButton>
 
-            <!-- Waiting/Capturing: Disabled button showing state -->
             <AppButton
               v-else-if="captureStatus === 'waiting' || captureStatus === 'capturing'"
               variant="primary"
@@ -253,7 +316,6 @@ onMounted(async () => {
               {{ captureStatus === 'waiting' ? 'Envoi...' : 'Capture en cours...' }}
             </AppButton>
 
-            <!-- Success: Go to list -->
             <AppButton
               v-else-if="captureStatus === 'success'"
               variant="primary"
@@ -262,7 +324,6 @@ onMounted(async () => {
               Voir les inscriptions
             </AppButton>
 
-            <!-- Error: Retry -->
             <AppButton
               v-else-if="captureStatus === 'error'"
               variant="primary"

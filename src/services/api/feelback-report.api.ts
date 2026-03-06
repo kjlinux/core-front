@@ -1,5 +1,4 @@
 import apiClient from './client'
-import type { ApiResponse } from '@/types'
 
 export interface FeelbackReportSiteRow {
   siteId: string
@@ -39,7 +38,7 @@ export interface FeelbackReportParams {
 }
 
 export const feelbackReportApi = {
-  getReport(params?: FeelbackReportParams): Promise<ApiResponse<FeelbackReportData>> {
+  getReport(params?: FeelbackReportParams): Promise<FeelbackReportData> {
     return apiClient.get('/feelback/reports', { params }).then((r) => r.data)
   },
 }

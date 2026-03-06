@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
-import type { Schedule } from '@/types'
+import { ref, computed, watch } from 'vue'
+import type { Schedule, Company, Department } from '@/types'
 import FormSection from './FormSection.vue'
 import FormRow from './FormRow.vue'
 import AppInput from '@/components/ui/AppInput.vue'
@@ -10,6 +10,8 @@ import AppCheckbox from '@/components/ui/AppCheckbox.vue'
 
 const props = defineProps<{
   initialData?: Partial<Schedule>
+  companies: Company[]
+  departments: Department[]
   loading: boolean
 }>()
 
@@ -22,6 +24,7 @@ const errors = ref<Record<string, string>>({})
 
 const form = ref<Partial<Schedule>>({
   name: '',
+  companyId: '',
   type: 'standard',
   startTime: '',
   endTime: '',
@@ -29,6 +32,7 @@ const form = ref<Partial<Schedule>>({
   breakEnd: '',
   workDays: [],
   lateTolerance: 0,
+  assignedDepartments: [],
 })
 
 // Pré-remplissage quand initialData arrive (chargement async en édition)
@@ -38,6 +42,7 @@ watch(
     if (data && Object.keys(data).length > 0) {
       form.value = {
         name: data.name ?? '',
+        companyId: data.companyId ?? '',
         type: data.type ?? 'standard',
         startTime: data.startTime ?? '',
         endTime: data.endTime ?? '',
@@ -45,11 +50,21 @@ watch(
         breakEnd: data.breakEnd ?? '',
         workDays: data.workDays ? [...data.workDays] : [],
         lateTolerance: data.lateTolerance ?? 0,
+        assignedDepartments: data.assignedDepartments ? [...data.assignedDepartments] : [],
       }
     }
   },
   { immediate: true },
 )
+
+const companyOptions = computed(() =>
+  props.companies.map((c) => ({ label: c.name, value: c.id }))
+)
+
+const filteredDepartments = computed(() => {
+  if (!form.value.companyId) return []
+  return props.departments.filter(d => d.companyId === form.value.companyId)
+})
 
 const typeOptions = [
   { label: 'Standard', value: 'standard' },
@@ -77,9 +92,28 @@ const toggleDay = (day: number) => {
   form.value = { ...form.value, workDays: days }
 }
 
+const toggleDepartment = (deptId: string) => {
+  const depts = [...(form.value.assignedDepartments ?? [])]
+  const idx = depts.indexOf(deptId)
+  if (idx > -1) {
+    depts.splice(idx, 1)
+  } else {
+    depts.push(deptId)
+  }
+  form.value = { ...form.value, assignedDepartments: depts }
+}
+
+// Reset departments when company changes
+watch(() => form.value.companyId, () => {
+  form.value = { ...form.value, assignedDepartments: [] }
+})
+
 const validate = (): boolean => {
   errors.value = {}
 
+  if (!form.value.companyId) {
+    errors.value.companyId = "L'entreprise est requise"
+  }
   if (!form.value.name?.trim()) {
     errors.value.name = 'Le nom est requis'
   }
@@ -112,6 +146,15 @@ const handleSubmit = () => {
 <template>
   <form @submit.prevent="handleSubmit" class="space-y-6">
     <FormSection title="Horaire de travail">
+      <FormRow label="Entreprise" :required="true" :error="errors.companyId">
+        <AppSelect
+          v-model="form.companyId"
+          :options="companyOptions"
+          placeholder="Selectionner une entreprise"
+          :disabled="loading"
+        />
+      </FormRow>
+
       <FormRow label="Nom" :required="true" :error="errors.name">
         <AppInput
           v-model="form.name"
@@ -186,6 +229,25 @@ const handleSubmit = () => {
           placeholder="0"
           :disabled="loading"
         />
+      </FormRow>
+
+      <FormRow label="Départements concernés" :error="errors.assignedDepartments">
+        <div v-if="!form.companyId" class="text-sm text-gray-400 italic">
+          Sélectionner d'abord une entreprise
+        </div>
+        <div v-else-if="filteredDepartments.length === 0" class="text-sm text-gray-400 italic">
+          Aucun département pour cette entreprise
+        </div>
+        <div v-else class="flex flex-wrap gap-3">
+          <AppCheckbox
+            v-for="dept in filteredDepartments"
+            :key="dept.id"
+            :model-value="(form.assignedDepartments ?? []).includes(dept.id)"
+            @update:model-value="toggleDepartment(dept.id)"
+            :label="dept.name"
+            :disabled="loading"
+          />
+        </div>
       </FormRow>
     </FormSection>
 

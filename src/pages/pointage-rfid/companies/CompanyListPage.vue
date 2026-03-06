@@ -1,84 +1,23 @@
 <script setup lang="ts">
-import { onMounted, computed, h } from 'vue'
+import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCompanyStore } from '@/stores/company.store'
 import { usePermissions } from '@/composables/usePermissions'
 import type { Company } from '@/types'
-import type { TableColumn } from '@/types/common'
-import DataTable from '@/components/data-display/DataTable.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
-import { EyeIcon, PencilIcon } from '@heroicons/vue/24/outline'
+import { EyeIcon, PencilIcon, NoSymbolIcon, CheckCircleIcon } from '@heroicons/vue/24/outline'
+import { useToast } from '@/composables/useToast'
 
 const router = useRouter()
 const companyStore = useCompanyStore()
 const { isSuperAdmin } = usePermissions()
+const toast = useToast()
 
 onMounted(() => {
   companyStore.fetchCompanies()
 })
-
-const columns = computed<TableColumn[]>(() => [
-  {
-    key: 'name',
-    label: 'Nom',
-    sortable: true,
-  },
-  {
-    key: 'email',
-    label: 'Email',
-    sortable: true,
-  },
-  {
-    key: 'phone',
-    label: 'Téléphone',
-    sortable: false,
-  },
-  {
-    key: 'status',
-    label: 'Statut',
-    sortable: true,
-  },
-  {
-    key: 'employeeCount',
-    label: 'Employés',
-    sortable: true,
-    align: 'center' as const,
-  },
-  {
-    key: 'actions',
-    label: 'Actions',
-    sortable: false,
-    align: 'right' as const,
-    width: '150px',
-  },
-])
-
-const tableData = computed(() => {
-  return companyStore.companies.map((company) => ({
-    id: company.id,
-    name: company.name,
-    email: company.email,
-    phone: company.phone,
-    status: getStatusBadge(company),
-    employeeCount: company.employeeCount,
-    actions: getActionButtons(company),
-  }))
-})
-
-function getStatusBadge(company: Company): string {
-  return company.isActive ? 'Actif' : 'Inactif'
-}
-
-function getActionButtons(company: Company): string {
-  const actions = []
-  actions.push('Voir')
-  if (isSuperAdmin.value) {
-    actions.push('Modifier')
-  }
-  return actions.join(' | ')
-}
 
 function handleRowClick(row: any) {
   router.push({ name: 'rfid-company-detail', params: { id: row.id } })
@@ -102,6 +41,15 @@ function handlePageChange(page: number) {
 
 function handleSort(column: string, direction: 'asc' | 'desc') {
   companyStore.fetchCompanies({ sortBy: column, sortOrder: direction })
+}
+
+async function handleToggleActive(company: Company) {
+  try {
+    await companyStore.toggleActive(company.id)
+    toast.success('Succes', company.isActive ? 'Entreprise desactivee' : 'Entreprise activee')
+  } catch (error: any) {
+    toast.error('Erreur', error.message || 'Erreur lors du changement de statut')
+  }
 }
 </script>
 
@@ -182,10 +130,19 @@ function handleSort(column: string, direction: 'asc' | 'desc') {
                   <button
                     v-if="isSuperAdmin"
                     @click.stop="handleEditCompany(company.id)"
-                    class="text-gray-600 hover:text-gray-900"
+                    class="text-gray-600 hover:text-gray-900 mr-3"
                     title="Modifier"
                   >
                     <PencilIcon class="h-5 w-5 inline" />
+                  </button>
+                  <button
+                    v-if="isSuperAdmin"
+                    @click.stop="handleToggleActive(company)"
+                    :class="company.isActive ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'"
+                    :title="company.isActive ? 'Desactiver' : 'Activer'"
+                  >
+                    <NoSymbolIcon v-if="company.isActive" class="h-5 w-5 inline" />
+                    <CheckCircleIcon v-else class="h-5 w-5 inline" />
                   </button>
                 </td>
               </tr>

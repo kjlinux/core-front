@@ -28,9 +28,9 @@ export const useSiteStore = defineStore('site', () => {
   async function fetchSite(id: string) {
     isLoading.value = true
     try {
-      const response = await siteApi.getById(id)
-      currentSite.value = response.data
-      return response.data
+      const site = await siteApi.getById(id)
+      currentSite.value = site
+      return site
     } finally {
       isLoading.value = false
     }
@@ -39,9 +39,9 @@ export const useSiteStore = defineStore('site', () => {
   async function createSite(data: Partial<Site>) {
     isLoading.value = true
     try {
-      const response = await siteApi.create(data)
-      sites.value.push(response.data)
-      return response.data
+      const created = await siteApi.create(data)
+      sites.value.push(created)
+      return created
     } finally {
       isLoading.value = false
     }
@@ -50,15 +50,15 @@ export const useSiteStore = defineStore('site', () => {
   async function updateSite(id: string, data: Partial<Site>) {
     isLoading.value = true
     try {
-      const response = await siteApi.update(id, data)
+      const updated = await siteApi.update(id, data)
       const index = sites.value.findIndex((s) => s.id === id)
       if (index !== -1) {
-        sites.value[index] = response.data
+        sites.value[index] = updated
       }
       if (currentSite.value?.id === id) {
-        currentSite.value = response.data
+        currentSite.value = updated
       }
-      return response.data
+      return updated
     } finally {
       isLoading.value = false
     }

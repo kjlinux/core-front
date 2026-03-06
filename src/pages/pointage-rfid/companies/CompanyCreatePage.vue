@@ -65,11 +65,10 @@ function handleCancel() {
           Annuler
         </AppButton>
         <AppButton
-          type="submit"
           :loading="companyStore.isLoading"
           @click="handleSubmit"
         >
-          Créer l'entreprise
+          Creer l'entreprise
         </AppButton>
       </div>
     </AppCard>

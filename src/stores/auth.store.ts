@@ -30,13 +30,19 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  function logout() {
-    disconnectEcho()
-    user.value = null
-    accessToken.value = null
-    localStorage.removeItem('access_token')
-    localStorage.removeItem('refresh_token')
-    localStorage.removeItem('auth_user')
+  async function logout() {
+    try {
+      await authApi.logout()
+    } catch {
+      // Ignore errors — always clear local state
+    } finally {
+      disconnectEcho()
+      user.value = null
+      accessToken.value = null
+      localStorage.removeItem('access_token')
+      localStorage.removeItem('refresh_token')
+      localStorage.removeItem('auth_user')
+    }
   }
 
   function loadFromStorage() {
@@ -56,8 +62,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function updateProfile(data: { firstName: string; lastName: string }) {
-    const response = await authApi.updateProfile(data)
-    user.value = response.data
+    user.value = await authApi.updateProfile(data)
     persistUser()
   }
 
