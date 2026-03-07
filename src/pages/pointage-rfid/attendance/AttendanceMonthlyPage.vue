@@ -7,13 +7,11 @@
           v-model="selectedMonth"
           :options="monthOptions"
           placeholder="Sélectionner le mois"
-          @change="fetchData"
         />
         <AppSelect
           v-model="selectedYear"
           :options="yearOptions"
           placeholder="Sélectionner l'année"
-          @change="fetchData"
         />
         <AppButton @click="handleExport">
           Exporter
@@ -46,7 +44,6 @@
           v-model="filters.departmentId"
           :options="departmentOptions"
           placeholder="Tous les départements"
-          @change="fetchData"
         />
         <AppInput
           v-model="filters.employeeName"
@@ -84,7 +81,7 @@
 
 <script setup lang="ts">
 // @ts-nocheck
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { useAttendanceStore } from '@/stores/attendance.store';
 import DataTable from '@/components/data-display/DataTable.vue';
 import AppButton from '@/components/ui/AppButton.vue';
@@ -218,6 +215,16 @@ const handleSearchDebounce = () => {
 const handleExport = () => {
   info('Export en cours...');
 };
+
+watch([selectedMonth, selectedYear], () => {
+  currentPage.value = 1;
+  fetchData();
+});
+
+watch(() => filters.value.departmentId, () => {
+  currentPage.value = 1;
+  fetchData();
+});
 
 onMounted(() => {
   loadFilters();

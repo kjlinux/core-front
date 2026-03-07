@@ -11,6 +11,7 @@ interface DataItem {
 interface Props {
   data: DataItem[]
   title?: string
+  seriesName?: string
   color?: string
   horizontal?: boolean
   height?: string
@@ -19,59 +20,43 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   title: '',
+  seriesName: '',
   color: '#3b82f6',
   horizontal: false,
   height: '400px',
   loading: false,
 })
 
+const legendConfig = computed(() => props.seriesName
+  ? { data: [props.seriesName], top: 4, textStyle: { color: '#6b7280', fontSize: 12 } }
+  : { show: false }
+)
+const gridTop = computed(() => props.seriesName ? '14%' : '8%')
+
 const chartOption = computed<EChartsOption>(() => {
   if (props.horizontal) {
     return {
-      title: {
-        text: props.title,
-        left: 'center',
-        textStyle: {
-          fontSize: 16,
-          fontWeight: 600,
-        },
-      },
+      tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+      legend: legendConfig.value,
+      grid: { left: '3%', right: '8%', bottom: '4%', top: gridTop.value, containLabel: true },
       xAxis: {
         type: 'value',
-        axisLine: {
-          lineStyle: {
-            color: '#e5e7eb',
-          },
-        },
-        axisLabel: {
-          color: '#6b7280',
-        },
-        splitLine: {
-          lineStyle: {
-            color: '#f3f4f6',
-          },
-        },
+        axisLine: { lineStyle: { color: '#e5e7eb' } },
+        axisLabel: { color: '#6b7280' },
+        splitLine: { lineStyle: { color: '#f3f4f6' } },
       },
       yAxis: {
         type: 'category',
         data: props.data.map(item => item.name),
-        axisLine: {
-          lineStyle: {
-            color: '#e5e7eb',
-          },
-        },
-        axisLabel: {
-          color: '#6b7280',
-        },
+        axisLine: { lineStyle: { color: '#e5e7eb' } },
+        axisLabel: { color: '#6b7280' },
       },
       series: [
         {
+          name: props.seriesName || undefined,
           type: 'bar',
           data: props.data.map(item => item.value),
-          itemStyle: {
-            color: props.color,
-            borderRadius: [0, 4, 4, 0],
-          },
+          itemStyle: { color: props.color, borderRadius: [0, 4, 4, 0] },
           barMaxWidth: 40,
         },
       ],
@@ -79,50 +64,27 @@ const chartOption = computed<EChartsOption>(() => {
   }
 
   return {
-    title: {
-      text: props.title,
-      left: 'center',
-      textStyle: {
-        fontSize: 16,
-        fontWeight: 600,
-      },
-    },
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+    legend: legendConfig.value,
+    grid: { left: '3%', right: '4%', bottom: '4%', top: gridTop.value, containLabel: true },
     xAxis: {
       type: 'category',
       data: props.data.map(item => item.name),
-      axisLine: {
-        lineStyle: {
-          color: '#e5e7eb',
-        },
-      },
-      axisLabel: {
-        color: '#6b7280',
-      },
+      axisLine: { lineStyle: { color: '#e5e7eb' } },
+      axisLabel: { color: '#6b7280' },
     },
     yAxis: {
       type: 'value',
-      axisLine: {
-        lineStyle: {
-          color: '#e5e7eb',
-        },
-      },
-      axisLabel: {
-        color: '#6b7280',
-      },
-      splitLine: {
-        lineStyle: {
-          color: '#f3f4f6',
-        },
-      },
+      axisLine: { lineStyle: { color: '#e5e7eb' } },
+      axisLabel: { color: '#6b7280' },
+      splitLine: { lineStyle: { color: '#f3f4f6' } },
     },
     series: [
       {
+        name: props.seriesName || undefined,
         type: 'bar',
         data: props.data.map(item => item.value),
-        itemStyle: {
-          color: props.color,
-          borderRadius: [4, 4, 0, 0],
-        },
+        itemStyle: { color: props.color, borderRadius: [4, 4, 0, 0] },
         barMaxWidth: 40,
       },
     ],

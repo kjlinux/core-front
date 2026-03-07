@@ -101,7 +101,7 @@
 
 <script setup lang="ts">
 // @ts-nocheck
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { useAttendanceStore } from '@/stores/attendance.store';
 import DataTable from '@/components/data-display/DataTable.vue';
 import AppButton from '@/components/ui/AppButton.vue';
@@ -168,6 +168,10 @@ const refreshData = async () => {
     loading.value = false;
   }
 };
+
+watch(selectedDate, () => {
+  refreshData();
+});
 
 onMounted(() => {
   refreshData();

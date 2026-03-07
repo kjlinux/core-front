@@ -7,7 +7,6 @@
           v-model="selectedDate"
           type="date"
           placeholder="Sélectionner une date"
-          @change="fetchData"
         />
         <AppButton @click="handleExport">
           Exporter
@@ -44,19 +43,16 @@
           v-model="filters.departmentId"
           :options="departmentOptions"
           placeholder="Tous les départements"
-          @change="fetchData"
         />
         <AppSelect
           v-model="filters.siteId"
           :options="siteOptions"
           placeholder="Tous les sites"
-          @change="fetchData"
         />
         <AppSelect
           v-model="filters.status"
           :options="statusOptions"
           placeholder="Tous les statuts"
-          @change="fetchData"
         />
       </div>
 
@@ -102,7 +98,7 @@
 
 <script setup lang="ts">
 // @ts-nocheck
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAttendanceStore } from '@/stores/attendance.store';
 import type { AttendanceRecord } from '@/types/attendance';
@@ -234,6 +230,16 @@ const viewDetail = (record: AttendanceRecord) => {
     params: { id: record.employeeId },
   });
 };
+
+watch(selectedDate, () => {
+  currentPage.value = 1;
+  fetchData();
+});
+
+watch([() => filters.value.departmentId, () => filters.value.siteId, () => filters.value.status], () => {
+  currentPage.value = 1;
+  fetchData();
+});
 
 onMounted(() => {
   loadFilters();

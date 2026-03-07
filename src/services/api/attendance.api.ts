@@ -28,13 +28,17 @@ export const attendanceApi = {
 
   getByEmployee(employeeId: string, dateRange: DateRange): Promise<AttendanceRecord[]> {
     return apiClient
-      .get(`/attendance/employee/${employeeId}`, { params: dateRange })
+      .get(`/attendance/employee/${employeeId}`, {
+        params: { start_date: dateRange.startDate, end_date: dateRange.endDate },
+      })
       .then((r) => r.data)
   },
 
   getByDepartment(departmentId: string, dateRange: DateRange): Promise<AttendanceRecord[]> {
     return apiClient
-      .get(`/attendance/department/${departmentId}`, { params: dateRange })
+      .get(`/attendance/department/${departmentId}`, {
+        params: { start_date: dateRange.startDate, end_date: dateRange.endDate },
+      })
       .then((r) => r.data)
   },
 

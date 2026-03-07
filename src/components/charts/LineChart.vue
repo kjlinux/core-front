@@ -11,6 +11,7 @@ interface DataItem {
 interface Props {
   data: DataItem[]
   title?: string
+  seriesName?: string
   color?: string
   height?: string
   loading?: boolean
@@ -18,20 +19,21 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   title: '',
+  seriesName: '',
   color: '#22c55e',
   height: '400px',
   loading: false,
 })
 
 const chartOption = computed<EChartsOption>(() => ({
-  title: {
-    text: props.title,
-    left: 'center',
-    textStyle: {
-      fontSize: 16,
-      fontWeight: 600,
-    },
+  tooltip: {
+    trigger: 'axis',
+    axisPointer: { type: 'cross', crossStyle: { color: '#94a3b8' } },
   },
+  legend: props.seriesName
+    ? { data: [props.seriesName], top: 4, textStyle: { color: '#6b7280', fontSize: 12 } }
+    : { show: false },
+  grid: { left: '3%', right: '4%', bottom: '4%', top: props.seriesName ? '14%' : '8%', containLabel: true },
   xAxis: {
     type: 'category',
     data: props.data.map(item => item.name),
@@ -62,6 +64,7 @@ const chartOption = computed<EChartsOption>(() => ({
   },
   series: [
     {
+      name: props.seriesName || undefined,
       type: 'line',
       data: props.data.map(item => item.value),
       smooth: true,

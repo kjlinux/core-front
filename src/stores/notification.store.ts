@@ -1,8 +1,9 @@
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { notificationApi } from '@/services/api/notification.api'
 import { getEcho } from '@/services/echo'
 import { useNotificationSound } from '@/composables/useNotificationSound'
+import { useAuthStore } from '@/stores/auth.store'
 
 export interface AppNotification {
   id: string
@@ -76,7 +77,13 @@ export const useNotificationStore = defineStore('notification', () => {
     const echo = getEcho()
     if (!echo) return
 
-    echo.channel('notifications')
+    const authStore = useAuthStore()
+    const userId = authStore.user?.id
+    if (!userId) return
+
+    const channelName = `notifications.${userId}`
+
+    echo.private(channelName)
       .stopListening('.notification.received')
       .listen('.notification.received', (data: AppNotification) => {
         const notification: AppNotification = {
@@ -97,7 +104,12 @@ export const useNotificationStore = defineStore('notification', () => {
   function unsubscribeRealtime() {
     const echo = getEcho()
     if (!echo) return
-    echo.leave('notifications')
+
+    const authStore = useAuthStore()
+    const userId = authStore.user?.id
+    if (userId) {
+      echo.leave(`notifications.${userId}`)
+    }
   }
 
   return {

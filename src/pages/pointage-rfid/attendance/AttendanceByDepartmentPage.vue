@@ -23,17 +23,15 @@
         <AppCard>
           <div class="date-range-controls">
             <AppInput
-              v-model="dateRange.startDate"
+              v-model="startDate"
               type="date"
               placeholder="Date de début"
-              @change="fetchData"
             />
             <span class="separator">-</span>
             <AppInput
-              v-model="dateRange.endDate"
+              v-model="endDate"
               type="date"
               placeholder="Date de fin"
-              @change="fetchData"
             />
             <AppButton @click="setCurrentMonth">
               Ce mois
@@ -97,7 +95,7 @@
 
 <script setup lang="ts">
 // @ts-nocheck
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAttendanceStore } from '@/stores/attendance.store';
 import { useDateRange } from '@/composables/useDateRange';
@@ -111,7 +109,7 @@ import { useToast } from '@/composables/useToast';
 const route = useRoute();
 const router = useRouter();
 const attendanceStore = useAttendanceStore();
-const { dateRange, setCurrentMonth: setCurrentMonthRange } = useDateRange();
+const { startDate, endDate, dateRange, setCurrentMonth: setCurrentMonthRange } = useDateRange();
 const { info, success, error } = useToast();
 
 const loading = ref(false);
@@ -201,6 +199,11 @@ const viewEmployee = (employeeId: string) => {
 const goBack = () => {
   router.back();
 };
+
+watch([startDate, endDate], () => {
+  currentPage.value = 1;
+  fetchData();
+});
 
 onMounted(() => {
   setCurrentMonth();

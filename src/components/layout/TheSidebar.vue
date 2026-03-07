@@ -67,10 +67,10 @@ const sidebarClasses = computed(() => [
     <!-- Logo -->
     <div class="flex h-16 items-center justify-center border-b border-white/10 px-4">
       <template v-if="!ui.sidebarCollapsed">
-        <span class="text-lg font-bold tracking-wide">CORE TANGA</span>
+        <span class="text-lg font-bold tracking-wide">TANGAFLOW</span>
       </template>
       <template v-else>
-        <span class="text-lg font-bold">CT</span>
+        <span class="text-lg font-bold">TF</span>
       </template>
     </div>
 
@@ -148,7 +148,10 @@ const sidebarClasses = computed(() => [
           to="/pointage-rfid/schedules"
           :icon="ClockIcon"
           :collapsed="false"
-          :active="route.path.startsWith('/pointage-rfid/schedules') || route.path.startsWith('/pointage-rfid/holidays')"
+          :active="
+            route.path.startsWith('/pointage-rfid/schedules') ||
+            route.path.startsWith('/pointage-rfid/holidays')
+          "
           :nested="true"
         />
         <TheSidebarItem
