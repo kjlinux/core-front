@@ -8,7 +8,7 @@ import DataTable from '@/components/data-display/DataTable.vue'
 import StatCard from '@/components/data-display/StatCard.vue'
 import { useToast } from '@/composables/useToast'
 import { useAuthStore } from '@/stores/auth.store'
-import { attendanceReportApi, type AttendanceReportData } from '@/services/api/attendance-report.api'
+import { attendanceReportApi, type AttendanceReportData, type AttendanceReportParams } from '@/services/api/attendance-report.api'
 import { exportToPdf, exportToExcel } from '@/utils/export-helpers'
 import { companyApi } from '@/services/api/company.api'
 import type { TableColumn } from '@/types/common'
@@ -100,7 +100,7 @@ const columnsByType: Record<string, TableColumn[]> = {
   ],
 }
 
-const currentColumns = computed(() => columnsByType[reportType.value] ?? columnsByType.daily)
+const currentColumns = computed<TableColumn[]>(() => columnsByType[reportType.value] ?? columnsByType.daily!)
 
 const currentReportLabel = computed(() => {
   return reportTypeOptions.find((o) => o.value === reportType.value)?.label ?? 'Rapport'
@@ -189,7 +189,7 @@ const generateReport = async () => {
   }
   loading.value = true
   try {
-    const params: Record<string, string> = {
+    const params: AttendanceReportParams = {
       start_date: startDate.value,
       end_date: endDate.value,
       type: reportType.value,

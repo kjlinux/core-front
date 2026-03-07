@@ -27,7 +27,7 @@ export const useOrderStore = defineStore('order', () => {
     try {
       const authStore = useAuthStore()
       const companyId = authStore.userCompanyId ?? undefined
-      const response = await orderApi.getAll({ companyId })
+      const response = await orderApi.getAll({ companyId } as any)
       orders.value = response.data
     } finally {
       isLoading.value = false

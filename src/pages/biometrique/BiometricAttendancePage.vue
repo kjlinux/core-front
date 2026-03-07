@@ -165,7 +165,7 @@ const loading = ref(false)
 const rawReport = ref<any>(null)
 
 const formattedDate = computed(() =>
-  new Date(selectedDate.value).toLocaleDateString('fr-FR', {
+  new Date(selectedDate.value ?? '').toLocaleDateString('fr-FR', {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
@@ -229,20 +229,20 @@ function statusLabel(status: string): string {
   return map[status] ?? status
 }
 
-function statusVariant(status: string): 'success' | 'danger' | 'warning' | 'default' {
-  const map: Record<string, 'success' | 'danger' | 'warning' | 'default'> = {
+function statusVariant(status: string): 'success' | 'danger' | 'warning' | 'neutral' {
+  const map: Record<string, 'success' | 'danger' | 'warning' | 'neutral'> = {
     present: 'success',
     absent: 'danger',
     late: 'warning',
     left_early: 'warning',
   }
-  return map[status] ?? 'default'
+  return map[status] ?? 'neutral'
 }
 
 async function fetchData() {
   loading.value = true
   try {
-    rawReport.value = await attendanceStore.fetchBiometricAttendance(selectedDate.value)
+    rawReport.value = await attendanceStore.fetchBiometricAttendance(selectedDate.value ?? '')
   } finally {
     loading.value = false
   }

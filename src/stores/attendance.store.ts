@@ -65,7 +65,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
     try {
       const date = typeof params === 'string' ? params : (params.date ?? new Date().toISOString().split('T')[0])
       const extraFilters = typeof params === 'string' ? filters : params
-      dailyReport.value = await attendanceApi.getDailyReport(date, extraFilters as any)
+      dailyReport.value = await attendanceApi.getDailyReport(date!, extraFilters as any)
       if (dailyReport.value) {
         records.value = dailyReport.value.records
       }
@@ -201,7 +201,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
       const byEmployee: Record<string, any[]> = {}
       for (const r of recs) {
         if (!byEmployee[r.employeeId]) byEmployee[r.employeeId] = []
-        byEmployee[r.employeeId].push(r)
+        byEmployee[r.employeeId]!.push(r)
       }
       departmentEmployeesData.value = Object.entries(byEmployee).map(([empId, empRecs]) => {
         const totalDays = empRecs.length
@@ -234,7 +234,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
       const byEmployee: Record<string, any[]> = {}
       for (const r of recs) {
         if (!byEmployee[r.employeeId]) byEmployee[r.employeeId] = []
-        byEmployee[r.employeeId].push(r)
+        byEmployee[r.employeeId]!.push(r)
       }
       const rates = Object.values(byEmployee).map((empRecs) => {
         const total = empRecs.length
