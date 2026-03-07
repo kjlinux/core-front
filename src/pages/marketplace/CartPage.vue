@@ -48,8 +48,24 @@ function removeItem(productId: string) {
           :key="item.productId"
         >
           <div class="flex gap-4">
-            <div class="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400 text-2xl flex-shrink-0">
-              [P]
+            <!-- Mini carte RFID -->
+            <div
+              class="w-20 h-14 rounded-lg flex-shrink-0 relative overflow-hidden flex flex-col justify-between p-2"
+              :class="{
+                'bg-gradient-to-br from-slate-700 to-slate-900': item.product.category === 'standard_card',
+                'bg-gradient-to-br from-amber-500 to-red-700': item.product.category === 'custom_card',
+                'bg-gradient-to-br from-indigo-600 to-slate-900': item.product.category === 'enterprise_pack',
+                'bg-gradient-to-br from-slate-600 to-slate-800': !['standard_card','custom_card','enterprise_pack'].includes(item.product.category),
+              }"
+            >
+              <div class="w-5 h-3.5 rounded-sm bg-gradient-to-br from-yellow-200 to-yellow-400 flex flex-col justify-center gap-px px-0.5">
+                <div class="h-px bg-yellow-600 opacity-60"></div>
+                <div class="h-px bg-yellow-600 opacity-60"></div>
+              </div>
+              <svg class="w-4 h-4 text-white/50 self-end" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M8.288 15.038a5.25 5.25 0 017.424 0M5.106 11.856c3.807-3.808 9.98-3.808 13.788 0M1.924 8.674c5.565-5.565 14.587-5.565 20.152 0" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="12" cy="18.75" r=".75" fill="currentColor" stroke="none"/>
+              </svg>
             </div>
             <div class="flex-1 space-y-2">
               <div class="flex items-start justify-between">

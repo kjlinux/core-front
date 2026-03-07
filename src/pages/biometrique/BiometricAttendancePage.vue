@@ -108,10 +108,10 @@
                 {{ record.department }}
               </td>
               <td class="whitespace-nowrap px-4 py-4 text-sm text-gray-900">
-                {{ record.entryTime ?? '—' }}
+                {{ formatTime(record.entryTime) }}
               </td>
               <td class="whitespace-nowrap px-4 py-4 text-sm text-gray-900">
-                {{ record.exitTime ?? '—' }}
+                {{ formatTime(record.exitTime) }}
               </td>
               <td class="whitespace-nowrap px-4 py-4">
                 <AppBadge :variant="statusVariant(record.status)" size="sm">
@@ -142,7 +142,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useAttendanceStore } from '@/stores/attendance.store'
 import StatCard from '@/components/data-display/StatCard.vue'
 import AppCard from '@/components/ui/AppCard.vue'
@@ -160,6 +160,7 @@ import {
 const attendanceStore = useAttendanceStore()
 
 const selectedDate = ref(new Date().toISOString().split('T')[0])
+const today = new Date().toISOString().split('T')[0]
 const loading = ref(false)
 const rawReport = ref<any>(null)
 
@@ -172,6 +173,38 @@ const formattedDate = computed(() =>
   }),
 )
 
+// Update rawReport in realtime when a biometric record arrives today
+watch(
+  () => attendanceStore.recentActivity,
+  (activity) => {
+    if (selectedDate.value !== today || !rawReport.value) return
+    const incoming = activity.filter((r) => r.source === 'biometric')
+    if (incoming.length === 0) return
+    const existing = rawReport.value.records as any[]
+    let changed = false
+    for (const r of incoming) {
+      const idx = existing.findIndex((e: any) => e.id === r.id)
+      if (idx !== -1) {
+        existing[idx] = r
+        changed = true
+      } else {
+        existing.unshift(r)
+        changed = true
+      }
+    }
+    if (changed) {
+      rawReport.value = {
+        ...rawReport.value,
+        records: [...existing],
+        present: existing.filter((r: any) => ['present', 'left_early'].includes(r.status)).length,
+        late: existing.filter((r: any) => r.status === 'late').length,
+        doubleBadgeCount: existing.filter((r: any) => r.isDoubleBadge).length,
+      }
+    }
+  },
+  { deep: true },
+)
+
 const records = computed(() => rawReport.value?.records ?? [])
 
 const stats = computed(() => ({
@@ -180,6 +213,11 @@ const stats = computed(() => ({
   late: rawReport.value?.late ?? 0,
   doubleBadgeCount: rawReport.value?.doubleBadgeCount ?? 0,
 }))
+
+function formatTime(iso: string | null | undefined): string {
+  if (!iso) return '—'
+  return new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+}
 
 function statusLabel(status: string): string {
   const map: Record<string, string> = {

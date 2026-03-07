@@ -60,10 +60,6 @@ async function cancelOrder() {
   }
 }
 
-const openInvoice = (url?: string) => {
-  if (url) window.open(url, '_blank')
-}
-
 onMounted(async () => {
   await store.fetchOrder(orderId)
 })
@@ -83,27 +79,90 @@ onMounted(async () => {
     </div>
 
     <template v-else-if="order">
-      <!-- Status stepper -->
-      <AppCard v-if="order.status !== 'cancelled'" title="Suivi de la commande">
-        <div class="flex items-center overflow-x-auto">
-          <template v-for="(status, index) in statusSteps" :key="status">
-            <div class="flex flex-col items-center gap-1 flex-shrink-0">
+      <!-- Suivi de livraison -->
+      <AppCard title="Suivi de livraison">
+        <!-- Commande annulee -->
+        <div v-if="order.status === 'cancelled'" class="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+            <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </div>
+          <div>
+            <p class="font-semibold text-red-700">Commande annulee</p>
+            <p class="text-sm text-red-500">Cette commande a ete annulee le {{ formatDate(order.updatedAt) }}</p>
+          </div>
+        </div>
+
+        <!-- Stepper actif -->
+        <div v-else class="overflow-x-auto pb-2">
+          <div class="flex items-start min-w-max">
+            <template v-for="(status, index) in statusSteps" :key="status">
+              <!-- Etape -->
+              <div class="flex flex-col items-center gap-2 w-28">
+                <!-- Icone -->
+                <div
+                  class="w-11 h-11 rounded-full flex items-center justify-center shrink-0 transition-all"
+                  :class="index < getCurrentStepIndex()
+                    ? 'bg-green-500 text-white shadow-sm'
+                    : index === getCurrentStepIndex()
+                      ? 'bg-primary-700 text-white ring-4 ring-primary-100 shadow'
+                      : 'bg-gray-100 text-gray-400'"
+                >
+                  <!-- Etape passee : checkmark -->
+                  <svg v-if="index < getCurrentStepIndex()" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                  </svg>
+                  <!-- Etape courante : icones specifiques -->
+                  <template v-else-if="index === getCurrentStepIndex()">
+                    <svg v-if="status === 'pending'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2m6-2a10 10 0 11-20 0 10 10 0 0120 0z" />
+                    </svg>
+                    <svg v-else-if="status === 'confirmed'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <svg v-else-if="status === 'processing'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M21 7.5l-2.25-1.313M21 7.5v2.25m0-2.25l-2.25 1.313M3 7.5l2.25-1.313M3 7.5l2.25 1.313M3 7.5v2.25m9 3l2.25-1.313M12 12.75l-2.25-1.313M12 12.75V15m0 6.75l2.25-1.313M12 21.75V19.5m0 2.25l-2.25-1.313m0-16.875L12 2.25l2.25 1.313M21 14.25v2.25l-2.25 1.313m-13.5 0L3 16.5v-2.25" />
+                    </svg>
+                    <svg v-else-if="status === 'shipped'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
+                    </svg>
+                    <svg v-else-if="status === 'delivered'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+                    </svg>
+                  </template>
+                  <!-- Etape future : numero -->
+                  <span v-else class="text-sm font-semibold">{{ index + 1 }}</span>
+                </div>
+                <!-- Label + date -->
+                <div class="text-center">
+                  <p class="text-xs font-semibold"
+                    :class="index <= getCurrentStepIndex() ? 'text-gray-900' : 'text-gray-400'">
+                    {{ stepLabels[status] }}
+                  </p>
+                  <p v-if="index === getCurrentStepIndex()" class="text-xs text-primary-600 mt-0.5">En cours</p>
+                  <p v-else-if="index < getCurrentStepIndex()" class="text-xs text-green-600 mt-0.5">Valide</p>
+                  <p v-else class="text-xs text-gray-300 mt-0.5">—</p>
+                </div>
+              </div>
+
+              <!-- Connecteur -->
               <div
-                class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold"
-                :class="index <= getCurrentStepIndex() ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-400'"
-              >{{ index + 1 }}</div>
-              <span class="text-xs text-center" :class="index <= getCurrentStepIndex() ? 'text-primary-600 font-medium' : 'text-gray-400'">
-                {{ stepLabels[status] }}
-              </span>
-            </div>
-            <div v-if="index < statusSteps.length - 1" class="h-0.5 flex-1 min-w-8"
-              :class="index < getCurrentStepIndex() ? 'bg-primary-600' : 'bg-gray-200'"></div>
-          </template>
+                v-if="index < statusSteps.length - 1"
+                class="h-0.5 flex-1 min-w-6 mt-5 transition-all"
+                :class="index < getCurrentStepIndex() ? 'bg-green-400' : 'bg-gray-200'"
+              ></div>
+            </template>
+          </div>
+        </div>
+
+        <!-- Bouton annulation en bas du stepper si commande annulable -->
+        <div v-if="order.status === 'pending'" class="mt-5 pt-4 border-t border-gray-100 flex justify-end">
+          <AppButton variant="danger" size="sm" @click="cancelOrder">
+            Annuler la commande
+          </AppButton>
         </div>
       </AppCard>
-      <div v-else class="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-        Cette commande a ete annulee
-      </div>
 
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Items -->
@@ -169,30 +228,6 @@ onMounted(async () => {
                   {{ paymentStatusLabels[order.paymentStatus] }}
                 </AppBadge>
               </div>
-            </div>
-          </AppCard>
-
-          <AppCard title="Actions">
-            <div class="space-y-3">
-              <AppButton
-                v-if="order.invoiceUrl"
-                variant="secondary"
-                class="w-full"
-                @click="openInvoice(order.invoiceUrl)"
-              >
-                Telecharger la facture
-              </AppButton>
-              <AppButton v-else variant="ghost" class="w-full" disabled>
-                Facture non disponible
-              </AppButton>
-              <AppButton
-                v-if="order.status === 'pending'"
-                variant="danger"
-                class="w-full"
-                @click="cancelOrder"
-              >
-                Annuler la commande
-              </AppButton>
             </div>
           </AppCard>
 

@@ -10,10 +10,19 @@ export interface FeelbackReportSiteRow {
   satisfactionRate: number
 }
 
-export interface FeelbackReportAgentRow {
-  agentId: string
-  agent: string
+export interface FeelbackReportDepartmentRow {
+  departmentId: string
+  department: string
   site: string
+  totalResponses: number
+  bon: number
+  neutre: number
+  mauvais: number
+  satisfactionRate: number
+}
+
+export interface FeelbackReportPeriodRow {
+  period: string
   totalResponses: number
   bon: number
   neutre: number
@@ -27,14 +36,18 @@ export interface FeelbackReportData {
   neutreRate: number
   mauvaisRate: number
   bySite: FeelbackReportSiteRow[]
-  byAgent: FeelbackReportAgentRow[]
+  byDepartment: FeelbackReportDepartmentRow[]
+  byPeriod: FeelbackReportPeriodRow[]
 }
 
 export interface FeelbackReportParams {
   start_date?: string
   end_date?: string
+  company_id?: string
   site_id?: string
+  department_id?: string
   type?: string
+  period_granularity?: 'day' | 'week' | 'month'
 }
 
 export const feelbackReportApi = {

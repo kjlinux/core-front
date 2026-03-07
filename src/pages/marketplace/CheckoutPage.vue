@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCartStore } from '@/stores/cart.store'
 import { useOrderStore } from '@/stores/order.store'
 import { useAuthStore } from '@/stores/auth.store'
 import { useToast } from '@/composables/useToast'
+import { companyApi } from '@/services/api/company.api'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppInput from '@/components/ui/AppInput.vue'
@@ -16,6 +17,21 @@ const cartStore = useCartStore()
 const orderStore = useOrderStore()
 const authStore = useAuthStore()
 const toast = useToast()
+
+const isSuperAdmin = computed(() => authStore.userRole === 'super_admin')
+const selectedCompanyId = ref(authStore.user?.companyId ?? '')
+const companyOptions = ref<{ label: string; value: string }[]>([])
+
+onMounted(async () => {
+  if (isSuperAdmin.value) {
+    try {
+      const companies = await companyApi.getAll()
+      companyOptions.value = companies.map((c) => ({ label: c.name, value: c.id }))
+    } catch {
+      // silencieux
+    }
+  }
+})
 
 const step = ref(1)
 const selectedOrderId = ref('')
@@ -44,6 +60,10 @@ function formatPrice(amount: number, currency = 'FCFA') {
 }
 
 function goToPayment() {
+  if (isSuperAdmin.value && !selectedCompanyId.value) {
+    toast.showError('Veuillez selectionner une entreprise')
+    return
+  }
   if (!deliveryAddress.value.fullName || !deliveryAddress.value.phone || !deliveryAddress.value.street || !deliveryAddress.value.city) {
     toast.showError('Veuillez remplir tous les champs')
     return
@@ -52,6 +72,14 @@ function goToPayment() {
 }
 
 async function confirmOrder() {
+  if (isSuperAdmin.value && !selectedCompanyId.value) {
+    toast.showError('Veuillez selectionner une entreprise')
+    return
+  }
+  if (selectedPaymentMethod.value === 'mobile_money' && !mobileNumber.value.trim()) {
+    toast.showError('Veuillez saisir votre numero Mobile Money')
+    return
+  }
   isSubmitting.value = true
   try {
     const items = cartStore.items.map((item) => ({
@@ -69,10 +97,21 @@ async function confirmOrder() {
       currency: 'FCFA',
       paymentMethod: selectedPaymentMethod.value as any,
       deliveryAddress: deliveryAddress.value,
+      ...(isSuperAdmin.value && selectedCompanyId.value ? { companyId: selectedCompanyId.value } : {}),
     })
     if (order) {
       selectedOrderId.value = order.orderNumber ?? order.id
-      await orderStore.initiatePayment(order.id, selectedPaymentMethod.value as any)
+      const paymentResult = await orderStore.initiatePayment(order.id, selectedPaymentMethod.value as any, mobileNumber.value || undefined)
+      // Si LigdiCash retourne une URL de paiement, rediriger vers la passerelle
+      if (paymentResult && (paymentResult as any).payment_url) {
+        cartStore.clearCart()
+        window.location.href = (paymentResult as any).payment_url
+        return
+      }
+      // Sinon (manual ou passerelle indisponible) : confirmation directe
+      if ((paymentResult as any)?.pending) {
+        toast.showWarning('La passerelle de paiement est indisponible. Votre commande est enregistree et sera traitee manuellement.')
+      }
     }
     cartStore.clearCart()
     step.value = 3
@@ -92,11 +131,11 @@ async function confirmOrder() {
     <div class="flex items-center gap-4 overflow-x-auto">
       <div v-for="(s, index) in ['Livraison', 'Paiement', 'Confirmation']" :key="index" class="flex items-center gap-2">
         <div
-          class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
+          class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0"
           :class="step > index + 1 ? 'bg-green-500 text-white' : step === index + 1 ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-500'"
         >{{ index + 1 }}</div>
         <span class="text-sm font-medium whitespace-nowrap" :class="step === index + 1 ? 'text-primary-600' : 'text-gray-400'">{{ s }}</span>
-        <div v-if="index < 2" class="h-px w-8 bg-gray-200 flex-shrink-0"></div>
+        <div v-if="index < 2" class="h-px w-8 bg-gray-200 shrink-0"></div>
       </div>
     </div>
 
@@ -104,6 +143,13 @@ async function confirmOrder() {
     <div v-if="step === 1" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <AppCard title="Adresse de livraison" class="lg:col-span-2">
         <div class="space-y-4">
+          <AppSelect
+            v-if="isSuperAdmin"
+            v-model="selectedCompanyId"
+            label="Entreprise *"
+            :options="companyOptions"
+            placeholder="Selectionner une entreprise"
+          />
           <AppInput v-model="deliveryAddress.fullName" label="Nom complet *" />
           <AppInput v-model="deliveryAddress.phone" label="Telephone *" type="tel" />
           <AppInput v-model="deliveryAddress.street" label="Adresse *" />
@@ -144,7 +190,7 @@ async function confirmOrder() {
               :class="selectedPaymentMethod === 'mobile_money' ? 'border-primary-600 bg-primary-50' : 'border-gray-200 hover:border-gray-300'"
             >
               <input v-model="selectedPaymentMethod" type="radio" value="mobile_money" class="sr-only" />
-              <div class="w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center"
+              <div class="w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center"
                 :class="selectedPaymentMethod === 'mobile_money' ? 'border-primary-600' : 'border-gray-300'">
                 <div v-if="selectedPaymentMethod === 'mobile_money'" class="w-2 h-2 rounded-full bg-primary-600"></div>
               </div>
@@ -165,7 +211,7 @@ async function confirmOrder() {
               :class="selectedPaymentMethod === 'manual' ? 'border-primary-600 bg-primary-50' : 'border-gray-200 hover:border-gray-300'"
             >
               <input v-model="selectedPaymentMethod" type="radio" value="manual" class="sr-only" />
-              <div class="w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center"
+              <div class="w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center"
                 :class="selectedPaymentMethod === 'manual' ? 'border-primary-600' : 'border-gray-300'">
                 <div v-if="selectedPaymentMethod === 'manual'" class="w-2 h-2 rounded-full bg-primary-600"></div>
               </div>
@@ -218,8 +264,10 @@ async function confirmOrder() {
     <div v-if="step === 3" class="max-w-lg mx-auto">
       <AppCard>
         <div class="text-center py-8 space-y-4">
-          <div class="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto text-4xl text-green-500 font-bold">
-            [OK]
+          <div class="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto">
+            <svg class="w-10 h-10 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
           </div>
           <h2 class="text-2xl font-bold text-gray-900">Commande confirmee !</h2>
           <p class="text-gray-600">Votre commande a ete enregistree avec succes.</p>

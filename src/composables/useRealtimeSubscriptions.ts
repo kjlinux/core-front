@@ -1,4 +1,3 @@
-import { watch } from 'vue'
 import { getEcho } from '@/services/echo'
 import { useAuthStore } from '@/stores/auth.store'
 import { useNotificationStore } from '@/stores/notification.store'
@@ -9,8 +8,14 @@ import { useFeelbackDeviceStore } from '@/stores/feelback-device.store'
 import { useUiStore } from '@/stores/ui.store'
 
 /**
- * Sets up all real-time Echo subscriptions and toast notifications.
- * Should be called once in App.vue or DashboardLayout.
+ * Centralise tous les abonnements Echo temps réel.
+ * Appelé une seule fois dans DashboardLayout (onMounted/onUnmounted).
+ *
+ * Canaux gérés :
+ *   - notifications  → notificationStore
+ *   - attendance     → attendanceStore + toast + notification locale
+ *   - feelback       → feelbackStore + toast + notification locale
+ *   - devices        → biometricStore + feelbackDeviceStore
  */
 export function useRealtimeSubscriptions() {
   const authStore = useAuthStore()
@@ -22,80 +27,86 @@ export function useRealtimeSubscriptions() {
   const ui = useUiStore()
 
   function subscribeAll() {
+    if (!authStore.isAuthenticated) return
+
     const echo = getEcho()
     if (!echo) return
 
+    // Canal notifications backend
     notificationStore.subscribeRealtime()
-    attendanceStore.subscribeRealtime()
-    feelbackStore.subscribeRealtime()
-    biometricStore.subscribeRealtime()
-    feelbackDeviceStore.subscribeRealtime()
 
-    // Global toast + notification for attendance events
-    echo.channel('attendance').listen('.attendance.recorded', (data: {
-      employeeName: string
-      status: string
-      source: string
-      exitTime: string | null
-    }) => {
-      const sourceName = data.source === 'rfid' ? 'RFID' : 'Biometrique'
-      const action = data.exitTime ? 'Sortie' : 'Entree'
-      const title = `Pointage ${sourceName}`
-      const message = `${data.employeeName} - ${action}`
+    // Canal attendance
+    // stopListening avant listen pour éviter les doublons (HMR, remontage)
+    echo.channel('attendance')
+      .stopListening('.attendance.recorded')
+      .listen('.attendance.recorded', (data: {
+        id: string
+        employeeId: string
+        employeeName: string
+        date: string
+        entryTime: string | null
+        exitTime: string | null
+        status: string
+        source: string
+      }) => {
+        attendanceStore.handleRealtimeAttendance(data)
 
-      ui.addToast({ type: 'info', title, message })
+        const sourceName = data.source === 'rfid' ? 'RFID' : 'Biometrique'
+        const action = data.exitTime ? 'Sortie' : 'Entree'
+        const title = `Pointage ${sourceName} - ${action}`
+        const message = data.employeeName
 
-      notificationStore.addLocalNotification({
-        type: 'attendance',
-        title,
-        message,
+        ui.addToast({ type: 'info', title, message })
       })
-    })
 
-    // Global toast + notification for feelback events
-    echo.channel('feelback').listen('.feelback.received', (data: {
-      level: string
-      siteName: string
-    }) => {
-      const levelLabels: Record<string, string> = {
-        bon: 'Bon',
-        neutre: 'Neutre',
-        mauvais: 'Mauvais',
-      }
-      const toastType = data.level === 'mauvais' ? 'warning' as const : 'info' as const
-      const title = `Feelback - ${levelLabels[data.level] ?? data.level}`
-      const message = data.siteName
+    // Canal feelback
+    echo.channel('feelback')
+      .stopListening('.feelback.received')
+      .listen('.feelback.received', (data: {
+        id?: string
+        deviceId?: string
+        level: string
+        siteName: string
+        timestamp?: string
+      }) => {
+        feelbackStore.handleRealtimeFeedback(data)
 
-      ui.addToast({ type: toastType, title, message })
+        const levelLabels: Record<string, string> = { bon: 'Bon', neutre: 'Neutre', mauvais: 'Mauvais' }
+        const toastType = data.level === 'mauvais' ? 'warning' as const : 'info' as const
+        const title = `Feelback - ${levelLabels[data.level] ?? data.level}`
+        const message = data.siteName
 
-      notificationStore.addLocalNotification({
-        type: 'feelback',
-        title,
-        message,
+        ui.addToast({ type: toastType, title, message })
       })
-    })
+
+    // Canal devices — dispatch selon deviceType
+    echo.channel('devices')
+      .stopListening('.device.status.updated')
+      .listen('.device.status.updated', (data: {
+        deviceType: string
+        deviceId: string
+        status: string
+        timestamp: string
+        data: Record<string, unknown>
+      }) => {
+        const payload = { deviceId: data.deviceId, status: data.status, timestamp: data.timestamp }
+        if (data.deviceType === 'biometric') {
+          biometricStore.handleRealtimeDevice(payload)
+        } else if (data.deviceType === 'feelback') {
+          feelbackDeviceStore.handleRealtimeDevice(payload)
+        }
+      })
   }
 
   function unsubscribeAll() {
-    notificationStore.unsubscribeRealtime()
-    attendanceStore.unsubscribeRealtime()
-    feelbackStore.unsubscribeRealtime()
-    biometricStore.unsubscribeRealtime()
-    feelbackDeviceStore.unsubscribeRealtime()
-  }
+    const echo = getEcho()
+    if (!echo) return
 
-  // Auto subscribe/unsubscribe when auth state changes
-  watch(
-    () => authStore.isAuthenticated,
-    (isAuth) => {
-      if (isAuth) {
-        subscribeAll()
-      } else {
-        unsubscribeAll()
-      }
-    },
-    { immediate: true },
-  )
+    notificationStore.unsubscribeRealtime()
+    echo.leave('attendance')
+    echo.leave('feelback')
+    echo.leave('devices')
+  }
 
   return { subscribeAll, unsubscribeAll }
 }

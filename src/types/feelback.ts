@@ -14,6 +14,7 @@ export interface FeelbackDevice {
 export interface FeelbackEntry {
   id: string
   deviceId: string
+  deviceSerialNumber?: string
   level: SatisfactionLevel
   timestamp: string
   siteId: string

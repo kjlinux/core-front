@@ -133,7 +133,8 @@ async function launchCapture() {
     toast.showSuccess('Empreinte capturee et enregistree avec succes')
   } catch (error: unknown) {
     captureStatus.value = 'error'
-    const message = error instanceof Error ? error.message : 'Erreur lors de la capture'
+    const axiosMessage = (error as { response?: { data?: { message?: string } } })?.response?.data?.message
+    const message = axiosMessage || (error instanceof Error ? error.message : 'Erreur lors de la capture')
     captureError.value = message
     toast.showError(message)
   }

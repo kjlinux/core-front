@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useFeelbackStore } from '@/stores/feelback.store'
 import { useCompanyStore } from '@/stores/company.store'
+import dayjs from 'dayjs'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
@@ -62,6 +63,31 @@ const topSites = computed(() =>
     }))
 )
 
+function buildParams() {
+  const params: Record<string, unknown> = {}
+  if (selectedCompany.value) params.companyId = selectedCompany.value
+  if (selectedPeriod.value === 'today') {
+    params.startDate = dayjs().format('YYYY-MM-DD')
+    params.endDate = dayjs().format('YYYY-MM-DD')
+  } else if (selectedPeriod.value === 'week') {
+    params.startDate = dayjs().startOf('week').format('YYYY-MM-DD')
+    params.endDate = dayjs().format('YYYY-MM-DD')
+  } else if (selectedPeriod.value === 'month') {
+    params.startDate = dayjs().startOf('month').format('YYYY-MM-DD')
+    params.endDate = dayjs().format('YYYY-MM-DD')
+  }
+  return params
+}
+
+async function applyFilters() {
+  await Promise.allSettled([
+    store.fetchStats(buildParams()),
+    store.fetchComparison(buildParams()),
+  ])
+}
+
+watch([selectedPeriod, selectedCompany], applyFilters)
+
 function getAlertTypeLabel(type: string) {
   switch (type) {
     case 'threshold_exceeded': return 'Seuil depasse'
@@ -84,9 +110,9 @@ function formatDate(date: string) {
 
 onMounted(async () => {
   await Promise.allSettled([
-    store.fetchStats(),
+    store.fetchStats(buildParams()),
     store.fetchAlerts(),
-    store.fetchComparison(),
+    store.fetchComparison(buildParams()),
     companyStore.fetchCompanies(),
   ])
 })
@@ -118,9 +144,9 @@ onMounted(async () => {
     <!-- Stats -->
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
       <StatCard title="Total reponses" :value="stats?.totalResponses ?? 0" />
-      <StatCard title="Bon" :value="`${stats?.bon ?? 0} (${stats ? Math.round(stats.bon / stats.totalResponses * 100) : 0}%)`" />
-      <StatCard title="Neutre" :value="`${stats?.neutre ?? 0} (${stats ? Math.round(stats.neutre / stats.totalResponses * 100) : 0}%)`" />
-      <StatCard title="Mauvais" :value="`${stats?.mauvais ?? 0} (${stats ? Math.round(stats.mauvais / stats.totalResponses * 100) : 0}%)`" />
+      <StatCard title="Bon" :value="`${stats?.bon ?? 0} (${stats?.totalResponses ? Math.round((stats.bon / stats.totalResponses) * 100) : 0}%)`" />
+      <StatCard title="Neutre" :value="`${stats?.neutre ?? 0} (${stats?.totalResponses ? Math.round((stats.neutre / stats.totalResponses) * 100) : 0}%)`" />
+      <StatCard title="Mauvais" :value="`${stats?.mauvais ?? 0} (${stats?.totalResponses ? Math.round((stats.mauvais / stats.totalResponses) * 100) : 0}%)`" />
     </div>
 
     <!-- Charts -->

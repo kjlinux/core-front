@@ -23,4 +23,8 @@ export const feelbackDeviceApi = {
     return apiClient.delete(`/feelback/devices/${id}`).then((r) => r.data)
   },
 
+  setOnline(id: string, isOnline: boolean): Promise<FeelbackDevice> {
+    return apiClient.put(`/feelback/devices/${id}`, { isOnline }).then((r) => r.data)
+  },
+
 }

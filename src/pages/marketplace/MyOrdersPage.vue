@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useOrderStore } from '@/stores/order.store'
+import { useAuthStore } from '@/stores/auth.store'
 import { useToast } from '@/composables/useToast'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
@@ -12,6 +13,7 @@ import { EyeIcon, XMarkIcon } from '@heroicons/vue/24/outline'
 
 const router = useRouter()
 const store = useOrderStore()
+const authStore = useAuthStore()
 const toast = useToast()
 
 const filterStatus = ref('')
@@ -60,9 +62,15 @@ const paymentVariants: Record<string, string> = {
   refunded: 'neutral',
 }
 
+const myOrders = computed(() => {
+  const companyId = authStore.userCompanyId
+  if (!companyId) return store.orders
+  return store.orders.filter((o) => o.companyId === companyId)
+})
+
 const filteredOrders = computed(() => {
-  if (!filterStatus.value) return store.orders
-  return store.orders.filter((o) => o.status === filterStatus.value)
+  if (!filterStatus.value) return myOrders.value
+  return myOrders.value.filter((o) => o.status === filterStatus.value)
 })
 
 function formatPrice(amount: number | undefined, currency = 'FCFA') {

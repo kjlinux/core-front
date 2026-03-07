@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useBiometricStore } from '@/stores/biometric.store'
 import { useCompanyStore } from '@/stores/company.store'
+import { useSiteStore } from '@/stores/site.store'
 import { usePermissions } from '@/composables/usePermissions'
 import { useToast } from '@/composables/useToast'
 import { mqttApi } from '@/services/api/mqtt.api'
@@ -24,11 +25,13 @@ import {
   SignalIcon,
   FingerPrintIcon,
   PlusIcon,
+  WifiIcon,
 } from '@heroicons/vue/24/outline'
 
 const router = useRouter()
 const store = useBiometricStore()
 const companyStore = useCompanyStore()
+const siteStore = useSiteStore()
 const permissions = usePermissions()
 const toast = useToast()
 
@@ -56,6 +59,24 @@ const companyOptions = computed(() => [
   { label: 'Toutes les entreprises', value: '' },
   ...companyStore.companies.map((c) => ({ label: c.name, value: c.id })),
 ])
+
+const addCompanyOptions = computed(() => [
+  { label: 'Selectionner une entreprise', value: '' },
+  ...companyStore.companies.map((c) => ({ label: c.name, value: c.id })),
+])
+
+const addSiteOptions = computed(() => {
+  if (!newDevice.value.companyId) return [{ label: 'Selectionner un site', value: '' }]
+  const sites = siteStore.sites.filter((s) => s.companyId === newDevice.value.companyId)
+  return [
+    { label: 'Selectionner un site', value: '' },
+    ...sites.map((s) => ({ label: s.name, value: s.id })),
+  ]
+})
+
+watch(() => newDevice.value.companyId, () => {
+  newDevice.value.siteId = ''
+})
 
 const filteredDevices = computed(() => {
   let list = store.devices
@@ -97,6 +118,15 @@ async function handleCommand(deviceId: string, command: DeviceCommand) {
   }
 }
 
+async function handleToggleOnline(device: BiometricDevice) {
+  try {
+    await store.setDeviceOnline(device.id, !device.isOnline)
+    toast.showSuccess(device.isOnline ? device.name + ' mis hors ligne' : device.name + ' mis en ligne')
+  } catch {
+    toast.showError('Erreur lors du changement de statut')
+  }
+}
+
 async function handleSync(device: BiometricDevice) {
   try {
     await store.syncDevice(device.id)
@@ -107,13 +137,13 @@ async function handleSync(device: BiometricDevice) {
 }
 
 async function handleAddDevice() {
-  if (!newDevice.value.name || !newDevice.value.serialNumber) {
+  if (!newDevice.value.name || !newDevice.value.serialNumber || !newDevice.value.companyId || !newDevice.value.siteId) {
     toast.showError('Veuillez remplir tous les champs obligatoires')
     return
   }
   isSubmitting.value = true
   try {
-    await store.startEnrollment(newDevice.value as any)
+    await store.createDevice(newDevice.value)
     toast.showSuccess('Terminal ajoute avec succes')
     showAddModal.value = false
     newDevice.value = { name: '', serialNumber: '', companyId: '', siteId: '', firmwareVersion: '' }
@@ -126,7 +156,7 @@ async function handleAddDevice() {
 }
 
 onMounted(async () => {
-  await Promise.all([store.fetchDevices(), companyStore.fetchCompanies()])
+  await Promise.all([store.fetchDevices(), companyStore.fetchCompanies(), siteStore.fetchSites({ perPage: 200 })])
 })
 </script>
 
@@ -253,6 +283,16 @@ onMounted(async () => {
                   <AppButton v-if="canManage" size="sm" variant="ghost" @click="handleSync(device)" title="Synchroniser">
                     <ArrowPathIcon class="w-4 h-4" />
                   </AppButton>
+                  <AppButton
+                    v-if="canManage"
+                    size="sm"
+                    :variant="device.isOnline ? 'ghost' : 'ghost'"
+                    :class="device.isOnline ? 'text-green-600' : 'text-gray-400'"
+                    :title="device.isOnline ? 'Mettre hors ligne' : 'Mettre en ligne'"
+                    @click="handleToggleOnline(device)"
+                  >
+                    <WifiIcon class="w-4 h-4" />
+                  </AppButton>
                 </div>
               </td>
             </tr>
@@ -265,7 +305,8 @@ onMounted(async () => {
       <div class="space-y-4">
         <AppInput v-model="newDevice.name" label="Nom du terminal *" placeholder="Ex: Lecteur Entree principale" />
         <AppInput v-model="newDevice.serialNumber" label="Numero de serie *" placeholder="Ex: BIO-2024-001" />
-        <AppSelect v-model="newDevice.companyId" label="Entreprise" :options="companyOptions" />
+        <AppSelect v-model="newDevice.companyId" label="Entreprise *" :options="addCompanyOptions" />
+        <AppSelect v-model="newDevice.siteId" label="Site *" :options="addSiteOptions" :disabled="!newDevice.companyId" />
         <AppInput v-model="newDevice.firmwareVersion" label="Version firmware" placeholder="Ex: 2.1.0" />
       </div>
       <template #footer>

@@ -14,6 +14,11 @@ const route = useRoute()
 const pageTitle = computed(() => {
   return (route.meta.title as string) || 'Tableau de bord'
 })
+
+const companyName = computed(() => {
+  if (auth.user?.role === 'super_admin') return null
+  return auth.user?.companyName ?? null
+})
 </script>
 
 <template>
@@ -40,6 +45,13 @@ const pageTitle = computed(() => {
       </button>
 
       <h1 class="text-lg font-semibold text-gray-800">{{ pageTitle }}</h1>
+      <span
+        v-if="companyName"
+        class="hidden sm:inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold text-white"
+        style="background-color: #334155;"
+      >
+        {{ companyName }}
+      </span>
     </div>
 
     <div class="flex items-center gap-4">

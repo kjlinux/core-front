@@ -77,14 +77,20 @@
           :total="recentActivity.length"
           :per-page="10"
         >
-          <template #status="{ row }">
-            <span :class="['status-badge', `status-${row.status}`]">
-              {{ row.status === 'entry' ? 'Entree' : 'Sortie' }}
+          <template #cell-entryTime="{ row }">
+            {{ formatTime(row.entryTime) }}
+          </template>
+          <template #cell-exitTime="{ row }">
+            {{ row.exitTime ? formatTime(row.exitTime) : '—' }}
+          </template>
+          <template #cell-pointageType="{ row }">
+            <span :class="['status-badge', row.exitTime ? 'status-exit' : 'status-entry']">
+              {{ row.exitTime ? 'Sortie' : 'Entree' }}
             </span>
           </template>
-          <template #type="{ row }">
-            <span :class="['type-badge', `type-${row.type}`]">
-              {{ getTypeLabel(row.type) }}
+          <template #cell-status="{ row }">
+            <span :class="['type-badge', `type-${row.status}`]">
+              {{ getStatusLabel(row.status) }}
             </span>
           </template>
         </DataTable>
@@ -97,7 +103,6 @@
 // @ts-nocheck
 import { ref, onMounted, computed } from 'vue';
 import { useAttendanceStore } from '@/stores/attendance.store';
-import { formatDate } from '@/utils/format';
 import DataTable from '@/components/data-display/DataTable.vue';
 import AppButton from '@/components/ui/AppButton.vue';
 import AppCard from '@/components/ui/AppCard.vue';
@@ -122,31 +127,36 @@ const stats = computed(() => {
     presentPercentage: total > 0 ? Math.round((present / total) * 100) : 0,
     absentPercentage: total > 0 ? Math.round((absent / total) * 100) : 0,
     latePercentage: total > 0 ? Math.round((late / total) * 100) : 0,
-    averageEntryTime: attendanceStore.dailyReport?.averageEntryTime || '00:00',
+    averageEntryTime: attendanceStore.dailyReport?.averageEntryTime || '—',
     lateCount: late,
     earlyDepartures: attendanceStore.dailyReport?.earlyDepartures || 0,
   };
 });
 
-const recentActivity = computed(() => {
-  return attendanceStore.recentActivity || [];
-});
+const recentActivity = computed(() => attendanceStore.recentActivity || []);
 
+// Colonnes alignées sur les vrais champs de AttendanceRecord
 const activityColumns = [
   { key: 'employeeName', label: 'Employé', sortable: true },
-  { key: 'time', label: 'Heure', sortable: true },
-  { key: 'status', label: 'Type', sortable: true },
-  { key: 'type', label: 'Statut', sortable: true },
+  { key: 'entryTime', label: 'Heure entrée', sortable: true },
+  { key: 'exitTime', label: 'Heure sortie', sortable: true },
+  { key: 'pointageType', label: 'Type', sortable: false },
+  { key: 'status', label: 'Statut', sortable: true },
 ];
 
-const getTypeLabel = (type: string): string => {
+const getStatusLabel = (status: string): string => {
   const labels: Record<string, string> = {
     present: 'Présent',
     late: 'En retard',
     absent: 'Absent',
-    early_departure: 'Départ anticipé',
+    left_early: 'Départ anticipé',
   };
-  return labels[type] || type;
+  return labels[status] || status;
+};
+
+const formatTime = (iso: string | null | undefined): string => {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 };
 
 const refreshData = async () => {
@@ -298,7 +308,7 @@ onMounted(() => {
   color: #991b1b;
 }
 
-.type-early_departure {
+.type-left_early {
   background-color: #fef3c7;
   color: #92400e;
 }

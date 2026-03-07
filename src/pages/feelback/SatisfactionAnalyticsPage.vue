@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useFeelbackStore } from '@/stores/feelback.store'
 import { useCompanyStore } from '@/stores/company.store'
+import { useSiteStore } from '@/stores/site.store'
+import dayjs from 'dayjs'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
 import AppInput from '@/components/ui/AppInput.vue'
@@ -12,6 +14,7 @@ import LineChart from '@/components/charts/LineChart.vue'
 
 const store = useFeelbackStore()
 const companyStore = useCompanyStore()
+const siteStore = useSiteStore()
 
 const selectedPeriod = ref('month')
 const selectedCompany = ref('')
@@ -20,7 +23,7 @@ const customStart = ref('')
 const customEnd = ref('')
 
 const periodOptions = [
-  { label: 'Aujourd\'hui', value: 'today' },
+  { label: "Aujourd'hui", value: 'today' },
   { label: 'Cette semaine', value: 'week' },
   { label: 'Ce mois', value: 'month' },
   { label: 'Personnalise', value: 'custom' },
@@ -30,6 +33,56 @@ const companyOptions = computed(() => [
   { label: 'Toutes les entreprises', value: '' },
   ...companyStore.companies.map((c) => ({ label: c.name, value: c.id })),
 ])
+
+const siteOptions = computed(() => {
+  const sites = selectedCompany.value
+    ? siteStore.sites.filter((s) => s.companyId === selectedCompany.value)
+    : siteStore.sites
+  return [
+    { label: 'Tous les sites', value: '' },
+    ...sites.map((s) => ({ label: s.name, value: s.id })),
+  ]
+})
+
+function buildParams() {
+  const params: Record<string, unknown> = {}
+  if (selectedCompany.value) params.companyId = selectedCompany.value
+  if (selectedSite.value) params.siteId = selectedSite.value
+
+  if (selectedPeriod.value === 'today') {
+    params.startDate = dayjs().format('YYYY-MM-DD')
+    params.endDate = dayjs().format('YYYY-MM-DD')
+  } else if (selectedPeriod.value === 'week') {
+    params.startDate = dayjs().startOf('week').format('YYYY-MM-DD')
+    params.endDate = dayjs().format('YYYY-MM-DD')
+  } else if (selectedPeriod.value === 'month') {
+    params.startDate = dayjs().startOf('month').format('YYYY-MM-DD')
+    params.endDate = dayjs().format('YYYY-MM-DD')
+  } else if (selectedPeriod.value === 'custom' && customStart.value && customEnd.value) {
+    params.startDate = customStart.value
+    params.endDate = customEnd.value
+  }
+  return params
+}
+
+async function applyFilters() {
+  await Promise.all([
+    store.fetchStats(buildParams()),
+    store.fetchComparison(buildParams()),
+  ])
+}
+
+watch([selectedPeriod, selectedCompany, selectedSite], () => {
+  if (selectedPeriod.value !== 'custom') applyFilters()
+})
+
+watch([customStart, customEnd], () => {
+  if (selectedPeriod.value === 'custom' && customStart.value && customEnd.value) applyFilters()
+})
+
+watch(selectedCompany, () => {
+  selectedSite.value = ''
+})
 
 const stats = computed(() => store.stats)
 
@@ -42,39 +95,32 @@ const pieData = computed(() => {
   ]
 })
 
-const siteBarXData = ['Siege', 'Nord', 'Est', 'Sud', 'Ouest', 'Centre']
-const siteBarSeries = [
-  { name: 'Bon', data: [45, 38, 52, 41, 35, 48] as number[], color: '#22c55e' },
-  { name: 'Neutre', data: [20, 25, 18, 22, 28, 19], color: '#f59e0b' },
-  { name: 'Mauvais', data: [12, 18, 10, 15, 20, 11], color: '#ef4444' },
-]
+const siteBarData = computed(() =>
+  store.comparison
+    .filter((s) => s.totalResponses > 0)
+    .sort((a, b) => b.satisfactionRate - a.satisfactionRate)
+    .map((s) => ({ name: s.siteName ?? '', value: s.satisfactionRate }))
+)
 
-const lineXData = ['Jan', 'Fev', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aou', 'Sep', 'Oct', 'Nov', 'Dec']
-const lineSeries = [
-  { name: 'Bon', data: [60, 62, 65, 68, 70, 72, 71, 73, 75, 74, 72, 76] },
-  { name: 'Neutre', data: [25, 24, 22, 21, 20, 19, 18, 18, 17, 18, 19, 17] },
-  { name: 'Mauvais', data: [15, 14, 13, 11, 10, 9, 11, 9, 8, 8, 9, 7] },
-]
+const lineData = computed(() => {
+  if (!stats.value) return []
+  return [
+    { name: 'Bon', value: stats.value.bon },
+    { name: 'Neutre', value: stats.value.neutre },
+    { name: 'Mauvais', value: stats.value.mauvais },
+  ]
+})
 
-const hourlyXData = Array.from({ length: 11 }, (_, i) => `${8 + i}h`)
-const hourlyBarSeries = [
-  { name: 'Reponses', data: [12, 28, 45, 52, 61, 48, 55, 63, 42, 35, 18] },
-]
-
-const siteBarData = computed(() => siteBarXData.map((name, i) => ({ name, value: siteBarSeries[0]?.data[i] ?? 0 })))
-const lineData = computed(() => lineXData.map((name, i) => ({ name, value: lineSeries[0]?.data[i] ?? 0 })))
-const hourlyBarData = computed(() => hourlyXData.map((name, i) => ({ name, value: hourlyBarSeries[0]?.data[i] ?? 0 })))
-
-const siteResults = [
-  { name: 'Siege Social', total: 234, bon: 78, neutre: 15, mauvais: 7, rate: 78 },
-  { name: 'Agence Nord', total: 187, bon: 72, neutre: 18, mauvais: 10, rate: 72 },
-  { name: 'Agence Est', total: 156, bon: 65, neutre: 22, mauvais: 13, rate: 65 },
-  { name: 'Agence Sud', total: 143, bon: 61, neutre: 25, mauvais: 14, rate: 61 },
-  { name: 'Agence Ouest', total: 128, bon: 55, neutre: 28, mauvais: 17, rate: 55 },
-]
+const hasLineData = computed(() => lineData.value.some((d) => d.value > 0))
+const hasSiteData = computed(() => siteBarData.value.length > 0)
 
 onMounted(async () => {
-  await Promise.all([store.fetchStats(), companyStore.fetchCompanies()])
+  await Promise.all([
+    store.fetchStats(buildParams()),
+    store.fetchComparison(buildParams()),
+    companyStore.fetchCompanies(),
+    siteStore.fetchSites({ perPage: 200 }),
+  ])
 })
 </script>
 
@@ -85,6 +131,7 @@ onMounted(async () => {
       <div class="flex flex-wrap gap-3">
         <AppSelect v-model="selectedPeriod" :options="periodOptions" class="w-40" />
         <AppSelect v-model="selectedCompany" :options="companyOptions" class="w-48" />
+        <AppSelect v-model="selectedSite" :options="siteOptions" class="w-48" />
         <template v-if="selectedPeriod === 'custom'">
           <AppInput v-model="customStart" type="date" />
           <AppInput v-model="customEnd" type="date" />
@@ -105,54 +152,33 @@ onMounted(async () => {
       <AppCard title="Repartition globale">
         <PieChart :data="pieData" title="Bon / Neutre / Mauvais" />
       </AppCard>
-      <AppCard title="Par site">
-        <BarChart :data="siteBarData" title="Reponses par site" />
+      <AppCard v-if="hasSiteData" title="Par site">
+        <BarChart :data="siteBarData" title="Taux de satisfaction par site (%)" />
       </AppCard>
     </div>
 
-    <AppCard title="Evolution dans le temps">
-      <LineChart :data="lineData" title="Tendances mensuelles" />
+    <AppCard v-if="hasLineData" title="Repartition par niveau">
+      <LineChart :data="lineData" title="Bon / Neutre / Mauvais" />
     </AppCard>
 
-    <AppCard title="Distribution horaire">
-      <BarChart :data="hourlyBarData" title="Reponses par heure" />
-    </AppCard>
-
-    <AppCard title="Resultats par site">
-      <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-          <thead class="bg-gray-50">
-            <tr>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Site</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Bon %</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Neutre %</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Mauvais %</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Satisfaction</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-100">
-            <tr v-for="site in siteResults" :key="site.name" class="hover:bg-gray-50">
-              <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ site.name }}</td>
-              <td class="px-4 py-3 text-sm text-gray-600">{{ site.total }}</td>
-              <td class="px-4 py-3 text-sm text-green-600 font-medium">{{ site.bon }}%</td>
-              <td class="px-4 py-3 text-sm text-amber-600">{{ site.neutre }}%</td>
-              <td class="px-4 py-3 text-sm text-red-600">{{ site.mauvais }}%</td>
-              <td class="px-4 py-3">
-                <div class="flex items-center gap-2">
-                  <div class="flex-1 bg-gray-200 rounded-full h-2">
-                    <div
-                      class="h-2 rounded-full"
-                      :class="site.rate >= 70 ? 'bg-green-500' : site.rate >= 50 ? 'bg-amber-500' : 'bg-red-500'"
-                      :style="{ width: `${site.rate}%` }"
-                    ></div>
-                  </div>
-                  <span class="text-sm font-medium">{{ site.rate }}%</span>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+    <AppCard title="Repartition">
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 py-2">
+        <div class="text-center">
+          <p class="text-2xl font-bold text-gray-900">{{ stats?.totalResponses ?? 0 }}</p>
+          <p class="text-xs text-gray-500 mt-0.5">Total reponses</p>
+        </div>
+        <div class="text-center">
+          <p class="text-2xl font-bold text-green-600">{{ stats?.bon ?? 0 }}</p>
+          <p class="text-xs text-gray-500 mt-0.5">Bon</p>
+        </div>
+        <div class="text-center">
+          <p class="text-2xl font-bold text-amber-500">{{ stats?.neutre ?? 0 }}</p>
+          <p class="text-xs text-gray-500 mt-0.5">Neutre</p>
+        </div>
+        <div class="text-center">
+          <p class="text-2xl font-bold text-red-600">{{ stats?.mauvais ?? 0 }}</p>
+          <p class="text-xs text-gray-500 mt-0.5">Mauvais</p>
+        </div>
       </div>
     </AppCard>
   </div>

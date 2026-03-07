@@ -19,6 +19,10 @@ export const biometricApi = {
     return apiClient.delete(`/biometric/devices/${id}`).then((r) => r.data)
   },
 
+  setDeviceOnline(id: string, isOnline: boolean): Promise<BiometricDevice> {
+    return apiClient.patch(`/biometric/devices/${id}/set-online`, { isOnline }).then((r) => r.data)
+  },
+
   syncDevice(id: string): Promise<void> {
     return apiClient.post(`/biometric/devices/${id}/sync`).then((r) => r.data)
   },
@@ -33,8 +37,8 @@ export const biometricApi = {
 
   enrollViaDevice(employeeId: string, deviceId: string): Promise<FingerprintEnrollment> {
     return apiClient.post('/biometric/enrollments/enroll', {
-      employeeId,
-      deviceId,
+      employee_id: employeeId,
+      device_id: deviceId,
     }).then((r) => r.data)
   },
 

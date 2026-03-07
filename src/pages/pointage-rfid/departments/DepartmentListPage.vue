@@ -197,6 +197,7 @@ import AppSelect from '@/components/ui/AppSelect.vue'
 import type { TableColumn } from '@/types/common'
 import type { Department } from '@/types'
 import { useToast } from '@/composables/useToast'
+import { userApi, type UserData } from '@/services/api/user.api'
 import { PencilIcon, TrashIcon } from '@heroicons/vue/24/outline'
 
 const router = useRouter()
@@ -210,6 +211,7 @@ const showCreateModal = ref(false)
 const showEditModal = ref(false)
 const editingDept = ref<Department | null>(null)
 const isSubmitting = ref(false)
+const managers = ref<UserData[]>([])
 
 const filters = ref({
   companyId: '',
@@ -267,6 +269,10 @@ const formSiteOptions = computed(() => {
 
 const managerOptions = computed(() => [
   { value: '', label: 'Aucun manager' },
+  ...managers.value.map((u) => ({
+    value: u.id,
+    label: `${u.firstName} ${u.lastName}`,
+  })),
 ])
 
 const columns = computed<TableColumn[]>(() => {
@@ -292,7 +298,11 @@ const tableData = computed(() => {
       name: dept.name,
       siteName: site?.name || '-',
       companyName: company?.name || '-',
-      manager: dept.managerId ? 'Manager assigne' : '-',
+      manager: (() => {
+        if (!dept.managerId) return '-'
+        const m = managers.value.find((u) => u.id === dept.managerId)
+        return m ? `${m.firstName} ${m.lastName}` : '-'
+      })(),
       employeeCount: dept.employeeCount || 0,
       _raw: dept,
     }
@@ -300,11 +310,13 @@ const tableData = computed(() => {
 })
 
 onMounted(async () => {
-  await Promise.all([
+  const [, , , users] = await Promise.all([
     companyStore.fetchCompanies({ perPage: 100 }),
     siteStore.fetchSites({ perPage: 100 }),
     departmentStore.fetchDepartments(filters.value),
+    userApi.getAll({ role: 'manager', perPage: 200 }),
   ])
+  managers.value = users
 })
 
 function handleCompanyFilterChange() {

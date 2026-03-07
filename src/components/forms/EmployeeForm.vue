@@ -99,6 +99,10 @@ const validate = (): boolean => {
     errors.value.companyId = "L'entreprise est requise"
   }
 
+  if (!localValue.value.siteId) {
+    errors.value.siteId = 'Le site est requis'
+  }
+
   if (!localValue.value.departmentId) {
     errors.value.departmentId = 'Le departement est requis'
   }
@@ -184,7 +188,7 @@ const handleSubmit = () => {
         />
       </FormRow>
 
-      <FormRow label="Site" :error="errors.siteId">
+      <FormRow label="Site" :required="true" :error="errors.siteId">
         <AppSelect
           :model-value="localValue.siteId"
           @update:model-value="updateField('siteId', $event)"

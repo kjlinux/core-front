@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useFeelbackDeviceStore } from '@/stores/feelback-device.store'
 import { useCompanyStore } from '@/stores/company.store'
 import { useSiteStore } from '@/stores/site.store'
@@ -11,7 +11,8 @@ import AppBadge from '@/components/ui/AppBadge.vue'
 import AppModal from '@/components/ui/AppModal.vue'
 import AppInput from '@/components/ui/AppInput.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
-import { TrashIcon } from '@heroicons/vue/24/outline'
+import type { FeelbackDevice } from '@/types'
+import { TrashIcon, WifiIcon, PlusIcon, PencilIcon } from '@heroicons/vue/24/outline'
 
 const deviceStore = useFeelbackDeviceStore()
 const companyStore = useCompanyStore()
@@ -20,10 +21,19 @@ const permissions = usePermissions()
 const toast = useToast()
 
 const showAddModal = ref(false)
+const showEditModal = ref(false)
 const filterCompany = ref('')
 const filterStatus = ref('')
+const isSubmitting = ref(false)
+
 const newDevice = ref({
   serialNumber: '',
+  companyId: '',
+  siteId: '',
+})
+
+const editDevice = ref<FeelbackDevice | null>(null)
+const editForm = ref({
   companyId: '',
   siteId: '',
 })
@@ -39,6 +49,37 @@ const companyOptions = computed(() => [
   ...companyStore.companies.map((c) => ({ label: c.name, value: c.id })),
 ])
 
+const addCompanyOptions = computed(() => [
+  { label: 'Selectionner une entreprise', value: '' },
+  ...companyStore.companies.map((c) => ({ label: c.name, value: c.id })),
+])
+
+const addSiteOptions = computed(() => {
+  if (!newDevice.value.companyId) return [{ label: 'Selectionner un site', value: '' }]
+  const sites = siteStore.sites.filter((s) => s.companyId === newDevice.value.companyId)
+  return [
+    { label: 'Selectionner un site', value: '' },
+    ...sites.map((s) => ({ label: s.name, value: s.id })),
+  ]
+})
+
+const editSiteOptions = computed(() => {
+  if (!editForm.value.companyId) return [{ label: 'Selectionner un site', value: '' }]
+  const sites = siteStore.sites.filter((s) => s.companyId === editForm.value.companyId)
+  return [
+    { label: 'Selectionner un site', value: '' },
+    ...sites.map((s) => ({ label: s.name, value: s.id })),
+  ]
+})
+
+watch(() => newDevice.value.companyId, () => {
+  newDevice.value.siteId = ''
+})
+
+watch(() => editForm.value.companyId, () => {
+  editForm.value.siteId = ''
+})
+
 const filteredDevices = computed(() => {
   let list = deviceStore.devices
   if (filterCompany.value) {
@@ -52,23 +93,29 @@ const filteredDevices = computed(() => {
   return list
 })
 
-const siteOptionsForForm = computed(() => {
-  const filtered = newDevice.value.companyId
-    ? siteStore.sites.filter((s) => s.companyId === newDevice.value.companyId)
-    : siteStore.sites
-  return [
-    { label: 'Selectionner un site', value: '' },
-    ...filtered.map((s) => ({ label: s.name, value: s.id })),
-  ]
-})
-
 const canManage = computed(() => permissions.isSuperAdmin.value || permissions.isAdminEnterprise.value)
 
 function formatDate(date: string) {
   return new Date(date).toLocaleString('fr-FR')
 }
 
+function openEditModal(device: FeelbackDevice) {
+  editDevice.value = device
+  editForm.value = { companyId: device.companyId, siteId: device.siteId }
+  showEditModal.value = true
+}
+
+async function handleToggleOnline(device: FeelbackDevice) {
+  try {
+    await deviceStore.setDeviceOnline(device.id, !device.isOnline)
+    toast.showSuccess(device.isOnline ? device.serialNumber + ' mis hors ligne' : device.serialNumber + ' mis en ligne')
+  } catch {
+    toast.showError('Erreur lors du changement de statut')
+  }
+}
+
 async function handleDelete(id: string) {
+  if (!confirm('Confirmer la suppression de ce terminal ?')) return
   try {
     await deviceStore.deleteDevice(id)
     toast.showSuccess('Terminal supprime')
@@ -78,10 +125,11 @@ async function handleDelete(id: string) {
 }
 
 async function handleAddDevice() {
-  if (!newDevice.value.serialNumber) {
-    toast.showError('Le numero de serie est obligatoire')
+  if (!newDevice.value.serialNumber || !newDevice.value.companyId || !newDevice.value.siteId) {
+    toast.showError('Veuillez remplir tous les champs obligatoires')
     return
   }
+  isSubmitting.value = true
   try {
     await deviceStore.registerDevice(newDevice.value)
     toast.showSuccess('Terminal Feelback ajoute')
@@ -89,11 +137,30 @@ async function handleAddDevice() {
     newDevice.value = { serialNumber: '', companyId: '', siteId: '' }
   } catch {
     toast.showError("Erreur lors de l'ajout")
+  } finally {
+    isSubmitting.value = false
+  }
+}
+
+async function handleEditDevice() {
+  if (!editDevice.value || !editForm.value.siteId) {
+    toast.showError('Veuillez selectionner un site')
+    return
+  }
+  isSubmitting.value = true
+  try {
+    await deviceStore.updateDevice(editDevice.value.id, editForm.value)
+    toast.showSuccess('Terminal mis a jour')
+    showEditModal.value = false
+  } catch {
+    toast.showError('Erreur lors de la mise a jour')
+  } finally {
+    isSubmitting.value = false
   }
 }
 
 onMounted(async () => {
-  await Promise.all([deviceStore.fetchDevices(), companyStore.fetchCompanies(), siteStore.fetchSites()])
+  await Promise.all([deviceStore.fetchDevices(), companyStore.fetchCompanies(), siteStore.fetchSites({ perPage: 200 })])
 })
 </script>
 
@@ -105,6 +172,7 @@ onMounted(async () => {
         <p class="text-sm text-gray-500 mt-1">Gestion des bornes de satisfaction client</p>
       </div>
       <AppButton v-if="canManage" variant="primary" @click="showAddModal = true">
+        <PlusIcon class="w-4 h-4 mr-1" />
         Ajouter un terminal
       </AppButton>
     </div>
@@ -131,6 +199,7 @@ onMounted(async () => {
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Site</th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Statut</th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Dernier ping</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Entreprise</th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
             </tr>
           </thead>
@@ -144,8 +213,23 @@ onMounted(async () => {
                 </AppBadge>
               </td>
               <td class="px-4 py-3 text-sm text-gray-600">{{ formatDate(device.lastPingAt) }}</td>
-              <td class="px-4 py-3">
-                <div v-if="canManage">
+              <td class="px-4 py-3 text-sm text-gray-600">
+                {{ companyStore.companies.find((c) => c.id === device.companyId)?.name ?? '-' }}
+              </td>
+              <td class="px-4 py-3" @click.stop>
+                <div v-if="canManage" class="flex gap-1">
+                  <AppButton
+                    size="sm"
+                    variant="ghost"
+                    :class="device.isOnline ? 'text-green-600' : 'text-gray-400'"
+                    :title="device.isOnline ? 'Mettre hors ligne' : 'Mettre en ligne'"
+                    @click="handleToggleOnline(device)"
+                  >
+                    <WifiIcon class="w-4 h-4" />
+                  </AppButton>
+                  <AppButton size="sm" variant="ghost" title="Modifier" @click="openEditModal(device)">
+                    <PencilIcon class="w-4 h-4" />
+                  </AppButton>
                   <AppButton size="sm" variant="ghost" class="text-red-600 hover:text-red-700" @click="handleDelete(device.id)" title="Supprimer">
                     <TrashIcon class="w-4 h-4" />
                   </AppButton>
@@ -160,13 +244,30 @@ onMounted(async () => {
     <AppModal v-model="showAddModal" title="Ajouter un terminal Feelback" size="md">
       <div class="space-y-4">
         <AppInput v-model="newDevice.serialNumber" label="Numero de serie *" placeholder="Ex: FLB-2024-001" />
-        <AppSelect v-model="newDevice.companyId" label="Entreprise" :options="companyOptions" @update:model-value="newDevice.siteId = ''" />
-        <AppSelect v-model="newDevice.siteId" label="Site" :options="siteOptionsForForm" />
+        <AppSelect v-model="newDevice.companyId" label="Entreprise *" :options="addCompanyOptions" />
+        <AppSelect v-model="newDevice.siteId" label="Site *" :options="addSiteOptions" :disabled="!newDevice.companyId" />
       </div>
       <template #footer>
         <div class="flex justify-end gap-3">
           <AppButton variant="secondary" @click="showAddModal = false">Annuler</AppButton>
-          <AppButton variant="primary" @click="handleAddDevice">Ajouter</AppButton>
+          <AppButton variant="primary" :loading="isSubmitting" @click="handleAddDevice">Ajouter</AppButton>
+        </div>
+      </template>
+    </AppModal>
+
+    <AppModal v-model="showEditModal" title="Modifier le terminal" size="md">
+      <div class="space-y-4">
+        <div>
+          <p class="text-sm text-gray-500">Numero de serie</p>
+          <p class="font-mono text-sm font-medium">{{ editDevice?.serialNumber }}</p>
+        </div>
+        <AppSelect v-model="editForm.companyId" label="Entreprise *" :options="addCompanyOptions" />
+        <AppSelect v-model="editForm.siteId" label="Site *" :options="editSiteOptions" :disabled="!editForm.companyId" />
+      </div>
+      <template #footer>
+        <div class="flex justify-end gap-3">
+          <AppButton variant="secondary" @click="showEditModal = false">Annuler</AppButton>
+          <AppButton variant="primary" :loading="isSubmitting" @click="handleEditDevice">Enregistrer</AppButton>
         </div>
       </template>
     </AppModal>

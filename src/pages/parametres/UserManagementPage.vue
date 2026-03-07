@@ -12,7 +12,7 @@ import AppModal from '@/components/ui/AppModal.vue'
 import AppInput from '@/components/ui/AppInput.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
-import { PencilIcon, EyeIcon, EyeSlashIcon, KeyIcon, UserPlusIcon, TrashIcon } from '@heroicons/vue/24/outline'
+import { PencilIcon, EyeIcon, EyeSlashIcon, KeyIcon, UserPlusIcon } from '@heroicons/vue/24/outline'
 
 const permissions = usePermissions()
 const toast = useToast()
@@ -22,9 +22,7 @@ const companyStore = useCompanyStore()
 const isLoading = ref(false)
 const showCreateModal = ref(false)
 const showEditModal = ref(false)
-const showDeleteConfirm = ref(false)
 const editingUser = ref<UserData | null>(null)
-const deletingUser = ref<UserData | null>(null)
 const isSaving = ref(false)
 
 const createForm = ref({
@@ -94,11 +92,6 @@ async function fetchUsers() {
 function openEditModal(user: UserData) {
   editingUser.value = { ...user }
   showEditModal.value = true
-}
-
-function openDeleteConfirm(user: UserData) {
-  deletingUser.value = user
-  showDeleteConfirm.value = true
 }
 
 async function toggleActive(user: UserData) {
@@ -187,25 +180,6 @@ async function handleEditSave() {
   }
 }
 
-async function handleDelete() {
-  if (!deletingUser.value) return
-  isSaving.value = true
-  try {
-    await userApi.getById(deletingUser.value.id) // Verify user still exists
-    // Use a simple DELETE via the API
-    const { default: apiClient } = await import('@/services/api/client')
-    await apiClient.delete(`/users/${deletingUser.value.id}`)
-    users.value = users.value.filter((u) => u.id !== deletingUser.value!.id)
-    toast.showSuccess('Utilisateur supprime')
-    showDeleteConfirm.value = false
-    deletingUser.value = null
-  } catch {
-    toast.showError("Erreur lors de la suppression de l'utilisateur")
-  } finally {
-    isSaving.value = false
-  }
-}
-
 onMounted(async () => {
   await fetchUsers()
   if (permissions.isSuperAdmin.value) {
@@ -278,16 +252,6 @@ onMounted(async () => {
                   <AppButton size="sm" variant="ghost" @click="resetPassword(u)" title="Reinitialiser le mot de passe">
                     <KeyIcon class="w-4 h-4" />
                   </AppButton>
-                  <AppButton
-                    v-if="permissions.isSuperAdmin.value && u.id !== authStore.user?.id"
-                    size="sm"
-                    variant="ghost"
-                    class="text-red-600 hover:text-red-700"
-                    @click="openDeleteConfirm(u)"
-                    title="Supprimer"
-                  >
-                    <TrashIcon class="w-4 h-4" />
-                  </AppButton>
                 </div>
               </td>
             </tr>
@@ -343,19 +307,5 @@ onMounted(async () => {
       </template>
     </AppModal>
 
-    <!-- Delete Confirmation Modal -->
-    <AppModal v-if="deletingUser" v-model="showDeleteConfirm" title="Confirmer la suppression">
-      <p class="text-sm text-gray-700">
-        Voulez-vous vraiment supprimer l'utilisateur
-        <span class="font-semibold">{{ deletingUser.firstName }} {{ deletingUser.lastName }}</span> ?
-        Cette action est irreversible.
-      </p>
-      <template #footer>
-        <div class="flex justify-end gap-3">
-          <AppButton variant="secondary" @click="showDeleteConfirm = false">Annuler</AppButton>
-          <AppButton variant="danger" :loading="isSaving" @click="handleDelete">Supprimer</AppButton>
-        </div>
-      </template>
-    </AppModal>
   </div>
 </template>

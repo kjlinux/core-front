@@ -41,13 +41,13 @@
     <AppCard>
       <div class="filters">
         <AppSelect
-          v-model="filters.department"
+          v-model="filters.departmentId"
           :options="departmentOptions"
           placeholder="Tous les départements"
           @change="fetchData"
         />
         <AppSelect
-          v-model="filters.site"
+          v-model="filters.siteId"
           :options="siteOptions"
           placeholder="Tous les sites"
           @change="fetchData"
@@ -78,6 +78,12 @@
             {{ getStatusLabel(row.status) }}
           </span>
         </template>
+        <template #cell-entryTime="{ row }">
+          {{ formatTime(row.entryTime) }}
+        </template>
+        <template #cell-exitTime="{ row }">
+          {{ formatTime(row.exitTime) }}
+        </template>
         <template #cell-lateMinutes="{ row }">
           <span v-if="row.lateMinutes > 0" class="late-minutes">
             {{ row.lateMinutes }} min
@@ -99,7 +105,6 @@
 import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAttendanceStore } from '@/stores/attendance.store';
-import { formatDate } from '@/utils/format';
 import type { AttendanceRecord } from '@/types/attendance';
 import DataTable from '@/components/data-display/DataTable.vue';
 import AppButton from '@/components/ui/AppButton.vue';
@@ -107,10 +112,12 @@ import AppCard from '@/components/ui/AppCard.vue';
 import AppSelect from '@/components/ui/AppSelect.vue';
 import AppInput from '@/components/ui/AppInput.vue';
 import { useToast } from '@/composables/useToast';
+import { departmentApi } from '@/services/api/department.api';
+import { siteApi } from '@/services/api/site.api';
 
 const router = useRouter();
 const attendanceStore = useAttendanceStore();
-const { info, success, error } = useToast();
+const { info } = useToast();
 
 const loading = ref(false);
 const selectedDate = ref(new Date().toISOString().split('T')[0]);
@@ -118,40 +125,24 @@ const currentPage = ref(1);
 const perPage = ref(20);
 
 const filters = ref({
-  department: '',
-  site: '',
+  departmentId: '',
+  siteId: '',
   status: '',
 });
 
-const departmentOptions = [
-  { label: 'Tous les départements', value: '' },
-  { label: 'IT', value: 'it' },
-  { label: 'RH', value: 'rh' },
-  { label: 'Finance', value: 'finance' },
-  { label: 'Commercial', value: 'commercial' },
-];
-
-const siteOptions = [
-  { label: 'Tous les sites', value: '' },
-  { label: 'Casablanca', value: 'casablanca' },
-  { label: 'Rabat', value: 'rabat' },
-  { label: 'Tanger', value: 'tanger' },
-];
+const departmentOptions = ref([{ label: 'Tous les départements', value: '' }]);
+const siteOptions = ref([{ label: 'Tous les sites', value: '' }]);
 
 const statusOptions = [
   { label: 'Tous les statuts', value: '' },
   { label: 'Présent', value: 'present' },
   { label: 'Absent', value: 'absent' },
   { label: 'En retard', value: 'late' },
+  { label: 'Départ anticipé', value: 'left_early' },
 ];
 
-const attendanceRecords = computed(() => {
-  return attendanceStore.dailyAttendance || [];
-});
-
-const total = computed(() => {
-  return attendanceStore.dailyAttendanceTotal || 0;
-});
+const attendanceRecords = computed(() => attendanceStore.dailyAttendance || []);
+const total = computed(() => attendanceStore.dailyAttendanceTotal || 0);
 
 const summary = computed(() => {
   const totalEmployees = attendanceStore.dailyStats?.totalEmployees || 0;
@@ -170,7 +161,7 @@ const summary = computed(() => {
 const columns = [
   { key: 'employeeName', label: 'Employé', sortable: true },
   { key: 'department', label: 'Département', sortable: true },
-  { key: 'entryTime', label: 'Heure d\'entrée', sortable: true },
+  { key: 'entryTime', label: "Heure d'entrée", sortable: true },
   { key: 'exitTime', label: 'Heure de sortie', sortable: true },
   { key: 'status', label: 'Statut', sortable: true },
   { key: 'lateMinutes', label: 'Retard', sortable: true },
@@ -182,8 +173,14 @@ const getStatusLabel = (status: string): string => {
     present: 'Présent',
     absent: 'Absent',
     late: 'En retard',
+    left_early: 'Départ anticipé',
   };
   return labels[status] || status;
+};
+
+const formatTime = (iso: string | null | undefined): string => {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 };
 
 const fetchData = async () => {
@@ -191,15 +188,34 @@ const fetchData = async () => {
   try {
     await attendanceStore.fetchDailyAttendance({
       date: selectedDate.value,
-      department: filters.value.department,
-      site: filters.value.site,
-      status: filters.value.status,
+      source: 'rfid' as const,
+      departmentId: filters.value.departmentId || undefined,
+      siteId: filters.value.siteId || undefined,
+      status: filters.value.status || undefined,
       page: currentPage.value,
       perPage: perPage.value,
     });
-    await attendanceStore.fetchDailyStats(selectedDate.value);
   } finally {
     loading.value = false;
+  }
+};
+
+const loadFilters = async () => {
+  try {
+    const [depts, sites] = await Promise.all([
+      departmentApi.getAll({ perPage: 200 }),
+      siteApi.getAll({ perPage: 200 }),
+    ]);
+    departmentOptions.value = [
+      { label: 'Tous les départements', value: '' },
+      ...(depts.data || []).map((d) => ({ label: d.name, value: d.id })),
+    ];
+    siteOptions.value = [
+      { label: 'Tous les sites', value: '' },
+      ...(sites.data || []).map((s) => ({ label: s.name, value: s.id })),
+    ];
+  } catch {
+    // silently fail — filtres restent vides
   }
 };
 
@@ -220,6 +236,7 @@ const viewDetail = (record: AttendanceRecord) => {
 };
 
 onMounted(() => {
+  loadFilters();
   fetchData();
 });
 </script>
@@ -336,6 +353,11 @@ onMounted(() => {
 .status-late {
   background-color: #fed7aa;
   color: #9a3412;
+}
+
+.status-left_early {
+  background-color: #fef3c7;
+  color: #92400e;
 }
 
 .late-minutes {

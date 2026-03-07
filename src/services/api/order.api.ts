@@ -18,8 +18,8 @@ export const orderApi = {
     return apiClient.patch(`/orders/${id}/cancel`).then((r) => r.data)
   },
 
-  initiatePayment(orderId: string, method: string): Promise<Order> {
-    return apiClient.post(`/orders/${orderId}/payment`, { method }).then((r) => r.data)
+  initiatePayment(orderId: string, method: string, phoneNumber?: string): Promise<{ payment_url: string | null; token: string | null; pending?: boolean; message?: string }> {
+    return apiClient.post(`/orders/${orderId}/payment`, { method, phoneNumber }).then((r) => r.data)
   },
 
   getAllAdmin(params?: PaginationParams): Promise<PaginatedResponse<Order>> {

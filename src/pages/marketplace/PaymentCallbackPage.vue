@@ -30,8 +30,10 @@ onMounted(() => {
 
       <!-- Success -->
       <div v-else-if="status === 'success'" class="space-y-4">
-        <div class="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto text-4xl text-green-500 font-bold">
-          [OK]
+        <div class="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto">
+          <svg class="w-10 h-10 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
         </div>
         <h2 class="text-2xl font-bold text-gray-900">Paiement reussi !</h2>
         <p class="text-gray-600">Votre commande a ete confirmee et est en cours de traitement.</p>
@@ -46,8 +48,10 @@ onMounted(() => {
 
       <!-- Failed -->
       <div v-else-if="status === 'failed'" class="space-y-4">
-        <div class="w-20 h-20 rounded-full bg-red-100 flex items-center justify-center mx-auto text-4xl text-red-500 font-bold">
-          [X]
+        <div class="w-20 h-20 rounded-full bg-red-100 flex items-center justify-center mx-auto">
+          <svg class="w-10 h-10 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
         </div>
         <h2 class="text-2xl font-bold text-gray-900">Echec du paiement</h2>
         <p class="text-gray-600">Votre paiement n'a pas pu etre traite. Veuillez reessayer ou contacter le support.</p>

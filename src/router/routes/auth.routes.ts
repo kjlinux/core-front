@@ -13,6 +13,12 @@ const authRoutes: RouteRecordRaw[] = [
     component: () => import('@/pages/auth/ForgotPasswordPage.vue'),
     meta: { layout: 'auth', requiresAuth: false },
   },
+  {
+    path: '/reset-password',
+    name: 'reset-password',
+    component: () => import('@/pages/auth/ResetPasswordPage.vue'),
+    meta: { layout: 'auth', requiresAuth: false },
+  },
 ]
 
 export default authRoutes

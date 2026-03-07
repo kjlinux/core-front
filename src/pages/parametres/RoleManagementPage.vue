@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { hasPermission, type Module, type Action } from '@/utils/permissions'
+import { usePermissions } from '@/composables/usePermissions'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import { CheckIcon, XMarkIcon } from '@heroicons/vue/24/solid'
+
+const permissions = usePermissions()
 
 const modules: { key: Module; label: string }[] = [
   { key: 'dashboard', label: 'Tableau de bord' },
@@ -22,7 +25,7 @@ const actions: { key: Action; label: string }[] = [
   { key: 'export', label: 'Exporter' },
 ]
 
-const roles: { key: string; label: string; description: string; variant: string }[] = [
+const allRoles: { key: string; label: string; description: string; variant: string }[] = [
   {
     key: 'super_admin',
     label: 'Super Administrateur',
@@ -43,13 +46,18 @@ const roles: { key: string; label: string; description: string; variant: string 
   },
 ]
 
+const roles = computed(() => {
+  if (permissions.isSuperAdmin.value) return allRoles
+  return allRoles.filter((r) => r.key !== 'super_admin')
+})
+
 function check(role: string, module: Module, action: Action): boolean {
   return hasPermission(role as any, module, action)
 }
 
 const totalPermissions = computed(() => {
   const totals: Record<string, number> = {}
-  for (const role of roles) {
+  for (const role of roles.value) {
     let count = 0
     for (const mod of modules) {
       for (const act of actions) {
@@ -138,12 +146,5 @@ const totalPermissions = computed(() => {
       </AppCard>
     </div>
 
-    <!-- Info note -->
-    <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
-      <p class="text-sm text-blue-700">
-        Les permissions sont definies au niveau du systeme et s'appliquent uniformement a tous les utilisateurs du meme role.
-        Les donnees visibles sont automatiquement filtrees par entreprise pour les Administrateurs Entreprise et les Managers.
-      </p>
-    </div>
   </div>
 </template>

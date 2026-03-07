@@ -1,7 +1,6 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { biometricApi } from '@/services/api/biometric.api'
-import { getEcho } from '@/services/echo'
 import type { BiometricDevice, FingerprintEnrollment } from '@/types'
 
 export const useBiometricStore = defineStore('biometric', () => {
@@ -48,6 +47,17 @@ export const useBiometricStore = defineStore('biometric', () => {
       const enrollment = await biometricApi.startEnrollment(data)
       enrollments.value.push(enrollment)
       return enrollment
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  async function createDevice(data: Partial<BiometricDevice>) {
+    isLoading.value = true
+    try {
+      const device = await biometricApi.createDevice(data)
+      devices.value.push(device)
+      return device
     } finally {
       isLoading.value = false
     }
@@ -108,6 +118,13 @@ export const useBiometricStore = defineStore('biometric', () => {
     }
   }
 
+  async function setDeviceOnline(id: string, isOnline: boolean) {
+    const device = await biometricApi.setDeviceOnline(id, isOnline)
+    const idx = devices.value.findIndex((d) => d.id === id)
+    if (idx !== -1) devices.value[idx] = device
+    if (currentDevice.value?.id === id) currentDevice.value = device
+    return device
+  }
 
   async function syncDevice(id: string) {
     isLoading.value = true
@@ -118,48 +135,36 @@ export const useBiometricStore = defineStore('biometric', () => {
     }
   }
 
-  function subscribeRealtime() {
-    const echo = getEcho()
-    if (!echo) return
-
-    echo.channel('devices').listen('.device.status.updated', (data: {
-      deviceType: string
-      deviceId: string
-      status: string
-      data: Record<string, unknown>
-      timestamp: string
-    }) => {
-      if (data.deviceType === 'biometric') {
-        const device = devices.value.find((d) => d.id === data.deviceId)
-        if (device) {
-          device.isOnline = data.status === 'online'
-          device.lastSyncAt = data.timestamp
-        }
-      }
-    })
-  }
-
-  function unsubscribeRealtime() {
-    const echo = getEcho()
-    if (!echo) return
-    echo.leave('devices')
+  /**
+   * Appelé par useRealtimeSubscriptions — met à jour le statut d'un device biométrique.
+   */
+  function handleRealtimeDevice(data: {
+    deviceId: string
+    status: string
+    timestamp: string
+  }) {
+    const device = devices.value.find((d) => d.id === data.deviceId)
+    if (device) {
+      device.isOnline = data.status === 'online'
+      device.lastSyncAt = data.timestamp
+    }
   }
 
   return {
     devices,
     currentDevice,
     enrollments,
-
     isLoading,
     fetchDevices,
     fetchDevice,
     fetchEnrollments,
+    createDevice,
     startEnrollment,
     enrollViaDevice,
     pollEnrollmentStatus,
     deleteEnrollment,
+    setDeviceOnline,
     syncDevice,
-    subscribeRealtime,
-    unsubscribeRealtime,
+    handleRealtimeDevice,
   }
 })

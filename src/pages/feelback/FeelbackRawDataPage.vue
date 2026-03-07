@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useFeelbackStore } from '@/stores/feelback.store'
+import { useSiteStore } from '@/stores/site.store'
 import { useToast } from '@/composables/useToast'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
@@ -9,14 +10,13 @@ import AppInput from '@/components/ui/AppInput.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
 
 const store = useFeelbackStore()
+const siteStore = useSiteStore()
 const toast = useToast()
 
 const filterStartDate = ref('')
 const filterEndDate = ref('')
 const filterLevel = ref('')
 const filterSite = ref('')
-const currentPage = ref(1)
-const perPage = 20
 const lastUpdated = ref(new Date().toLocaleTimeString('fr-FR'))
 let refreshInterval: ReturnType<typeof setInterval>
 
@@ -27,23 +27,21 @@ const levelOptions = [
   { label: 'Mauvais', value: 'mauvais' },
 ]
 
-const filteredEntries = computed(() => {
-  let list = store.entries
-  if (filterLevel.value) {
-    list = list.filter((e) => e.level === filterLevel.value)
-  }
-  if (filterSite.value) {
-    list = list.filter((e) => e.siteId === filterSite.value)
-  }
-  return list
-})
+const siteOptions = computed(() => [
+  { label: 'Tous les sites', value: '' },
+  ...siteStore.sites.map((s) => ({ label: s.name, value: s.id })),
+])
 
-const paginatedEntries = computed(() => {
-  const start = (currentPage.value - 1) * perPage
-  return filteredEntries.value.slice(start, start + perPage)
-})
+function buildParams() {
+  const params: Record<string, unknown> = {}
+  if (filterLevel.value) params.level = filterLevel.value
+  if (filterSite.value) params.siteId = filterSite.value
+  if (filterStartDate.value) params.startDate = filterStartDate.value
+  if (filterEndDate.value) params.endDate = filterEndDate.value
+  return params
+}
 
-const totalPages = computed(() => Math.ceil(filteredEntries.value.length / perPage))
+const entries = computed(() => store.entries)
 
 function getLevelVariant(level: string) {
   switch (level) {
@@ -68,16 +66,20 @@ function formatDate(date: string) {
 }
 
 async function refresh() {
-  await store.fetchEntries()
+  await store.fetchEntries(buildParams())
   lastUpdated.value = new Date().toLocaleTimeString('fr-FR')
 }
+
+watch([filterLevel, filterSite, filterStartDate, filterEndDate], () => {
+  refresh()
+})
 
 function exportData() {
   toast.showSuccess('Export CSV en cours...')
 }
 
 onMounted(async () => {
-  await refresh()
+  await Promise.all([refresh(), siteStore.fetchSites({ perPage: 200 })])
   refreshInterval = setInterval(refresh, 30000)
 })
 
@@ -101,16 +103,16 @@ onUnmounted(() => {
         <AppInput v-model="filterStartDate" type="date" placeholder="Date debut" />
         <AppInput v-model="filterEndDate" type="date" placeholder="Date fin" />
         <AppSelect v-model="filterLevel" :options="levelOptions" class="w-40" />
-        <AppInput v-model="filterSite" placeholder="Filtrer par site..." />
+        <AppSelect v-model="filterSite" :options="siteOptions" class="w-48" />
       </div>
 
-      <p class="text-sm text-gray-500 mb-4">{{ filteredEntries.length }} reponse(s) trouvee(s)</p>
+      <p class="text-sm text-gray-500 mb-4">{{ store.entries.length }} reponse(s) trouvee(s)</p>
 
       <div v-if="store.isLoading" class="flex justify-center py-12">
         <div class="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
       </div>
 
-      <div v-else-if="filteredEntries.length === 0" class="text-center py-12 text-gray-500">
+      <div v-else-if="entries.length === 0" class="text-center py-12 text-gray-500">
         Aucune donnee disponible
       </div>
 
@@ -125,7 +127,7 @@ onUnmounted(() => {
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-100">
-            <tr v-for="entry in paginatedEntries" :key="entry.id" class="hover:bg-gray-50">
+            <tr v-for="entry in entries" :key="entry.id" class="hover:bg-gray-50">
               <td class="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">{{ formatDate(entry.timestamp) }}</td>
               <td class="px-4 py-3 text-sm text-gray-900">{{ entry.siteName }}</td>
               <td class="px-4 py-3">
@@ -133,22 +135,11 @@ onUnmounted(() => {
                   {{ getLevelLabel(entry.level) }}
                 </AppBadge>
               </td>
-              <td class="px-4 py-3 text-sm font-mono text-gray-500">{{ entry.deviceId }}</td>
+              <td class="px-4 py-3 text-sm font-mono text-gray-500">{{ entry.deviceSerialNumber ?? '-' }}</td>
             </tr>
           </tbody>
         </table>
 
-        <div v-if="totalPages > 1" class="flex justify-center mt-6">
-          <div class="flex gap-2">
-            <AppButton size="sm" variant="ghost" :disabled="currentPage === 1" @click="currentPage--">
-              Precedent
-            </AppButton>
-            <span class="px-3 py-1 text-sm text-gray-600">{{ currentPage }} / {{ totalPages }}</span>
-            <AppButton size="sm" variant="ghost" :disabled="currentPage === totalPages" @click="currentPage++">
-              Suivant
-            </AppButton>
-          </div>
-        </div>
       </div>
     </AppCard>
   </div>

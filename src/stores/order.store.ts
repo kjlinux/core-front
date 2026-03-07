@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { orderApi } from '@/services/api/order.api'
+import { useAuthStore } from '@/stores/auth.store'
 import type { Order } from '@/types'
 import type { PaymentMethod } from '@/types/enums'
 
@@ -24,7 +25,9 @@ export const useOrderStore = defineStore('order', () => {
   async function fetchOrders() {
     isLoading.value = true
     try {
-      const response = await orderApi.getAll()
+      const authStore = useAuthStore()
+      const companyId = authStore.userCompanyId ?? undefined
+      const response = await orderApi.getAll({ companyId })
       orders.value = response.data
     } finally {
       isLoading.value = false
@@ -57,10 +60,10 @@ export const useOrderStore = defineStore('order', () => {
     }
   }
 
-  async function initiatePayment(orderId: string, method: PaymentMethod) {
+  async function initiatePayment(orderId: string, method: PaymentMethod, phoneNumber?: string) {
     isLoading.value = true
     try {
-      return await orderApi.initiatePayment(orderId, method)
+      return await orderApi.initiatePayment(orderId, method, phoneNumber)
     } finally {
       isLoading.value = false
     }

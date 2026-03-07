@@ -27,26 +27,18 @@
             </AppBadge>
           </div>
 
-          <div v-if="card.employee" class="employee-section">
+          <div v-if="card.employeeId" class="employee-section">
             <h3>Informations de l'employe</h3>
             <div class="employee-info">
               <div class="employee-photo">
                 <div class="photo-placeholder">
-                  {{ getInitials(card.employee.firstName, card.employee.lastName) }}
+                  {{ card.employeeName ? card.employeeName.split(' ').map((n: string) => n[0]).join('').toUpperCase() : '?' }}
                 </div>
               </div>
               <div class="employee-details">
                 <div class="info-row">
                   <label>Nom complet</label>
-                  <span>{{ card.employee.firstName }} {{ card.employee.lastName }}</span>
-                </div>
-                <div class="info-row">
-                  <label>Poste</label>
-                  <span>{{ card.employee.position || '-' }}</span>
-                </div>
-                <div class="info-row">
-                  <label>Entreprise</label>
-                  <span>{{ card.employee.company?.name || '-' }}</span>
+                  <span>{{ card.employeeName || '-' }}</span>
                 </div>
               </div>
             </div>
@@ -58,12 +50,12 @@
 
           <div class="info-row">
             <label>Date d'attribution</label>
-            <span>{{ card.assignedDate ? formatDate(card.assignedDate) : '-' }}</span>
+            <span>{{ card.assignedAt ? formatDate(card.assignedAt) : '-' }}</span>
           </div>
 
           <div class="info-row">
             <label>Entreprise</label>
-            <span>{{ card.company?.name || '-' }}</span>
+            <span>{{ companyStore.companies.find(c => c.id === card.companyId)?.name || card.companyId || '-' }}</span>
           </div>
 
           <div class="info-row">
@@ -75,7 +67,7 @@
 
       <div class="action-buttons">
         <AppButton
-          v-if="!card.employee && (permissions.isSuperAdmin.value || permissions.isAdminEnterprise.value)"
+          v-if="!card.employeeId && (permissions.isSuperAdmin.value || permissions.isAdminEnterprise.value)"
           variant="primary"
           @click="openAssignModal"
         >
@@ -84,7 +76,7 @@
         </AppButton>
 
         <AppButton
-          v-if="card.employee && (permissions.isSuperAdmin.value || permissions.isAdminEnterprise.value)"
+          v-if="card.employeeId && (permissions.isSuperAdmin.value || permissions.isAdminEnterprise.value)"
           variant="secondary"
           @click="openUnassignModal"
         >
@@ -180,8 +172,8 @@
     >
       <div class="modal-content">
         <p>Etes-vous sur de vouloir desattribuer cette carte?</p>
-        <p v-if="card?.employee">
-          Employe actuel: <strong>{{ card.employee.firstName }} {{ card.employee.lastName }}</strong>
+        <p v-if="card?.employeeName">
+          Employe actuel: <strong>{{ card.employeeName }}</strong>
         </p>
       </div>
       <template #footer>
@@ -358,12 +350,12 @@ const confirmAssign = async () => {
 
   try {
     await cardStore.assignCard(cardId.value, selectedEmployeeId.value);
-    toast.success('Succes', 'Carte attribuee avec succes');
+    toast.showSuccess('Carte attribuee avec succes');
     assignModalVisible.value = false;
     selectedEmployeeId.value = '';
     await cardStore.fetchCard(cardId.value);
   } catch (error: any) {
-    toast.error('Erreur', error.message || "Erreur lors de l'attribution");
+    toast.showError(error.message || "Erreur lors de l'attribution");
   }
 };
 
@@ -379,11 +371,11 @@ const openUnassignModal = () => {
 const confirmUnassign = async () => {
   try {
     await cardStore.unassignCard(cardId.value);
-    toast.success('Succes', 'Carte desattribuee avec succes');
+    toast.showSuccess('Carte desattribuee avec succes');
     unassignModalVisible.value = false;
     await cardStore.fetchCard(cardId.value);
   } catch (error: any) {
-    toast.error('Erreur', error.message || 'Erreur lors de la desattribution');
+    toast.showError(error.message || 'Erreur lors de la desattribution');
   }
 };
 
@@ -401,12 +393,12 @@ const confirmBlock = async () => {
 
   try {
     await cardStore.blockCard(cardId.value, blockReason.value);
-    toast.success('Succes', 'Carte bloquee avec succes');
+    toast.showSuccess('Carte bloquee avec succes');
     blockModalVisible.value = false;
     blockReason.value = '';
     await cardStore.fetchCard(cardId.value);
   } catch (error: any) {
-    toast.error('Erreur', error.message || 'Erreur lors du blocage');
+    toast.showError(error.message || 'Erreur lors du blocage');
   }
 };
 
@@ -422,11 +414,11 @@ const openUnblockModal = () => {
 const confirmUnblock = async () => {
   try {
     await cardStore.unblockCard(cardId.value);
-    toast.success('Succes', 'Carte debloquee avec succes');
+    toast.showSuccess('Carte debloquee avec succes');
     unblockModalVisible.value = false;
     await cardStore.fetchCard(cardId.value);
   } catch (error: any) {
-    toast.error('Erreur', error.message || 'Erreur lors du deblocage');
+    toast.showError(error.message || 'Erreur lors du deblocage');
   }
 };
 
@@ -447,7 +439,7 @@ onMounted(async () => {
     }
     await Promise.all(promises);
   } catch {
-    toast.error('Erreur', 'Impossible de charger les donnees de la carte');
+    toast.showError('Impossible de charger les donnees de la carte');
   } finally {
     loading.value = false;
   }

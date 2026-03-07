@@ -1,7 +1,6 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { feelbackDeviceApi } from '@/services/api/feelback-device.api'
-import { getEcho } from '@/services/echo'
 import type { FeelbackDevice } from '@/types'
 
 export const useFeelbackDeviceStore = defineStore('feelback-device', () => {
@@ -58,6 +57,14 @@ export const useFeelbackDeviceStore = defineStore('feelback-device', () => {
     }
   }
 
+  async function setDeviceOnline(id: string, isOnline: boolean) {
+    const device = await feelbackDeviceApi.setOnline(id, isOnline)
+    const idx = devices.value.findIndex((d) => d.id === id)
+    if (idx !== -1) devices.value[idx] = device
+    if (currentDevice.value?.id === id) currentDevice.value = device
+    return device
+  }
+
   async function deleteDevice(id: string) {
     isLoading.value = true
     try {
@@ -68,31 +75,19 @@ export const useFeelbackDeviceStore = defineStore('feelback-device', () => {
     }
   }
 
-  function subscribeRealtime() {
-    const echo = getEcho()
-    if (!echo) return
-
-    echo.channel('devices').listen('.device.status.updated', (data: {
-      deviceType: string
-      deviceId: string
-      status: string
-      data: Record<string, unknown>
-      timestamp: string
-    }) => {
-      if (data.deviceType === 'feelback') {
-        const device = devices.value.find((d) => d.id === data.deviceId)
-        if (device) {
-          device.isOnline = data.status === 'online'
-          device.lastPingAt = data.timestamp
-        }
-      }
-    })
-  }
-
-  function unsubscribeRealtime() {
-    const echo = getEcho()
-    if (!echo) return
-    echo.leave('devices')
+  /**
+   * Appelé par useRealtimeSubscriptions — met à jour le statut d'un device feelback.
+   */
+  function handleRealtimeDevice(data: {
+    deviceId: string
+    status: string
+    timestamp: string
+  }) {
+    const device = devices.value.find((d) => d.id === data.deviceId)
+    if (device) {
+      device.isOnline = data.status === 'online'
+      device.lastPingAt = data.timestamp
+    }
   }
 
   return {
@@ -103,8 +98,8 @@ export const useFeelbackDeviceStore = defineStore('feelback-device', () => {
     fetchDevice,
     registerDevice,
     updateDevice,
+    setDeviceOnline,
     deleteDevice,
-    subscribeRealtime,
-    unsubscribeRealtime,
+    handleRealtimeDevice,
   }
 })

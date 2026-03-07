@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { BellIcon, CheckIcon } from '@heroicons/vue/24/outline'
+import { BellIcon, CheckIcon, XMarkIcon } from '@heroicons/vue/24/outline'
 import { onClickOutside } from '@vueuse/core'
 import { useNotificationStore } from '@/stores/notification.store'
 import type { AppNotification } from '@/stores/notification.store'
@@ -38,9 +38,51 @@ function getTypeColor(notification: AppNotification): string {
   if (notification.type === 'attendance') return 'bg-primary-500'
   return 'bg-gray-500'
 }
+
+function getFlashAccent(notification: AppNotification): string {
+  if (notification.type === 'feelback') return 'border-amber-400'
+  if (notification.type === 'attendance') return 'border-primary-400'
+  return 'border-gray-400'
+}
 </script>
 
 <template>
+  <Teleport to="body">
+    <Transition
+      enter-active-class="transition-all duration-300 ease-out"
+      enter-from-class="opacity-0 translate-y-2"
+      enter-to-class="opacity-100 translate-y-0"
+      leave-active-class="transition-all duration-500 ease-in"
+      leave-from-class="opacity-100 translate-y-0"
+      leave-to-class="opacity-0 translate-y-2"
+    >
+      <div
+        v-if="notificationStore.flashNotification"
+        class="fixed bottom-6 right-6 z-9999 w-80 rounded-lg border-l-4 bg-white shadow-xl"
+        :class="getFlashAccent(notificationStore.flashNotification)"
+        @mouseenter="notificationStore.dismissFlash()"
+      >
+        <div class="flex items-start gap-3 px-4 py-3">
+          <span
+            class="mt-1 h-2 w-2 shrink-0 rounded-full"
+            :class="getTypeColor(notificationStore.flashNotification)"
+          />
+          <div class="min-w-0 flex-1">
+            <p class="text-sm font-semibold text-gray-800">{{ notificationStore.flashNotification.title }}</p>
+            <p class="mt-0.5 text-sm text-gray-600">{{ notificationStore.flashNotification.message }}</p>
+          </div>
+          <button
+            type="button"
+            class="shrink-0 text-gray-400 hover:text-gray-600"
+            @click="notificationStore.dismissFlash()"
+          >
+            <XMarkIcon class="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
+
   <div ref="panelRef" class="relative">
     <button
       type="button"
@@ -98,7 +140,7 @@ function getTypeColor(notification: AppNotification): string {
           @click="notificationStore.markAsRead(notification.id)"
         >
           <span
-            class="mt-1.5 h-2 w-2 flex-shrink-0 rounded-full"
+            class="mt-1.5 h-2 w-2 shrink-0 rounded-full"
             :class="notification.isRead ? 'bg-transparent' : getTypeColor(notification)"
           />
           <div class="min-w-0 flex-1">

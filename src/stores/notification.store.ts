@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { defineStore } from 'pinia'
 import { notificationApi } from '@/services/api/notification.api'
 import { getEcho } from '@/services/echo'
@@ -17,7 +17,18 @@ export interface AppNotification {
 export const useNotificationStore = defineStore('notification', () => {
   const notifications = ref<AppNotification[]>([])
   const isLoading = ref(false)
+  const flashNotification = ref<AppNotification | null>(null)
   const { play: playSound } = useNotificationSound()
+
+  let flashTimer: ReturnType<typeof setTimeout> | null = null
+
+  function triggerFlash(notification: AppNotification) {
+    if (flashTimer) clearTimeout(flashTimer)
+    flashNotification.value = notification
+    flashTimer = setTimeout(() => {
+      flashNotification.value = null
+    }, 5000)
+  }
 
   const unreadCount = computed(() => notifications.value.filter((n) => !n.isRead).length)
 
@@ -54,7 +65,6 @@ export const useNotificationStore = defineStore('notification', () => {
       createdAt: new Date().toISOString(),
     })
 
-    // Keep max 50 notifications
     if (notifications.value.length > 50) {
       notifications.value.pop()
     }
@@ -66,19 +76,22 @@ export const useNotificationStore = defineStore('notification', () => {
     const echo = getEcho()
     if (!echo) return
 
-    echo.channel('notifications').listen('.notification.received', (data: AppNotification) => {
-      notifications.value.unshift({
-        id: data.id,
-        type: data.type,
-        title: data.title,
-        message: data.message,
-        isRead: false,
-        data: data.data,
-        createdAt: data.createdAt,
+    echo.channel('notifications')
+      .stopListening('.notification.received')
+      .listen('.notification.received', (data: AppNotification) => {
+        const notification: AppNotification = {
+          id: data.id,
+          type: data.type,
+          title: data.title,
+          message: data.message,
+          isRead: false,
+          data: data.data,
+          createdAt: data.createdAt,
+        }
+        notifications.value.unshift(notification)
+        triggerFlash(notification)
+        playSound()
       })
-
-      playSound()
-    })
   }
 
   function unsubscribeRealtime() {
@@ -91,6 +104,8 @@ export const useNotificationStore = defineStore('notification', () => {
     notifications,
     isLoading,
     unreadCount,
+    flashNotification,
+    dismissFlash: () => { flashNotification.value = null },
     fetchNotifications,
     markAsRead,
     markAllAsRead,

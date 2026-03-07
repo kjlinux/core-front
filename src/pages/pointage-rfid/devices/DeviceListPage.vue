@@ -22,6 +22,8 @@ import {
   SunIcon,
   MoonIcon,
   SignalIcon,
+  WifiIcon,
+  NoSymbolIcon,
 } from '@heroicons/vue/24/outline'
 
 const router = useRouter()
@@ -42,7 +44,22 @@ const newDevice = ref({
   serialNumber: '',
   companyId: '',
   siteId: '',
+  isOnline: false,
 })
+
+const togglingStatus = ref<string | null>(null)
+
+async function handleToggleStatus(device: { id: string; isOnline: boolean }) {
+  togglingStatus.value = device.id
+  try {
+    await deviceStore.updateDevice(device.id, { isOnline: !device.isOnline })
+    toast.showSuccess(device.isOnline ? 'Terminal mis hors ligne' : 'Terminal mis en ligne')
+  } catch {
+    toast.showError('Erreur lors du changement de statut')
+  } finally {
+    togglingStatus.value = null
+  }
+}
 
 const statusOptions = [
   { label: 'Tous les statuts', value: '' },
@@ -120,7 +137,7 @@ async function handleAddDevice() {
     await deviceStore.registerDevice(newDevice.value)
     toast.showSuccess('Terminal RFID ajoute')
     showAddModal.value = false
-    newDevice.value = { name: '', serialNumber: '', companyId: '', siteId: '' }
+    newDevice.value = { name: '', serialNumber: '', companyId: '', siteId: '', isOnline: false }
   } catch {
     toast.showError("Erreur lors de l'ajout du terminal")
   } finally {
@@ -246,6 +263,18 @@ onMounted(async () => {
                   <AppButton size="sm" variant="ghost" @click="router.push(`/pointage-rfid/devices/${device.id}`)" title="Voir">
                     <EyeIcon class="w-4 h-4" />
                   </AppButton>
+                  <AppButton
+                    v-if="canManage"
+                    size="sm"
+                    :variant="device.isOnline ? 'ghost' : 'ghost'"
+                    :class="device.isOnline ? 'text-green-600 hover:text-red-600' : 'text-gray-400 hover:text-green-600'"
+                    :disabled="togglingStatus === device.id"
+                    :title="device.isOnline ? 'Mettre hors ligne' : 'Mettre en ligne'"
+                    @click="handleToggleStatus(device)"
+                  >
+                    <WifiIcon v-if="device.isOnline" class="w-4 h-4" />
+                    <NoSymbolIcon v-else class="w-4 h-4" />
+                  </AppButton>
                   <AppButton v-if="canManage" size="sm" variant="ghost" class="text-red-600 hover:text-red-700" @click="handleDelete(device.id)" title="Supprimer">
                     <TrashIcon class="w-4 h-4" />
                   </AppButton>
@@ -274,6 +303,27 @@ onMounted(async () => {
           placeholder="Selectionner un site"
           :disabled="!newDevice.companyId"
         />
+        <div class="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3">
+          <div>
+            <p class="text-sm font-medium text-gray-700">Statut initial</p>
+            <p class="text-xs text-gray-500">{{ newDevice.isOnline ? 'En ligne' : 'Hors ligne' }}</p>
+          </div>
+          <button
+            type="button"
+            :class="[
+              'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none',
+              newDevice.isOnline ? 'bg-green-500' : 'bg-gray-300'
+            ]"
+            @click="newDevice.isOnline = !newDevice.isOnline"
+          >
+            <span
+              :class="[
+                'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out',
+                newDevice.isOnline ? 'translate-x-5' : 'translate-x-0'
+              ]"
+            />
+          </button>
+        </div>
       </div>
       <template #footer>
         <div class="flex justify-end gap-3">

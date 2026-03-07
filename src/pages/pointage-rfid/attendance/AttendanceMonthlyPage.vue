@@ -43,7 +43,7 @@
     <AppCard>
       <div class="filters">
         <AppSelect
-          v-model="filters.department"
+          v-model="filters.departmentId"
           :options="departmentOptions"
           placeholder="Tous les départements"
           @change="fetchData"
@@ -92,9 +92,10 @@ import AppCard from '@/components/ui/AppCard.vue';
 import AppSelect from '@/components/ui/AppSelect.vue';
 import AppInput from '@/components/ui/AppInput.vue';
 import { useToast } from '@/composables/useToast';
+import { departmentApi } from '@/services/api/department.api';
 
 const attendanceStore = useAttendanceStore();
-const { info, success, error } = useToast();
+const { info } = useToast();
 
 const loading = ref(false);
 const currentDate = new Date();
@@ -104,7 +105,7 @@ const currentPage = ref(1);
 const perPage = ref(20);
 
 const filters = ref({
-  department: '',
+  departmentId: '',
   employeeName: '',
 });
 
@@ -134,29 +135,24 @@ const yearOptions = computed(() => {
   return years;
 });
 
-const departmentOptions = [
-  { label: 'Tous les départements', value: '' },
-  { label: 'IT', value: 'it' },
-  { label: 'RH', value: 'rh' },
-  { label: 'Finance', value: 'finance' },
-  { label: 'Commercial', value: 'commercial' },
-];
+const departmentOptions = ref([{ label: 'Tous les départements', value: '' }]);
 
 const monthlyRecords = computed(() => {
-  return attendanceStore.monthlyAttendance || [];
+  let data = attendanceStore.monthlyAttendance || [];
+  if (filters.value.employeeName) {
+    const search = filters.value.employeeName.toLowerCase();
+    data = data.filter((r) => r.employeeName?.toLowerCase().includes(search));
+  }
+  return data;
 });
 
-const total = computed(() => {
-  return attendanceStore.monthlyAttendanceTotal || 0;
-});
+const total = computed(() => monthlyRecords.value.length);
 
-const summary = computed(() => {
-  return {
-    averageAttendanceRate: attendanceStore.monthlyStats?.averageAttendanceRate || 0,
-    totalAbsences: attendanceStore.monthlyStats?.totalAbsences || 0,
-    totalLateMinutes: attendanceStore.monthlyStats?.totalLateMinutes || 0,
-  };
-});
+const summary = computed(() => ({
+  averageAttendanceRate: attendanceStore.monthlyStats?.averageAttendanceRate || 0,
+  totalAbsences: attendanceStore.monthlyStats?.totalAbsences || 0,
+  totalLateMinutes: attendanceStore.monthlyStats?.totalLateMinutes || 0,
+}));
 
 const columns = [
   { key: 'employeeName', label: 'Employé', sortable: true },
@@ -178,20 +174,32 @@ const getAttendanceRateClass = (rate: number): string => {
 const fetchData = async () => {
   loading.value = true;
   try {
-    await attendanceStore.fetchMonthlyAttendance({
-      month: selectedMonth.value,
-      year: selectedYear.value,
-      department: filters.value.department,
-      employeeName: filters.value.employeeName,
-      page: currentPage.value,
-      perPage: perPage.value,
-    });
-    await attendanceStore.fetchMonthlyStats({
-      month: selectedMonth.value,
-      year: selectedYear.value,
-    });
+    await Promise.all([
+      attendanceStore.fetchMonthlyAttendance({
+        month: selectedMonth.value,
+        year: selectedYear.value,
+        page: currentPage.value,
+        perPage: perPage.value,
+      }),
+      attendanceStore.fetchMonthlyStats({
+        month: selectedMonth.value,
+        year: selectedYear.value,
+      }),
+    ]);
   } finally {
     loading.value = false;
+  }
+};
+
+const loadFilters = async () => {
+  try {
+    const depts = await departmentApi.getAll({ perPage: 200 });
+    departmentOptions.value = [
+      { label: 'Tous les départements', value: '' },
+      ...(depts.data || []).map((d) => ({ label: d.name, value: d.id })),
+    ];
+  } catch {
+    // silently fail
   }
 };
 
@@ -201,13 +209,10 @@ const handlePageChange = (page: number) => {
 };
 
 const handleSearchDebounce = () => {
-  if (searchTimeout) {
-    clearTimeout(searchTimeout);
-  }
+  if (searchTimeout) clearTimeout(searchTimeout);
   searchTimeout = window.setTimeout(() => {
     currentPage.value = 1;
-    fetchData();
-  }, 500);
+  }, 300);
 };
 
 const handleExport = () => {
@@ -215,6 +220,7 @@ const handleExport = () => {
 };
 
 onMounted(() => {
+  loadFilters();
   fetchData();
 });
 </script>

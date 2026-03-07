@@ -1,13 +1,29 @@
 <script setup lang="ts">
+import { onMounted, onUnmounted } from 'vue'
 import { useUiStore } from '@/stores/ui.store'
+import { useAuthStore } from '@/stores/auth.store'
 import { useRealtimeSubscriptions } from '@/composables/useRealtimeSubscriptions'
+import { authApi } from '@/services/api/auth.api'
 import TheSidebar from '@/components/layout/TheSidebar.vue'
 import TheHeader from '@/components/layout/TheHeader.vue'
 
 const ui = useUiStore()
+const authStore = useAuthStore()
 
-// Initialize all real-time WebSocket subscriptions
-useRealtimeSubscriptions()
+const { subscribeAll, unsubscribeAll } = useRealtimeSubscriptions()
+
+onMounted(async () => {
+  subscribeAll()
+  // Rafraichir le profil utilisateur pour avoir companyName et autres données à jour
+  try {
+    const user = await authApi.getCurrentUser()
+    authStore.user = user
+    authStore.persistUser()
+  } catch {
+    // Silencieux — si l'appel échoue, on garde le user du localStorage
+  }
+})
+onUnmounted(() => unsubscribeAll())
 </script>
 
 <template>
