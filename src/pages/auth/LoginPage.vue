@@ -28,7 +28,7 @@
         v-model="formData.email"
         type="email"
         label="Email"
-        placeholder="admin@tanga.com"
+        placeholder=""
         :error="errors.email"
         :disabled="authStore.isLoading"
       />
