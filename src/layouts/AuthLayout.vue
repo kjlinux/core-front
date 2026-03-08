@@ -20,7 +20,7 @@
       <!-- Logo -->
       <div class="relative z-10">
         <h1 class="text-4xl font-bold text-white tracking-tight">TANGAFLOW</h1>
-        <h2 class="text-lg font-medium text-primary-400 mt-1">GROUP</h2>
+        <h2 class="text-lg font-medium text-primary-400 mt-1"></h2>
       </div>
 
       <!-- Center content -->
