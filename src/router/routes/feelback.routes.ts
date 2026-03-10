@@ -48,6 +48,12 @@ const feelbackRoutes: RouteRecordRaw[] = [
         component: () => import('@/pages/feelback/FeelbackReportsPage.vue'),
         meta: { title: 'Rapports Feelback' },
       },
+      {
+        path: 'qr-avis',
+        name: 'feelback-qr-avis',
+        component: () => import('@/pages/feelback/QrAvisPage.vue'),
+        meta: { title: 'Avis QR' },
+      },
     ],
   },
 ]

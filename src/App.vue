@@ -14,13 +14,15 @@ authStore.loadFromStorage()
 
 const layoutComponent = computed(() => {
   const layout = route.meta.layout
+  if (layout === 'none') return null
   if (layout === 'auth') return AuthLayout
   return DashboardLayout
 })
 </script>
 
 <template>
-  <component :is="layoutComponent">
+  <RouterView v-if="!layoutComponent" />
+  <component v-else :is="layoutComponent">
     <RouterView />
   </component>
 </template>

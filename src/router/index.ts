@@ -7,10 +7,12 @@ import biometriqueRoutes from './routes/biometrique.routes'
 import feelbackRoutes from './routes/feelback.routes'
 import marketplaceRoutes from './routes/marketplace.routes'
 import settingsRoutes from './routes/settings.routes'
+import publicRoutes from './routes/public.routes'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
+    ...publicRoutes,
     ...authRoutes,
     ...dashboardRoutes,
     ...pointageRfidRoutes,

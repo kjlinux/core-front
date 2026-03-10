@@ -31,6 +31,7 @@ import {
   UserIcon,
   ShieldCheckIcon,
   ServerStackIcon,
+  QrCodeIcon,
 } from '@heroicons/vue/24/outline'
 
 const ui = useUiStore()
@@ -280,6 +281,14 @@ const sidebarClasses = computed(() => [
           :icon="DocumentChartBarIcon"
           :collapsed="false"
           :active="route.path.startsWith('/feelback/reports')"
+          :nested="true"
+        />
+        <TheSidebarItem
+          label="Avis QR"
+          to="/feelback/qr-avis"
+          :icon="QrCodeIcon"
+          :collapsed="false"
+          :active="route.path.startsWith('/feelback/qr-avis')"
           :nested="true"
         />
       </TheSidebarGroup>
