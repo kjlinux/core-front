@@ -47,7 +47,7 @@ async function submit() {
   try {
     const reviewAnswers: ReviewAnswer[] = config.value.questions.map((q) => ({
       questionId: q.id,
-      stars: answers.value[q.id],
+      stars: answers.value[q.id] ?? 0,
     }))
 
     await publicReviewApi.submitReview(token, {
@@ -151,7 +151,7 @@ async function submit() {
             <p class="text-sm font-medium text-gray-800 leading-snug pt-0.5">{{ question.text }}</p>
           </div>
           <div class="pl-9">
-            <StarRating v-model="answers[question.id]" />
+            <StarRating :model-value="answers[question.id] ?? 0" @update:model-value="(v) => answers[question.id] = v" />
           </div>
         </div>
 
