@@ -81,7 +81,7 @@ apiClient.interceptors.response.use(
 
     const originalRequest = error.config
     const url = originalRequest?.url || ''
-    const isAuthEndpoint = url.includes('/auth/login') || url.includes('/auth/refresh')
+    const isAuthEndpoint = url.includes('/auth/login') || url.includes('/auth/refresh') || url.includes('/auth/logout')
     const isOnLoginPage = router.currentRoute.value.path.includes('/login')
 
     if (error.response?.status === 401 && !isAuthEndpoint && !originalRequest._retry) {
