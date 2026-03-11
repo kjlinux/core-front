@@ -30,19 +30,14 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function logout() {
-    try {
-      await authApi.logout()
-    } catch {
-      // Ignore errors — always clear local state
-    } finally {
-      disconnectEcho()
-      user.value = null
-      accessToken.value = null
-      localStorage.removeItem('access_token')
-      localStorage.removeItem('refresh_token')
-      localStorage.removeItem('auth_user')
-    }
+  function logout() {
+    disconnectEcho()
+    user.value = null
+    accessToken.value = null
+    localStorage.removeItem('access_token')
+    localStorage.removeItem('refresh_token')
+    localStorage.removeItem('auth_user')
+    authApi.logout().catch(() => {})
   }
 
   function loadFromStorage() {
