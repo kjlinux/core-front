@@ -65,7 +65,10 @@ function processQueue(error: unknown, token: string | null) {
 function forceLogout() {
   const auth = useAuthStore()
   auth.logout()
-  router.push({ name: 'login', query: { redirect: router.currentRoute.value.fullPath, expired: '1' } })
+  const currentPath = router.currentRoute.value.path
+  if (!currentPath.includes('/login')) {
+    router.push({ name: 'login', query: { redirect: currentPath, expired: '1' } })
+  }
 }
 
 apiClient.interceptors.response.use(
