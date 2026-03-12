@@ -54,23 +54,6 @@ apiClient.interceptors.request.use(
 )
 
 // Response interceptor: auto-unwrap { success, data } wrapper from API responses
-let isRefreshing = false
-let failedQueue: Array<{ resolve: (token: string) => void; reject: (err: unknown) => void }> = []
-
-function processQueue(error: unknown, token: string | null) {
-  failedQueue.forEach((p) => (error ? p.reject(error) : p.resolve(token!)))
-  failedQueue = []
-}
-
-function forceLogout() {
-  const auth = useAuthStore()
-  auth.logout()
-  const currentPath = router.currentRoute.value.path
-  if (!currentPath.includes('/login')) {
-    router.push({ name: 'login', query: { redirect: currentPath, expired: '1' } })
-  }
-}
-
 apiClient.interceptors.response.use(
   (response) => {
     const body = response.data
@@ -79,56 +62,15 @@ apiClient.interceptors.response.use(
     }
     return response
   },
-  async (error) => {
-    console.error('[API Error]', error.config?.url, error.response?.status, error.response?.data)
-
-    const originalRequest = error.config
-    const url = originalRequest?.url || ''
-    const isAuthEndpoint = url.includes('/auth/login') || url.includes('/auth/refresh') || url.includes('/auth/logout')
+  (error) => {
+    const url = error.config?.url || ''
+    const isAuthEndpoint = url.includes('/auth/login') || url.includes('/auth/logout')
     const isOnLoginPage = router.currentRoute.value.path.includes('/login')
 
-    if (error.response?.status === 401 && !isAuthEndpoint && !originalRequest._retry) {
-      const refreshToken = localStorage.getItem('refresh_token')
-
-      if (!refreshToken || isOnLoginPage) {
-        forceLogout()
-        return Promise.reject(error)
-      }
-
-      if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject })
-        }).then((token) => {
-          originalRequest.headers.Authorization = `Bearer ${token}`
-          return apiClient(originalRequest)
-        })
-      }
-
-      originalRequest._retry = true
-      isRefreshing = true
-
-      try {
-        const response = await apiClient.post('/auth/refresh', { token: refreshToken })
-        const data = response.data
-        const newAccessToken: string = data.accessToken ?? data.access_token
-        const newRefreshToken: string | undefined = data.refreshToken ?? data.refresh_token
-
-        localStorage.setItem('access_token', newAccessToken)
-        if (newRefreshToken) localStorage.setItem('refresh_token', newRefreshToken)
-
-        const auth = useAuthStore()
-        auth.accessToken = newAccessToken
-
-        processQueue(null, newAccessToken)
-        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`
-        return apiClient(originalRequest)
-      } catch (refreshError) {
-        processQueue(refreshError, null)
-        forceLogout()
-        return Promise.reject(refreshError)
-      } finally {
-        isRefreshing = false
-      }
+    if (error.response?.status === 401 && !isAuthEndpoint && !isOnLoginPage) {
+      const auth = useAuthStore()
+      auth.logout()
+      router.push({ name: 'login' })
     }
 
     return Promise.reject(error)

@@ -22,7 +22,6 @@ export const useAuthStore = defineStore('auth', () => {
       accessToken.value = response.accessToken
       user.value = response.user
       localStorage.setItem('access_token', response.accessToken)
-      localStorage.setItem('refresh_token', response.refreshToken)
       localStorage.setItem('auth_user', JSON.stringify(response.user))
       initEcho()
     } finally {
@@ -35,7 +34,6 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = null
     accessToken.value = null
     localStorage.removeItem('access_token')
-    localStorage.removeItem('refresh_token')
     localStorage.removeItem('auth_user')
     authApi.logout().catch(() => {})
   }
