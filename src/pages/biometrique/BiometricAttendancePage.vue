@@ -203,13 +203,7 @@ watch(
       }
     }
     if (changed) {
-      rawReport.value = {
-        ...rawReport.value,
-        records: [...existing],
-        present: existing.filter((r: any) => ['present', 'left_early'].includes(r.status)).length,
-        late: existing.filter((r: any) => r.status === 'late').length,
-        doubleBadgeCount: existing.filter((r: any) => r.isDoubleBadge).length,
-      }
+      rawReport.value = { ...rawReport.value, records: [...existing] }
     }
   },
   { deep: true },
@@ -234,12 +228,15 @@ const records = computed(() => {
   return allRecords.value.slice(start, start + bioPerPage)
 })
 
-const stats = computed(() => ({
-  totalEmployees: rawReport.value?.totalEmployees ?? 0,
-  present: rawReport.value?.present ?? 0,
-  late: rawReport.value?.late ?? 0,
-  doubleBadgeCount: rawReport.value?.doubleBadgeCount ?? 0,
-}))
+const stats = computed(() => {
+  const recs = rawReport.value?.records ?? []
+  return {
+    totalEmployees: rawReport.value?.totalEmployees ?? recs.length,
+    present: recs.filter((r: any) => r.status === 'present').length,
+    late: recs.filter((r: any) => r.status === 'late').length,
+    doubleBadgeCount: recs.filter((r: any) => r.isDoubleBadge).length,
+  }
+})
 
 function formatTime(iso: string | null | undefined): string {
   if (!iso) return '—'

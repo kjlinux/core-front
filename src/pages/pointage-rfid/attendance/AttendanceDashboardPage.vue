@@ -74,6 +74,8 @@
         <DataTable
           :columns="activityColumns"
           :data="recentActivity"
+          :pagination="activityPagination"
+          @page-change="activityPage = $event"
         >
           <template #entryTime="{ row }">
             {{ formatTime(row.entryTime) }}
@@ -112,10 +114,26 @@ const loading = ref(false);
 const selectedDate = ref(new Date().toISOString().split('T')[0]);
 
 const stats = computed(() => {
-  const total = attendanceStore.dailyReport?.totalEmployees || 0;
-  const present = attendanceStore.dailyReport?.present || 0;
-  const absent = attendanceStore.dailyReport?.absent || 0;
-  const late = attendanceStore.dailyReport?.late || 0;
+  const report = attendanceStore.dailyReport;
+  const records = attendanceStore.dailyAttendance || [];
+
+  const total = report?.totalEmployees || records.length || 0;
+  const present = records.filter((r) => r.status === 'present').length;
+  const absent = records.filter((r) => r.status === 'absent').length;
+  const late = records.filter((r) => r.status === 'late').length;
+
+  // Calcul heure moyenne d'entrée à partir des records
+  const entryTimes = records
+    .filter((r) => r.entryTime)
+    .map((r) => new Date(r.entryTime!).getTime());
+  let averageEntryTime = '—';
+  if (entryTimes.length > 0) {
+    const avg = entryTimes.reduce((a, b) => a + b, 0) / entryTimes.length;
+    averageEntryTime = new Date(avg).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  // Départs anticipés = records avec earlyDepartureMinutes > 0
+  const earlyDepartures = records.filter((r) => (r.earlyDepartureMinutes ?? 0) > 0).length;
 
   return {
     totalEmployees: total,
@@ -125,13 +143,34 @@ const stats = computed(() => {
     presentPercentage: total > 0 ? Math.round((present / total) * 100) : 0,
     absentPercentage: total > 0 ? Math.round((absent / total) * 100) : 0,
     latePercentage: total > 0 ? Math.round((late / total) * 100) : 0,
-    averageEntryTime: attendanceStore.dailyReport?.averageEntryTime || '—',
+    averageEntryTime,
     lateCount: late,
-    earlyDepartures: attendanceStore.dailyReport?.earlyDepartures || 0,
+    earlyDepartures,
   };
 });
 
-const recentActivity = computed(() => attendanceStore.recentActivity || []);
+const activityPage = ref(1);
+const activityPerPage = 20;
+
+const allActivity = computed(() => {
+  const recs = [...(attendanceStore.dailyAttendance || [])];
+  return recs.sort((a, b) => {
+    const ta = a.entryTime ? new Date(a.entryTime).getTime() : 0;
+    const tb = b.entryTime ? new Date(b.entryTime).getTime() : 0;
+    return tb - ta;
+  });
+});
+
+const recentActivity = computed(() => {
+  const start = (activityPage.value - 1) * activityPerPage;
+  return allActivity.value.slice(start, start + activityPerPage);
+});
+
+const activityPagination = computed(() => {
+  const total = allActivity.value.length;
+  const totalPages = Math.ceil(total / activityPerPage) || 1;
+  return { currentPage: activityPage.value, totalPages, perPage: activityPerPage, total };
+});
 
 // Colonnes alignées sur les vrais champs de AttendanceRecord
 const activityColumns = [
@@ -159,9 +198,9 @@ const formatTime = (iso: string | null | undefined): string => {
 
 const refreshData = async () => {
   loading.value = true;
+  activityPage.value = 1;
   try {
-    await attendanceStore.fetchDailyStats(selectedDate.value);
-    await attendanceStore.fetchRecentActivity(selectedDate.value, 10);
+    await attendanceStore.fetchDailyAttendance({ date: selectedDate.value });
   } finally {
     loading.value = false;
   }
