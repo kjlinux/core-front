@@ -1,6 +1,7 @@
 import axios from 'axios'
 import router from '@/router'
 import { useAuthStore } from '@/stores/auth.store'
+import { disconnectEcho } from '@/services/echo'
 
 /**
  * Convert camelCase keys to snake_case recursively for API requests.
@@ -68,8 +69,18 @@ apiClient.interceptors.response.use(
     const isOnLoginPage = router.currentRoute.value.path.includes('/login')
 
     if (error.response?.status === 401 && !isAuthEndpoint && !isOnLoginPage) {
-      const auth = useAuthStore()
-      auth.logout()
+      // Nettoyer les tokens directement sans passer par le store
+      // pour éviter tout problème d'initialisation de Pinia
+      localStorage.removeItem('access_token')
+      localStorage.removeItem('auth_user')
+      try {
+        const auth = useAuthStore()
+        auth.user = null
+        auth.accessToken = null
+        disconnectEcho()
+      } catch {
+        // Pinia pas encore prêt — les tokens localStorage sont déjà supprimés
+      }
       router.push({ name: 'login' })
     }
 
