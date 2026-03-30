@@ -137,6 +137,15 @@
           </tbody>
         </table>
       </div>
+
+      <div v-if="!loading && allRecords.length > bioPerPage" class="mt-4">
+        <AppPagination
+          :current-page="bioPage"
+          :total-pages="totalBioPages"
+          :per-page="bioPerPage"
+          @page-change="bioPage = $event"
+        />
+      </div>
     </AppCard>
   </div>
 </template>
@@ -149,6 +158,7 @@ import AppCard from '@/components/ui/AppCard.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppSpinner from '@/components/ui/AppSpinner.vue'
+import AppPagination from '@/components/ui/AppPagination.vue'
 import {
   ClipboardDocumentListIcon,
   CheckCircleIcon,
@@ -205,7 +215,24 @@ watch(
   { deep: true },
 )
 
-const records = computed(() => rawReport.value?.records ?? [])
+const allRecords = computed(() => {
+  const recs = [...(rawReport.value?.records ?? [])]
+  return recs.sort((a, b) => {
+    const ta = a.entryTime ? new Date(a.entryTime).getTime() : 0
+    const tb = b.entryTime ? new Date(b.entryTime).getTime() : 0
+    return tb - ta
+  })
+})
+
+const bioPage = ref(1)
+const bioPerPage = 20
+
+const totalBioPages = computed(() => Math.ceil(allRecords.value.length / bioPerPage) || 1)
+
+const records = computed(() => {
+  const start = (bioPage.value - 1) * bioPerPage
+  return allRecords.value.slice(start, start + bioPerPage)
+})
 
 const stats = computed(() => ({
   totalEmployees: rawReport.value?.totalEmployees ?? 0,
@@ -241,6 +268,7 @@ function statusVariant(status: string): 'success' | 'danger' | 'warning' | 'neut
 
 async function fetchData() {
   loading.value = true
+  bioPage.value = 1
   try {
     rawReport.value = await attendanceStore.fetchBiometricAttendance(selectedDate.value ?? '')
   } finally {

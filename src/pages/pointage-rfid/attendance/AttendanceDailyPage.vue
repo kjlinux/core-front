@@ -63,30 +63,28 @@
       <DataTable
         v-else
         :columns="columns"
-        :data="attendanceRecords"
-        :total="total"
-        :per-page="perPage"
-        :current-page="currentPage"
+        :data="pagedRecords"
+        :pagination="paginationObj"
         @page-change="handlePageChange"
       >
-        <template #cell-status="{ row }">
+        <template #status="{ row }">
           <span :class="['status-badge', `status-${row.status}`]">
             {{ getStatusLabel(row.status) }}
           </span>
         </template>
-        <template #cell-entryTime="{ row }">
+        <template #entryTime="{ row }">
           {{ formatTime(row.entryTime) }}
         </template>
-        <template #cell-exitTime="{ row }">
+        <template #exitTime="{ row }">
           {{ formatTime(row.exitTime) }}
         </template>
-        <template #cell-lateMinutes="{ row }">
+        <template #lateMinutes="{ row }">
           <span v-if="row.lateMinutes > 0" class="late-minutes">
             {{ row.lateMinutes }} min
           </span>
           <span v-else>-</span>
         </template>
-        <template #cell-actions="{ row }">
+        <template #actions="{ row }">
           <AppButton size="small" variant="ghost" @click="viewDetail(row)">
             Détail
           </AppButton>
@@ -137,8 +135,25 @@ const statusOptions = [
   { label: 'Départ anticipé', value: 'left_early' },
 ];
 
-const attendanceRecords = computed(() => attendanceStore.dailyAttendance || []);
-const total = computed(() => attendanceStore.dailyAttendanceTotal || 0);
+const attendanceRecords = computed(() => {
+  const recs = [...(attendanceStore.dailyAttendance || [])];
+  return recs.sort((a, b) => {
+    const ta = a.entryTime ? new Date(a.entryTime).getTime() : 0;
+    const tb = b.entryTime ? new Date(b.entryTime).getTime() : 0;
+    return tb - ta;
+  });
+});
+
+const pagedRecords = computed(() => {
+  const start = (currentPage.value - 1) * perPage.value;
+  return attendanceRecords.value.slice(start, start + perPage.value);
+});
+
+const paginationObj = computed(() => {
+  const total = attendanceRecords.value.length;
+  const totalPages = Math.ceil(total / perPage.value) || 1;
+  return { currentPage: currentPage.value, totalPages, perPage: perPage.value, total };
+});
 
 const summary = computed(() => {
   const totalEmployees = attendanceStore.dailyStats?.totalEmployees || 0;
@@ -217,7 +232,6 @@ const loadFilters = async () => {
 
 const handlePageChange = (page: number) => {
   currentPage.value = page;
-  fetchData();
 };
 
 const handleExport = () => {
