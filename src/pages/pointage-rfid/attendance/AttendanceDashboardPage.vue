@@ -74,21 +74,19 @@
         <DataTable
           :columns="activityColumns"
           :data="recentActivity"
-          :total="recentActivity.length"
-          :per-page="10"
         >
-          <template #cell-entryTime="{ row }">
+          <template #entryTime="{ row }">
             {{ formatTime(row.entryTime) }}
           </template>
-          <template #cell-exitTime="{ row }">
+          <template #exitTime="{ row }">
             {{ row.exitTime ? formatTime(row.exitTime) : '—' }}
           </template>
-          <template #cell-pointageType="{ row }">
+          <template #pointageType="{ row }">
             <span :class="['status-badge', row.exitTime ? 'status-exit' : 'status-entry']">
               {{ row.exitTime ? 'Sortie' : 'Entree' }}
             </span>
           </template>
-          <template #cell-status="{ row }">
+          <template #status="{ row }">
             <span :class="['type-badge', `type-${row.status}`]">
               {{ getStatusLabel(row.status) }}
             </span>
