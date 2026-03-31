@@ -40,8 +40,10 @@ apiClient.interceptors.request.use(
     }
 
     // Inject active company for technicien/super_admin company switching
+    // Do NOT inject on /companies list — super_admin must always see all companies
     const activeCompanyId = localStorage.getItem('active_company_id')
-    if (activeCompanyId && activeCompanyId !== 'undefined' && activeCompanyId !== 'null') {
+    const isCompaniesListEndpoint = /\/companies(\?.*)?$/.test(config.url ?? '')
+    if (activeCompanyId && activeCompanyId !== 'undefined' && activeCompanyId !== 'null' && !isCompaniesListEndpoint) {
       config.headers['X-Active-Company-Id'] = activeCompanyId
     }
 
