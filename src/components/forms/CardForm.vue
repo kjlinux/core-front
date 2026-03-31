@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import type { RfidCard, Employee, Company } from '@/types'
+import type { RfidCard, Company } from '@/types'
+import type { RfidDevice } from '@/types'
 import FormSection from './FormSection.vue'
 import FormRow from './FormRow.vue'
 import AppInput from '@/components/ui/AppInput.vue'
@@ -10,16 +11,19 @@ import AppButton from '@/components/ui/AppButton.vue'
 const props = defineProps<{
   modelValue: Partial<RfidCard>
   companies: Company[]
-  employees?: Employee[]
+  devices?: RfidDevice[]
+  scanStatus?: 'idle' | 'waiting' | 'received'
   loading: boolean
 }>()
 
 const emit = defineEmits<{
   'update:modelValue': [value: Partial<RfidCard>]
+  'scan-request': [deviceId: string]
   submit: []
 }>()
 
 const errors = ref<Record<string, string>>({})
+const selectedDeviceId = ref('')
 
 const localValue = computed({
   get: () => props.modelValue,
@@ -34,12 +38,13 @@ const companyOptions = computed(() =>
   props.companies.map((c) => ({ label: c.name, value: c.id }))
 )
 
-const employeeOptions = computed(() =>
-  (props.employees || []).map((e) => ({
-    label: `${e.firstName} ${e.lastName} (${e.employeeNumber})`,
-    value: e.id
-  }))
-)
+const deviceOptions = computed(() => [
+  { label: 'Selectionner un capteur', value: '' },
+  ...(props.devices || []).map((d) => ({
+    label: `${d.name} (${d.serialNumber})`,
+    value: d.id,
+  })),
+])
 
 const statusOptions = [
   { label: 'Active', value: 'active' },
@@ -48,6 +53,8 @@ const statusOptions = [
 ]
 
 const isEditing = computed(() => !!localValue.value.id)
+const isWaiting = computed(() => props.scanStatus === 'waiting')
+const isReceived = computed(() => props.scanStatus === 'received')
 
 const validate = (): boolean => {
   errors.value = {}
@@ -68,22 +75,60 @@ const handleSubmit = () => {
     emit('submit')
   }
 }
+
+const handleScan = () => {
+  if (!selectedDeviceId.value) return
+  emit('scan-request', selectedDeviceId.value)
+}
 </script>
 
 <template>
   <form @submit.prevent="handleSubmit" class="space-y-6">
     <FormSection title="Carte RFID">
+
+      <template v-if="!isEditing">
+        <FormRow
+          label="Capteur de scan"
+          :help="'Selectionnez le capteur qui va lire la carte'"
+        >
+          <div class="flex gap-2">
+            <AppSelect
+              v-model="selectedDeviceId"
+              :options="deviceOptions"
+              :disabled="loading || isWaiting"
+              class="flex-1"
+            />
+            <AppButton
+              type="button"
+              variant="secondary"
+              :loading="isWaiting"
+              :disabled="!selectedDeviceId || loading || isWaiting"
+              @click="handleScan"
+            >
+              {{ isWaiting ? 'En attente...' : 'Scanner' }}
+            </AppButton>
+          </div>
+          <p v-if="isWaiting" class="mt-2 text-sm text-blue-600 flex items-center gap-2">
+            <span class="inline-block h-3 w-3 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"></span>
+            Approchez la carte du capteur...
+          </p>
+          <p v-if="isReceived" class="mt-2 text-sm text-green-600">
+            UID recupere avec succes
+          </p>
+        </FormRow>
+      </template>
+
       <FormRow
         label="UID de la carte"
         :required="true"
         :error="errors.uid"
-        :help="isEditing ? 'Le UID ne peut pas être modifié' : 'Identifiant unique de la carte RFID'"
+        :help="isEditing ? 'Le UID ne peut pas être modifié' : 'Identifiant unique lu par le capteur'"
       >
         <AppInput
           :model-value="localValue.uid || ''"
           @update:model-value="updateField('uid', $event)"
-          placeholder="XXXXXXXX"
-          :disabled="loading || isEditing"
+          placeholder="Scan via le capteur ou saisie manuelle"
+          :disabled="loading || isEditing || isWaiting"
           :readonly="isEditing"
         />
       </FormRow>
@@ -100,7 +145,7 @@ const handleSubmit = () => {
     </FormSection>
 
     <div class="flex justify-end">
-      <AppButton type="submit" :loading="loading">
+      <AppButton type="submit" :loading="loading" :disabled="isWaiting">
         Enregistrer
       </AppButton>
     </div>

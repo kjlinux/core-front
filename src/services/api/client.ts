@@ -41,7 +41,7 @@ apiClient.interceptors.request.use(
 
     // Inject active company for technicien/super_admin company switching
     const activeCompanyId = localStorage.getItem('active_company_id')
-    if (activeCompanyId) {
+    if (activeCompanyId && activeCompanyId !== 'undefined' && activeCompanyId !== 'null') {
       config.headers['X-Active-Company-Id'] = activeCompanyId
     }
 

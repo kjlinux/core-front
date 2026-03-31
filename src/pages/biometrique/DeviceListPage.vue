@@ -49,6 +49,17 @@ const newDevice = ref({
   firmwareVersion: '',
 })
 
+function generateSerialNumber(prefix: string): string {
+  const year = new Date().getFullYear()
+  const pattern = new RegExp(`^${prefix}-${year}-(\\d+)$`)
+  let max = 0
+  for (const d of store.devices) {
+    const match = d.serialNumber.match(pattern)
+    if (match) max = Math.max(max, parseInt(match[1]))
+  }
+  return `${prefix}-${year}-${String(max + 1).padStart(3, '0')}`
+}
+
 const statusOptions = [
   { label: 'Tous les statuts', value: '' },
   { label: 'En ligne', value: 'online' },
@@ -137,7 +148,7 @@ async function handleSync(device: BiometricDevice) {
 }
 
 async function handleAddDevice() {
-  if (!newDevice.value.name || !newDevice.value.serialNumber || !newDevice.value.companyId || !newDevice.value.siteId) {
+  if (!newDevice.value.name || !newDevice.value.companyId || !newDevice.value.siteId) {
     toast.showError('Veuillez remplir tous les champs obligatoires')
     return
   }
@@ -167,7 +178,7 @@ onMounted(async () => {
         <h1 class="text-2xl font-bold text-gray-900">Terminaux biometriques</h1>
         <p class="text-sm text-gray-500 mt-1">Gestion des lecteurs d'empreintes digitales</p>
       </div>
-      <AppButton v-if="canManage" variant="primary" @click="showAddModal = true">
+      <AppButton v-if="canManage" variant="primary" @click="() => { newDevice.serialNumber = generateSerialNumber('BIO'); showAddModal = true }">
         <PlusIcon class="w-4 h-4 mr-1" />
         Ajouter un terminal
       </AppButton>
@@ -304,7 +315,10 @@ onMounted(async () => {
     <AppModal v-model="showAddModal" title="Ajouter un terminal biometrique" size="md">
       <div class="space-y-4">
         <AppInput v-model="newDevice.name" label="Nom du terminal *" placeholder="Ex: Lecteur Entree principale" />
-        <AppInput v-model="newDevice.serialNumber" label="Numero de serie *" placeholder="Ex: BIO-2024-001" />
+        <div>
+          <p class="text-sm font-medium text-gray-700 mb-1">Numero de serie</p>
+          <p class="font-mono text-sm bg-gray-50 border border-gray-200 rounded-md px-3 py-2 text-gray-900">{{ newDevice.serialNumber }}</p>
+        </div>
         <AppSelect v-model="newDevice.companyId" label="Entreprise *" :options="addCompanyOptions" />
         <AppSelect v-model="newDevice.siteId" label="Site *" :options="addSiteOptions" :disabled="!newDevice.companyId" />
         <AppInput v-model="newDevice.firmwareVersion" label="Version firmware" placeholder="Ex: 2.1.0" />

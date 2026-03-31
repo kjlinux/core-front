@@ -47,6 +47,17 @@ const newDevice = ref({
   isOnline: false,
 })
 
+function generateSerialNumber(prefix: string): string {
+  const year = new Date().getFullYear()
+  const pattern = new RegExp(`^${prefix}-${year}-(\\d+)$`)
+  let max = 0
+  for (const d of deviceStore.devices) {
+    const match = d.serialNumber.match(pattern)
+    if (match) max = Math.max(max, parseInt(match[1]))
+  }
+  return `${prefix}-${year}-${String(max + 1).padStart(3, '0')}`
+}
+
 const togglingStatus = ref<string | null>(null)
 
 async function handleToggleStatus(device: { id: string; isOnline: boolean }) {
@@ -128,7 +139,7 @@ async function handleDelete(id: string) {
 }
 
 async function handleAddDevice() {
-  if (!newDevice.value.name || !newDevice.value.serialNumber) {
+  if (!newDevice.value.name) {
     toast.showError('Veuillez remplir tous les champs obligatoires')
     return
   }
@@ -161,7 +172,7 @@ onMounted(async () => {
         <h1 class="text-2xl font-bold text-gray-900">Terminaux RFID</h1>
         <p class="text-sm text-gray-500 mt-1">Gestion des lecteurs de cartes RFID</p>
       </div>
-      <AppButton v-if="canManage" variant="primary" @click="showAddModal = true">
+      <AppButton v-if="canManage" variant="primary" @click="() => { newDevice.serialNumber = generateSerialNumber('RFID'); showAddModal = true }">
         Ajouter un terminal
       </AppButton>
     </div>
@@ -289,7 +300,10 @@ onMounted(async () => {
     <AppModal v-model="showAddModal" title="Ajouter un terminal RFID" size="md">
       <div class="space-y-4">
         <AppInput v-model="newDevice.name" label="Nom du terminal *" placeholder="Ex: Lecteur Entree principale" />
-        <AppInput v-model="newDevice.serialNumber" label="Numero de serie *" placeholder="Ex: RFID-2026-001" />
+        <div>
+          <p class="text-sm font-medium text-gray-700 mb-1">Numero de serie</p>
+          <p class="font-mono text-sm bg-gray-50 border border-gray-200 rounded-md px-3 py-2 text-gray-900">{{ newDevice.serialNumber }}</p>
+        </div>
         <AppSelect
           v-model="newDevice.companyId"
           label="Entreprise"

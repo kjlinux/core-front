@@ -1,6 +1,6 @@
 import apiClient from './client'
 
-export type RfidCommand = 'RESET' | 'REBOOT' | 'WAKE_UP' | 'SLEEP' | 'STATUS'
+export type RfidCommand = 'RESET' | 'REBOOT' | 'WAKE_UP' | 'SLEEP' | 'STATUS' | 'SCAN'
 export type BiometricCommand = RfidCommand | 'ENROLE'
 export type DeviceCommand = RfidCommand | BiometricCommand
 export type DeviceType = 'biometric' | 'rfid'
