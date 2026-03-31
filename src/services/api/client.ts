@@ -28,7 +28,7 @@ function convertKeysToSnakeCase(obj: unknown): unknown {
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
   timeout: 15000,
-  headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+  headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Cache-Control': 'no-cache' },
 })
 
 // Request interceptor: attach JWT token + convert camelCase to snake_case
