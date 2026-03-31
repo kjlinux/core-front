@@ -28,7 +28,7 @@ const deviceId = route.params.id as string
 const sendingCommand = ref<string | null>(null)
 
 const device = computed(() => store.devices.find((d) => d.id === deviceId) ?? store.currentDevice)
-const canManage = computed(() => permissions.isSuperAdmin.value || permissions.isAdminEnterprise.value)
+const canManage = computed(() => permissions.isAdminOrSuperOrTech.value)
 
 const commandLabels: Record<string, string> = {
   RESET: 'Reset',

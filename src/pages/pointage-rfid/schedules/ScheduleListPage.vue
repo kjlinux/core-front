@@ -120,7 +120,8 @@ import { PencilIcon, DocumentDuplicateIcon, TrashIcon, PlusIcon } from '@heroico
 const router = useRouter()
 const scheduleStore = useScheduleStore()
 const companyStore = useCompanyStore()
-const { isSuperAdmin, isAdminEnterprise } = usePermissions()
+const permissions = usePermissions()
+const { isSuperAdmin, isAdminEnterprise } = permissions
 const toast = useToast()
 
 const loading = ref(false)
@@ -128,9 +129,9 @@ const deleteModalVisible = ref(false)
 const scheduleToDelete = ref<Schedule | null>(null)
 const filterCompanyId = ref('')
 
-const canCreate = computed(() => isSuperAdmin.value || isAdminEnterprise.value)
-const canEdit = computed(() => isSuperAdmin.value || isAdminEnterprise.value)
-const canDelete = computed(() => isSuperAdmin.value || isAdminEnterprise.value)
+const canCreate = computed(() => permissions.isAdminOrSuperOrTech.value)
+const canEdit = computed(() => permissions.isAdminOrSuperOrTech.value)
+const canDelete = computed(() => permissions.isAdminOrSuperOrTech.value)
 
 const companyOptions = computed(() => [
   { value: '', label: 'Toutes les entreprises' },

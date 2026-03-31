@@ -155,7 +155,7 @@ const siteId = computed(() => route.params.id as string)
 const site = computed(() => siteStore.currentSite)
 
 const canCreate = computed(() =>
-  permissions.isSuperAdmin.value || permissions.isAdminEnterprise.value
+  permissions.isAdminOrSuperOrTech.value
 )
 
 const companyName = computed(() => {

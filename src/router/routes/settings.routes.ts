@@ -18,7 +18,7 @@ const settingsRoutes: RouteRecordRaw[] = [
         component: () => import('@/pages/parametres/CompanySettingsPage.vue'),
         meta: {
           title: 'Parametres entreprise',
-          roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE, UserRole.TECHNICIEN],
+          roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE],
         },
       },
       {
@@ -27,7 +27,7 @@ const settingsRoutes: RouteRecordRaw[] = [
         component: () => import('@/pages/parametres/UserManagementPage.vue'),
         meta: {
           title: 'Gestion utilisateurs',
-          roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE, UserRole.TECHNICIEN],
+          roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE],
         },
       },
       {

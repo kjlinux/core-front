@@ -92,7 +92,7 @@ const filteredDevices = computed(() => {
   return list
 })
 
-const canManage = computed(() => permissions.isSuperAdmin.value || permissions.isAdminEnterprise.value)
+const canManage = computed(() => permissions.isAdminOrSuperOrTech.value)
 
 const commandLabels: Record<string, string> = {
   RESET: 'Reset',

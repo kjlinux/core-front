@@ -3,7 +3,7 @@
     <div class="page-header">
       <h1>Cartes RFID</h1>
       <AppButton
-        v-if="permissions.isSuperAdmin.value || permissions.isAdminEnterprise.value"
+        v-if="permissions.isAdminOrSuperOrTech.value"
         @click="navigateToRegister"
         variant="primary"
       >
@@ -73,7 +73,7 @@
               <EyeIcon class="w-4 h-4" />
             </AppButton>
             <AppButton
-              v-if="!row.employeeId && (permissions.isSuperAdmin.value || permissions.isAdminEnterprise.value)"
+              v-if="!row.employeeId && (permissions.isAdminOrSuperOrTech.value)"
               size="sm"
               variant="ghost"
               class="text-blue-600 hover:text-blue-700"
@@ -83,7 +83,7 @@
               <CheckIcon class="w-4 h-4" />
             </AppButton>
             <AppButton
-              v-if="row.status === CardStatus.ACTIVE && (permissions.isSuperAdmin.value || permissions.isAdminEnterprise.value)"
+              v-if="row.status === CardStatus.ACTIVE && (permissions.isAdminOrSuperOrTech.value)"
               size="sm"
               variant="ghost"
               class="text-red-600 hover:text-red-700"
@@ -93,7 +93,7 @@
               <NoSymbolIcon class="w-4 h-4" />
             </AppButton>
             <AppButton
-              v-if="row.status === CardStatus.BLOCKED && (permissions.isSuperAdmin.value || permissions.isAdminEnterprise.value)"
+              v-if="row.status === CardStatus.BLOCKED && (permissions.isAdminOrSuperOrTech.value)"
               size="sm"
               variant="ghost"
               class="text-green-600 hover:text-green-700"

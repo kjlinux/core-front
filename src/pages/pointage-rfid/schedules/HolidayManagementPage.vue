@@ -134,7 +134,8 @@ import dayjs from 'dayjs'
 import { PencilIcon, TrashIcon, PlusIcon } from '@heroicons/vue/24/outline'
 
 const scheduleStore = useScheduleStore()
-const { isSuperAdmin, isAdminEnterprise } = usePermissions()
+const permissions = usePermissions()
+const { isSuperAdmin, isAdminEnterprise } = permissions
 const toast = useToast()
 
 const loading = ref(false)
@@ -151,8 +152,8 @@ const formData = ref({
   isRecurring: false
 })
 
-const canCreate = computed(() => isSuperAdmin.value || isAdminEnterprise.value)
-const canDelete = computed(() => isSuperAdmin.value || isAdminEnterprise.value)
+const canCreate = computed(() => permissions.isAdminOrSuperOrTech.value)
+const canDelete = computed(() => permissions.isAdminOrSuperOrTech.value)
 
 const holidays = computed(() => scheduleStore.holidays || [])
 

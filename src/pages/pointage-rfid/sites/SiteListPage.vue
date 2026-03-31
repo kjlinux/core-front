@@ -271,7 +271,7 @@ const formData = ref({
 })
 
 const canCreate = computed(() =>
-  permissions.isSuperAdmin.value || permissions.isAdminEnterprise.value
+  permissions.isAdminOrSuperOrTech.value
 )
 
 const companyOptions = computed(() => [

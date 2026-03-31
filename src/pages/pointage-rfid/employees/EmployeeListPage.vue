@@ -27,8 +27,8 @@ const departmentStore = useDepartmentStore()
 const permissions = usePermissions()
 const toast = useToast()
 
-const canCreate = computed(() => permissions.isSuperAdmin.value || permissions.isAdminEnterprise.value)
-const canEdit = computed(() => permissions.isSuperAdmin.value || permissions.isAdminEnterprise.value)
+const canCreate = computed(() => permissions.isAdminOrSuperOrTech.value)
+const canEdit = computed(() => permissions.isAdminOrSuperOrTech.value)
 
 // Modal transfert site/département
 const showTransferModal = ref(false)

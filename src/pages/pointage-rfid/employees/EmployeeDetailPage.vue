@@ -26,7 +26,7 @@ const showAssignCardModal = ref(false)
 const selectedCardId = ref('')
 
 const canEdit = computed(() =>
-  permissions.isSuperAdmin.value || permissions.isAdminEnterprise.value
+  permissions.isAdminOrSuperOrTech.value
 )
 
 const employee = computed(() => employeeStore.currentEmployee)

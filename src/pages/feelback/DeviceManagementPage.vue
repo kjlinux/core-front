@@ -93,7 +93,7 @@ const filteredDevices = computed(() => {
   return list
 })
 
-const canManage = computed(() => permissions.isSuperAdmin.value || permissions.isAdminEnterprise.value)
+const canManage = computed(() => permissions.isAdminOrSuperOrTech.value)
 
 function formatDate(date: string) {
   return new Date(date).toLocaleString('fr-FR')

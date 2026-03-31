@@ -32,14 +32,14 @@ const permissionMatrix: Record<Module, Record<Action, UserRole[]>> = {
     view: allRoles,
     create: setupRoles,
     edit: setupRoles,
-    delete: superOnly,
+    delete: superAndTech,
     export: adminRoles,
   },
   biometrique: {
     view: allRoles,
     create: setupRoles,
     edit: setupRoles,
-    delete: superOnly,
+    delete: superAndTech,
     export: adminRoles,
   },
   feelback: {
@@ -67,14 +67,14 @@ const permissionMatrix: Record<Module, Record<Action, UserRole[]>> = {
     view: allRoles,
     create: setupRoles,
     edit: setupRoles,
-    delete: superOnly,
+    delete: superAndTech,
     export: adminRoles,
   },
   firmware: {
     view: setupRoles,
     create: superAndTech,
     edit: superAndTech,
-    delete: superOnly,
+    delete: superAndTech,
     export: none,
   },
 }

@@ -67,7 +67,7 @@
 
       <div class="action-buttons">
         <AppButton
-          v-if="!card.employeeId && (permissions.isSuperAdmin.value || permissions.isAdminEnterprise.value)"
+          v-if="!card.employeeId && (permissions.isAdminOrSuperOrTech.value)"
           variant="primary"
           @click="openAssignModal"
         >
@@ -76,7 +76,7 @@
         </AppButton>
 
         <AppButton
-          v-if="card.employeeId && (permissions.isSuperAdmin.value || permissions.isAdminEnterprise.value)"
+          v-if="card.employeeId && (permissions.isAdminOrSuperOrTech.value)"
           variant="secondary"
           @click="openUnassignModal"
         >
@@ -85,7 +85,7 @@
         </AppButton>
 
         <AppButton
-          v-if="card.status === CardStatus.ACTIVE && (permissions.isSuperAdmin.value || permissions.isAdminEnterprise.value)"
+          v-if="card.status === CardStatus.ACTIVE && (permissions.isAdminOrSuperOrTech.value)"
           variant="danger"
           @click="openBlockModal"
         >
@@ -94,7 +94,7 @@
         </AppButton>
 
         <AppButton
-          v-if="card.status === CardStatus.BLOCKED && (permissions.isSuperAdmin.value || permissions.isAdminEnterprise.value)"
+          v-if="card.status === CardStatus.BLOCKED && (permissions.isAdminOrSuperOrTech.value)"
           variant="success"
           @click="openUnblockModal"
         >

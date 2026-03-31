@@ -63,7 +63,8 @@ const route = useRoute()
 const scheduleStore = useScheduleStore()
 const companyStore = useCompanyStore()
 const departmentStore = useDepartmentStore()
-const { isSuperAdmin, isAdminEnterprise } = usePermissions()
+const permissions = usePermissions()
+const { isSuperAdmin, isAdminEnterprise } = permissions
 const toast = useToast()
 
 const loading = ref(false)
@@ -71,7 +72,7 @@ const loadingSchedule = ref(false)
 const showDeleteModal = ref(false)
 const schedule = ref<Schedule | null>(null)
 
-const canDelete = computed(() => isSuperAdmin.value || isAdminEnterprise.value)
+const canDelete = computed(() => permissions.isAdminOrSuperOrTech.value)
 
 const scheduleId = computed(() => String(route.params.id))
 
