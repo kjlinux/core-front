@@ -1,13 +1,11 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
 import { useActiveCompanyStore } from '@/stores/active-company.store'
 import apiClient from '@/services/api/client'
 import type { Company } from '@/types'
 import { BuildingOffice2Icon, ChevronDownIcon } from '@heroicons/vue/24/outline'
 import { onClickOutside } from '@vueuse/core'
 
-const router = useRouter()
 const activeCompanyStore = useActiveCompanyStore()
 
 const isOpen = ref(false)
@@ -32,7 +30,7 @@ onMounted(async () => {
 async function select(company: Company) {
   await activeCompanyStore.selectCompany(company.id, company.name)
   isOpen.value = false
-  router.go(0)
+  window.location.reload()
 }
 </script>
 

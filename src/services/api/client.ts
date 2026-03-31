@@ -43,11 +43,16 @@ apiClient.interceptors.request.use(
     // Skip if the caller already set the header explicitly (even as empty string = opt-out).
     const activeCompanyId = localStorage.getItem('active_company_id')
     const headerAlreadySet = 'X-Active-Company-Id' in (config.headers ?? {})
-    if (!headerAlreadySet && activeCompanyId && activeCompanyId !== 'undefined' && activeCompanyId !== 'null') {
-      config.headers['X-Active-Company-Id'] = activeCompanyId
+    const isOptOut = config.headers['X-Active-Company-Id'] === ''
+    if (!isOptOut && activeCompanyId && activeCompanyId !== 'undefined' && activeCompanyId !== 'null') {
+      if (!headerAlreadySet) {
+        config.headers['X-Active-Company-Id'] = activeCompanyId
+      }
+      // Also inject as query param as fallback (in case proxy strips custom headers)
+      config.params = { ...config.params, _company_id: activeCompanyId }
     }
     // Remove the header entirely if explicitly set to empty (opt-out pattern)
-    if (config.headers['X-Active-Company-Id'] === '') {
+    if (isOptOut) {
       delete config.headers['X-Active-Company-Id']
     }
 
