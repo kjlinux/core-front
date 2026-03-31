@@ -18,7 +18,7 @@ const isLoading = ref(false)
 
 // Session d'enrôlement en cours
 const session = ref<{
-  token: string
+  sessionToken: string
   employeeName: string
   expiresIn: number
 } | null>(null)
@@ -62,7 +62,7 @@ async function startEnrollment() {
     const enrollUrl = `${window.location.origin}/qr-scan?enroll=${result.sessionToken}`
     qrDataUrl.value = await QRCode.toDataURL(enrollUrl, { width: 280, margin: 2 })
 
-    startPolling(result.sessionToken)
+    startPolling(session.value!.sessionToken)
     startCountdown()
   } catch {
     toast.error('Erreur lors de la creation de la session')
