@@ -18,8 +18,7 @@ onMounted(async () => {
   try {
     // Load without X-Active-Company-Id to get all accessible companies
     const res = await apiClient.get('/companies', {
-      params: { per_page: 200 },
-      headers: { 'X-Active-Company-Id': '' },
+      params: { per_page: 200, __skipCompanyScope: true },
     })
     companies.value = res.data?.data ?? res.data ?? []
   } catch {

@@ -39,21 +39,15 @@ apiClient.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`
     }
 
-    // Inject active company for technicien company switching.
-    // Skip if the caller already set the header explicitly (even as empty string = opt-out).
+    // Inject active company as query param for technicien company switching.
+    // Using query param instead of custom header to avoid CORS preflight issues with proxies.
     const activeCompanyId = localStorage.getItem('active_company_id')
-    const headerAlreadySet = 'X-Active-Company-Id' in (config.headers ?? {})
-    const isOptOut = config.headers['X-Active-Company-Id'] === ''
-    if (!isOptOut && activeCompanyId && activeCompanyId !== 'undefined' && activeCompanyId !== 'null') {
-      if (!headerAlreadySet) {
-        config.headers['X-Active-Company-Id'] = activeCompanyId
-      }
-      // Also inject as query param as fallback (in case proxy strips custom headers)
+    const skipCompanyScope = config.params?.__skipCompanyScope === true
+    if (!skipCompanyScope && activeCompanyId && activeCompanyId !== 'undefined' && activeCompanyId !== 'null') {
       config.params = { ...config.params, _company_id: activeCompanyId }
     }
-    // Remove the header entirely if explicitly set to empty (opt-out pattern)
-    if (isOptOut) {
-      delete config.headers['X-Active-Company-Id']
+    if (config.params) {
+      delete config.params.__skipCompanyScope
     }
 
     // Convert request body keys from camelCase to snake_case (skip FormData)
