@@ -38,7 +38,7 @@ function generateSerialNumber(prefix: string): string {
   let max = 0
   for (const d of deviceStore.devices) {
     const match = d.serialNumber.match(pattern)
-    if (match) max = Math.max(max, parseInt(match[1]))
+    if (match) max = Math.max(max, parseInt(match[1]!))
   }
   return `${prefix}-${year}-${String(max + 1).padStart(3, '0')}`
 }
