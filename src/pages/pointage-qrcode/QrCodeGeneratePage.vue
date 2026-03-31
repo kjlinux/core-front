@@ -120,14 +120,5 @@ function printQr() {
       </div>
     </AppCard>
 
-    <AppCard class="border-blue-100 bg-blue-50">
-      <h3 class="mb-2 text-sm font-semibold text-blue-900">Comment ca fonctionne</h3>
-      <ol class="space-y-1 text-sm text-blue-800">
-        <li>1. Generez un QR Code pour chaque site et affichez-le a l'entree</li>
-        <li>2. Enrolez le telephone de chaque employe (menu "Enrolement telephone")</li>
-        <li>3. L'employe scanne le QR avec son telephone — sa position GPS est verifiee</li>
-        <li>4. Le systeme identifie l'employe via son telephone et enregistre le pointage</li>
-      </ol>
-    </AppCard>
   </div>
 </template>

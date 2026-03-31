@@ -8,6 +8,7 @@ import { UserRole } from '@/types/enums'
 import TheHeaderUserMenu from './TheHeaderUserMenu.vue'
 import TheHeaderNotifications from './TheHeaderNotifications.vue'
 import TheLanguageSwitcher from './TheLanguageSwitcher.vue'
+import TheCompanySwitcher from './TheCompanySwitcher.vue'
 import FirmwareUpdateModal from '@/components/firmware/FirmwareUpdateModal.vue'
 import { Bars3Icon, ChevronLeftIcon } from '@heroicons/vue/24/outline'
 
@@ -98,6 +99,9 @@ onMounted(() => {
       </div>
 
       <div class="flex items-center gap-4">
+        <TheCompanySwitcher
+          v-if="auth.user?.role === UserRole.TECHNICIEN || auth.user?.role === UserRole.SUPER_ADMIN"
+        />
         <TheLanguageSwitcher />
         <TheHeaderNotifications />
         <TheHeaderUserMenu />

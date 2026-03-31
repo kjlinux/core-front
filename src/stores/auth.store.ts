@@ -35,6 +35,8 @@ export const useAuthStore = defineStore('auth', () => {
     accessToken.value = null
     localStorage.removeItem('access_token')
     localStorage.removeItem('auth_user')
+    localStorage.removeItem('active_company_id')
+    localStorage.removeItem('active_company_name')
     authApi.logout().catch(() => {})
   }
 

@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth.store'
 import { onClickOutside } from '@vueuse/core'
 import { UserCircleIcon, ArrowRightOnRectangleIcon, Cog6ToothIcon } from '@heroicons/vue/24/outline'
 import { ROLE_LABELS } from '@/utils/constants'
 
+const { t } = useI18n()
 const auth = useAuthStore()
 const router = useRouter()
 const isOpen = ref(false)
@@ -45,7 +47,7 @@ async function handleLogout() {
         @click="isOpen = false"
       >
         <Cog6ToothIcon class="h-4 w-4" />
-        Mon profil
+        {{ t('userMenu.myProfile') }}
       </RouterLink>
       <hr class="my-1 border-gray-200" />
       <button
@@ -54,7 +56,7 @@ async function handleLogout() {
         @click="handleLogout"
       >
         <ArrowRightOnRectangleIcon class="h-4 w-4" />
-        Se deconnecter
+        {{ t('userMenu.logout') }}
       </button>
     </div>
   </div>

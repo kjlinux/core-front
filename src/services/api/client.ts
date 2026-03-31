@@ -39,6 +39,12 @@ apiClient.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`
     }
 
+    // Inject active company for technicien/super_admin company switching
+    const activeCompanyId = localStorage.getItem('active_company_id')
+    if (activeCompanyId) {
+      config.headers['X-Active-Company-Id'] = activeCompanyId
+    }
+
     // Convert request body keys from camelCase to snake_case (skip FormData)
     if (config.data && typeof config.data === 'object' && !(config.data instanceof FormData)) {
       config.data = convertKeysToSnakeCase(config.data)

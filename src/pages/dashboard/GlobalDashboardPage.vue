@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useDashboardStore } from '@/stores/dashboard.store'
 import { usePermissions } from '@/composables/usePermissions'
 import { useAuthStore } from '@/stores/auth.store'
@@ -25,6 +26,7 @@ import {
   XCircleIcon,
 } from '@heroicons/vue/24/outline'
 
+const { t } = useI18n()
 const dashboardStore = useDashboardStore()
 const permissions = usePermissions()
 const authStore = useAuthStore()
@@ -32,9 +34,9 @@ const authStore = useAuthStore()
 const isSuperAdmin = permissions.isSuperAdmin
 const greeting = computed(() => {
   const h = new Date().getHours()
-  if (h < 12) return 'Bonjour'
-  if (h < 18) return 'Bon apres-midi'
-  return 'Bonsoir'
+  if (h < 12) return t('dashboard.greetingMorning')
+  if (h < 18) return t('dashboard.greetingAfternoon')
+  return t('dashboard.greetingEvening')
 })
 
 const stats = computed(() => dashboardStore.stats)
@@ -78,9 +80,9 @@ const revenueMonthlyData = computed(() => {
 const attendancePieData = computed(() => {
   if (!stats.value) return []
   return [
-    { name: 'Presents', value: stats.value.presentToday },
-    { name: 'Absents', value: stats.value.absentToday },
-    { name: 'En retard', value: stats.value.lateToday },
+    { name: t('dashboard.presentsPie'), value: stats.value.presentToday },
+    { name: t('dashboard.absentsPie'), value: stats.value.absentToday },
+    { name: t('dashboard.latePie'), value: stats.value.lateToday },
   ].filter(d => d.value > 0)
 })
 
@@ -108,7 +110,7 @@ onMounted(async () => {
     <div>
       <h1 class="text-2xl font-bold text-gray-900">{{ greeting }}, {{ authStore.user?.firstName ?? '' }}</h1>
       <p class="text-sm text-gray-500 mt-1">
-        {{ isSuperAdmin ? 'Vue globale de la plateforme' : 'Vue d\'ensemble de votre entreprise' }}
+        {{ isSuperAdmin ? t('dashboard.globalView') : t('dashboard.companyView') }}
       </p>
     </div>
 
@@ -123,35 +125,35 @@ onMounted(async () => {
       <template v-if="isSuperAdmin">
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
-            title="Entreprises actives"
+            :title="t('dashboard.activeCompanies')"
             :value="val(stats.activeCompanies)"
             :icon="BuildingOffice2Icon"
             icon-bg-class="bg-blue-100"
             icon-color-class="text-blue-600"
           />
           <StatCard
-            title="Employes total"
+            :title="t('dashboard.employeesTotal')"
             :value="val(stats.totalEmployees)"
             :icon="UsersIcon"
             icon-bg-class="bg-green-100"
             icon-color-class="text-green-600"
           />
           <StatCard
-            title="Equipements connectes"
+            :title="t('dashboard.connectedDevices')"
             :value="val(stats.connectedDevices)"
             :icon="DevicePhoneMobileIcon"
             icon-bg-class="bg-purple-100"
             icon-color-class="text-purple-600"
           />
           <StatCard
-            title="Alertes techniques"
+            :title="t('dashboard.technicalAlerts')"
             :value="val(stats.technicalAlerts)"
             :icon="ExclamationTriangleIcon"
             icon-bg-class="bg-red-100"
             icon-color-class="text-red-600"
           />
           <StatCard
-            title="Satisfaction globale"
+            :title="t('dashboard.globalSatisfaction')"
             :value="val(stats.globalSatisfactionRate)"
             :suffix="stats.globalSatisfactionRate != null ? '%' : ''"
             :icon="StarIcon"
@@ -159,14 +161,14 @@ onMounted(async () => {
             icon-color-class="text-yellow-600"
           />
           <StatCard
-            title="Cartes RFID vendues"
+            :title="t('dashboard.rfidCardsSold')"
             :value="val(stats.rfidCardsSold)"
             :icon="CreditCardIcon"
             icon-bg-class="bg-indigo-100"
             icon-color-class="text-indigo-600"
           />
           <StatCard
-            title="Revenus marketplace"
+            :title="t('dashboard.marketplaceRevenue')"
             :value="stats.marketplaceRevenue != null ? formatRevenue(stats.marketplaceRevenue) : '-'"
             :suffix="stats.marketplaceRevenue != null ? 'FCFA' : ''"
             :icon="BanknotesIcon"
@@ -174,7 +176,7 @@ onMounted(async () => {
             icon-color-class="text-emerald-600"
           />
           <StatCard
-            title="Commandes totales"
+            :title="t('dashboard.totalOrders')"
             :value="val(stats.totalOrders)"
             :icon="ShoppingCartIcon"
             icon-bg-class="bg-orange-100"
@@ -186,30 +188,30 @@ onMounted(async () => {
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <AppCard>
             <template #header>
-              <span class="text-sm font-semibold text-gray-700">Revenus marketplace (6 mois)</span>
+              <span class="text-sm font-semibold text-gray-700">{{ t('dashboard.revenueChart') }}</span>
             </template>
-            <BarChart :data="revenueMonthlyData" color="#10b981" height="260px" series-name="Revenus (FCFA)" :loading="dashboardStore.chartsLoading" />
+            <BarChart :data="revenueMonthlyData" color="#10b981" height="260px" :series-name="t('dashboard.revenuesSeries')" :loading="dashboardStore.chartsLoading" />
           </AppCard>
 
           <AppCard>
             <template #header>
-              <span class="text-sm font-semibold text-gray-700">Entreprises par module</span>
+              <span class="text-sm font-semibold text-gray-700">{{ t('dashboard.companiesByModule') }}</span>
             </template>
-            <PieChart :data="companiesByModuleData.length ? companiesByModuleData : [{name:'Aucune donnee',value:1}]" height="260px" :loading="dashboardStore.chartsLoading" />
+            <PieChart :data="companiesByModuleData.length ? companiesByModuleData : [{name:t('common.noData'),value:1}]" height="260px" :loading="dashboardStore.chartsLoading" />
           </AppCard>
 
           <AppCard>
             <template #header>
-              <span class="text-sm font-semibold text-gray-700">Tendance satisfaction (7 jours)</span>
+              <span class="text-sm font-semibold text-gray-700">{{ t('dashboard.satisfactionTrend') }}</span>
             </template>
-            <LineChart :data="satisfactionTrendData" color="#f59e0b" height="260px" series-name="Satisfaction (%)" :loading="dashboardStore.chartsLoading" />
+            <LineChart :data="satisfactionTrendData" color="#f59e0b" height="260px" :series-name="t('dashboard.satisfactionSeries')" :loading="dashboardStore.chartsLoading" />
           </AppCard>
 
           <AppCard>
             <template #header>
-              <span class="text-sm font-semibold text-gray-700">Presences journalieres (7 jours)</span>
+              <span class="text-sm font-semibold text-gray-700">{{ t('dashboard.attendanceTrend') }}</span>
             </template>
-            <LineChart :data="attendanceTrendData" color="#6366f1" height="260px" series-name="Employes presents" :loading="dashboardStore.chartsLoading" />
+            <LineChart :data="attendanceTrendData" color="#6366f1" height="260px" :series-name="t('dashboard.presentSeries')" :loading="dashboardStore.chartsLoading" />
           </AppCard>
         </div>
       </template>
@@ -218,35 +220,35 @@ onMounted(async () => {
       <template v-else>
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
-            title="Employes"
+            :title="t('dashboard.employees')"
             :value="val(stats.totalEmployees)"
             :icon="UsersIcon"
             icon-bg-class="bg-blue-100"
             icon-color-class="text-blue-600"
           />
           <StatCard
-            title="Presents aujourd'hui"
+            :title="t('dashboard.presentTodayStat')"
             :value="val(stats.presentToday)"
             :icon="CheckCircleIcon"
             icon-bg-class="bg-green-100"
             icon-color-class="text-green-600"
           />
           <StatCard
-            title="En retard aujourd'hui"
+            :title="t('dashboard.lateTodayStat')"
             :value="val(stats.lateToday)"
             :icon="ClockIcon"
             icon-bg-class="bg-yellow-100"
             icon-color-class="text-yellow-600"
           />
           <StatCard
-            title="Absents aujourd'hui"
+            :title="t('dashboard.absentTodayStat')"
             :value="val(stats.absentToday)"
             :icon="XCircleIcon"
             icon-bg-class="bg-red-100"
             icon-color-class="text-red-600"
           />
           <StatCard
-            title="Taux de presence"
+            :title="t('dashboard.attendanceRateStat')"
             :value="val(stats.attendanceRate)"
             :suffix="stats.attendanceRate != null ? '%' : ''"
             :icon="UserGroupIcon"
@@ -254,7 +256,7 @@ onMounted(async () => {
             icon-color-class="text-indigo-600"
           />
           <StatCard
-            title="Satisfaction"
+            :title="t('dashboard.satisfaction')"
             :value="val(stats.globalSatisfactionRate)"
             :suffix="stats.globalSatisfactionRate != null ? '%' : ''"
             :icon="StarIcon"
@@ -262,14 +264,14 @@ onMounted(async () => {
             icon-color-class="text-yellow-600"
           />
           <StatCard
-            title="Appareils connectes"
+            :title="t('dashboard.connectedDevicesStat')"
             :value="val(stats.connectedDevices)"
             :icon="DevicePhoneMobileIcon"
             icon-bg-class="bg-purple-100"
             icon-color-class="text-purple-600"
           />
           <StatCard
-            title="Enrolements bio"
+            :title="t('dashboard.biometricEnrolled')"
             :value="val(stats.biometricEnrolled)"
             :icon="FingerPrintIcon"
             icon-bg-class="bg-teal-100"
@@ -281,17 +283,17 @@ onMounted(async () => {
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <AppCard>
             <template #header>
-              <span class="text-sm font-semibold text-gray-700">Presences journalieres (7 jours)</span>
+              <span class="text-sm font-semibold text-gray-700">{{ t('dashboard.attendanceTrend') }}</span>
             </template>
-            <LineChart :data="attendanceTrendData" color="#6366f1" height="260px" series-name="Employes presents" :loading="dashboardStore.chartsLoading" />
+            <LineChart :data="attendanceTrendData" color="#6366f1" height="260px" :series-name="t('dashboard.presentSeries')" :loading="dashboardStore.chartsLoading" />
           </AppCard>
 
           <AppCard>
             <template #header>
-              <span class="text-sm font-semibold text-gray-700">Repartition presences du jour</span>
+              <span class="text-sm font-semibold text-gray-700">{{ t('dashboard.attendancePie') }}</span>
             </template>
             <PieChart
-              :data="attendancePieData.length ? attendancePieData : [{name:'Aucune donnee',value:1}]"
+              :data="attendancePieData.length ? attendancePieData : [{name:t('common.noData'),value:1}]"
               height="260px"
               :loading="dashboardStore.chartsLoading"
             />
@@ -299,23 +301,23 @@ onMounted(async () => {
 
           <AppCard>
             <template #header>
-              <span class="text-sm font-semibold text-gray-700">Presences par departement</span>
+              <span class="text-sm font-semibold text-gray-700">{{ t('dashboard.attendanceByDept') }}</span>
             </template>
             <BarChart
-              :data="attendanceByDeptData.length ? attendanceByDeptData : [{name:'Aucune donnee',value:0}]"
+              :data="attendanceByDeptData.length ? attendanceByDeptData : [{name:t('common.noData'),value:0}]"
               color="#3b82f6"
               :horizontal="true"
               height="260px"
-              series-name="Presents"
+              :series-name="t('dashboard.presentsPie')"
               :loading="dashboardStore.chartsLoading"
             />
           </AppCard>
 
           <AppCard>
             <template #header>
-              <span class="text-sm font-semibold text-gray-700">Evolution satisfaction (7 jours)</span>
+              <span class="text-sm font-semibold text-gray-700">{{ t('dashboard.satisfactionEvolution') }}</span>
             </template>
-            <LineChart :data="satisfactionTrendData" color="#f59e0b" height="260px" series-name="Satisfaction (%)" :loading="dashboardStore.chartsLoading" />
+            <LineChart :data="satisfactionTrendData" color="#f59e0b" height="260px" :series-name="t('dashboard.satisfactionSeries')" :loading="dashboardStore.chartsLoading" />
           </AppCard>
         </div>
       </template>
@@ -324,7 +326,7 @@ onMounted(async () => {
 
     <!-- Empty State -->
     <div v-else class="text-center py-12 bg-white rounded-xl border border-gray-200">
-      <p class="text-gray-500">Aucune donnee disponible</p>
+      <p class="text-gray-500">{{ t('dashboard.noData') }}</p>
     </div>
   </div>
 </template>

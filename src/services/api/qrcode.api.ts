@@ -65,4 +65,29 @@ export const qrcodeApi = {
   revokeDevice(employeeId: string): Promise<void> {
     return apiClient.delete(`/employees/${employeeId}/device`).then((r) => r.data)
   },
+
+  /** Crée une session d'enrôlement QR (admin) */
+  createEnrollSession(employeeId: string): Promise<{
+    sessionToken: string
+    employeeId: string
+    employeeName: string
+    expiresIn: number
+  }> {
+    return apiClient.post('/enroll-session', { employeeId }).then((r) => r.data)
+  },
+
+  /** Poll le statut d'une session d'enrôlement (admin) */
+  getEnrollSession(sessionToken: string): Promise<{
+    status: 'pending' | 'completed'
+    employeeName: string
+    fingerprint: string | null
+    deviceInfo: string | null
+  }> {
+    return apiClient.get(`/enroll-session/${sessionToken}`).then((r) => r.data)
+  },
+
+  /** Soumet le fingerprint depuis le téléphone de l'employé (sans auth) */
+  submitEnrollSession(sessionToken: string, deviceFingerprint: string, deviceInfo?: string): Promise<void> {
+    return apiClient.post(`/enroll-session/${sessionToken}/submit`, { deviceFingerprint, deviceInfo }).then((r) => r.data)
+  },
 }

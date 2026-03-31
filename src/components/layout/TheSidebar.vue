@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, provide, ref } from 'vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useUiStore } from '@/stores/ui.store'
 import { useAuthStore } from '@/stores/auth.store'
 import { UserRole } from '@/types/enums'
@@ -35,6 +36,7 @@ import {
   CpuChipIcon,
 } from '@heroicons/vue/24/outline'
 
+const { t } = useI18n()
 const ui = useUiStore()
 const auth = useAuthStore()
 const route = useRoute()
@@ -98,7 +100,7 @@ const sidebarClasses = computed(() => [
     <nav class="flex-1 overflow-y-auto py-4">
       <!-- Dashboard -->
       <TheSidebarItem
-        label="Tableau de bord"
+        :label="t('nav.dashboard')"
         to="/"
         :icon="HomeIcon"
         :collapsed="ui.sidebarCollapsed"
@@ -108,14 +110,14 @@ const sidebarClasses = computed(() => [
       <!-- Pointage RFID -->
       <TheSidebarGroup
         group-id="pointage-rfid"
-        label="Pointage RFID"
+        :label="t('nav.pointageRfid')"
         :icon="CreditCardIcon"
         :collapsed="ui.sidebarCollapsed"
         :active="route.path.startsWith('/pointage-rfid')"
       >
         <TheSidebarItem
           v-if="isSetupRole"
-          label="Entreprises"
+          :label="t('nav.companies')"
           to="/pointage-rfid/companies"
           :icon="BuildingOffice2Icon"
           :collapsed="false"
@@ -123,7 +125,7 @@ const sidebarClasses = computed(() => [
           :nested="true"
         />
         <TheSidebarItem
-          label="Sites"
+          :label="t('nav.sites')"
           to="/pointage-rfid/sites"
           :icon="MapPinIcon"
           :collapsed="false"
@@ -131,7 +133,7 @@ const sidebarClasses = computed(() => [
           :nested="true"
         />
         <TheSidebarItem
-          label="Departements"
+          :label="t('nav.departments')"
           to="/pointage-rfid/departments"
           :icon="RectangleGroupIcon"
           :collapsed="false"
@@ -139,7 +141,7 @@ const sidebarClasses = computed(() => [
           :nested="true"
         />
         <TheSidebarItem
-          label="Employes"
+          :label="t('nav.employees')"
           to="/pointage-rfid/employees"
           :icon="UsersIcon"
           :collapsed="false"
@@ -148,7 +150,7 @@ const sidebarClasses = computed(() => [
         />
         <TheSidebarItem
           v-if="isAdminOrSuperOrTech"
-          label="Terminaux RFID"
+          :label="t('nav.rfidDevices')"
           to="/pointage-rfid/devices"
           :icon="DevicePhoneMobileIcon"
           :collapsed="false"
@@ -156,7 +158,7 @@ const sidebarClasses = computed(() => [
           :nested="true"
         />
         <TheSidebarItem
-          label="Cartes RFID"
+          :label="t('nav.rfidCards')"
           to="/pointage-rfid/cards"
           :icon="CreditCardIcon"
           :collapsed="false"
@@ -164,7 +166,7 @@ const sidebarClasses = computed(() => [
           :nested="true"
         />
         <TheSidebarItem
-          label="Horaires"
+          :label="t('nav.schedules')"
           to="/pointage-rfid/schedules"
           :icon="ClockIcon"
           :collapsed="false"
@@ -175,7 +177,7 @@ const sidebarClasses = computed(() => [
           :nested="true"
         />
         <TheSidebarItem
-          label="Pointage"
+          :label="t('nav.attendance')"
           to="/pointage-rfid/attendance"
           :icon="CalendarDaysIcon"
           :collapsed="false"
@@ -183,7 +185,7 @@ const sidebarClasses = computed(() => [
           :nested="true"
         />
         <TheSidebarItem
-          label="Rapports"
+          :label="t('nav.reports')"
           to="/pointage-rfid/reports"
           :icon="DocumentChartBarIcon"
           :collapsed="false"
@@ -195,13 +197,13 @@ const sidebarClasses = computed(() => [
       <!-- Pointage QR Code -->
       <TheSidebarGroup
         group-id="pointage-qrcode"
-        label="Pointage QR Code"
+        :label="t('nav.pointageQrcode')"
         :icon="QrCodeIcon"
         :collapsed="ui.sidebarCollapsed"
         :active="route.path.startsWith('/pointage-qrcode')"
       >
         <TheSidebarItem
-          label="Tableau de bord"
+          :label="t('nav.dashboard')"
           to="/pointage-qrcode"
           :icon="ChartBarIcon"
           :collapsed="false"
@@ -209,7 +211,7 @@ const sidebarClasses = computed(() => [
           :nested="true"
         />
         <TheSidebarItem
-          label="QR Codes"
+          :label="t('nav.qrCodes')"
           to="/pointage-qrcode/list"
           :icon="QrCodeIcon"
           :collapsed="false"
@@ -218,7 +220,7 @@ const sidebarClasses = computed(() => [
         />
         <TheSidebarItem
           v-if="isAdminOrSuperOrTech"
-          label="Generer"
+          :label="t('nav.generate')"
           to="/pointage-qrcode/generate"
           :icon="CreditCardIcon"
           :collapsed="false"
@@ -235,7 +237,7 @@ const sidebarClasses = computed(() => [
           :nested="true"
         />
         <TheSidebarItem
-          label="Pointage"
+          :label="t('nav.attendance')"
           to="/pointage-qrcode/attendance"
           :icon="CalendarDaysIcon"
           :collapsed="false"
@@ -243,7 +245,7 @@ const sidebarClasses = computed(() => [
           :nested="true"
         />
         <TheSidebarItem
-          label="Rapports"
+          :label="t('nav.reports')"
           to="/pointage-qrcode/reports"
           :icon="DocumentChartBarIcon"
           :collapsed="false"
@@ -255,13 +257,13 @@ const sidebarClasses = computed(() => [
       <!-- Biometrique -->
       <TheSidebarGroup
         group-id="biometrique"
-        label="Biometrique"
+        :label="t('nav.biometrique')"
         :icon="FingerPrintIcon"
         :collapsed="ui.sidebarCollapsed"
         :active="route.path.startsWith('/biometrique')"
       >
         <TheSidebarItem
-          label="Tableau de bord"
+          :label="t('nav.dashboard')"
           to="/biometrique"
           :icon="ChartBarIcon"
           :collapsed="false"
@@ -270,7 +272,7 @@ const sidebarClasses = computed(() => [
         />
         <TheSidebarItem
           v-if="isAdminOrSuperOrTech"
-          label="Terminaux"
+          :label="t('nav.biometricDevices')"
           to="/biometrique/devices"
           :icon="DevicePhoneMobileIcon"
           :collapsed="false"
@@ -279,7 +281,7 @@ const sidebarClasses = computed(() => [
         />
         <TheSidebarItem
           v-if="isAdminOrSuperOrTech"
-          label="Inscriptions"
+          :label="t('nav.enrollments')"
           to="/biometrique/enrollment"
           :icon="HandRaisedIcon"
           :collapsed="false"
@@ -287,7 +289,7 @@ const sidebarClasses = computed(() => [
           :nested="true"
         />
         <TheSidebarItem
-          label="Pointage"
+          :label="t('nav.attendance')"
           to="/biometrique/attendance"
           :icon="ClockIcon"
           :collapsed="false"
@@ -300,13 +302,13 @@ const sidebarClasses = computed(() => [
       <TheSidebarGroup
         v-if="isAdminOrSuperOrTech"
         group-id="firmware"
-        label="Firmware"
+        :label="t('nav.firmware')"
         :icon="CpuChipIcon"
         :collapsed="ui.sidebarCollapsed"
         :active="route.path.startsWith('/firmware')"
       >
         <TheSidebarItem
-          label="Versions"
+          :label="t('nav.firmwareVersions')"
           to="/firmware"
           :icon="ServerStackIcon"
           :collapsed="false"
@@ -315,7 +317,7 @@ const sidebarClasses = computed(() => [
         />
         <TheSidebarItem
           v-if="isSetupRole"
-          label="Telecharger"
+          :label="t('nav.firmwareUpload')"
           to="/firmware/upload"
           :icon="CubeIcon"
           :collapsed="false"
@@ -323,7 +325,7 @@ const sidebarClasses = computed(() => [
           :nested="true"
         />
         <TheSidebarItem
-          label="Etat terminaux"
+          :label="t('nav.firmwareDevices')"
           to="/firmware/devices"
           :icon="DevicePhoneMobileIcon"
           :collapsed="false"
@@ -331,7 +333,7 @@ const sidebarClasses = computed(() => [
           :nested="true"
         />
         <TheSidebarItem
-          label="Historique"
+          :label="t('nav.firmwareLogs')"
           to="/firmware/logs"
           :icon="ClipboardDocumentListIcon"
           :collapsed="false"
@@ -344,13 +346,13 @@ const sidebarClasses = computed(() => [
       <TheSidebarGroup
         v-if="isClientRole"
         group-id="feelback"
-        label="Feelback"
+        :label="t('nav.feelback')"
         :icon="FaceSmileIcon"
         :collapsed="ui.sidebarCollapsed"
         :active="route.path.startsWith('/feelback')"
       >
         <TheSidebarItem
-          label="Tableau de bord"
+          :label="t('nav.dashboard')"
           to="/feelback"
           :icon="ChartBarIcon"
           :collapsed="false"
@@ -358,7 +360,7 @@ const sidebarClasses = computed(() => [
           :nested="true"
         />
         <TheSidebarItem
-          label="Analyse"
+          :label="t('nav.feelbackAnalytics')"
           to="/feelback/analytics"
           :icon="DocumentChartBarIcon"
           :collapsed="false"
@@ -366,7 +368,7 @@ const sidebarClasses = computed(() => [
           :nested="true"
         />
         <TheSidebarItem
-          label="Donnees brutes"
+          :label="t('nav.feelbackData')"
           to="/feelback/data"
           :icon="ClipboardDocumentListIcon"
           :collapsed="false"
@@ -375,7 +377,7 @@ const sidebarClasses = computed(() => [
         />
         <TheSidebarItem
           v-if="isAdminOrSuper"
-          label="Terminaux"
+          :label="t('nav.biometricDevices')"
           to="/feelback/devices"
           :icon="DevicePhoneMobileIcon"
           :collapsed="false"
@@ -384,7 +386,7 @@ const sidebarClasses = computed(() => [
         />
         <TheSidebarItem
           v-if="isAdminOrSuper"
-          label="Alertes"
+          :label="t('nav.feelbackAlerts')"
           to="/feelback/alerts"
           :icon="BellAlertIcon"
           :collapsed="false"
@@ -392,7 +394,7 @@ const sidebarClasses = computed(() => [
           :nested="true"
         />
         <TheSidebarItem
-          label="Comparaison sites"
+          :label="t('nav.feelbackComparison')"
           to="/feelback/comparison"
           :icon="ChartBarIcon"
           :collapsed="false"
@@ -400,7 +402,7 @@ const sidebarClasses = computed(() => [
           :nested="true"
         />
         <TheSidebarItem
-          label="Rapports"
+          :label="t('nav.reports')"
           to="/feelback/reports"
           :icon="DocumentChartBarIcon"
           :collapsed="false"
@@ -408,7 +410,7 @@ const sidebarClasses = computed(() => [
           :nested="true"
         />
         <TheSidebarItem
-          label="Avis QR"
+          :label="t('nav.feelbackQrAvis')"
           to="/feelback/qr-avis"
           :icon="QrCodeIcon"
           :collapsed="false"
@@ -419,15 +421,15 @@ const sidebarClasses = computed(() => [
 
       <!-- Marketplace (masque pour technicien) -->
       <TheSidebarGroup
-        v-if="isClientRole"
+        v-if="isClientRole && !isTechnicien"
         group-id="marketplace"
-        label="Marketplace"
+        :label="t('nav.marketplace')"
         :icon="ShoppingCartIcon"
         :collapsed="ui.sidebarCollapsed"
         :active="route.path.startsWith('/marketplace')"
       >
         <TheSidebarItem
-          label="Catalogue"
+          :label="t('nav.catalog')"
           to="/marketplace"
           :icon="TagIcon"
           :collapsed="false"
@@ -435,7 +437,7 @@ const sidebarClasses = computed(() => [
           :nested="true"
         />
         <TheSidebarItem
-          label="Mon panier"
+          :label="t('nav.cart')"
           to="/marketplace/cart"
           :icon="ShoppingCartIcon"
           :collapsed="false"
@@ -443,7 +445,7 @@ const sidebarClasses = computed(() => [
           :nested="true"
         />
         <TheSidebarItem
-          label="Mes commandes"
+          :label="t('nav.orders')"
           to="/marketplace/orders"
           :icon="ClipboardDocumentListIcon"
           :collapsed="false"
@@ -452,7 +454,7 @@ const sidebarClasses = computed(() => [
         />
         <TheSidebarItem
           v-if="isSuperAdmin"
-          label="Gestion produits"
+          :label="t('nav.adminProducts')"
           to="/marketplace/admin/products"
           :icon="CubeIcon"
           :collapsed="false"
@@ -461,7 +463,7 @@ const sidebarClasses = computed(() => [
         />
         <TheSidebarItem
           v-if="isSuperAdmin"
-          label="Toutes commandes"
+          :label="t('nav.adminOrders')"
           to="/marketplace/admin/orders"
           :icon="WrenchScrewdriverIcon"
           :collapsed="false"
@@ -470,7 +472,7 @@ const sidebarClasses = computed(() => [
         />
         <TheSidebarItem
           v-if="isSuperAdmin"
-          label="Stocks"
+          :label="t('nav.inventory')"
           to="/marketplace/admin/inventory"
           :icon="ServerStackIcon"
           :collapsed="false"
@@ -479,7 +481,7 @@ const sidebarClasses = computed(() => [
         />
         <TheSidebarItem
           v-if="isSuperAdmin"
-          label="Rapports ventes"
+          :label="t('nav.salesReports')"
           to="/marketplace/admin/reports"
           :icon="DocumentChartBarIcon"
           :collapsed="false"
@@ -491,13 +493,13 @@ const sidebarClasses = computed(() => [
       <!-- Parametres -->
       <TheSidebarGroup
         group-id="parametres"
-        label="Parametres"
+        :label="t('nav.parametres')"
         :icon="Cog6ToothIcon"
         :collapsed="ui.sidebarCollapsed"
         :active="route.path.startsWith('/parametres')"
       >
         <TheSidebarItem
-          label="Mon profil"
+          :label="t('nav.profile')"
           to="/parametres/profile"
           :icon="UserIcon"
           :collapsed="false"
@@ -505,8 +507,8 @@ const sidebarClasses = computed(() => [
           :nested="true"
         />
         <TheSidebarItem
-          v-if="isAdminOrSuperOrTech"
-          label="Entreprise"
+          v-if="isAdminOrSuper"
+          :label="t('nav.company')"
           to="/parametres/entreprise"
           :icon="BuildingOffice2Icon"
           :collapsed="false"
@@ -514,8 +516,8 @@ const sidebarClasses = computed(() => [
           :nested="true"
         />
         <TheSidebarItem
-          v-if="isAdminOrSuperOrTech"
-          label="Utilisateurs"
+          v-if="isAdminOrSuper"
+          :label="t('nav.users')"
           to="/parametres/utilisateurs"
           :icon="UsersIcon"
           :collapsed="false"
@@ -524,7 +526,7 @@ const sidebarClasses = computed(() => [
         />
         <TheSidebarItem
           v-if="isAdminOrSuper"
-          label="Roles"
+          :label="t('nav.roles')"
           to="/parametres/roles"
           :icon="ShieldCheckIcon"
           :collapsed="false"

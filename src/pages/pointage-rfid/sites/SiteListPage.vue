@@ -83,36 +83,32 @@
             required
           />
 
-          <div class="rounded-lg border border-blue-200 bg-blue-50 p-4">
-            <p class="mb-1 text-sm font-medium text-blue-900">Coordonnees GPS <span class="text-red-500">*</span></p>
-            <p class="mb-3 text-xs text-blue-700">Obligatoire pour verifier que les employes pointent bien sur site via QR Code.</p>
-            <div class="grid grid-cols-2 gap-3">
-              <AppInput
-                v-model="formData.latitude"
-                label="Latitude"
-                type="number"
-                placeholder="ex: 12.3456"
-                step="any"
-                required
-              />
-              <AppInput
-                v-model="formData.longitude"
-                label="Longitude"
-                type="number"
-                placeholder="ex: -1.5678"
-                step="any"
-                required
-              />
-            </div>
+          <div class="grid grid-cols-2 gap-4">
             <AppInput
-              v-model="formData.geofenceRadius"
-              label="Rayon de geofence (metres)"
+              v-model="formData.latitude"
+              label="Latitude"
               type="number"
-              placeholder="100"
-              class="mt-3"
+              placeholder="ex: 12.3456"
+              step="any"
+              required
+            />
+            <AppInput
+              v-model="formData.longitude"
+              label="Longitude"
+              type="number"
+              placeholder="ex: -1.5678"
+              step="any"
               required
             />
           </div>
+
+          <AppInput
+            v-model="formData.geofenceRadius"
+            label="Rayon de geofence (metres)"
+            type="number"
+            placeholder="100"
+            required
+          />
         </div>
       </form>
 
@@ -131,6 +127,22 @@
         >
           Creer
         </AppButton>
+      </template>
+    </AppModal>
+
+    <AppModal
+      :is-open="showDeleteModal"
+      title="Supprimer le site"
+      size="sm"
+      @close="closeDeleteModal"
+    >
+      <p class="text-sm text-gray-600">
+        Etes-vous sur de vouloir supprimer le site <strong>{{ deletingSite?.name }}</strong> ? Cette action est irreversible.
+      </p>
+
+      <template #footer>
+        <AppButton variant="outline" @click="closeDeleteModal">Annuler</AppButton>
+        <AppButton variant="danger" :loading="isSubmitting" @click="confirmDeleteSite">Supprimer</AppButton>
       </template>
     </AppModal>
 
@@ -164,36 +176,32 @@
             required
           />
 
-          <div class="rounded-lg border border-blue-200 bg-blue-50 p-4">
-            <p class="mb-1 text-sm font-medium text-blue-900">Coordonnees GPS <span class="text-red-500">*</span></p>
-            <p class="mb-3 text-xs text-blue-700">Obligatoire pour verifier que les employes pointent bien sur site via QR Code.</p>
-            <div class="grid grid-cols-2 gap-3">
-              <AppInput
-                v-model="formData.latitude"
-                label="Latitude"
-                type="number"
-                placeholder="ex: 12.3456"
-                step="any"
-                required
-              />
-              <AppInput
-                v-model="formData.longitude"
-                label="Longitude"
-                type="number"
-                placeholder="ex: -1.5678"
-                step="any"
-                required
-              />
-            </div>
+          <div class="grid grid-cols-2 gap-4">
             <AppInput
-              v-model="formData.geofenceRadius"
-              label="Rayon de geofence (metres)"
+              v-model="formData.latitude"
+              label="Latitude"
               type="number"
-              placeholder="100"
-              class="mt-3"
+              placeholder="ex: 12.3456"
+              step="any"
+              required
+            />
+            <AppInput
+              v-model="formData.longitude"
+              label="Longitude"
+              type="number"
+              placeholder="ex: -1.5678"
+              step="any"
               required
             />
           </div>
+
+          <AppInput
+            v-model="formData.geofenceRadius"
+            label="Rayon de geofence (metres)"
+            type="number"
+            placeholder="100"
+            required
+          />
         </div>
       </form>
 
@@ -242,7 +250,9 @@ const toast = useToast()
 
 const showCreateModal = ref(false)
 const showEditModal = ref(false)
+const showDeleteModal = ref(false)
 const editingSite = ref<Site | null>(null)
+const deletingSite = ref<Site | null>(null)
 const isSubmitting = ref(false)
 
 const filters = ref({
@@ -378,15 +388,29 @@ async function handleEditSite() {
   }
 }
 
-async function handleDeleteSite(site: Site) {
-  if (!confirm(`Supprimer le site "${site.name}" ?`)) return
+function handleDeleteSite(site: Site) {
+  deletingSite.value = site
+  showDeleteModal.value = true
+}
+
+async function confirmDeleteSite() {
+  if (!deletingSite.value) return
+  isSubmitting.value = true
   try {
-    await siteStore.deleteSite(site.id)
+    await siteStore.deleteSite(deletingSite.value.id)
     toast.success('Succes', 'Site supprime avec succes')
+    closeDeleteModal()
     await siteStore.fetchSites(filters.value)
   } catch (error: any) {
     toast.error('Erreur', error.message || 'Erreur lors de la suppression du site')
+  } finally {
+    isSubmitting.value = false
   }
+}
+
+function closeDeleteModal() {
+  showDeleteModal.value = false
+  deletingSite.value = null
 }
 
 function closeCreateModal() {

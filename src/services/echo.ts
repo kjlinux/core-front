@@ -9,6 +9,8 @@ let echoInstance: Echo<'reverb'> | null = null
 export function initEcho(): Echo<'reverb'> {
   if (echoInstance) return echoInstance
 
+  const token = localStorage.getItem('access_token')
+
   echoInstance = new Echo({
     broadcaster: 'reverb',
     key: import.meta.env.VITE_REVERB_APP_KEY,
@@ -18,6 +20,12 @@ export function initEcho(): Echo<'reverb'> {
     forceTLS: import.meta.env.VITE_REVERB_SCHEME === 'https',
     enabledTransports: ['ws', 'wss'],
     disableStats: true,
+    authEndpoint: '/broadcasting/auth',
+    auth: {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
   })
 
   return echoInstance

@@ -13,15 +13,18 @@ const { getOrCreate, getDeviceInfo } = useDeviceFingerprint()
 
 // Token du QR Code du site (passé en query param quand l'employé scanne le QR)
 const token = ref((route.query.token as string) ?? '')
+// Token de session d'enrôlement (quand l'employé scanne le QR d'enrôlement admin)
+const enrollToken = ref((route.query.enroll as string) ?? '')
 const fingerprint = getOrCreate()
 const deviceInfo = getDeviceInfo()
 
-const step = ref<'identify' | 'ready' | 'scanning' | 'result' | 'error'>('identify')
+const step = ref<'identify' | 'ready' | 'scanning' | 'result' | 'error' | 'enrolling' | 'enrolled' | 'enroll-error'>('identify')
 const identity = ref<DeviceIdentifyResponse | null>(null)
 const result = ref<QrAttendanceRecord | null>(null)
 const errorMsg = ref('')
 const gpsStatus = ref<'idle' | 'loading' | 'ok' | 'denied' | 'unavailable'>('idle')
 const coords = ref<{ lat: number; lng: number } | null>(null)
+const enrolledName = ref('')
 
 const statusLabel: Record<string, string> = {
   present: 'Present',
@@ -37,12 +40,27 @@ const statusVariant: Record<string, 'success' | 'warning' | 'danger' | 'info' | 
 }
 
 onMounted(async () => {
-  // Vérifier si cet appareil est enrôlé
+  // Mode enrôlement : le QR de l'admin contient ?enroll=sessionToken
+  if (enrollToken.value) {
+    step.value = 'enrolling'
+    try {
+      await qrcodeApi.submitEnrollSession(enrollToken.value, fingerprint, deviceInfo)
+      enrolledName.value = ''
+      step.value = 'enrolled'
+    } catch (e: unknown) {
+      const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message
+      errorMsg.value = msg || 'Erreur lors de l\'enrolement'
+      step.value = 'enroll-error'
+    }
+    return
+  }
+
+  // Mode pointage normal : vérifier si cet appareil est enrôlé
   try {
     identity.value = await qrcodeApi.identifyDevice(fingerprint, deviceInfo)
     step.value = identity.value.enrolled ? 'ready' : 'identify'
   } catch {
-    step.value = 'ready' // On laisse quand même tenter le scan
+    step.value = 'ready'
   }
 })
 
@@ -112,8 +130,48 @@ function reset() {
         <p class="mt-1 text-sm text-gray-500">Systeme de presence en ligne</p>
       </div>
 
+      <!-- Étape : enrôlement en cours (soumission auto) -->
+      <AppCard v-if="step === 'enrolling'" class="text-center">
+        <div class="flex flex-col items-center gap-3 py-6">
+          <div class="h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-gray-700" />
+          <p class="text-sm font-medium text-gray-700">Enrolement en cours...</p>
+        </div>
+      </AppCard>
+
+      <!-- Étape : enrôlement réussi -->
+      <AppCard v-else-if="step === 'enrolled'" class="border-green-200 bg-green-50">
+        <div class="flex flex-col items-center gap-4 py-4 text-center">
+          <div class="flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+            <svg class="h-9 w-9 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <div>
+            <h2 class="text-lg font-bold text-green-900">Telephone enrole</h2>
+            <p class="mt-1 text-sm text-green-700">
+              Votre telephone est maintenant associe a votre compte. Vous pouvez pointer via QR Code.
+            </p>
+          </div>
+        </div>
+      </AppCard>
+
+      <!-- Étape : erreur enrôlement -->
+      <AppCard v-else-if="step === 'enroll-error'" class="border-red-200 bg-red-50">
+        <div class="flex flex-col items-center gap-4 py-4 text-center">
+          <div class="flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
+            <svg class="h-9 w-9 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </div>
+          <div>
+            <h2 class="text-lg font-bold text-red-900">Enrolement impossible</h2>
+            <p class="mt-1 text-sm text-red-700">{{ errorMsg }}</p>
+          </div>
+        </div>
+      </AppCard>
+
       <!-- Étape : appareil non enrôlé -->
-      <AppCard v-if="step === 'identify'" class="border-yellow-200 bg-yellow-50">
+      <AppCard v-else-if="step === 'identify'" class="border-yellow-200 bg-yellow-50">
         <h2 class="mb-2 font-semibold text-yellow-900">Telephone non reconnu</h2>
         <p class="mb-4 text-sm text-yellow-800">
           Cet appareil n'est pas encore enrole. Donnez l'identifiant ci-dessous a votre responsable pour qu'il enrole votre telephone.
