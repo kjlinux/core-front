@@ -16,19 +16,37 @@ const settingsRoutes: RouteRecordRaw[] = [
         path: 'entreprise',
         name: 'settings-company',
         component: () => import('@/pages/parametres/CompanySettingsPage.vue'),
-        meta: { title: 'Parametres entreprise', roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE] },
+        meta: {
+          title: 'Parametres entreprise',
+          roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE, UserRole.TECHNICIEN],
+        },
       },
       {
         path: 'utilisateurs',
         name: 'settings-users',
         component: () => import('@/pages/parametres/UserManagementPage.vue'),
-        meta: { title: 'Gestion utilisateurs', roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE] },
+        meta: {
+          title: 'Gestion utilisateurs',
+          roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE, UserRole.TECHNICIEN],
+        },
       },
       {
         path: 'roles',
         name: 'settings-roles',
         component: () => import('@/pages/parametres/RoleManagementPage.vue'),
-        meta: { title: 'Gestion des roles', roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE] },
+        meta: {
+          title: 'Gestion des roles',
+          roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE, UserRole.TECHNICIEN],
+        },
+      },
+      {
+        path: 'rapport-technicien',
+        name: 'technicien-report',
+        component: () => import('@/pages/parametres/TechnicienReportPage.vue'),
+        meta: {
+          title: 'Rapport de mise en service',
+          roles: [UserRole.SUPER_ADMIN, UserRole.TECHNICIEN],
+        },
       },
     ],
   },

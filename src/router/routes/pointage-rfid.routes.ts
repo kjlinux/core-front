@@ -10,13 +10,13 @@ const pointageRfidRoutes: RouteRecordRaw[] = [
         path: 'companies',
         name: 'rfid-companies',
         component: () => import('@/pages/pointage-rfid/companies/CompanyListPage.vue'),
-        meta: { title: 'Entreprises', roles: [UserRole.SUPER_ADMIN] },
+        meta: { title: 'Entreprises', roles: [UserRole.SUPER_ADMIN, UserRole.TECHNICIEN] },
       },
       {
         path: 'companies/create',
         name: 'rfid-company-create',
         component: () => import('@/pages/pointage-rfid/companies/CompanyCreatePage.vue'),
-        meta: { title: 'Nouvelle entreprise', roles: [UserRole.SUPER_ADMIN] },
+        meta: { title: 'Nouvelle entreprise', roles: [UserRole.SUPER_ADMIN, UserRole.TECHNICIEN] },
       },
       {
         path: 'companies/:id',
@@ -28,7 +28,7 @@ const pointageRfidRoutes: RouteRecordRaw[] = [
         path: 'companies/:id/edit',
         name: 'rfid-company-edit',
         component: () => import('@/pages/pointage-rfid/companies/CompanyEditPage.vue'),
-        meta: { title: 'Modifier entreprise', roles: [UserRole.SUPER_ADMIN] },
+        meta: { title: 'Modifier entreprise', roles: [UserRole.SUPER_ADMIN, UserRole.TECHNICIEN] },
       },
       {
         path: 'sites',
@@ -64,7 +64,10 @@ const pointageRfidRoutes: RouteRecordRaw[] = [
         path: 'employees/create',
         name: 'rfid-employee-create',
         component: () => import('@/pages/pointage-rfid/employees/EmployeeCreatePage.vue'),
-        meta: { title: 'Nouvel employe', roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE] },
+        meta: {
+          title: 'Nouvel employe',
+          roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE, UserRole.TECHNICIEN],
+        },
       },
       {
         path: 'employees/:id',
@@ -76,19 +79,28 @@ const pointageRfidRoutes: RouteRecordRaw[] = [
         path: 'employees/:id/edit',
         name: 'rfid-employee-edit',
         component: () => import('@/pages/pointage-rfid/employees/EmployeeEditPage.vue'),
-        meta: { title: 'Modifier employe', roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE] },
+        meta: {
+          title: 'Modifier employe',
+          roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE, UserRole.TECHNICIEN],
+        },
       },
       {
         path: 'devices',
         name: 'rfid-devices',
         component: () => import('@/pages/pointage-rfid/devices/DeviceListPage.vue'),
-        meta: { title: 'Terminaux RFID', roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE] },
+        meta: {
+          title: 'Terminaux RFID',
+          roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE, UserRole.TECHNICIEN],
+        },
       },
       {
         path: 'devices/:id',
         name: 'rfid-device-detail',
         component: () => import('@/pages/pointage-rfid/devices/DeviceDetailPage.vue'),
-        meta: { title: 'Detail terminal RFID', roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE] },
+        meta: {
+          title: 'Detail terminal RFID',
+          roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE, UserRole.TECHNICIEN],
+        },
       },
       {
         path: 'cards',
@@ -100,7 +112,10 @@ const pointageRfidRoutes: RouteRecordRaw[] = [
         path: 'cards/register',
         name: 'rfid-card-register',
         component: () => import('@/pages/pointage-rfid/cards/CardRegisterPage.vue'),
-        meta: { title: 'Enregistrer carte', roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE] },
+        meta: {
+          title: 'Enregistrer carte',
+          roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE, UserRole.TECHNICIEN],
+        },
       },
       {
         path: 'cards/:id',
@@ -124,13 +139,19 @@ const pointageRfidRoutes: RouteRecordRaw[] = [
         path: 'schedules/create',
         name: 'rfid-schedule-create',
         component: () => import('@/pages/pointage-rfid/schedules/ScheduleCreatePage.vue'),
-        meta: { title: 'Nouvel horaire', roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE] },
+        meta: {
+          title: 'Nouvel horaire',
+          roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE, UserRole.TECHNICIEN],
+        },
       },
       {
         path: 'schedules/:id/edit',
         name: 'rfid-schedule-edit',
         component: () => import('@/pages/pointage-rfid/schedules/ScheduleEditPage.vue'),
-        meta: { title: 'Modifier horaire', roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE] },
+        meta: {
+          title: 'Modifier horaire',
+          roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE, UserRole.TECHNICIEN],
+        },
       },
       {
         path: 'holidays',

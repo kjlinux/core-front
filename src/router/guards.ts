@@ -9,8 +9,14 @@ export function authGuard(to: RouteLocationNormalized, _from: RouteLocationNorma
     return { name: 'login', query: { redirect: to.fullPath } }
   }
 
-  if (to.meta.roles) {
-    const allowedRoles = to.meta.roles as UserRole[]
+  // Check roles from matched routes (most specific route with roles wins, then falls back to parent)
+  const matchedWithRoles = to.matched
+    .slice()
+    .reverse()
+    .find((r) => r.meta.roles)
+
+  if (matchedWithRoles?.meta.roles) {
+    const allowedRoles = matchedWithRoles.meta.roles as UserRole[]
     if (auth.user && !allowedRoles.includes(auth.user.role)) {
       return { name: 'dashboard' }
     }

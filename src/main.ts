@@ -14,6 +14,7 @@ import App from './App.vue'
 import router from './router'
 import '@/assets/css/main.css'
 import { useAuthStore } from '@/stores/auth.store'
+import { i18n } from '@/plugins/i18n'
 
 // Register ECharts components globally once
 use([
@@ -34,6 +35,7 @@ async function bootstrap() {
 
   app.use(pinia)
   app.use(router)
+  app.use(i18n)
 
   // Hydrate auth store from localStorage before first navigation guard runs
   const authStore = useAuthStore()

@@ -5,6 +5,7 @@ import { useUiStore } from '@/stores/ui.store'
 import { useAuthStore } from '@/stores/auth.store'
 import TheHeaderUserMenu from './TheHeaderUserMenu.vue'
 import TheHeaderNotifications from './TheHeaderNotifications.vue'
+import TheLanguageSwitcher from './TheLanguageSwitcher.vue'
 import { Bars3Icon, ChevronLeftIcon } from '@heroicons/vue/24/outline'
 
 const ui = useUiStore()
@@ -55,6 +56,7 @@ const companyName = computed(() => {
     </div>
 
     <div class="flex items-center gap-4">
+      <TheLanguageSwitcher />
       <TheHeaderNotifications />
       <TheHeaderUserMenu />
     </div>

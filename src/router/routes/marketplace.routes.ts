@@ -4,7 +4,12 @@ import { UserRole } from '@/types/enums'
 const marketplaceRoutes: RouteRecordRaw[] = [
   {
     path: '/marketplace',
-    meta: { requiresAuth: true, layout: 'dashboard', module: 'marketplace' },
+    meta: {
+      requiresAuth: true,
+      layout: 'dashboard',
+      module: 'marketplace',
+      roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE, UserRole.MANAGER],
+    },
     children: [
       {
         path: '',

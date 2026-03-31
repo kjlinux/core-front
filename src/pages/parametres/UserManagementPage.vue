@@ -41,12 +41,14 @@ const roleLabels: Record<string, string> = {
   super_admin: 'Super Admin',
   admin_enterprise: 'Admin Entreprise',
   manager: 'Manager',
+  technicien: 'Technicien',
 }
 
 const roleBadgeVariant: Record<string, string> = {
   super_admin: 'danger',
   admin_enterprise: 'warning',
   manager: 'info',
+  technicien: 'success',
 }
 
 const roleOptions = computed(() => {
@@ -54,6 +56,14 @@ const roleOptions = computed(() => {
     return [
       { label: 'Selectionner un role', value: '' },
       { label: 'Super Administrateur', value: 'super_admin' },
+      { label: 'Administrateur Entreprise', value: 'admin_enterprise' },
+      { label: 'Manager', value: 'manager' },
+      { label: 'Technicien', value: 'technicien' },
+    ]
+  }
+  if (permissions.isTechnicien.value) {
+    return [
+      { label: 'Selectionner un role', value: '' },
       { label: 'Administrateur Entreprise', value: 'admin_enterprise' },
       { label: 'Manager', value: 'manager' },
     ]

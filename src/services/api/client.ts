@@ -39,8 +39,8 @@ apiClient.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`
     }
 
-    // Convert request body keys from camelCase to snake_case
-    if (config.data && typeof config.data === 'object') {
+    // Convert request body keys from camelCase to snake_case (skip FormData)
+    if (config.data && typeof config.data === 'object' && !(config.data instanceof FormData)) {
       config.data = convertKeysToSnakeCase(config.data)
     }
 

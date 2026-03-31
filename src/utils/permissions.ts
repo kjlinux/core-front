@@ -9,10 +9,15 @@ export type Module =
   | 'feelback'
   | 'marketplace'
   | 'settings'
+  | 'pointage-qrcode'
+  | 'firmware'
 
-const allRoles: UserRole[] = ['super_admin', 'admin_enterprise', 'manager']
+const allRoles: UserRole[] = ['super_admin', 'admin_enterprise', 'manager', 'technicien']
 const adminRoles: UserRole[] = ['super_admin', 'admin_enterprise']
+const setupRoles: UserRole[] = ['super_admin', 'admin_enterprise', 'technicien']
 const superOnly: UserRole[] = ['super_admin']
+const superAndTech: UserRole[] = ['super_admin', 'technicien']
+const clientRoles: UserRole[] = ['super_admin', 'admin_enterprise', 'manager']
 const none: UserRole[] = []
 
 const permissionMatrix: Record<Module, Record<Action, UserRole[]>> = {
@@ -25,36 +30,50 @@ const permissionMatrix: Record<Module, Record<Action, UserRole[]>> = {
   },
   'pointage-rfid': {
     view: allRoles,
-    create: adminRoles,
-    edit: adminRoles,
+    create: setupRoles,
+    edit: setupRoles,
     delete: superOnly,
     export: adminRoles,
   },
   biometrique: {
     view: allRoles,
-    create: adminRoles,
-    edit: adminRoles,
+    create: setupRoles,
+    edit: setupRoles,
     delete: superOnly,
     export: adminRoles,
   },
   feelback: {
-    view: allRoles,
+    view: clientRoles,
     create: adminRoles,
     edit: adminRoles,
     delete: superOnly,
     export: adminRoles,
   },
   marketplace: {
-    view: allRoles,
+    view: clientRoles,
     create: superOnly,
     edit: superOnly,
     delete: superOnly,
     export: adminRoles,
   },
   settings: {
-    view: adminRoles,
-    create: superOnly,
-    edit: adminRoles,
+    view: setupRoles,
+    create: superAndTech,
+    edit: setupRoles,
+    delete: superOnly,
+    export: none,
+  },
+  'pointage-qrcode': {
+    view: allRoles,
+    create: setupRoles,
+    edit: setupRoles,
+    delete: superOnly,
+    export: adminRoles,
+  },
+  firmware: {
+    view: setupRoles,
+    create: superAndTech,
+    edit: superAndTech,
     delete: superOnly,
     export: none,
   },

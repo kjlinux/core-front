@@ -4,7 +4,12 @@ import { UserRole } from '@/types/enums'
 const feelbackRoutes: RouteRecordRaw[] = [
   {
     path: '/feelback',
-    meta: { requiresAuth: true, layout: 'dashboard', module: 'feelback' },
+    meta: {
+      requiresAuth: true,
+      layout: 'dashboard',
+      module: 'feelback',
+      roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE, UserRole.MANAGER],
+    },
     children: [
       {
         path: '',

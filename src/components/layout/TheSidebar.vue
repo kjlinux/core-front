@@ -32,6 +32,7 @@ import {
   ShieldCheckIcon,
   ServerStackIcon,
   QrCodeIcon,
+  CpuChipIcon,
 } from '@heroicons/vue/24/outline'
 
 const ui = useUiStore()
@@ -39,14 +40,32 @@ const auth = useAuthStore()
 const route = useRoute()
 
 const isSuperAdmin = computed(() => auth.user?.role === UserRole.SUPER_ADMIN)
+const isTechnicien = computed(() => auth.user?.role === UserRole.TECHNICIEN)
 const isAdminOrSuper = computed(
   () => auth.user?.role === UserRole.SUPER_ADMIN || auth.user?.role === UserRole.ADMIN_ENTERPRISE,
+)
+const isSetupRole = computed(
+  () => auth.user?.role === UserRole.SUPER_ADMIN || auth.user?.role === UserRole.TECHNICIEN,
+)
+const isAdminOrSuperOrTech = computed(
+  () =>
+    auth.user?.role === UserRole.SUPER_ADMIN ||
+    auth.user?.role === UserRole.ADMIN_ENTERPRISE ||
+    auth.user?.role === UserRole.TECHNICIEN,
+)
+const isClientRole = computed(
+  () =>
+    auth.user?.role === UserRole.SUPER_ADMIN ||
+    auth.user?.role === UserRole.ADMIN_ENTERPRISE ||
+    auth.user?.role === UserRole.MANAGER,
 )
 
 function getActiveGroupId(): string | null {
   const path = route.path
   if (path.startsWith('/pointage-rfid')) return 'pointage-rfid'
+  if (path.startsWith('/pointage-qrcode')) return 'pointage-qrcode'
   if (path.startsWith('/biometrique')) return 'biometrique'
+  if (path.startsWith('/firmware')) return 'firmware'
   if (path.startsWith('/feelback')) return 'feelback'
   if (path.startsWith('/marketplace')) return 'marketplace'
   if (path.startsWith('/parametres')) return 'parametres'
@@ -95,7 +114,7 @@ const sidebarClasses = computed(() => [
         :active="route.path.startsWith('/pointage-rfid')"
       >
         <TheSidebarItem
-          v-if="isSuperAdmin"
+          v-if="isSetupRole"
           label="Entreprises"
           to="/pointage-rfid/companies"
           :icon="BuildingOffice2Icon"
@@ -128,7 +147,7 @@ const sidebarClasses = computed(() => [
           :nested="true"
         />
         <TheSidebarItem
-          v-if="isAdminOrSuper"
+          v-if="isAdminOrSuperOrTech"
           label="Terminaux RFID"
           to="/pointage-rfid/devices"
           :icon="DevicePhoneMobileIcon"
@@ -173,6 +192,65 @@ const sidebarClasses = computed(() => [
         />
       </TheSidebarGroup>
 
+      <!-- Pointage QR Code -->
+      <TheSidebarGroup
+        group-id="pointage-qrcode"
+        label="Pointage QR Code"
+        :icon="QrCodeIcon"
+        :collapsed="ui.sidebarCollapsed"
+        :active="route.path.startsWith('/pointage-qrcode')"
+      >
+        <TheSidebarItem
+          label="Tableau de bord"
+          to="/pointage-qrcode"
+          :icon="ChartBarIcon"
+          :collapsed="false"
+          :active="route.path === '/pointage-qrcode'"
+          :nested="true"
+        />
+        <TheSidebarItem
+          label="QR Codes"
+          to="/pointage-qrcode/list"
+          :icon="QrCodeIcon"
+          :collapsed="false"
+          :active="route.path.startsWith('/pointage-qrcode/list')"
+          :nested="true"
+        />
+        <TheSidebarItem
+          v-if="isAdminOrSuperOrTech"
+          label="Generer"
+          to="/pointage-qrcode/generate"
+          :icon="CreditCardIcon"
+          :collapsed="false"
+          :active="route.path.startsWith('/pointage-qrcode/generate')"
+          :nested="true"
+        />
+        <TheSidebarItem
+          label="Scanner"
+          to="/pointage-qrcode/scan"
+          :icon="DevicePhoneMobileIcon"
+          :collapsed="false"
+          :active="route.path.startsWith('/pointage-qrcode/scan')"
+          :nested="true"
+        />
+        <TheSidebarItem
+          label="Pointage"
+          to="/pointage-qrcode/attendance"
+          :icon="CalendarDaysIcon"
+          :collapsed="false"
+          :active="route.path.startsWith('/pointage-qrcode/attendance')"
+          :nested="true"
+        />
+        <TheSidebarItem
+          label="Rapports"
+          to="/pointage-qrcode/reports"
+          :icon="DocumentChartBarIcon"
+          :collapsed="false"
+          :active="route.path.startsWith('/pointage-qrcode/reports')"
+          :nested="true"
+        />
+      </TheSidebarGroup>
+
       <!-- Biometrique -->
       <TheSidebarGroup
         group-id="biometrique"
@@ -190,7 +268,7 @@ const sidebarClasses = computed(() => [
           :nested="true"
         />
         <TheSidebarItem
-          v-if="isAdminOrSuper"
+          v-if="isAdminOrSuperOrTech"
           label="Terminaux"
           to="/biometrique/devices"
           :icon="DevicePhoneMobileIcon"
@@ -199,7 +277,7 @@ const sidebarClasses = computed(() => [
           :nested="true"
         />
         <TheSidebarItem
-          v-if="isAdminOrSuper"
+          v-if="isAdminOrSuperOrTech"
           label="Inscriptions"
           to="/biometrique/enrollment"
           :icon="HandRaisedIcon"
@@ -217,8 +295,53 @@ const sidebarClasses = computed(() => [
         />
       </TheSidebarGroup>
 
-      <!-- Feelback -->
+      <!-- Firmware OTA -->
       <TheSidebarGroup
+        v-if="isAdminOrSuperOrTech"
+        group-id="firmware"
+        label="Firmware"
+        :icon="CpuChipIcon"
+        :collapsed="ui.sidebarCollapsed"
+        :active="route.path.startsWith('/firmware')"
+      >
+        <TheSidebarItem
+          label="Versions"
+          to="/firmware"
+          :icon="ServerStackIcon"
+          :collapsed="false"
+          :active="route.path === '/firmware'"
+          :nested="true"
+        />
+        <TheSidebarItem
+          v-if="isSetupRole"
+          label="Telecharger"
+          to="/firmware/upload"
+          :icon="CubeIcon"
+          :collapsed="false"
+          :active="route.path.startsWith('/firmware/upload')"
+          :nested="true"
+        />
+        <TheSidebarItem
+          label="Etat terminaux"
+          to="/firmware/devices"
+          :icon="DevicePhoneMobileIcon"
+          :collapsed="false"
+          :active="route.path.startsWith('/firmware/devices')"
+          :nested="true"
+        />
+        <TheSidebarItem
+          label="Historique"
+          to="/firmware/logs"
+          :icon="ClipboardDocumentListIcon"
+          :collapsed="false"
+          :active="route.path.startsWith('/firmware/logs')"
+          :nested="true"
+        />
+      </TheSidebarGroup>
+
+      <!-- Feelback (masque pour technicien) -->
+      <TheSidebarGroup
+        v-if="isClientRole"
         group-id="feelback"
         label="Feelback"
         :icon="FaceSmileIcon"
@@ -293,8 +416,9 @@ const sidebarClasses = computed(() => [
         />
       </TheSidebarGroup>
 
-      <!-- Marketplace -->
+      <!-- Marketplace (masque pour technicien) -->
       <TheSidebarGroup
+        v-if="isClientRole"
         group-id="marketplace"
         label="Marketplace"
         :icon="ShoppingCartIcon"
@@ -380,7 +504,7 @@ const sidebarClasses = computed(() => [
           :nested="true"
         />
         <TheSidebarItem
-          v-if="isAdminOrSuper"
+          v-if="isAdminOrSuperOrTech"
           label="Entreprise"
           to="/parametres/entreprise"
           :icon="BuildingOffice2Icon"
@@ -389,7 +513,7 @@ const sidebarClasses = computed(() => [
           :nested="true"
         />
         <TheSidebarItem
-          v-if="isAdminOrSuper"
+          v-if="isAdminOrSuperOrTech"
           label="Utilisateurs"
           to="/parametres/utilisateurs"
           :icon="UsersIcon"
@@ -398,12 +522,21 @@ const sidebarClasses = computed(() => [
           :nested="true"
         />
         <TheSidebarItem
-          v-if="isAdminOrSuper"
+          v-if="isAdminOrSuperOrTech"
           label="Roles"
           to="/parametres/roles"
           :icon="ShieldCheckIcon"
           :collapsed="false"
           :active="route.path === '/parametres/roles'"
+          :nested="true"
+        />
+        <TheSidebarItem
+          v-if="isSetupRole"
+          label="Rapport technicien"
+          to="/parametres/rapport-technicien"
+          :icon="ClipboardDocumentListIcon"
+          :collapsed="false"
+          :active="route.path === '/parametres/rapport-technicien'"
           :nested="true"
         />
       </TheSidebarGroup>

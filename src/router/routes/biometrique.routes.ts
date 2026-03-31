@@ -16,25 +16,37 @@ const biometriqueRoutes: RouteRecordRaw[] = [
         path: 'devices',
         name: 'bio-devices',
         component: () => import('@/pages/biometrique/DeviceListPage.vue'),
-        meta: { title: 'Terminaux biometriques', roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE] },
+        meta: {
+          title: 'Terminaux biometriques',
+          roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE, UserRole.TECHNICIEN],
+        },
       },
       {
         path: 'devices/:id',
         name: 'bio-device-detail',
         component: () => import('@/pages/biometrique/DeviceDetailPage.vue'),
-        meta: { title: 'Detail terminal', roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE] },
+        meta: {
+          title: 'Detail terminal',
+          roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE, UserRole.TECHNICIEN],
+        },
       },
       {
         path: 'enrollment',
         name: 'bio-enrollment-list',
         component: () => import('@/pages/biometrique/EnrollmentListPage.vue'),
-        meta: { title: 'Inscriptions biometriques', roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE] },
+        meta: {
+          title: 'Inscriptions biometriques',
+          roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE, UserRole.TECHNICIEN],
+        },
       },
       {
         path: 'enrollment/new',
         name: 'bio-enrollment-new',
         component: () => import('@/pages/biometrique/EnrollmentPage.vue'),
-        meta: { title: 'Nouvelle inscription', roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE] },
+        meta: {
+          title: 'Nouvelle inscription',
+          roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE, UserRole.TECHNICIEN],
+        },
       },
       {
         path: 'attendance',
