@@ -61,7 +61,6 @@ export function useTechnicienReport() {
     const sections: ReportSection[] = []
 
     // --- Entreprise active ---
-    const companyName = activeCompanyStore.activeCompanyName ?? 'Entreprise inconnue'
     sections.push({
       title: 'Entreprise',
       status: activeCompanyStore.hasActiveCompany ? 'ok' : 'error',
