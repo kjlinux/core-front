@@ -51,7 +51,7 @@ export const useQrcodeStore = defineStore('qrcode', () => {
     await qrcodeApi.revoke(id)
     const index = qrCodes.value.findIndex((q) => q.id === id)
     if (index !== -1) {
-      qrCodes.value[index] = { ...qrCodes.value[index], isActive: false }
+      qrCodes.value[index] = { ...qrCodes.value[index], isActive: false } as QrCode
     }
   }
 

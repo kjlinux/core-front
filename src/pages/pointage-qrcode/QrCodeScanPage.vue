@@ -29,7 +29,7 @@ const statusLabel: Record<string, string> = {
   left_early: 'Parti tot',
   absent: 'Absent',
 }
-const statusVariant: Record<string, 'success' | 'warning' | 'danger' | 'info'> = {
+const statusVariant: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'neutral'> = {
   present: 'success',
   late: 'warning',
   left_early: 'info',
@@ -201,7 +201,7 @@ function reset() {
           </div>
           <div class="flex justify-between text-sm">
             <span class="text-gray-500">Statut</span>
-            <AppBadge :variant="statusVariant[result.status] ?? 'default'">
+            <AppBadge :variant="statusVariant[result.status] ?? 'neutral'">
               {{ statusLabel[result.status] ?? result.status }}
             </AppBadge>
           </div>

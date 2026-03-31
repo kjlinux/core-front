@@ -17,14 +17,14 @@ function formatDateTime(dt: string) {
   return new Date(dt).toLocaleString('fr-FR')
 }
 
-function getStatusVariant(status: string) {
-  const map: Record<string, string> = {
+function getStatusVariant(status: string): 'success' | 'danger' | 'warning' | 'info' | 'neutral' {
+  const map: Record<string, 'success' | 'danger' | 'warning' | 'info' | 'neutral'> = {
     present: 'success',
     absent: 'danger',
     late: 'warning',
     left_early: 'info',
   }
-  return map[status] || 'default'
+  return map[status] ?? 'neutral'
 }
 
 function getStatusLabel(status: string) {

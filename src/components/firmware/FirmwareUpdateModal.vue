@@ -78,12 +78,12 @@ onUnmounted(() => {
   store.stopProgressPolling()
 })
 
-const statusVariant: Record<OtaUpdateStatus, 'success' | 'warning' | 'danger' | 'info' | 'default'> = {
-  pending:     'default',
+const statusVariant: Record<OtaUpdateStatus, 'success' | 'warning' | 'danger' | 'info' | 'neutral'> = {
+  pending:     'neutral',
   in_progress: 'info',
   success:     'success',
   failed:      'danger',
-  skipped:     'default',
+  skipped:     'neutral',
 }
 const statusLabel: Record<OtaUpdateStatus, string> = {
   pending:     'En attente',

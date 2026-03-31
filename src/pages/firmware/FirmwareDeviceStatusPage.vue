@@ -27,12 +27,12 @@ const columns = [
   { key: 'actions', label: 'Actions' },
 ]
 
-const statusVariant: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'default'> = {
+const statusVariant: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'neutral'> = {
   success: 'success',
   in_progress: 'info',
   pending: 'warning',
   failed: 'danger',
-  skipped: 'default',
+  skipped: 'neutral',
 }
 
 const statusLabel: Record<string, string> = {
@@ -107,7 +107,7 @@ function formatDate(d?: string) {
           <span class="font-mono text-sm text-blue-600">{{ row.targetVersion || '-' }}</span>
         </template>
         <template #updateStatus="{ row }">
-          <AppBadge :variant="statusVariant[row.updateStatus] ?? 'default'">
+          <AppBadge :variant="statusVariant[row.updateStatus] ?? 'neutral'">
             {{ statusLabel[row.updateStatus] ?? row.updateStatus }}
           </AppBadge>
         </template>

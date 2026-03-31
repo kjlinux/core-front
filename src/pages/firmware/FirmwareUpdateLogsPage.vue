@@ -23,12 +23,12 @@ const columns = [
   { key: 'errorMessage', label: 'Erreur' },
 ]
 
-const statusVariant: Record<OtaUpdateStatus, 'success' | 'warning' | 'danger' | 'info' | 'default'> = {
+const statusVariant: Record<OtaUpdateStatus, 'success' | 'warning' | 'danger' | 'info' | 'neutral'> = {
   success: 'success',
   in_progress: 'info',
   pending: 'warning',
   failed: 'danger',
-  skipped: 'default',
+  skipped: 'neutral',
 }
 
 const statusLabel: Record<OtaUpdateStatus, string> = {
@@ -94,12 +94,12 @@ function formatDatetime(d?: string) {
           <span class="font-mono text-sm">{{ row.firmwareVersion || '-' }}</span>
         </template>
         <template #triggeredBy="{ row }">
-          <AppBadge :variant="row.triggeredBy === 'auto' ? 'info' : 'default'">
+          <AppBadge :variant="row.triggeredBy === 'auto' ? 'info' : 'neutral'">
             {{ row.triggeredBy === 'auto' ? 'Automatique' : 'Manuel' }}
           </AppBadge>
         </template>
         <template #status="{ row }">
-          <AppBadge :variant="statusVariant[row.status as OtaUpdateStatus] ?? 'default'">
+          <AppBadge :variant="statusVariant[row.status as OtaUpdateStatus] ?? 'neutral'">
             {{ statusLabel[row.status as OtaUpdateStatus] ?? row.status }}
           </AppBadge>
         </template>

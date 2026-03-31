@@ -167,10 +167,10 @@ export function useTechnicienReport() {
     const activeQr = qrcodeStore.qrCodes.filter((q) => q.isActive)
     const inactiveQr = qrcodeStore.qrCodes.filter((q) => !q.isActive)
     const employeesWithoutQr = employeeStore.employees.filter(
-      (e) => e.isActive && !qrcodeStore.qrCodes.some((q) => q.employeeId === e.id && q.isActive),
+      (e) => e.isActive && !activeQr.some((q) => q.siteId && q.isActive),
     )
     const qrIssues: string[] = [
-      ...inactiveQr.map((q) => `QR code revoque : ${q.employeeName}`),
+      ...inactiveQr.map((q) => `QR code revoque : ${q.label ?? q.siteName ?? q.id}`),
       ...employeesWithoutQr.map((e) => `Employe sans QR code actif : ${e.firstName} ${e.lastName}`),
     ]
     sections.push({

@@ -119,7 +119,7 @@ async function handleDelete(id: string) {
           />
         </template>
         <template #isPublished="{ row }">
-          <AppBadge :variant="row.isPublished ? 'success' : 'default'">
+          <AppBadge :variant="row.isPublished ? 'success' : 'neutral'">
             {{ row.isPublished ? 'Publie' : 'Non publie' }}
           </AppBadge>
         </template>

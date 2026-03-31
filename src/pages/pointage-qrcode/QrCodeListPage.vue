@@ -73,7 +73,7 @@ async function handleRevoke(id: string) {
         </template>
 
         <template #isActive="{ row }">
-          <AppBadge :variant="row.isActive ? 'success' : 'default'">
+          <AppBadge :variant="row.isActive ? 'success' : 'neutral'">
             {{ row.isActive ? 'Actif' : 'Revoque' }}
           </AppBadge>
         </template>

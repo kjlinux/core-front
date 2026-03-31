@@ -14,29 +14,18 @@ async function loadData() {
   await store.fetchAttendance({ perPage: 100 })
 }
 
-const statusChartOption = computed(() => {
+const statusChartData = computed(() => {
   const records = store.attendanceRecords
   const counts: Record<string, number> = { present: 0, absent: 0, late: 0, left_early: 0 }
   for (const r of records) {
     counts[r.status] = (counts[r.status] || 0) + 1
   }
-  return {
-    tooltip: { trigger: 'axis' },
-    xAxis: { type: 'category', data: ['Present', 'Absent', 'En retard', 'Parti tot'] },
-    yAxis: { type: 'value' },
-    series: [
-      {
-        type: 'bar',
-        data: [counts.present, counts.absent, counts.late, counts.left_early],
-        itemStyle: {
-          color: (params: { dataIndex: number }) => {
-            const colors = ['#22c55e', '#ef4444', '#f97316', '#3b82f6']
-            return colors[params.dataIndex]
-          },
-        },
-      },
-    ],
-  }
+  return [
+    { name: 'Present', value: counts.present ?? 0 },
+    { name: 'Absent', value: counts.absent ?? 0 },
+    { name: 'En retard', value: counts.late ?? 0 },
+    { name: 'Parti tot', value: counts.left_early ?? 0 },
+  ]
 })
 </script>
 
@@ -50,7 +39,7 @@ const statusChartOption = computed(() => {
     </div>
 
     <AppCard title="Repartition des statuts">
-      <BarChart :option="statusChartOption" style="height: 300px" />
+      <BarChart :data="statusChartData" height="300px" />
     </AppCard>
 
     <div class="grid grid-cols-1 gap-6 sm:grid-cols-3">
