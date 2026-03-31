@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-const { locale } = useI18n()
+const { locale } = useI18n({ useScope: 'global' })
 
 function setLocale(lang: 'fr' | 'en') {
   locale.value = lang
