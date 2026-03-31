@@ -244,15 +244,19 @@ Backend Tangaflow              RFID-001 (ESP32)
 {
   "log_id": "550e8400-e29b-41d4-a716-446655440000",
   "version": "V2.1.0",
-  "url": "https://api.tangaflow.com/firmware/v2.1.0.bin"
+  "firmware_url": "https://api.tangaflow.com/firmware/v2.1.0.bin",
+  "type": "ota_update",
+  "timestamp": "2026-03-31T10:00:00.000Z"
 }
 ```
 
-| Champ     | Type   | Description                                                          |
-|-----------|--------|----------------------------------------------------------------------|
-| `log_id`  | string | UUID du log OTA en base — **doit être renvoyé tel quel** en réponse  |
-| `version` | string | Version cible du firmware (format `VX.Y.Z`)                         |
-| `url`     | string | URL HTTPS du fichier `.bin` à télécharger                            |
+| Champ          | Type   | Description                                                          |
+|----------------|--------|----------------------------------------------------------------------|
+| `log_id`       | string | UUID du log OTA en base — **doit être renvoyé tel quel** en réponse  |
+| `version`      | string | Version cible du firmware (format `VX.Y.Z`)                         |
+| `firmware_url` | string | URL HTTPS du fichier `.bin` à télécharger                            |
+| `type`         | string | Toujours `"ota_update"` — peut être ignoré par le firmware           |
+| `timestamp`    | string | Horodatage ISO 8601 — peut être ignoré par le firmware               |
 
 ### 6.3 Réponse OTA publiée par l'ESP32
 
@@ -388,10 +392,10 @@ Déplacer le contenu actuel du `mqttCallback` (gestion des CMD_ACCEPTED, CMD_REF
 
 ```cpp
 void handleOtaCommand(const String& message) {
-  // Payload attendu: {"log_id":"uuid","version":"V2.1.0","url":"https://..."}
+  // Payload attendu: {"log_id":"uuid","version":"V2.1.0","firmware_url":"https://...","type":"ota_update","timestamp":"..."}
   String logId   = FOTA::extractJSON(message, "log_id");
   String version = FOTA::extractJSON(message, "version");
-  String url     = FOTA::extractJSON(message, "url");
+  String url     = FOTA::extractJSON(message, "firmware_url");
 
   if (url.isEmpty() || logId.isEmpty()) {
     logger.error("[OTA] Payload invalide : " + message);
