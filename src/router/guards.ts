@@ -1,5 +1,6 @@
 import type { RouteLocationNormalized } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
+import { useActiveCompanyStore } from '@/stores/active-company.store'
 import type { UserRole } from '@/types/enums'
 
 export function authGuard(to: RouteLocationNormalized, _from: RouteLocationNormalized) {
@@ -7,6 +8,18 @@ export function authGuard(to: RouteLocationNormalized, _from: RouteLocationNorma
 
   if (to.meta.requiresAuth !== false && !auth.isAuthenticated) {
     return { name: 'login', query: { redirect: to.fullPath } }
+  }
+
+  // Technicien sans entreprise sélectionnée → forcer la sélection sauf sur la page dédiée
+  if (
+    auth.isAuthenticated &&
+    auth.user?.role === 'technicien' &&
+    !auth.user?.companyId
+  ) {
+    const activeCompanyStore = useActiveCompanyStore()
+    if (!activeCompanyStore.hasActiveCompany && to.name !== 'technicien-select-company') {
+      return { name: 'technicien-select-company' }
+    }
   }
 
   // Check roles from matched routes (most specific route with roles wins, then falls back to parent)

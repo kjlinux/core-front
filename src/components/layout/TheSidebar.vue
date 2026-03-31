@@ -59,7 +59,8 @@ const isClientRole = computed(
   () =>
     auth.user?.role === UserRole.SUPER_ADMIN ||
     auth.user?.role === UserRole.ADMIN_ENTERPRISE ||
-    auth.user?.role === UserRole.MANAGER,
+    auth.user?.role === UserRole.MANAGER ||
+    auth.user?.role === UserRole.TECHNICIEN,
 )
 
 function getActiveGroupId(): string | null {

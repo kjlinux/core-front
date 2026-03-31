@@ -25,6 +25,12 @@ const router = createRouter({
     ...marketplaceRoutes,
     ...settingsRoutes,
     {
+      path: '/choisir-entreprise',
+      name: 'technicien-select-company',
+      component: () => import('@/pages/TechnicienSelectCompanyPage.vue'),
+      meta: { requiresAuth: true, layout: 'blank' },
+    },
+    {
       path: '/:pathMatch(.*)*',
       name: 'not-found',
       component: () => import('@/pages/NotFoundPage.vue'),

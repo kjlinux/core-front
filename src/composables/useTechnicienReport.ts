@@ -228,44 +228,71 @@ export function useTechnicienReport() {
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
     const pageWidth = doc.internal.pageSize.getWidth()
     const marginX = 15
+
+    // Palette couleurs de l'app (slate)
+    const C = {
+      primary:   [30, 41, 59]   as [number, number, number], // slate-800 #1e293b
+      primary600: [71, 85, 105] as [number, number, number], // slate-600 #475569
+      primary400: [148, 163, 184] as [number, number, number], // slate-400 #94a3b8
+      primary100: [241, 245, 249] as [number, number, number], // slate-100 #f1f5f9
+      white:     [255, 255, 255] as [number, number, number],
+      text:      [30, 41, 59]   as [number, number, number],
+      textMuted: [100, 116, 139] as [number, number, number], // slate-500
+      ok:        [22, 163, 74]  as [number, number, number],  // green-600
+      warning:   [202, 138, 4]  as [number, number, number],  // yellow-600
+      error:     [220, 38, 38]  as [number, number, number],  // red-600
+      okBg:      [240, 253, 244] as [number, number, number], // green-50
+      warnBg:    [254, 249, 195] as [number, number, number], // yellow-100
+      errorBg:   [254, 242, 242] as [number, number, number], // red-50
+      border:    [226, 232, 240] as [number, number, number], // slate-200
+    }
+
     let y = 20
 
     // ---- En-tête ----
-    doc.setFillColor(30, 64, 175) // bleu
-    doc.rect(0, 0, pageWidth, 38, 'F')
+    doc.setFillColor(...C.primary)
+    doc.rect(0, 0, pageWidth, 36, 'F')
 
-    doc.setTextColor(255, 255, 255)
-    doc.setFontSize(18)
+    doc.setTextColor(...C.white)
+    doc.setFontSize(16)
     doc.setFont('helvetica', 'bold')
-    doc.text('Rapport de mise en service', marginX, 16)
+    doc.text('Rapport de mise en service', marginX, 14)
 
-    doc.setFontSize(10)
+    doc.setFontSize(9)
     doc.setFont('helvetica', 'normal')
-    doc.text(`Technicien : ${data.technicienName}`, marginX, 24)
-    doc.text(`Entreprise : ${data.companyName}`, marginX, 30)
-    doc.text(`Genere le : ${data.generatedAt}`, marginX, 36)
+    doc.setTextColor(...C.primary400)
+    doc.text(`Technicien : ${data.technicienName}`, marginX, 22)
+    doc.text(`Entreprise : ${data.companyName}`, marginX, 28)
+    doc.text(`Genere le : ${data.generatedAt}`, marginX, 34)
 
-    y = 48
+    y = 46
 
     // ---- Score global ----
     const scoreColor: [number, number, number] =
-      data.globalScore >= 80 ? [22, 163, 74] : data.globalScore >= 50 ? [234, 179, 8] : [220, 38, 38]
-    doc.setDrawColor(...scoreColor)
-    doc.setFillColor(...scoreColor)
-    doc.roundedRect(marginX, y, pageWidth - marginX * 2, 18, 3, 3, 'FD')
-    doc.setTextColor(255, 255, 255)
-    doc.setFontSize(12)
+      data.globalScore >= 80 ? C.ok : data.globalScore >= 50 ? C.warning : C.error
+
+    doc.setFillColor(...C.primary100)
+    doc.setDrawColor(...C.border)
+    doc.roundedRect(marginX, y, pageWidth - marginX * 2, 14, 2, 2, 'FD')
+
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(...C.textMuted)
+    doc.text('Score global de mise en service', marginX + 4, y + 9)
+
     doc.setFont('helvetica', 'bold')
-    doc.text(`Score global de mise en service : ${data.globalScore}%`, marginX + 5, y + 11)
+    doc.setTextColor(...scoreColor)
+    doc.setFontSize(12)
+    doc.text(`${data.globalScore}%`, pageWidth - marginX - 4, y + 9, { align: 'right' })
 
-    y += 26
+    y += 22
 
-    // ---- Résumé par section ----
-    doc.setTextColor(30, 41, 59)
-    doc.setFontSize(13)
+    // ---- Récapitulatif ----
+    doc.setTextColor(...C.text)
+    doc.setFontSize(11)
     doc.setFont('helvetica', 'bold')
     doc.text('Recapitulatif', marginX, y)
-    y += 6
+    y += 5
 
     const summaryRows = data.sections.map((s) => [
       s.title,
@@ -276,23 +303,24 @@ export function useTechnicienReport() {
 
     autoTable(doc, {
       startY: y,
-      head: [['Section', 'Realise', 'Statut', 'Points d\'attention']],
+      head: [['Section', 'Realise', 'Statut', "Points d'attention"]],
       body: summaryRows,
       theme: 'grid',
-      headStyles: { fillColor: [30, 64, 175], textColor: 255, fontStyle: 'bold', fontSize: 9 },
-      bodyStyles: { fontSize: 9 },
+      headStyles: { fillColor: C.primary, textColor: C.white, fontStyle: 'bold', fontSize: 9 },
+      bodyStyles: { fontSize: 9, textColor: C.text },
+      alternateRowStyles: { fillColor: C.primary100 },
       columnStyles: {
         0: { cellWidth: 55 },
-        1: { cellWidth: 30, halign: 'center' },
-        2: { cellWidth: 30, halign: 'center' },
+        1: { cellWidth: 28, halign: 'center' },
+        2: { cellWidth: 28, halign: 'center' },
         3: { cellWidth: 'auto' },
       },
       didParseCell(hookData) {
         if (hookData.section === 'body' && hookData.column.index === 2) {
           const val = hookData.cell.raw as string
-          if (val === 'OK') hookData.cell.styles.textColor = [22, 163, 74]
-          else if (val === 'Incomplet') hookData.cell.styles.textColor = [161, 98, 7]
-          else hookData.cell.styles.textColor = [220, 38, 38]
+          if (val === 'OK') hookData.cell.styles.textColor = C.ok
+          else if (val === 'Incomplet') hookData.cell.styles.textColor = C.warning
+          else hookData.cell.styles.textColor = C.error
           hookData.cell.styles.fontStyle = 'bold'
         }
       },
@@ -302,67 +330,67 @@ export function useTechnicienReport() {
     y = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 10
 
     // ---- Détail par section ----
-    doc.setFontSize(13)
+    doc.setFontSize(11)
     doc.setFont('helvetica', 'bold')
-    doc.setTextColor(30, 41, 59)
+    doc.setTextColor(...C.text)
     doc.text('Detail par section', marginX, y)
     y += 6
 
     for (const section of data.sections) {
-      // Vérification saut de page
       if (y > 255) {
         doc.addPage()
         y = 20
       }
 
-      // Titre de section avec couleur statut
-      const bgColor: [number, number, number] =
-        section.status === 'ok' ? [240, 253, 244] : section.status === 'warning' ? [254, 252, 232] : [254, 242, 242]
-      const borderColor: [number, number, number] =
-        section.status === 'ok' ? [22, 163, 74] : section.status === 'warning' ? [234, 179, 8] : [220, 38, 38]
-      const statusLabel = section.status === 'ok' ? 'OK' : section.status === 'warning' ? 'INCOMPLET' : 'PROBLEME'
+      const bgColor = section.status === 'ok' ? C.okBg : section.status === 'warning' ? C.warnBg : C.errorBg
+      const accentColor = section.status === 'ok' ? C.ok : section.status === 'warning' ? C.warning : C.error
+      const statusLabel = section.status === 'ok' ? 'OK' : section.status === 'warning' ? 'Incomplet' : 'Probleme'
 
+      // Bande de titre section
       doc.setFillColor(...bgColor)
-      doc.setDrawColor(...borderColor)
-      doc.roundedRect(marginX, y, pageWidth - marginX * 2, 10, 2, 2, 'FD')
+      doc.setDrawColor(...C.border)
+      doc.rect(marginX, y, pageWidth - marginX * 2, 9, 'FD')
 
-      doc.setTextColor(30, 41, 59)
-      doc.setFontSize(10)
-      doc.setFont('helvetica', 'bold')
-      doc.text(section.title, marginX + 3, y + 7)
+      // Trait coloré à gauche
+      doc.setFillColor(...accentColor)
+      doc.rect(marginX, y, 2, 9, 'F')
 
-      doc.setTextColor(...borderColor)
-      doc.setFont('helvetica', 'bold')
-      doc.text(statusLabel, pageWidth - marginX - 5, y + 7, { align: 'right' })
-
-      doc.setTextColor(75, 85, 99)
-      doc.setFont('helvetica', 'normal')
+      doc.setTextColor(...C.text)
       doc.setFontSize(9)
-      const progress = section.total > 0 ? `${section.done}/${section.total} realise(s)` : 'Aucun element'
-      doc.text(progress, pageWidth - marginX - 40, y + 7, { align: 'right' })
+      doc.setFont('helvetica', 'bold')
+      doc.text(section.title, marginX + 5, y + 6)
 
-      y += 14
+      doc.setTextColor(...accentColor)
+      doc.setFont('helvetica', 'bold')
+      doc.text(statusLabel, pageWidth - marginX - 4, y + 6, { align: 'right' })
+
+      doc.setTextColor(...C.textMuted)
+      doc.setFont('helvetica', 'normal')
+      const progress = section.total > 0 ? `${section.done}/${section.total}` : '-'
+      doc.text(progress, pageWidth - marginX - 28, y + 6, { align: 'right' })
+
+      y += 12
 
       if (section.issues.length === 0) {
-        doc.setTextColor(22, 163, 74)
-        doc.setFontSize(9)
+        doc.setTextColor(...C.ok)
+        doc.setFontSize(8.5)
         doc.setFont('helvetica', 'italic')
-        doc.text('Aucun point d\'attention — configuration complete.', marginX + 4, y)
+        doc.text("Configuration complete — aucun point d'attention.", marginX + 5, y)
         y += 7
       } else {
         for (const issue of section.issues) {
-          if (y > 270) {
+          if (y > 272) {
             doc.addPage()
             y = 20
           }
-          doc.setTextColor(127, 29, 29)
+          doc.setTextColor(...C.textMuted)
           doc.setFont('helvetica', 'normal')
           doc.setFontSize(8.5)
           const lines = doc.splitTextToSize(`• ${issue}`, pageWidth - marginX * 2 - 8)
-          doc.text(lines, marginX + 4, y)
+          doc.text(lines, marginX + 5, y)
           y += lines.length * 5
         }
-        y += 2
+        y += 3
       }
     }
 
@@ -370,18 +398,17 @@ export function useTechnicienReport() {
     const pageCount = doc.getNumberOfPages()
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i)
-      doc.setFontSize(8)
-      doc.setTextColor(148, 163, 184)
+      doc.setFontSize(7.5)
+      doc.setTextColor(...C.primary400)
       doc.setFont('helvetica', 'normal')
       doc.text(
         `Page ${i} / ${pageCount} — Rapport genere automatiquement par le systeme`,
         pageWidth / 2,
-        doc.internal.pageSize.getHeight() - 8,
+        doc.internal.pageSize.getHeight() - 7,
         { align: 'center' },
       )
     }
 
-    // Nom du fichier
     const dateStr = new Date().toISOString().slice(0, 10)
     doc.save(`rapport-technicien-${dateStr}.pdf`)
   }

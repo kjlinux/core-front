@@ -67,6 +67,7 @@ export interface FirmwareFilters {
 
 export interface OtaLogFilters {
   deviceId?: string
+  deviceKind?: DeviceKind
   status?: OtaUpdateStatus
   page?: number
   perPage?: number

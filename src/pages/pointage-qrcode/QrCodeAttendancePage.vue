@@ -9,21 +9,29 @@ import DataTable from '@/components/data-display/DataTable.vue'
 
 const store = useQrcodeStore()
 const dateFilter = ref(new Date().toISOString().split('T')[0])
+const currentPage = ref(1)
+const perPage = 20
 
 const columns = [
-  { key: 'employeeName', label: 'Employe' },
+  { key: 'employeeName', label: 'Employé' },
   { key: 'date', label: 'Date' },
-  { key: 'entryTime', label: 'Entree' },
+  { key: 'entryTime', label: 'Entrée' },
   { key: 'exitTime', label: 'Sortie' },
   { key: 'status', label: 'Statut' },
   { key: 'gpsVerified', label: 'GPS' },
-  { key: 'scannedAt', label: 'Scanne le' },
+  { key: 'scannedAt', label: 'Scanné le' },
 ]
 
 onMounted(() => loadData())
 
 async function loadData() {
-  await store.fetchAttendance({ date: dateFilter.value })
+  currentPage.value = 1
+  await store.fetchAttendance({ date: dateFilter.value, page: 1, perPage })
+}
+
+async function goToPage(page: number) {
+  currentPage.value = page
+  await store.fetchAttendance({ date: dateFilter.value, page, perPage })
 }
 
 function formatDateTime(dt: string) {
@@ -36,7 +44,7 @@ function getStatusVariant(status: string): 'success' | 'danger' | 'warning' | 'i
 }
 
 function getStatusLabel(status: string) {
-  const map: Record<string, string> = { present: 'Present', absent: 'Absent', late: 'En retard', left_early: 'Parti tot' }
+  const map: Record<string, string> = { present: 'Présent', absent: 'Absent', late: 'En retard', left_early: 'Parti tôt' }
   return map[status] || status
 }
 </script>
@@ -73,6 +81,35 @@ function getStatusLabel(status: string) {
         </template>
         <template #scannedAt="{ row }">{{ formatDateTime(row.scannedAt) }}</template>
       </DataTable>
+
+      <!-- Pagineur -->
+      <div
+        v-if="store.pagination.totalPages > 1"
+        class="mt-4 flex items-center justify-between border-t border-gray-100 pt-4"
+      >
+        <p class="text-sm text-gray-500">
+          {{ store.pagination.total }} pointage{{ store.pagination.total > 1 ? 's' : '' }} —
+          page {{ currentPage }} / {{ store.pagination.totalPages }}
+        </p>
+        <div class="flex gap-2">
+          <AppButton
+            variant="outline"
+            size="sm"
+            :disabled="currentPage <= 1 || store.isLoading"
+            @click="goToPage(currentPage - 1)"
+          >
+            Précédent
+          </AppButton>
+          <AppButton
+            variant="outline"
+            size="sm"
+            :disabled="currentPage >= store.pagination.totalPages || store.isLoading"
+            @click="goToPage(currentPage + 1)"
+          >
+            Suivant
+          </AppButton>
+        </div>
+      </div>
     </AppCard>
   </div>
 </template>

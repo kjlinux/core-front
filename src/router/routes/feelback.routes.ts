@@ -8,7 +8,7 @@ const feelbackRoutes: RouteRecordRaw[] = [
       requiresAuth: true,
       layout: 'dashboard',
       module: 'feelback',
-      roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE, UserRole.MANAGER],
+      roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE, UserRole.MANAGER, UserRole.TECHNICIEN],
     },
     children: [
       {
