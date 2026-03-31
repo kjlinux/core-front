@@ -10,12 +10,9 @@ export function authGuard(to: RouteLocationNormalized, _from: RouteLocationNorma
     return { name: 'login', query: { redirect: to.fullPath } }
   }
 
-  // Technicien sans entreprise sélectionnée → forcer la sélection sauf sur la page dédiée
-  if (
-    auth.isAuthenticated &&
-    auth.user?.role === 'technicien' &&
-    !auth.user?.companyId
-  ) {
+  // Technicien sans entreprise active → forcer la sélection sauf sur la page dédiée
+  // Le technicien peut avoir company_id = null (multi-entreprises), on vérifie le store actif
+  if (auth.isAuthenticated && auth.user?.role === 'technicien') {
     const activeCompanyStore = useActiveCompanyStore()
     if (!activeCompanyStore.hasActiveCompany && to.name !== 'technicien-select-company') {
       return { name: 'technicien-select-company' }

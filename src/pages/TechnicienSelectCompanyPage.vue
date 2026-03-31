@@ -19,7 +19,8 @@ onMounted(async () => {
 
 async function confirm() {
   if (!selectedId.value) return
-  await activeCompanyStore.selectCompany(selectedId.value)
+  const company = companyStore.companies.find((c) => c.id === selectedId.value)
+  await activeCompanyStore.selectCompany(selectedId.value, company?.name)
   router.push({ name: 'dashboard' })
 }
 </script>

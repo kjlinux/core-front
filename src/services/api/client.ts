@@ -39,12 +39,16 @@ apiClient.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`
     }
 
-    // Inject active company for technicien/super_admin company switching
-    // Do NOT inject on /companies list — super_admin must always see all companies
+    // Inject active company for technicien company switching.
+    // Skip if the caller already set the header explicitly (even as empty string = opt-out).
     const activeCompanyId = localStorage.getItem('active_company_id')
-    const isCompaniesListEndpoint = /\/companies(\?.*)?$/.test(config.url ?? '')
-    if (activeCompanyId && activeCompanyId !== 'undefined' && activeCompanyId !== 'null' && !isCompaniesListEndpoint) {
+    const headerAlreadySet = 'X-Active-Company-Id' in (config.headers ?? {})
+    if (!headerAlreadySet && activeCompanyId && activeCompanyId !== 'undefined' && activeCompanyId !== 'null') {
       config.headers['X-Active-Company-Id'] = activeCompanyId
+    }
+    // Remove the header entirely if explicitly set to empty (opt-out pattern)
+    if (config.headers['X-Active-Company-Id'] === '') {
+      delete config.headers['X-Active-Company-Id']
     }
 
     // Convert request body keys from camelCase to snake_case (skip FormData)

@@ -100,7 +100,7 @@ onMounted(() => {
 
       <div class="flex items-center gap-4">
         <TheCompanySwitcher
-          v-if="auth.user?.role === UserRole.TECHNICIEN || auth.user?.role === UserRole.SUPER_ADMIN"
+          v-if="auth.user?.role === UserRole.TECHNICIEN"
         />
         <TheLanguageSwitcher />
         <TheHeaderNotifications />

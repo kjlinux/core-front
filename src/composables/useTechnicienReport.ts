@@ -2,7 +2,7 @@ import { ref } from 'vue'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { useAuthStore } from '@/stores/auth.store'
-import { useCompanyStore } from '@/stores/company.store'
+import { useActiveCompanyStore } from '@/stores/active-company.store'
 import { useSiteStore } from '@/stores/site.store'
 import { useDepartmentStore } from '@/stores/department.store'
 import { useEmployeeStore } from '@/stores/employee.store'
@@ -33,7 +33,7 @@ export function useTechnicienReport() {
   const reportData = ref<ReportData | null>(null)
 
   const auth = useAuthStore()
-  const companyStore = useCompanyStore()
+  const activeCompanyStore = useActiveCompanyStore()
   const siteStore = useSiteStore()
   const departmentStore = useDepartmentStore()
   const employeeStore = useEmployeeStore()
@@ -44,9 +44,8 @@ export function useTechnicienReport() {
   const firmwareStore = useFirmwareStore()
 
   async function collectData(): Promise<ReportData> {
-    // Charger toutes les données en parallèle
+    // Charger toutes les données en parallèle (pas de fetchCompanies — le technicien travaille sur l'entreprise active)
     await Promise.all([
-      companyStore.fetchCompanies(),
       siteStore.fetchSites({ perPage: 200 }),
       departmentStore.fetchDepartments({ perPage: 200 }),
       employeeStore.fetchEmployees({ perPage: 200 }),
@@ -61,15 +60,14 @@ export function useTechnicienReport() {
 
     const sections: ReportSection[] = []
 
-    // --- Entreprise ---
-    const activeCompanies = companyStore.companies.filter((c) => c.isActive)
-    const inactiveCompanies = companyStore.companies.filter((c) => !c.isActive)
+    // --- Entreprise active ---
+    const companyName = activeCompanyStore.activeCompanyName ?? 'Entreprise inconnue'
     sections.push({
-      title: 'Entreprises',
-      status: companyStore.companies.length > 0 ? 'ok' : 'error',
-      total: companyStore.companies.length,
-      done: activeCompanies.length,
-      issues: inactiveCompanies.map((c) => `Entreprise inactive : ${c.name}`),
+      title: 'Entreprise',
+      status: activeCompanyStore.hasActiveCompany ? 'ok' : 'error',
+      total: 1,
+      done: activeCompanyStore.hasActiveCompany ? 1 : 0,
+      issues: activeCompanyStore.hasActiveCompany ? [] : ['Aucune entreprise active selectionnee'],
     })
 
     // --- Sites ---
@@ -204,7 +202,7 @@ export function useTechnicienReport() {
     const okSections = sections.filter((s) => s.status === 'ok').length
     const globalScore = sections.length > 0 ? Math.round((okSections / sections.length) * 100) : 0
 
-    const companyName = auth.user?.companyName || companyStore.companies[0]?.name || 'Entreprise'
+    const companyName = activeCompanyStore.activeCompanyName || auth.user?.companyName || 'Entreprise'
 
     return {
       generatedAt: new Date().toLocaleString('fr-FR'),

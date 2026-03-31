@@ -345,7 +345,7 @@ const sidebarClasses = computed(() => [
 
       <!-- Feelback -->
       <TheSidebarGroup
-        v-if="isClientRole"
+        v-if="isClientRole && !isTechnicien"
         group-id="feelback"
         :label="t('nav.feelback')"
         :icon="FaceSmileIcon"
