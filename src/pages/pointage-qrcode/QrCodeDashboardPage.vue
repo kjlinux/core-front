@@ -5,7 +5,7 @@ import StatCard from '@/components/data-display/StatCard.vue'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
-import { QrCodeIcon, UsersIcon, ClockIcon, ChartBarIcon } from '@heroicons/vue/24/outline'
+import { QrCodeIcon, UsersIcon, ClockIcon, ChartBarIcon, DevicePhoneMobileIcon } from '@heroicons/vue/24/outline'
 
 const store = useQrcodeStore()
 
@@ -49,16 +49,17 @@ function getStatusLabel(status: string) {
 
     <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
       <StatCard
-        title="Total QR Codes"
-        :value="store.stats?.totalQrCodes ?? 0"
+        title="QR Codes de sites"
+        :value="store.stats?.activeQrCodes ?? 0"
         :icon="QrCodeIcon"
         icon-bg-class="bg-blue-100"
         icon-color-class="text-blue-600"
       />
       <StatCard
-        title="QR Codes actifs"
-        :value="store.stats?.activeQrCodes ?? 0"
-        :icon="UsersIcon"
+        title="Telephones enroles"
+        :value="store.stats?.enrolledDevices ?? 0"
+        :suffix="store.stats ? ` / ${store.stats.totalEmployees}` : ''"
+        :icon="DevicePhoneMobileIcon"
         icon-bg-class="bg-green-100"
         icon-color-class="text-green-600"
       />
@@ -98,6 +99,9 @@ function getStatusLabel(status: string) {
             <span class="text-xs text-gray-500">
               {{ record.entryTime ?? '-' }} → {{ record.exitTime ?? '-' }}
             </span>
+            <AppBadge v-if="record.gpsVerified !== undefined" :variant="record.gpsVerified ? 'success' : 'warning'" class="text-xs">
+              {{ record.gpsVerified ? 'GPS ok' : 'GPS non verifie' }}
+            </AppBadge>
             <AppBadge :variant="getStatusVariant(record.status)">
               {{ getStatusLabel(record.status) }}
             </AppBadge>

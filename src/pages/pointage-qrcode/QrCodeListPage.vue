@@ -18,7 +18,8 @@ const toast = useToast()
 const confirmRevokeId = ref<string | null>(null)
 
 const columns = [
-  { key: 'employeeName', label: 'Employe' },
+  { key: 'siteName', label: 'Site' },
+  { key: 'label', label: 'Libelle' },
   { key: 'token', label: 'Token' },
   { key: 'isActive', label: 'Statut' },
   { key: 'generatedAt', label: 'Genere le' },
@@ -45,7 +46,12 @@ async function handleRevoke(id: string) {
 <template>
   <div class="space-y-6">
     <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold text-gray-900">QR Codes</h1>
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">QR Codes de sites</h1>
+        <p class="mt-1 text-sm text-gray-500">
+          Un QR Code par site, affiché à l'entrée. Les employés scannent depuis leur téléphone enrôlé.
+        </p>
+      </div>
       <AppButton
         v-if="permissions.isAdminOrSuperOrTech.value"
         variant="primary"
@@ -58,6 +64,14 @@ async function handleRevoke(id: string) {
 
     <AppCard>
       <DataTable :columns="columns" :data="store.qrCodes" :loading="store.isLoading">
+        <template #siteName="{ row }">
+          <span class="font-medium text-gray-900">{{ row.siteName ?? '-' }}</span>
+        </template>
+
+        <template #label="{ row }">
+          <span class="text-sm text-gray-600">{{ row.label ?? '-' }}</span>
+        </template>
+
         <template #isActive="{ row }">
           <AppBadge :variant="row.isActive ? 'success' : 'default'">
             {{ row.isActive ? 'Actif' : 'Revoque' }}
@@ -79,7 +93,7 @@ async function handleRevoke(id: string) {
               size="sm"
               variant="ghost"
               class="text-red-600 hover:text-red-700"
-              :title="'Revoquer'"
+              title="Revoquer"
               @click="confirmRevokeId = row.id"
             >
               <TrashIcon class="h-4 w-4" />
@@ -98,7 +112,7 @@ async function handleRevoke(id: string) {
       <div class="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
         <h3 class="mb-2 text-lg font-semibold text-gray-900">Revoquer le QR Code</h3>
         <p class="mb-6 text-sm text-gray-600">
-          Etes-vous sur de vouloir revoquer ce QR Code ? L'employe ne pourra plus pointer avec ce code.
+          Etes-vous sur de vouloir revoquer ce QR Code ? Les employes ne pourront plus pointer via ce code de site.
         </p>
         <div class="flex justify-end gap-3">
           <AppButton variant="ghost" @click="confirmRevokeId = null">Annuler</AppButton>

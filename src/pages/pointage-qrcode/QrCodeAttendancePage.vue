@@ -16,6 +16,7 @@ const columns = [
   { key: 'entryTime', label: 'Entree' },
   { key: 'exitTime', label: 'Sortie' },
   { key: 'status', label: 'Statut' },
+  { key: 'gpsVerified', label: 'GPS' },
   { key: 'scannedAt', label: 'Scanne le' },
 ]
 
@@ -64,6 +65,11 @@ function getStatusLabel(status: string) {
         <template #exitTime="{ row }">{{ row.exitTime ?? '-' }}</template>
         <template #status="{ row }">
           <AppBadge :variant="getStatusVariant(row.status)">{{ getStatusLabel(row.status) }}</AppBadge>
+        </template>
+        <template #gpsVerified="{ row }">
+          <AppBadge :variant="row.gpsVerified ? 'success' : 'warning'">
+            {{ row.gpsVerified ? `Oui (${row.distanceMeters}m)` : 'Non' }}
+          </AppBadge>
         </template>
         <template #scannedAt="{ row }">{{ formatDateTime(row.scannedAt) }}</template>
       </DataTable>

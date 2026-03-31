@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { qrcodeApi } from '@/services/api/qrcode.api'
-import type { QrCode, QrAttendanceRecord, QrCodeStats } from '@/types'
+import type { QrCode, QrAttendanceRecord, QrCodeStats, QrScanPayload } from '@/types'
 
 export const useQrcodeStore = defineStore('qrcode', () => {
   const qrCodes = ref<QrCode[]>([])
@@ -31,12 +31,11 @@ export const useQrcodeStore = defineStore('qrcode', () => {
     }
   }
 
-  async function generateQrCode(employeeId: string) {
+  async function generateQrCode(siteId: string, label?: string) {
     isLoading.value = true
     try {
-      const created = await qrcodeApi.generate(employeeId)
-      // Replace existing QR for this employee in the list
-      const index = qrCodes.value.findIndex((q) => q.employeeId === employeeId)
+      const created = await qrcodeApi.generate(siteId, label)
+      const index = qrCodes.value.findIndex((q) => q.siteId === siteId)
       if (index !== -1) {
         qrCodes.value[index] = created
       } else {
@@ -76,11 +75,10 @@ export const useQrcodeStore = defineStore('qrcode', () => {
     }
   }
 
-  async function simulateScan(token: string) {
+  async function scan(payload: QrScanPayload) {
     isLoading.value = true
     try {
-      const record = await qrcodeApi.simulateScan(token)
-      return record
+      return await qrcodeApi.scan(payload)
     } finally {
       isLoading.value = false
     }
@@ -99,6 +97,6 @@ export const useQrcodeStore = defineStore('qrcode', () => {
     revokeQrCode,
     fetchStats,
     fetchAttendance,
-    simulateScan,
+    scan,
   }
 })

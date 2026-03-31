@@ -22,7 +22,7 @@ const pointageRfidRoutes: RouteRecordRaw[] = [
         path: 'companies/:id',
         name: 'rfid-company-detail',
         component: () => import('@/pages/pointage-rfid/companies/CompanyDetailPage.vue'),
-        meta: { title: 'Detail entreprise' },
+        meta: { title: 'Detail entreprise', roles: [UserRole.SUPER_ADMIN, UserRole.TECHNICIEN] },
       },
       {
         path: 'companies/:id/edit',

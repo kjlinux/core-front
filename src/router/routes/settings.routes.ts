@@ -36,7 +36,7 @@ const settingsRoutes: RouteRecordRaw[] = [
         component: () => import('@/pages/parametres/RoleManagementPage.vue'),
         meta: {
           title: 'Gestion des roles',
-          roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE, UserRole.TECHNICIEN],
+          roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE],
         },
       },
       {

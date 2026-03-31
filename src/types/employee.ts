@@ -14,6 +14,9 @@ export interface Employee {
   hireDate: string
   rfidCardId?: string
   biometricEnrolled: boolean
+  deviceFingerprint?: string
+  deviceInfo?: string
+  deviceEnrolledAt?: string
   createdAt: string
 }
 

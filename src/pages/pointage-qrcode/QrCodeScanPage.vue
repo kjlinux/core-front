@@ -1,117 +1,243 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useQrcodeStore } from '@/stores/qrcode.store'
-import { useToast } from '@/composables/useToast'
-import type { QrAttendanceRecord } from '@/types'
+import { ref, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
+import { useDeviceFingerprint } from '@/composables/useDeviceFingerprint'
+import { qrcodeApi } from '@/services/api/qrcode.api'
+import type { QrAttendanceRecord, DeviceIdentifyResponse } from '@/types'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
-import AppInput from '@/components/ui/AppInput.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 
-const store = useQrcodeStore()
-const toast = useToast()
+const route = useRoute()
+const { getOrCreate, getDeviceInfo } = useDeviceFingerprint()
 
-const token = ref('')
-const lastResult = ref<QrAttendanceRecord | null>(null)
-const error = ref<string | null>(null)
+// Token du QR Code du site (passé en query param quand l'employé scanne le QR)
+const token = ref((route.query.token as string) ?? '')
+const fingerprint = getOrCreate()
+const deviceInfo = getDeviceInfo()
 
-async function scan() {
+const step = ref<'identify' | 'ready' | 'scanning' | 'result' | 'error'>('identify')
+const identity = ref<DeviceIdentifyResponse | null>(null)
+const result = ref<QrAttendanceRecord | null>(null)
+const errorMsg = ref('')
+const gpsStatus = ref<'idle' | 'loading' | 'ok' | 'denied' | 'unavailable'>('idle')
+const coords = ref<{ lat: number; lng: number } | null>(null)
+
+const statusLabel: Record<string, string> = {
+  present: 'Present',
+  late: 'En retard',
+  left_early: 'Parti tot',
+  absent: 'Absent',
+}
+const statusVariant: Record<string, 'success' | 'warning' | 'danger' | 'info'> = {
+  present: 'success',
+  late: 'warning',
+  left_early: 'info',
+  absent: 'danger',
+}
+
+onMounted(async () => {
+  // Vérifier si cet appareil est enrôlé
+  try {
+    identity.value = await qrcodeApi.identifyDevice(fingerprint, deviceInfo)
+    step.value = identity.value.enrolled ? 'ready' : 'identify'
+  } catch {
+    step.value = 'ready' // On laisse quand même tenter le scan
+  }
+})
+
+async function requestGps(): Promise<{ lat: number; lng: number } | null> {
+  if (!navigator.geolocation) {
+    gpsStatus.value = 'unavailable'
+    return null
+  }
+  gpsStatus.value = 'loading'
+  return new Promise((resolve) => {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        coords.value = { lat: pos.coords.latitude, lng: pos.coords.longitude }
+        gpsStatus.value = 'ok'
+        resolve(coords.value)
+      },
+      () => {
+        gpsStatus.value = 'denied'
+        resolve(null)
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    )
+  })
+}
+
+async function doScan() {
   if (!token.value.trim()) {
-    toast.error('Veuillez saisir un token QR Code')
+    errorMsg.value = 'Token manquant. Scannez le QR Code du site.'
+    step.value = 'error'
     return
   }
-  error.value = null
-  lastResult.value = null
+
+  step.value = 'scanning'
+  errorMsg.value = ''
+
+  const position = await requestGps()
+
   try {
-    lastResult.value = await store.simulateScan(token.value.trim())
-    token.value = ''
-    toast.success('Pointage enregistre')
+    result.value = await qrcodeApi.scan({
+      token: token.value.trim(),
+      deviceFingerprint: fingerprint,
+      latitude: position?.lat,
+      longitude: position?.lng,
+    })
+    step.value = 'result'
   } catch (e: unknown) {
     const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message
-    error.value = msg || 'QR Code invalide ou inactif'
+    errorMsg.value = msg || 'Erreur lors du pointage'
+    step.value = 'error'
   }
 }
 
-function getStatusVariant(status: string) {
-  const map: Record<string, string> = {
-    present: 'success',
-    absent: 'danger',
-    late: 'warning',
-    left_early: 'info',
-  }
-  return map[status] || 'default'
-}
-
-function getStatusLabel(status: string) {
-  const map: Record<string, string> = {
-    present: 'Present',
-    absent: 'Absent',
-    late: 'En retard',
-    left_early: 'Parti tot',
-  }
-  return map[status] || status
+function reset() {
+  step.value = 'ready'
+  result.value = null
+  errorMsg.value = ''
+  gpsStatus.value = 'idle'
 }
 </script>
 
 <template>
-  <div class="mx-auto max-w-lg space-y-6">
-    <h1 class="text-2xl font-bold text-gray-900">Scanner QR Code</h1>
-
-    <AppCard>
-      <div class="space-y-4">
-        <p class="text-sm text-gray-600">
-          Saisissez ou collez le token du QR Code pour simuler un scan de pointage.
-        </p>
-        <AppInput
-          v-model="token"
-          label="Token QR Code"
-          placeholder="Entrez le token..."
-          @keydown.enter="scan"
-        />
-        <AppButton
-          variant="primary"
-          :loading="store.isLoading"
-          :disabled="!token.trim()"
-          class="w-full"
-          @click="scan"
-        >
-          Simuler le scan
-        </AppButton>
+  <div class="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-4">
+    <div class="w-full max-w-sm space-y-4">
+      <!-- En-tête -->
+      <div class="text-center">
+        <h1 class="text-2xl font-bold text-gray-900">Pointage QR Code</h1>
+        <p class="mt-1 text-sm text-gray-500">Systeme de presence en ligne</p>
       </div>
-    </AppCard>
 
-    <AppCard v-if="error" class="border-red-200 bg-red-50">
-      <p class="text-sm text-red-700">{{ error }}</p>
-    </AppCard>
+      <!-- Étape : appareil non enrôlé -->
+      <AppCard v-if="step === 'identify'" class="border-yellow-200 bg-yellow-50">
+        <h2 class="mb-2 font-semibold text-yellow-900">Telephone non reconnu</h2>
+        <p class="mb-4 text-sm text-yellow-800">
+          Cet appareil n'est pas encore enrole. Donnez l'identifiant ci-dessous a votre responsable pour qu'il enrole votre telephone.
+        </p>
+        <div class="rounded-lg bg-white p-3">
+          <p class="mb-1 text-xs text-gray-500">Votre identifiant appareil :</p>
+          <p class="font-mono text-sm font-bold text-gray-900 break-all">{{ fingerprint }}</p>
+          <p class="mt-1 text-xs text-gray-400">{{ deviceInfo }}</p>
+        </div>
+        <AppButton variant="ghost" size="sm" class="mt-3 w-full" @click="step = 'ready'">
+          Continuer quand meme
+        </AppButton>
+      </AppCard>
 
-    <AppCard v-if="lastResult" class="border-green-200 bg-green-50">
-      <h3 class="mb-3 font-semibold text-gray-900">Resultat du scan</h3>
-      <dl class="space-y-2">
-        <div class="flex justify-between">
-          <dt class="text-sm text-gray-600">Employe</dt>
-          <dd class="text-sm font-medium text-gray-900">{{ lastResult.employeeName }}</dd>
+      <!-- Étape : prêt à pointer -->
+      <AppCard v-else-if="step === 'ready'">
+        <div v-if="identity?.enrolled" class="mb-4 rounded-lg bg-green-50 p-3">
+          <p class="text-sm font-medium text-green-800">
+            Bonjour, <strong>{{ identity.employeeName }}</strong>
+          </p>
+          <p class="text-xs text-green-600">Appareil reconnu</p>
         </div>
-        <div class="flex justify-between">
-          <dt class="text-sm text-gray-600">Date</dt>
-          <dd class="text-sm font-medium text-gray-900">{{ lastResult.date }}</dd>
+
+        <div class="space-y-3">
+          <div v-if="token" class="rounded-lg bg-gray-50 p-3">
+            <p class="text-xs text-gray-500">Site detecte depuis le QR :</p>
+            <p class="font-mono text-xs text-gray-700 break-all">{{ token }}</p>
+          </div>
+          <div v-else class="space-y-2">
+            <label class="block text-sm font-medium text-gray-700">Token QR Code</label>
+            <input
+              v-model="token"
+              type="text"
+              placeholder="Entrez le token manuellement..."
+              class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <p class="text-xs text-gray-500">
+            Votre position GPS sera verifiee au moment du pointage.
+            Autorisez la localisation quand le navigateur vous le demande.
+          </p>
+
+          <AppButton variant="primary" class="w-full" @click="doScan">
+            Pointer ma presence
+          </AppButton>
         </div>
-        <div class="flex justify-between">
-          <dt class="text-sm text-gray-600">Entree</dt>
-          <dd class="text-sm font-medium text-gray-900">{{ lastResult.entryTime ?? '-' }}</dd>
+      </AppCard>
+
+      <!-- Étape : scan en cours -->
+      <AppCard v-else-if="step === 'scanning'" class="text-center">
+        <div class="flex flex-col items-center gap-3 py-4">
+          <div class="h-10 w-10 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600" />
+          <p class="text-sm font-medium text-gray-700">
+            <template v-if="gpsStatus === 'loading'">Verification de votre position GPS...</template>
+            <template v-else>Enregistrement du pointage...</template>
+          </p>
         </div>
-        <div class="flex justify-between">
-          <dt class="text-sm text-gray-600">Sortie</dt>
-          <dd class="text-sm font-medium text-gray-900">{{ lastResult.exitTime ?? '-' }}</dd>
+      </AppCard>
+
+      <!-- Étape : résultat -->
+      <AppCard v-else-if="step === 'result' && result" class="border-green-200 bg-green-50">
+        <div class="text-center">
+          <div class="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-green-100">
+            <svg class="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h2 class="text-lg font-bold text-green-900">Pointage enregistre</h2>
+          <p v-if="result.employeeName" class="mt-1 text-sm text-green-700">{{ result.employeeName }}</p>
         </div>
-        <div class="flex justify-between">
-          <dt class="text-sm text-gray-600">Statut</dt>
-          <dd>
-            <AppBadge :variant="getStatusVariant(lastResult.status)">
-              {{ getStatusLabel(lastResult.status) }}
+
+        <div class="mt-4 space-y-2 rounded-lg bg-white p-3">
+          <div class="flex justify-between text-sm">
+            <span class="text-gray-500">Date</span>
+            <span class="font-medium">{{ result.date }}</span>
+          </div>
+          <div class="flex justify-between text-sm">
+            <span class="text-gray-500">Entree</span>
+            <span class="font-medium">{{ result.entryTime ?? '-' }}</span>
+          </div>
+          <div v-if="result.exitTime" class="flex justify-between text-sm">
+            <span class="text-gray-500">Sortie</span>
+            <span class="font-medium">{{ result.exitTime }}</span>
+          </div>
+          <div class="flex justify-between text-sm">
+            <span class="text-gray-500">Statut</span>
+            <AppBadge :variant="statusVariant[result.status] ?? 'default'">
+              {{ statusLabel[result.status] ?? result.status }}
             </AppBadge>
-          </dd>
+          </div>
+          <div class="flex justify-between text-sm">
+            <span class="text-gray-500">GPS verifie</span>
+            <AppBadge :variant="result.gpsVerified ? 'success' : 'warning'">
+              {{ result.gpsVerified ? `Oui (${result.distanceMeters}m)` : 'Non verifie' }}
+            </AppBadge>
+          </div>
         </div>
-      </dl>
-    </AppCard>
+
+        <AppButton variant="ghost" class="mt-4 w-full" @click="reset">
+          Nouveau pointage
+        </AppButton>
+      </AppCard>
+
+      <!-- Étape : erreur -->
+      <AppCard v-else-if="step === 'error'" class="border-red-200 bg-red-50">
+        <div class="text-center">
+          <div class="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-red-100">
+            <svg class="h-8 w-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </div>
+          <h2 class="text-lg font-bold text-red-900">Pointage refuse</h2>
+          <p class="mt-2 text-sm text-red-700">{{ errorMsg }}</p>
+        </div>
+        <AppButton variant="ghost" class="mt-4 w-full" @click="reset">
+          Reessayer
+        </AppButton>
+      </AppCard>
+
+      <!-- Fingerprint affiché en bas pour l'enrôlement -->
+      <p class="text-center font-mono text-xs text-gray-300">
+        ID: {{ fingerprint }}
+      </p>
+    </div>
   </div>
 </template>

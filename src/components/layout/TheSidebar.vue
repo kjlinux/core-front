@@ -226,11 +226,12 @@ const sidebarClasses = computed(() => [
           :nested="true"
         />
         <TheSidebarItem
-          label="Scanner"
-          to="/pointage-qrcode/scan"
+          v-if="isAdminOrSuperOrTech"
+          label="Enrolement telephones"
+          to="/pointage-qrcode/enroll"
           :icon="DevicePhoneMobileIcon"
           :collapsed="false"
-          :active="route.path.startsWith('/pointage-qrcode/scan')"
+          :active="route.path.startsWith('/pointage-qrcode/enroll')"
           :nested="true"
         />
         <TheSidebarItem
@@ -522,7 +523,7 @@ const sidebarClasses = computed(() => [
           :nested="true"
         />
         <TheSidebarItem
-          v-if="isAdminOrSuperOrTech"
+          v-if="isAdminOrSuper"
           label="Roles"
           to="/parametres/roles"
           :icon="ShieldCheckIcon"

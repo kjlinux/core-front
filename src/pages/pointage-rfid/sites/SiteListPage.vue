@@ -82,6 +82,37 @@
             placeholder="Selectionner une entreprise"
             required
           />
+
+          <div class="rounded-lg border border-blue-200 bg-blue-50 p-4">
+            <p class="mb-1 text-sm font-medium text-blue-900">Coordonnees GPS <span class="text-red-500">*</span></p>
+            <p class="mb-3 text-xs text-blue-700">Obligatoire pour verifier que les employes pointent bien sur site via QR Code.</p>
+            <div class="grid grid-cols-2 gap-3">
+              <AppInput
+                v-model="formData.latitude"
+                label="Latitude"
+                type="number"
+                placeholder="ex: 12.3456"
+                step="any"
+                required
+              />
+              <AppInput
+                v-model="formData.longitude"
+                label="Longitude"
+                type="number"
+                placeholder="ex: -1.5678"
+                step="any"
+                required
+              />
+            </div>
+            <AppInput
+              v-model="formData.geofenceRadius"
+              label="Rayon de geofence (metres)"
+              type="number"
+              placeholder="100"
+              class="mt-3"
+              required
+            />
+          </div>
         </div>
       </form>
 
@@ -132,6 +163,37 @@
             placeholder="Selectionner une entreprise"
             required
           />
+
+          <div class="rounded-lg border border-blue-200 bg-blue-50 p-4">
+            <p class="mb-1 text-sm font-medium text-blue-900">Coordonnees GPS <span class="text-red-500">*</span></p>
+            <p class="mb-3 text-xs text-blue-700">Obligatoire pour verifier que les employes pointent bien sur site via QR Code.</p>
+            <div class="grid grid-cols-2 gap-3">
+              <AppInput
+                v-model="formData.latitude"
+                label="Latitude"
+                type="number"
+                placeholder="ex: 12.3456"
+                step="any"
+                required
+              />
+              <AppInput
+                v-model="formData.longitude"
+                label="Longitude"
+                type="number"
+                placeholder="ex: -1.5678"
+                step="any"
+                required
+              />
+            </div>
+            <AppInput
+              v-model="formData.geofenceRadius"
+              label="Rayon de geofence (metres)"
+              type="number"
+              placeholder="100"
+              class="mt-3"
+              required
+            />
+          </div>
         </div>
       </form>
 
@@ -193,6 +255,9 @@ const formData = ref({
   name: '',
   address: '',
   companyId: '',
+  latitude: '' as string | number,
+  longitude: '' as string | number,
+  geofenceRadius: 100 as string | number,
 })
 
 const canCreate = computed(() =>
@@ -264,6 +329,9 @@ async function handleCreateSite() {
       name: formData.value.name,
       address: formData.value.address,
       companyId: formData.value.companyId,
+      latitude: Number(formData.value.latitude),
+      longitude: Number(formData.value.longitude),
+      geofenceRadius: Number(formData.value.geofenceRadius),
     })
     toast.success('Succes', 'Site cree avec succes')
     closeCreateModal()
@@ -281,6 +349,9 @@ function openEditModal(site: Site) {
     name: site.name,
     address: site.address,
     companyId: site.companyId,
+    latitude: site.latitude ?? '',
+    longitude: site.longitude ?? '',
+    geofenceRadius: site.geofenceRadius ?? 100,
   }
   showEditModal.value = true
 }
@@ -293,6 +364,9 @@ async function handleEditSite() {
       name: formData.value.name,
       address: formData.value.address,
       companyId: formData.value.companyId,
+      latitude: Number(formData.value.latitude),
+      longitude: Number(formData.value.longitude),
+      geofenceRadius: Number(formData.value.geofenceRadius),
     })
     toast.success('Succes', 'Site modifie avec succes')
     closeEditModal()
@@ -317,12 +391,12 @@ async function handleDeleteSite(site: Site) {
 
 function closeCreateModal() {
   showCreateModal.value = false
-  formData.value = { name: '', address: '', companyId: '' }
+  formData.value = { name: '', address: '', companyId: '', latitude: '', longitude: '', geofenceRadius: 100 }
 }
 
 function closeEditModal() {
   showEditModal.value = false
   editingSite.value = null
-  formData.value = { name: '', address: '', companyId: '' }
+  formData.value = { name: '', address: '', companyId: '', latitude: '', longitude: '', geofenceRadius: 100 }
 }
 </script>
