@@ -9,7 +9,7 @@ import AppButton from '@/components/ui/AppButton.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import AppToggle from '@/components/ui/AppToggle.vue'
 import DataTable from '@/components/data-display/DataTable.vue'
-import { PlusIcon, TrashIcon } from '@heroicons/vue/24/outline'
+import { PlusIcon, TrashIcon, BellAlertIcon } from '@heroicons/vue/24/outline'
 
 const store = useFirmwareStore()
 const router = useRouter()
@@ -18,6 +18,7 @@ const toast = useToast()
 
 const deviceKindFilter = ref('')
 const confirmDeleteId = ref<string | null>(null)
+const publishingId = ref<string | null>(null)
 
 const columns = [
   { key: 'version', label: 'Version' },
@@ -25,6 +26,7 @@ const columns = [
   { key: 'description', label: 'Description' },
   { key: 'fileSize', label: 'Taille' },
   { key: 'isAutoUpdate', label: 'Auto' },
+  { key: 'isPublished', label: 'Publie' },
   { key: 'uploadedAt', label: 'Mis en ligne' },
   { key: 'actions', label: 'Actions' },
 ]
@@ -50,6 +52,19 @@ async function toggleAutoUpdate(id: string, current: boolean) {
     toast.success('Mise a jour automatique modifiee')
   } catch {
     toast.error('Erreur')
+  }
+}
+
+async function handlePublish(id: string) {
+  if (!confirm('Notifier tous les admins et techniciens de cette mise a jour ?')) return
+  publishingId.value = id
+  try {
+    await store.publishVersion(id)
+    toast.success('Version publiee. Emails envoyes aux admins et techniciens.')
+  } catch {
+    toast.error('Erreur lors de la publication')
+  } finally {
+    publishingId.value = null
   }
 }
 
@@ -103,9 +118,26 @@ async function handleDelete(id: string) {
             @update:modelValue="toggleAutoUpdate(row.id, row.isAutoUpdate)"
           />
         </template>
+        <template #isPublished="{ row }">
+          <AppBadge :variant="row.isPublished ? 'success' : 'default'">
+            {{ row.isPublished ? 'Publie' : 'Non publie' }}
+          </AppBadge>
+        </template>
         <template #uploadedAt="{ row }">{{ formatDate(row.uploadedAt) }}</template>
         <template #actions="{ row }">
           <div class="flex items-center gap-2" @click.stop>
+            <!-- Bouton Notifier les admins (super_admin uniquement, désactivé si déjà publié) -->
+            <AppButton
+              v-if="permissions.isSuperAdmin.value"
+              size="sm"
+              variant="outline"
+              :disabled="row.isPublished || publishingId === row.id"
+              :loading="publishingId === row.id"
+              title="Notifier les admins"
+              @click="handlePublish(row.id)"
+            >
+              <BellAlertIcon class="h-4 w-4" />
+            </AppButton>
             <AppButton
               v-if="permissions.isSuperAdmin.value"
               size="sm"

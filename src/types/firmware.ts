@@ -10,8 +10,28 @@ export interface FirmwareVersion {
   fileUrl?: string
   fileSize?: number
   isAutoUpdate: boolean
+  isPublished: boolean
+  publishedAt?: string
   uploadedAt: string
   uploadedBy: string
+}
+
+export interface DeviceUpdateProgress {
+  deviceId: string
+  deviceName: string
+  deviceKind: DeviceKind
+  status: OtaUpdateStatus
+  errorMessage?: string
+  completedAt?: string
+}
+
+export interface CompanyUpdateProgress {
+  total: number
+  pending: number
+  inProgress: number
+  success: number
+  failed: number
+  devices: DeviceUpdateProgress[]
 }
 
 export interface DeviceFirmwareStatus {

@@ -1,5 +1,5 @@
 import apiClient from './client'
-import type { FirmwareVersion, DeviceFirmwareStatus, OtaUpdateLog, FirmwareFilters, OtaLogFilters } from '@/types'
+import type { FirmwareVersion, DeviceFirmwareStatus, OtaUpdateLog, FirmwareFilters, OtaLogFilters, CompanyUpdateProgress } from '@/types'
 import type { PaginatedResponse } from '@/types'
 
 export const firmwareApi = {
@@ -41,5 +41,27 @@ export const firmwareApi = {
 
   getLogs(params?: OtaLogFilters): Promise<PaginatedResponse<OtaUpdateLog>> {
     return apiClient.get('/firmware/logs', { params }).then((r) => r.data)
+  },
+
+  publishVersion(id: string): Promise<FirmwareVersion> {
+    return apiClient.patch(`/firmware/versions/${id}/publish`).then((r) => r.data)
+  },
+
+  triggerCompanyUpdate(firmwareVersionId: string): Promise<{ triggered: number; logs: OtaUpdateLog[] }> {
+    return apiClient
+      .post('/firmware/trigger-company-update', { firmware_version_id: firmwareVersionId })
+      .then((r) => r.data)
+  },
+
+  getCompanyUpdateProgress(firmwareVersionId: string): Promise<CompanyUpdateProgress> {
+    return apiClient
+      .get('/firmware/company-update-progress', { params: { firmware_version_id: firmwareVersionId } })
+      .then((r) => r.data)
+  },
+
+  retryFailed(firmwareVersionId: string): Promise<{ triggered: number }> {
+    return apiClient
+      .post('/firmware/retry-failed', { firmware_version_id: firmwareVersionId })
+      .then((r) => r.data)
   },
 }
