@@ -343,7 +343,7 @@ const sidebarClasses = computed(() => [
         />
       </TheSidebarGroup>
 
-      <!-- Feelback (masque pour technicien) -->
+      <!-- Feelback -->
       <TheSidebarGroup
         v-if="isClientRole"
         group-id="feelback"

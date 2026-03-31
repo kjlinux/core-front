@@ -43,7 +43,7 @@ const permissionMatrix: Record<Module, Record<Action, UserRole[]>> = {
     export: adminRoles,
   },
   feelback: {
-    view: clientRoles,
+    view: allRoles,
     create: adminRoles,
     edit: adminRoles,
     delete: superOnly,

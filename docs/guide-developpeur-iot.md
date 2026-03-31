@@ -1,5 +1,5 @@
 # Guide Développeur IoT — PRESENSE v2
-## Intégration ESP32 avec la plateforme CORE TANGA GROUP
+## Intégration ESP32 avec la plateforme Tangaflow
 
 ---
 
@@ -20,6 +20,8 @@
 
 ## 1. Architecture générale
 
+Le firmware est **universel** — un seul binaire pour tous les terminaux RFID. Chaque terminal est identifié par une constante `SERIAL_NUMBER` dans `config.h`. Pour flasher un nouveau terminal, il suffit de changer cette valeur et de recompiler. Tout le reste du firmware est identique.
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                     HiveMQ Cloud                            │
@@ -27,27 +29,33 @@
 └──────────────┬───────────────────────────────┬──────────────┘
                │                               │
                ▼                               ▼
-   ┌───────────────────┐           ┌──────────────────────┐
-   │   ESP32 RFID      │           │   Backend Laravel     │
-   │   (PRESENSE V2)   │           │   (core-back)         │
-   │                   │           │                       │
-   │  Publie sur :     │           │  Souscrit sur :       │
-   │  core/rfid/       │ ────────► │  core/rfid/           │
-   │  sensor/{id}/event│           │  sensor/+/event       │
-   │                   │           │                       │
-   │  Souscrit sur :   │ ◄──────── │  Publie sur :         │
-   │  core/rfid/       │           │  core/rfid/           │
-   │  sensor/{id}/     │           │  sensor/{id}/response │
-   │  response         │           │                       │
-   │                   │           │  ET publie sur :      │
-   │  [MANQUANT] ◄──── │ ◄──────── │  devices/{serial}/ota │
-   │  devices/{id}/ota │           │  (commandes OTA)      │
-   └───────────────────┘           └──────────────────────┘
+   ┌───────────────────┐           ┌──────────────────────────┐
+   │   ESP32 RFID-001  │           │   Backend Tangaflow       │
+   │   (PRESENSE V2)   │           │   api.tangaflow.com       │
+   │                   │           │                          │
+   │  Publie sur :     │ ────────► │  Souscrit sur :          │
+   │  core/rfid/       │           │  core/rfid/sensor/+/event│
+   │  sensor/RFID-001  │           │                          │
+   │  /event           │           │  Publie sur :            │
+   │                   │ ◄──────── │  core/rfid/sensor/       │
+   │  Souscrit sur :   │           │  RFID-001/response       │
+   │  core/rfid/sensor │           │                          │
+   │  /RFID-001/       │           │  ET publie sur :         │
+   │  response         │           │  devices/RFID-001/ota    │
+   │                   │ ◄──────── │  (commandes OTA)         │
+   │  [À AJOUTER]      │           │                          │
+   │  devices/RFID-001 │           │  Souscrit sur :          │
+   │  /ota             │           │  devices/+/ota/response  │
+   │                   │ ────────► │                          │
+   │  [À AJOUTER]      │           │                          │
+   │  devices/RFID-001 │           │                          │
+   │  /ota/response    │           │                          │
+   └───────────────────┘           └──────────────────────────┘
 ```
 
-**Important :** Le backend utilise deux canaux distincts vers l'ESP32 :
-- `core/rfid/sensor/{id}/response` — réponses aux pointages + commandes générales
-- `devices/{serial}/ota` — commandes de mise à jour firmware (OTA)
+**Le backend utilise deux canaux distincts vers l'ESP32 :**
+- `core/rfid/sensor/RFID-001/response` — réponses aux pointages + commandes générales
+- `devices/RFID-001/ota` — commandes de mise à jour firmware
 
 L'ESP32 actuel ne souscrit **pas** au topic OTA. Voir [section 8](#8-correction-critique--double-abonnement-mqtt).
 
@@ -57,22 +65,22 @@ L'ESP32 actuel ne souscrit **pas** au topic OTA. Voir [section 8](#8-correction-
 
 ### Paramètres de connexion
 
-| Paramètre   | Valeur                                          |
-|-------------|------------------------------------------------|
-| Host        | `fd286f0fca334917b338f6f5882a2763.s1.eu.hivemq.cloud` |
-| Port        | `8883` (TLS obligatoire)                        |
-| Protocol    | MQTT 3.1.1                                      |
-| TLS         | Activé — certificat CA inclus dans `ca_cert.h`  |
-| Username    | `perseus911`                                    |
-| Password    | `Wemtinga2026@`                                 |
-| Client ID   | Unique par terminal (ex: `presense-RFID-001`)   |
-| Keep Alive  | 60 secondes                                     |
+| Paramètre   | Valeur                                                        |
+|-------------|---------------------------------------------------------------|
+| Host        | `fd286f0fca334917b338f6f5882a2763.s1.eu.hivemq.cloud`        |
+| Port        | `8883` (TLS obligatoire)                                      |
+| Protocol    | MQTT 3.1.1                                                    |
+| TLS         | Activé — certificat CA inclus dans `ca_cert.h`               |
+| Username    | `perseus911`                                                  |
+| Password    | `Wemtinga2026@`                                               |
+| Client ID   | Doit être unique par terminal (ex: `presense-RFID-001`)       |
+| Keep Alive  | 60 secondes                                                   |
 
 ### Notes importantes
 
 - Le TLS doit être configuré **avant** d'appeler `begin()` ou `connect()`.
-- Le `ClientID` doit être unique pour chaque terminal physique. Si deux terminaux utilisent le même `ClientID`, le broker déconnectera l'un d'eux.
-- Le buffer MQTT doit être agrandi à **1024 bytes minimum** pour accueillir les payloads JSON OTA :
+- Le `ClientID` doit être **unique pour chaque terminal physique**. Si deux terminaux utilisent le même `ClientID`, le broker déconnectera l'un d'eux. Actuellement `MQTT_CLIENT_ID = "presense"` dans `config.h` est partagé — à corriger.
+- Le buffer MQTT doit être à **1024 bytes minimum** pour les payloads JSON OTA :
   ```cpp
   client.setBufferSize(1024);
   ```
@@ -81,26 +89,30 @@ L'ESP32 actuel ne souscrit **pas** au topic OTA. Voir [section 8](#8-correction-
 
 ## 3. Topics MQTT — Convention et structure
 
-### Structure des topics
+### Topics du terminal RFID-001
+
+Chaque terminal a ses propres topics fixes, construits avec son `MQTT_DEVICE_ID`.
 
 ```
-core/rfid/sensor/{DEVICE_ID}/event      ← ESP32 publie (scan RFID)
-core/rfid/sensor/{DEVICE_ID}/response   ← ESP32 souscrit (réponses + commandes)
-devices/{DEVICE_ID}/ota                 ← ESP32 souscrit (commandes OTA)  [À AJOUTER]
-devices/{DEVICE_ID}/ota/response        ← ESP32 publie (résultat OTA)     [À AJOUTER]
+core/rfid/sensor/RFID-001/event      ← RFID-001 publie (scan + statut)
+core/rfid/sensor/RFID-001/response   ← RFID-001 souscrit (réponses + commandes)
+devices/RFID-001/ota                 ← RFID-001 souscrit (commandes OTA)  [À AJOUTER]
+devices/RFID-001/ota/response        ← RFID-001 publie (résultat OTA)     [À AJOUTER]
 ```
 
-### Correspondance `DEVICE_ID` vs `serial_number`
+Pour un autre terminal, ex. `RFID-002`, remplacer `RFID-001` par `RFID-002` partout dans son `config.h`.
 
-Le `DEVICE_ID` dans les topics MQTT doit correspondre exactement au champ `serial_number` de l'appareil en base de données.
+### Correspondance `DEVICE_ID` ↔ `serial_number`
+
+Le `MQTT_DEVICE_ID` dans `config.h` doit correspondre **exactement** au champ `serial_number` enregistré dans la base de données Tangaflow pour cet appareil.
 
 ```
-config.h → MQTT_DEVICE_ID = "RFID-001"
-           ↕ doit être identique
-base de données → rfid_devices.serial_number = "RFID-001"
+config.h           →  MQTT_DEVICE_ID = "RFID-001"
+                             ↕  identique
+DB tangaflow       →  rfid_devices.serial_number = "RFID-001"
 ```
 
-Si ces deux valeurs ne correspondent pas, le backend ne retrouvera pas l'appareil et ne pourra pas associer les pointages ni mettre à jour le firmware.
+Si ces deux valeurs diffèrent, le backend ne retrouvera pas l'appareil et ne pourra pas associer les pointages ni déclencher les mises à jour.
 
 ---
 
@@ -117,8 +129,8 @@ Si ces deux valeurs ne correspondent pas, le backend ne retrouvera pas l'apparei
 }
 ```
 
-- `card_uid` : UID de la carte RFID en hexadécimal majuscule, sans séparateurs (`:` retirés).
-- Le backend accepte également le champ `uid` pour compatibilité legacy, mais `card_uid` est le format attendu.
+- `card_uid` : UID de la carte RFID en hexadécimal majuscule, séparateurs `:` retirés.
+- Le backend accepte aussi `uid` (format legacy) mais `card_uid` est le format attendu.
 
 **Code Arduino actuel (conforme) :**
 ```cpp
@@ -130,12 +142,13 @@ mqttController->publish(mqttController->getPublishTopic().c_str(), payload);
 
 ### Étape 2 — Le backend traite et répond
 
-Le backend Laravel (`MqttListenRfidCommand`) :
-1. Trouve l'appareil par `serial_number` et met à jour `is_online = true`
-2. Vérifie que la carte existe et est active
-3. Vérifie que l'employé associé est actif
-4. Détecte si c'est une entrée ou une sortie (logique entry/exit)
-5. Publie la réponse sur `core/rfid/sensor/RFID-001/response`
+Le backend Tangaflow (`MqttListenRfidCommand`) :
+1. Identifie le terminal via `serial_number = "RFID-001"` (extrait du topic)
+2. Met à jour `is_online = true` sur l'appareil
+3. Vérifie que la carte existe et est active
+4. Vérifie que l'employé associé est actif
+5. Détecte automatiquement si c'est une entrée ou une sortie
+6. Publie la réponse sur `core/rfid/sensor/RFID-001/response`
 
 ### Étape 3 — L'ESP32 reçoit la réponse
 
@@ -143,23 +156,23 @@ Le backend Laravel (`MqttListenRfidCommand`) :
 
 **Payload (texte brut, pas JSON) :**
 
-| Payload        | Signification                                  |
-|----------------|------------------------------------------------|
-| `0x001020`     | Accepté — pointage enregistré                  |
-| `0x003020`     | Refusé — carte inactive ou employé inactif     |
-| `0x108080`     | Rejeté — carte inconnue                        |
+| Payload        | Signification                               |
+|----------------|---------------------------------------------|
+| `0x001020`     | Accepté — pointage enregistré               |
+| `0x003020`     | Refusé — carte inactive ou employé inactif  |
+| `0x108080`     | Rejeté — carte inconnue                     |
 
 ### Diagramme séquence
 
 ```
-ESP32                     Backend (Laravel)
-  │                            │
-  │──── event: {card_uid} ────►│
-  │                            │── Vérifie carte, employé
-  │                            │── Enregistre pointage
-  │◄─── response: 0x001020 ───│
-  │                            │
-  │   [BUZZER + OLED OK]       │
+RFID-001 (ESP32)            Backend Tangaflow
+      │                            │
+      │── event: {card_uid} ──────►│
+      │                            │── Vérifie carte + employé
+      │                            │── Enregistre pointage (entrée ou sortie)
+      │◄── response: 0x001020 ────│
+      │                            │
+      │  [BUZZER OK + OLED Accepté]│
 ```
 
 ---
@@ -168,16 +181,16 @@ ESP32                     Backend (Laravel)
 
 ### Commande STATUS envoyée par le backend
 
-Le backend peut demander à l'ESP32 son état en envoyant :
+Le backend peut interroger l'état d'un terminal en envoyant :
 
-**Topic :** `core/rfid/sensor/RFID-001/response`  
+**Topic :** `core/rfid/sensor/RFID-001/response`
 **Payload :** `0x100010`
 
 ### Réponse attendue de l'ESP32
 
-L'ESP32 répond en **republiant sur son topic d'événement** (`/event`) :
+L'ESP32 répond en republiant sur son topic d'événement :
 
-**Topic :** `core/rfid/sensor/RFID-001/event`  
+**Topic :** `core/rfid/sensor/RFID-001/event`
 **Payload JSON :**
 ```json
 {
@@ -189,7 +202,7 @@ L'ESP32 répond en **republiant sur son topic d'événement** (`/event`) :
 }
 ```
 
-> **Important :** Le champ `version` est utilisé par le backend pour synchroniser `firmware_version` dans la base de données. Il doit correspondre exactement à `FIRMWARE_VERSION` défini dans `config.h`.
+> **Important :** Le champ `version` est utilisé par le backend Tangaflow pour synchroniser `firmware_version` dans la base de données. Il doit correspondre exactement à `FIRMWARE_VERSION` dans `config.h`.
 
 **Code Arduino actuel (conforme) :**
 ```cpp
@@ -205,25 +218,21 @@ else if (message == CMD_STATUS) {
 }
 ```
 
-Ce comportement est conforme. Le backend extrait `firmware_version` depuis le payload event et met à jour la DB.
-
 ---
 
 ## 6. Flux de mise à jour OTA (FOTA)
 
-C'est la partie la plus complexe. Elle implique **deux topics supplémentaires** que l'ESP32 doit gérer.
-
 ### 6.1 Vue d'ensemble
 
 ```
-Backend                     ESP32
-   │                          │
-   │── devices/RFID-001/ota ─►│  (commande OTA)
-   │                          │── Télécharge .bin via HTTP
-   │                          │── Flash firmware
-   │                          │── Redémarre
-   │◄─ devices/RFID-001/      │  (résultat OTA)
-   │   ota/response ──────────│
+Backend Tangaflow              RFID-001 (ESP32)
+        │                             │
+        │── devices/RFID-001/ota ────►│  (commande OTA avec log_id)
+        │                             │── Télécharge .bin via HTTP
+        │                             │── Flash firmware
+        │◄─ devices/RFID-001/         │  (résultat avec log_id)
+        │   ota/response ─────────────│
+        │                             │── Redémarre
 ```
 
 ### 6.2 Commande OTA reçue par l'ESP32
@@ -233,17 +242,17 @@ Backend                     ESP32
 **Payload JSON :**
 ```json
 {
-  "log_id": "uuid-du-log-ota",
+  "log_id": "550e8400-e29b-41d4-a716-446655440000",
   "version": "V2.1.0",
-  "url": "https://tonserveur.com/firmware/v2.1.0.bin"
+  "url": "https://api.tangaflow.com/firmware/v2.1.0.bin"
 }
 ```
 
-| Champ     | Type   | Description                                                   |
-|-----------|--------|---------------------------------------------------------------|
-| `log_id`  | string | Identifiant UUID du log OTA en base — **doit être renvoyé** dans la réponse |
-| `version` | string | Version cible du firmware (format `VX.Y.Z`)                  |
-| `url`     | string | URL HTTP(S) du fichier `.bin` à télécharger                  |
+| Champ     | Type   | Description                                                          |
+|-----------|--------|----------------------------------------------------------------------|
+| `log_id`  | string | UUID du log OTA en base — **doit être renvoyé tel quel** en réponse  |
+| `version` | string | Version cible du firmware (format `VX.Y.Z`)                         |
+| `url`     | string | URL HTTPS du fichier `.bin` à télécharger                            |
 
 ### 6.3 Réponse OTA publiée par l'ESP32
 
@@ -252,7 +261,7 @@ Backend                     ESP32
 **Payload JSON (succès) :**
 ```json
 {
-  "log_id": "uuid-du-log-ota",
+  "log_id": "550e8400-e29b-41d4-a716-446655440000",
   "success": true,
   "version": "V2.1.0",
   "error": null
@@ -262,41 +271,33 @@ Backend                     ESP32
 **Payload JSON (échec) :**
 ```json
 {
-  "log_id": "uuid-du-log-ota",
+  "log_id": "550e8400-e29b-41d4-a716-446655440000",
   "success": false,
   "version": null,
   "error": "HTTP 404 - firmware introuvable"
 }
 ```
 
-| Champ     | Type    | Description                                                    |
-|-----------|---------|----------------------------------------------------------------|
-| `log_id`  | string  | Même valeur que dans la commande reçue — obligatoire           |
-| `success` | boolean | `true` si le flash a réussi, `false` sinon                     |
-| `version` | string  | Version installée (si succès), `null` sinon                    |
-| `error`   | string  | Message d'erreur (si échec), `null` sinon                      |
+| Champ     | Type    | Description                                                   |
+|-----------|---------|---------------------------------------------------------------|
+| `log_id`  | string  | Même UUID que dans la commande — **obligatoire**              |
+| `success` | boolean | `true` si le flash a réussi, `false` sinon                    |
+| `version` | string  | Version installée si succès, `null` sinon                     |
+| `error`   | string  | Message d'erreur si échec, `null` sinon                       |
 
-> **Le `log_id` est critique.** Sans lui, le backend ne peut pas mettre à jour le statut du log OTA en base de données et l'opération restera en état `in_progress` indéfiniment.
+> **Le `log_id` est critique.** Sans lui, le backend ne peut pas retrouver le log OTA et l'opération restera bloquée en état `in_progress`.
+
+> **La réponse doit être publiée AVANT le reboot.** Ajouter un `delay(500)` entre la publication et `ESP.restart()` pour laisser le temps au message d'être transmis au broker.
 
 ### 6.4 Ce que fait le backend après réception
 
-```php
-// core-back/app/Console/Commands/MqttListenRfidCommand.php
-// processOtaResponse()
-
-if ($success && $version && $serial) {
-    RfidDevice::where('serial_number', $serial)
-        ->update(['firmware_version' => $version]);
-}
-```
-
-Le backend extrait le `serial_number` depuis le topic (`devices/{serial}/ota/response`) et met à jour `firmware_version` dans la table `rfid_devices`.
+Le backend extrait le `serial_number` depuis le topic (`devices/RFID-001/ota/response` → `RFID-001`), met à jour le log OTA (`success` ou `failed`) et synchronise `firmware_version` dans la table `rfid_devices`.
 
 ---
 
 ## 7. Codes de commande
 
-Tous les codes sont reçus sur le topic `core/rfid/sensor/{id}/response` sous forme de **texte brut** (pas de JSON), sauf le FOTA qui arrive en JSON.
+Tous les codes arrivent sur `core/rfid/sensor/RFID-001/response` en **texte brut** (sauf le FOTA legacy qui est JSON).
 
 | Code       | Constante    | Action ESP32                                      |
 |------------|--------------|---------------------------------------------------|
@@ -310,19 +311,19 @@ Tous les codes sont reçus sur le topic `core/rfid/sensor/{id}/response` sous fo
 | `0x100010` | CMD_STATUS   | Publie le statut système sur le topic `/event`    |
 | `0x1080D0` | CMD_FOTA     | Déclenche une mise à jour firmware (JSON payload) |
 
-### Format FOTA via le topic response (legacy)
+### FOTA via le topic response (mode legacy, sans tracking)
 
-Le backend peut aussi déclencher une FOTA via le topic response habituel avec un JSON :
+Le backend peut aussi déclencher une FOTA sans `log_id` via le topic response :
 
 ```json
 {
   "cmd": "0x1080D0",
-  "url": "https://tonserveur.com/firmware/v2.1.0.bin",
+  "url": "https://api.tangaflow.com/firmware/v2.1.0.bin",
   "version": "V2.1.0"
 }
 ```
 
-Dans ce mode, **pas de `log_id`** et donc pas de tracking du statut OTA. Préférer le topic `devices/{id}/ota` qui inclut le `log_id`.
+Ce mode ne permet pas de tracker le statut dans la plateforme. Préférer le topic `devices/RFID-001/ota` décrit en section 6.
 
 ---
 
@@ -330,33 +331,30 @@ Dans ce mode, **pas de `log_id`** et donc pas de tracking du statut OTA. Préfé
 
 ### Problème actuel
 
-L'ESP32 actuel n'est abonné qu'à **un seul topic** :
+L'ESP32 ne souscrit qu'à **un seul topic** :
 ```
-core/rfid/sensor/RFID-001/response   ✓ (abonné)
-devices/RFID-001/ota                  ✗ (NON abonné)
+core/rfid/sensor/RFID-001/response   ✓ abonné (réponses pointage + commandes)
+devices/RFID-001/ota                  ✗ NON abonné (commandes OTA)
 ```
 
-Or le backend publie les commandes OTA sur `devices/{serial}/ota`. L'ESP32 ne reçoit donc **jamais** les commandes de mise à jour firmware depuis la plateforme.
+Le backend Tangaflow publie les commandes OTA sur `devices/RFID-001/ota`. L'ESP32 ne les reçoit donc **jamais** et les mises à jour firmware déclenchées depuis la plateforme sont sans effet.
 
-### Limitation du MQTTController actuel
+### Cause dans le code
 
-La classe `MQTTController` dans `mqtt.h` ne supporte qu'**un seul topic d'abonnement** via `setSubscribeTopic()`. Elle stocke le topic dans `subscribeTopic` (String unique) et le resouscrit à chaque reconnexion.
+La classe `MQTTController` (`mqtt.h`) ne supporte qu'un seul topic d'abonnement. De plus, `mqttCallback` filtre les messages entrants :
 
-De plus, le `mqttCallback` filtre les messages :
 ```cpp
+// Dans presenseV2.ino — filtre strict actuel
 if (strcmp(topic, mqttController->getSubscribeTopic().c_str()) != 0) return;
 ```
-Cela ignore silencieusement tout message arrivant sur un topic différent du topic principal.
 
-### Solution — Modifications à apporter
+Tout message arrivant sur un topic différent est ignoré silencieusement.
 
-#### 1. Étendre `MQTTController` pour plusieurs topics
+### Modifications à apporter
 
-Dans `mqtt.h`, remplacer le `String subscribeTopic` unique par une liste, et modifier `applySubscription()` pour souscrire à tous les topics.
+#### 1. Supprimer le filtre strict dans `mqttCallback`
 
-#### 2. Modifier `mqttCallback` pour accepter plusieurs topics
-
-Supprimer le filtre strict et traiter le message selon le topic reçu :
+Remplacer le filtre par un dispatch selon le topic reçu :
 
 ```cpp
 void mqttCallback(char* topic, byte* payload, unsigned int length) {
@@ -365,77 +363,78 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
   String topicStr = String(topic);
   String message;
   for (unsigned int i = 0; i < length; i++) message += (char)payload[i];
-  
+
   logger.debug("MQTT recu [" + topicStr + "] : " + message);
 
-  // Topic réponse standard (pointage, commandes)
-  String expectedResponseTopic = String(MQTT_TOPIC_PREFIX) + String(MQTT_DEVICE_ID) + String(MQTT_CMD_SUFFIX);
-  
-  // Topic OTA
-  String otaTopic = "devices/" + String(MQTT_DEVICE_ID) + "/ota";
-
-  if (topicStr == expectedResponseTopic) {
-    // Traitement des réponses de pointage et commandes générales
+  // Topic réponse standard (pointage + commandes générales)
+  if (topicStr == String(MQTT_TOPIC_PREFIX) + MQTT_DEVICE_ID + MQTT_CMD_SUFFIX) {
     handleResponseMessage(message);
+    return;
   }
-  else if (topicStr == otaTopic) {
-    // Traitement des commandes OTA
+
+  // Topic OTA
+  if (topicStr == String("devices/") + MQTT_DEVICE_ID + "/ota") {
     handleOtaCommand(message);
+    return;
   }
 }
 ```
+
+#### 2. Extraire la logique de réponse dans `handleResponseMessage()`
+
+Déplacer le contenu actuel du `mqttCallback` (gestion des CMD_ACCEPTED, CMD_REFUSED, CMD_STATUS, etc.) dans cette fonction.
 
 #### 3. Implémenter `handleOtaCommand()`
 
 ```cpp
 void handleOtaCommand(const String& message) {
-  // Extraire log_id, version, url depuis le JSON
-  // {"log_id":"uuid","version":"V2.1.0","url":"https://..."}
-  
-  String logId   = extractFromJSON(message, "log_id");
-  String version = extractFromJSON(message, "version");
-  String url     = extractFromJSON(message, "url");
+  // Payload attendu: {"log_id":"uuid","version":"V2.1.0","url":"https://..."}
+  String logId   = FOTA::extractJSON(message, "log_id");
+  String version = FOTA::extractJSON(message, "version");
+  String url     = FOTA::extractJSON(message, "url");
+
+  if (url.isEmpty() || logId.isEmpty()) {
+    logger.error("[OTA] Payload invalide : " + message);
+    return;
+  }
 
   oled.displayText("MAJ firmware", 0, 0, 1, true);
   oled.displayText(version, 0, 20, 1, false);
   led.setPattern(LEDManager::Pattern::BLINK_FAST);
 
-  // Effectuer la mise à jour
-  bool success = performOTA(url, version);
+  // Tenter la mise à jour
+  // Note : FOTA::performUpdate() redémarre en cas de succès
+  // La réponse doit être publiée AVANT le reboot — adapter fota.h en conséquence
 
-  // Publier le résultat (AVANT le reboot si succès)
-  String otaResponseTopic = "devices/" + String(MQTT_DEVICE_ID) + "/ota/response";
-  String responsePayload;
-  if (success) {
-    responsePayload = "{\"log_id\":\"" + logId + "\",\"success\":true,\"version\":\"" + version + "\",\"error\":null}";
-  } else {
-    responsePayload = "{\"log_id\":\"" + logId + "\",\"success\":false,\"version\":null,\"error\":\"OTA failed\"}";
-  }
+  String otaResponseTopic = String("devices/") + MQTT_DEVICE_ID + "/ota/response";
+
+  // En cas d'échec (performUpdate retourne sans redémarrer)
+  String responsePayload = "{\"log_id\":\"" + logId + "\","
+    "\"success\":false,"
+    "\"version\":null,"
+    "\"error\":\"OTA failed\"}";
   mqttController->publish(otaResponseTopic.c_str(), responsePayload);
-  
-  delay(500); // Laisser le temps au message d'être envoyé avant reboot
 }
 ```
 
-#### 4. Ajouter l'abonnement OTA dans `initMQTT()`
+> **Note sur le succès OTA :** `httpUpdate` redémarre automatiquement l'ESP32 si le flash réussit (`rebootOnUpdate(true)`). Il faut donc publier la réponse de succès dans le callback `onEnd` de `httpUpdate`, **avant** que le reboot ait lieu. Adapter `fota.h` pour accepter un callback ou un topic de réponse.
 
-Dans `presenseV2.ino`, après la configuration des topics existants :
+#### 4. Souscrire au topic OTA dans `MQTTController`
+
+Ajouter un second appel `subscribe` dans `applySubscription()` de `mqtt.h` :
 
 ```cpp
-void initMQTT() {
-  // ... code existant ...
-  
-  String pubTopic = String(MQTT_TOPIC_PREFIX) + String(MQTT_DEVICE_ID) + "/event";
-  String subTopic = String(MQTT_TOPIC_PREFIX) + String(MQTT_DEVICE_ID) + String(MQTT_CMD_SUFFIX);
-  
-  mqttController->setPublishTopic(pubTopic);
-  mqttController->setSubscribeTopic(subTopic);           // topic principal (réponses pointage)
-  
-  // NOUVEAU — abonnement au topic OTA
-  String otaTopic = "devices/" + String(MQTT_DEVICE_ID) + "/ota";
-  mqttController->addSubscribeTopic(otaTopic);           // à implémenter dans MQTTController
-  
-  // ...
+void applySubscription() {
+  // Abonnement principal (réponses pointage)
+  if (!subscribeTopic.isEmpty()) {
+    client.subscribe(subscribeTopic.c_str());
+    logger.info("Abonne : " + subscribeTopic);
+  }
+
+  // Abonnement OTA
+  String otaTopic = String("devices/") + MQTT_DEVICE_ID + "/ota";
+  client.subscribe(otaTopic.c_str());
+  logger.info("Abonne OTA : " + otaTopic);
 }
 ```
 
@@ -443,85 +442,113 @@ void initMQTT() {
 
 ## 9. Identification du terminal
 
-### Convention de nommage `DEVICE_ID`
+### Principe : un seul firmware pour tous les terminaux
 
-Le `MQTT_DEVICE_ID` défini dans `config.h` est utilisé comme identifiant dans les topics MQTT. Il doit correspondre au `serial_number` enregistré dans la base de données pour l'appareil.
+Le firmware est **universel** — un seul binaire est compilé et flashé sur tous les terminaux RFID. Chaque terminal se distingue par une constante `SERIAL_NUMBER` définie dans `config.h`, qui est injectée dans les topics MQTT au démarrage.
 
-```
-config.h           → MQTT_DEVICE_ID = "RFID-001"
-rfid_devices table → serial_number  = "RFID-001"
-```
+### Définir le serial number dans `config.h`
 
-**Format recommandé :** `RFID-{numéro}` pour les terminaux RFID (ex: `RFID-001`, `RFID-002`).
+Remplacer `MQTT_DEVICE_ID` par une constante `SERIAL_NUMBER` plus explicite :
 
-### Extraction du serial depuis le topic
-
-Le backend extrait le `serial_number` depuis le topic en splitant sur `/` :
-
-```php
-// Topic: core/rfid/sensor/RFID-001/event
-$parts = explode('/', $topic);
-$uniqueId = $parts[3] ?? null;  // → "RFID-001"
-
-// Topic: devices/RFID-001/ota/response
-$serial = explode('/', $topic)[1] ?? null;  // → "RFID-001"
+```cpp
+// config.h — à adapter pour chaque terminal avant de flasher
+#define SERIAL_NUMBER  "RFID-001"   // ← changer ici selon le terminal
 ```
 
-Assurer la cohérence entre la position dans le topic et le format attendu.
+### Construire les topics dynamiquement dans `presenseV2.ino`
+
+```cpp
+void initMQTT() {
+  // ...
+
+  String pubTopic = String(MQTT_TOPIC_PREFIX) + SERIAL_NUMBER + "/event";
+  String subTopic = String(MQTT_TOPIC_PREFIX) + SERIAL_NUMBER + "/response";
+  String otaTopic = String("devices/") + SERIAL_NUMBER + "/ota";
+
+  mqttController->setPublishTopic(pubTopic);
+  mqttController->setSubscribeTopic(subTopic);
+  // otaTopic souscrit séparément — voir section 8
+
+  // Client ID unique basé sur le serial
+  mqttController->setClientId(String("presense-") + SERIAL_NUMBER);
+
+  // ...
+}
+```
+
+Et dans `mqttCallback`, utiliser la même variable :
+
+```cpp
+if (topicStr == String(MQTT_TOPIC_PREFIX) + SERIAL_NUMBER + "/response") {
+  handleResponseMessage(message);
+  return;
+}
+if (topicStr == String("devices/") + SERIAL_NUMBER + "/ota") {
+  handleOtaCommand(message);
+  return;
+}
+```
+
+### Cohérence avec la base de données
+
+Le `SERIAL_NUMBER` doit correspondre exactement au champ `serial_number` enregistré dans Tangaflow pour ce terminal :
+
+```
+config.h        →  SERIAL_NUMBER = "RFID-001"
+                          ↕  identique
+DB tangaflow    →  rfid_devices.serial_number = "RFID-001"
+```
+
+Pour flasher un nouveau terminal, il suffit de changer `SERIAL_NUMBER` dans `config.h` et de recompiler. Le reste du firmware est identique.
 
 ### Client ID MQTT unique
 
-Le `MQTT_CLIENT_ID` dans `config.h` est actuellement `"presense"` (valeur partagée). Si plusieurs terminaux utilisent le même `ClientID`, le broker déconnectera l'ancien terminal quand un nouveau se connecte.
-
-**Recommandation :** Utiliser le `DEVICE_ID` comme `ClientID` ou l'inclure dedans :
-```cpp
-mqttController->setClientId("presense-" + String(MQTT_DEVICE_ID));
-```
+Avec la construction dynamique ci-dessus, le `ClientID` devient `presense-RFID-001`, `presense-RFID-002`, etc. — unique pour chaque terminal, ce qui évite les déconnexions mutuelles sur le broker.
 
 ---
 
 ## 10. Checklist de conformité
 
-Avant de flasher un terminal en production, vérifier les points suivants :
+Avant de flasher un terminal en production :
 
-### Configuration
+### Configuration (`config.h`)
 
-- [ ] `MQTT_DEVICE_ID` correspond au `serial_number` enregistré en base
-- [ ] `MQTT_CLIENT_ID` est unique (différent pour chaque terminal physique)
+- [ ] `SERIAL_NUMBER` correspond au `serial_number` enregistré dans Tangaflow (ex: `"RFID-001"`)
+- [ ] `MQTT_CLIENT_ID` construit dynamiquement depuis `SERIAL_NUMBER` (ex: `presense-RFID-001`)
 - [ ] `FIRMWARE_VERSION` est au format `VX.Y.Z` (ex: `V2.0.1`)
-- [ ] Buffer MQTT = 1024 bytes minimum
+- [ ] Buffer MQTT = 1024 bytes minimum dans le constructeur `MQTTController`
 
-### Topics
+### Topics (abonnements)
 
-- [ ] Publication sur `core/rfid/sensor/{id}/event` avec `{"card_uid":"..."}`
-- [ ] Abonnement à `core/rfid/sensor/{id}/response` (réponses pointage + commandes)
-- [ ] **Abonnement à `devices/{id}/ota`** (commandes OTA — **CRITIQUE, à ajouter**)
-- [ ] Publication sur `devices/{id}/ota/response` avec `log_id` après chaque OTA
+- [ ] Abonnement à `core/rfid/sensor/RFID-001/response` (réponses pointage + commandes)
+- [ ] **Abonnement à `devices/RFID-001/ota`** — CRITIQUE, absent du code actuel
+
+### Topics (publications)
+
+- [ ] Scan RFID publié sur `core/rfid/sensor/RFID-001/event` avec `{"card_uid":"..."}`
+- [ ] Statut publié sur `core/rfid/sensor/RFID-001/event` avec champ `version`
+- [ ] **Résultat OTA publié sur `devices/RFID-001/ota/response`** avec `log_id` — AVANT le reboot
 
 ### Payloads
 
-- [ ] Scan RFID : champ `card_uid` (majuscule, sans `:`)
-- [ ] Status : champ `version` présent avec la valeur exacte de `FIRMWARE_VERSION`
-- [ ] OTA response : `log_id` echoed back, `success` boolean, `version` si succès
-
-### OTA
-
-- [ ] La commande OTA sur `devices/{id}/ota` est reçue et traitée
-- [ ] La réponse OTA est publiée sur `devices/{id}/ota/response` **avant** le reboot
-- [ ] Le `log_id` reçu est renvoyé dans la réponse
+- [ ] `card_uid` en majuscules, sans séparateurs
+- [ ] `version` dans le statut = valeur exacte de `FIRMWARE_VERSION`
+- [ ] Réponse OTA : `log_id` renvoyé tel quel, `success` boolean, `version` si succès
 
 ---
 
-## Résumé des topics — Tableau de référence
+## Résumé des topics — Tableau de référence (pour RFID-001)
 
-| Direction       | Topic                                    | Format  | Description                    |
-|-----------------|------------------------------------------|---------|-------------------------------|
-| ESP32 → Backend | `core/rfid/sensor/{id}/event`            | JSON    | Scan badge / Statut heartbeat  |
-| Backend → ESP32 | `core/rfid/sensor/{id}/response`         | Texte   | Résultat pointage + commandes  |
-| Backend → ESP32 | `devices/{id}/ota`                       | JSON    | Commande mise à jour firmware  |
-| ESP32 → Backend | `devices/{id}/ota/response`              | JSON    | Résultat mise à jour firmware  |
+| Direction             | Topic                                       | Format      | Description                        |
+|-----------------------|---------------------------------------------|-------------|-----------------------------------|
+| ESP32 → Backend       | `core/rfid/sensor/RFID-001/event`           | JSON        | Scan badge + réponse statut        |
+| Backend → ESP32       | `core/rfid/sensor/RFID-001/response`        | Texte brut  | Résultat pointage + commandes      |
+| Backend → ESP32       | `devices/RFID-001/ota`                      | JSON        | Commande mise à jour firmware      |
+| ESP32 → Backend       | `devices/RFID-001/ota/response`             | JSON        | Résultat mise à jour firmware      |
+
+Ces topics sont construits dynamiquement depuis `SERIAL_NUMBER` dans `config.h`. Pour un nouveau terminal, seule cette valeur change — le reste du firmware est identique.
 
 ---
 
-*Guide généré pour PRESENSE V2 — TANGA GROUP*  
+*Guide développeur IoT — PRESENSE V2 — Tangaflow*
 *Dernière mise à jour : 2026-03-31*
