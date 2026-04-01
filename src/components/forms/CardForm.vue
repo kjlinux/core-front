@@ -19,6 +19,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update:modelValue': [value: Partial<RfidCard>]
   'scan-request': [deviceId: string]
+  'toggle-device-online': [deviceId: string]
   submit: []
 }>()
 
@@ -41,10 +42,22 @@ const companyOptions = computed(() =>
 const deviceOptions = computed(() => [
   { label: 'Selectionner un capteur', value: '' },
   ...(props.devices || []).map((d) => ({
-    label: `${d.name} (${d.serialNumber})`,
+    label: `${d.name} (${d.serialNumber})${d.isOnline ? '' : ' — Hors ligne'}`,
     value: d.id,
   })),
 ])
+
+const selectedDevice = computed(() =>
+  props.devices?.find((d) => d.id === selectedDeviceId.value) ?? null
+)
+
+const selectedDeviceIsOnline = computed(() => selectedDevice.value?.isOnline ?? false)
+
+function handleForceOnline() {
+  if (selectedDeviceId.value) {
+    emit('toggle-device-online', selectedDeviceId.value)
+  }
+}
 
 const statusOptions = [
   { label: 'Active', value: 'active' },
@@ -98,16 +111,31 @@ const handleScan = () => {
               :disabled="loading || isWaiting"
               class="flex-1"
             />
-            <AppButton
-              type="button"
-              variant="secondary"
-              :loading="isWaiting"
-              :disabled="!selectedDeviceId || loading || isWaiting"
-              @click="handleScan"
-            >
-              {{ isWaiting ? 'En attente...' : 'Scanner' }}
-            </AppButton>
+            <template v-if="selectedDeviceId && !selectedDeviceIsOnline">
+              <AppButton
+                type="button"
+                variant="secondary"
+                :disabled="loading"
+                @click="handleForceOnline"
+              >
+                Mettre en ligne
+              </AppButton>
+            </template>
+            <template v-else>
+              <AppButton
+                type="button"
+                variant="secondary"
+                :loading="isWaiting"
+                :disabled="!selectedDeviceId || !selectedDeviceIsOnline || loading || isWaiting"
+                @click="handleScan"
+              >
+                {{ isWaiting ? 'En attente...' : 'Scanner' }}
+              </AppButton>
+            </template>
           </div>
+          <p v-if="selectedDeviceId && !selectedDeviceIsOnline && !isWaiting" class="mt-2 text-sm text-amber-600">
+            Ce capteur est hors ligne. Mettez-le en ligne pour pouvoir scanner.
+          </p>
           <p v-if="isWaiting" class="mt-2 text-sm text-blue-600 flex items-center gap-2">
             <span class="inline-block h-3 w-3 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"></span>
             Approchez la carte du capteur...

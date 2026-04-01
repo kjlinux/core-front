@@ -16,10 +16,11 @@
       <CardForm
         v-model="formData"
         :companies="companyStore.companies"
-        :devices="onlineDevices"
+        :devices="deviceStore.devices"
         :scan-status="scanStatus"
         :loading="loading"
         @scan-request="handleScanRequest"
+        @toggle-device-online="handleToggleDeviceOnline"
         @submit="handleSubmit"
       />
     </AppCard>
@@ -52,7 +53,21 @@ const formData = ref<Partial<RfidCard>>({})
 const scanStatus = ref<'idle' | 'waiting' | 'received'>('idle')
 let scanTimeoutId: ReturnType<typeof setTimeout> | null = null
 
-const onlineDevices = computed(() => deviceStore.devices.filter((d) => d.isOnline))
+const togglingDeviceId = ref<string | null>(null)
+
+async function handleToggleDeviceOnline(deviceId: string) {
+  const device = deviceStore.devices.find((d) => d.id === deviceId)
+  if (!device) return
+  togglingDeviceId.value = deviceId
+  try {
+    await deviceStore.updateDevice(deviceId, { isOnline: true })
+    toast.showSuccess(`${device.name} mis en ligne`)
+  } catch {
+    toast.showError('Erreur lors de la mise en ligne du capteur')
+  } finally {
+    togglingDeviceId.value = null
+  }
+}
 
 onMounted(async () => {
   await Promise.all([
