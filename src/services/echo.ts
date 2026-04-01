@@ -20,7 +20,7 @@ export function initEcho(): Echo<'reverb'> {
     forceTLS: import.meta.env.VITE_REVERB_SCHEME === 'https',
     enabledTransports: ['ws', 'wss'],
     disableStats: true,
-    authEndpoint: '/broadcasting/auth',
+    authEndpoint: `${import.meta.env.VITE_API_BASE_URL}/broadcasting/auth`,
     auth: {
       headers: {
         Authorization: `Bearer ${token}`,
