@@ -78,8 +78,13 @@ apiClient.interceptors.response.use(
     const url = error.config?.url || ''
     const isAuthEndpoint = url.includes('/auth/login') || url.includes('/auth/logout')
     const isOnLoginPage = router.currentRoute.value.path.includes('/login')
+    // Endpoints publics utilisés par les employés sans compte (scan QR, enrôlement téléphone)
+    const isPublicQrEndpoint =
+      url.includes('/enroll-session/') ||
+      url.includes('/employees/device/identify') ||
+      url.includes('/qr-attendance/scan')
 
-    if (error.response?.status === 401 && !isAuthEndpoint && !isOnLoginPage) {
+    if (error.response?.status === 401 && !isAuthEndpoint && !isOnLoginPage && !isPublicQrEndpoint) {
       // Nettoyer les tokens directement sans passer par le store
       // pour éviter tout problème d'initialisation de Pinia
       localStorage.removeItem('access_token')

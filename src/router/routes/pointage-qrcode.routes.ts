@@ -7,7 +7,7 @@ const pointageQrcodeRoutes: RouteRecordRaw[] = [
     path: '/qr-scan',
     name: 'qr-scan-public',
     component: () => import('@/pages/pointage-qrcode/QrCodeScanPage.vue'),
-    meta: { layout: 'none', title: 'Pointage QR Code' },
+    meta: { requiresAuth: false, layout: 'none', title: 'Pointage QR Code' },
   },
 
   // Routes protégées du module
