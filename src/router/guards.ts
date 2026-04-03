@@ -6,8 +6,8 @@ import type { UserRole } from '@/types/enums'
 export function authGuard(to: RouteLocationNormalized, _from: RouteLocationNormalized) {
   const auth = useAuthStore()
 
-  if (to.meta.requiresAuth !== false && !auth.isAuthenticated) {
-    console.warn('[guard] redirect login ← non authentifié, route:', to.fullPath, 'requiresAuth:', to.meta.requiresAuth)
+  const publicRoutes = ['login', 'forgot-password', 'qr-scan-public']
+  if (!publicRoutes.includes(to.name as string) && to.meta.requiresAuth !== false && !auth.isAuthenticated) {
     return { name: 'login', query: { redirect: to.fullPath } }
   }
 
