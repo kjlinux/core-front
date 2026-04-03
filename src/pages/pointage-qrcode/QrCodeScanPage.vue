@@ -47,12 +47,14 @@ onMounted(async () => {
       await qrcodeApi.submitEnrollSession(enrollToken.value, fingerprint, deviceInfo)
       enrolledName.value = ''
       step.value = 'enrolled'
+      // Ne pas continuer — rester sur l'écran de confirmation
+      return
     } catch (e: unknown) {
       const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message
       errorMsg.value = msg || 'Erreur lors de l\'enrolement'
       step.value = 'enroll-error'
+      return
     }
-    return
   }
 
   // Mode pointage normal : vérifier si cet appareil est enrôlé
