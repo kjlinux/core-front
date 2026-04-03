@@ -80,6 +80,7 @@ apiClient.interceptors.response.use(
     const isOnLoginPage = router.currentRoute.value.path.includes('/login')
     const isOnPublicQrPage = router.currentRoute.value.path.includes('/qr-scan')
 
+    console.warn('[client] 401 sur:', url, '| page courante:', router.currentRoute.value.path)
     if (error.response?.status === 401 && !isAuthEndpoint && !isOnLoginPage && !isOnPublicQrPage) {
       // Nettoyer les tokens directement sans passer par le store
       // pour éviter tout problème d'initialisation de Pinia

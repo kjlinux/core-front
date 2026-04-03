@@ -7,6 +7,7 @@ export function authGuard(to: RouteLocationNormalized, _from: RouteLocationNorma
   const auth = useAuthStore()
 
   if (to.meta.requiresAuth !== false && !auth.isAuthenticated) {
+    console.warn('[guard] redirect login ← non authentifié, route:', to.fullPath, 'requiresAuth:', to.meta.requiresAuth)
     return { name: 'login', query: { redirect: to.fullPath } }
   }
 
