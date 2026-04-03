@@ -77,8 +77,9 @@ apiClient.interceptors.response.use(
   (error) => {
     const url = error.config?.url || ''
     const isAuthEndpoint = url.includes('/auth/login') || url.includes('/auth/logout')
-    const isOnLoginPage = router.currentRoute.value.path.includes('/login')
-    const isOnPublicQrPage = router.currentRoute.value.path.includes('/qr-scan')
+    const currentPath = window.location.pathname
+    const isOnLoginPage = currentPath.includes('/login')
+    const isOnPublicQrPage = currentPath.includes('/qr-scan')
 
     if (error.response?.status === 401 && !isAuthEndpoint && !isOnLoginPage && !isOnPublicQrPage) {
       // Nettoyer les tokens directement sans passer par le store
