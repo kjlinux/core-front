@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useFeelbackStore } from '@/stores/feelback.store'
 import { useCompanyStore } from '@/stores/company.store'
 import { usePermissions } from '@/composables/usePermissions'
@@ -10,6 +11,7 @@ import AppInput from '@/components/ui/AppInput.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
 import BarChart from '@/components/charts/BarChart.vue'
 
+const { t } = useI18n()
 const store = useFeelbackStore()
 const companyStore = useCompanyStore()
 const permissions = usePermissions()
@@ -22,7 +24,7 @@ const selectedSiteIds = ref<string[]>([])
 const isSuperAdmin = computed(() => permissions.isSuperAdmin.value)
 
 const companyOptions = computed(() => [
-  { label: 'Toutes les entreprises', value: '' },
+  { label: t('feelback.allCompanies'), value: '' },
   ...companyStore.companies.map((c) => ({ label: c.name, value: c.id })),
 ])
 
@@ -36,7 +38,6 @@ function buildParams() {
 
 async function load() {
   await store.fetchComparison(buildParams())
-  // Sélectionner tous les sites par défaut au premier chargement
   if (selectedSiteIds.value.length === 0) {
     selectedSiteIds.value = store.comparison.map((s) => s.siteId ?? '').filter(Boolean).slice(0, 5)
   }
@@ -92,7 +93,7 @@ onMounted(async () => {
 <template>
   <div class="space-y-6">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-      <h1 class="text-2xl font-bold text-gray-900">Comparaison par site</h1>
+      <h1 class="text-2xl font-bold text-gray-900">{{ t('feelback.comparisonTitle') }}</h1>
       <div class="flex flex-wrap gap-3">
         <AppSelect
           v-if="isSuperAdmin"
@@ -100,8 +101,8 @@ onMounted(async () => {
           :options="companyOptions"
           class="w-48"
         />
-        <AppInput v-model="startDate" type="date" placeholder="Date debut" />
-        <AppInput v-model="endDate" type="date" placeholder="Date fin" />
+        <AppInput v-model="startDate" type="date" />
+        <AppInput v-model="endDate" type="date" />
       </div>
     </div>
 
@@ -110,9 +111,9 @@ onMounted(async () => {
     </div>
 
     <template v-else>
-      <AppCard title="Selectionner les sites a comparer (max 5)">
+      <AppCard :title="t('feelback.selectSites')">
         <div v-if="allSites.length === 0" class="text-sm text-gray-500">
-          Aucun site avec des donnees pour cette periode.
+          {{ t('feelback.noSiteData') }}
         </div>
         <div v-else class="flex flex-wrap gap-3">
           <button
@@ -129,26 +130,26 @@ onMounted(async () => {
             <span class="ml-1 text-xs opacity-75">({{ site.totalResponses }})</span>
           </button>
         </div>
-        <p class="text-xs text-gray-400 mt-3">{{ selectedSiteIds.length }}/5 site(s) selectionne(s)</p>
+        <p class="text-xs text-gray-400 mt-3">{{ selectedSiteIds.length }}/5 {{ t('feelback.selectedSites') }}</p>
       </AppCard>
 
-      <AppCard v-if="selectedSites.length > 0" title="Taux de satisfaction par site">
-        <BarChart :data="barData" title="Taux de satisfaction (%)" />
+      <AppCard v-if="selectedSites.length > 0" :title="t('feelback.satisfactionChart')">
+        <BarChart :data="barData" :title="t('feelback.satisfaction')" />
       </AppCard>
 
-      <AppCard v-if="sortedSites.length > 0" title="Classement des sites selectionnes">
+      <AppCard v-if="sortedSites.length > 0" :title="t('feelback.ranking')">
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
               <tr>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rang</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Site</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Bon %</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Neutre %</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Mauvais %</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Satisfaction</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Performance</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('feelback.rank') }}</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('feelback.site') }}</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('common.total') }}</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('feelback.goodPct') }}</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('feelback.neutralPct') }}</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('feelback.badPct') }}</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('feelback.satisfaction') }}</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('feelback.performance') }}</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
@@ -161,8 +162,8 @@ onMounted(async () => {
                 <td class="px-4 py-3 text-sm text-red-600">{{ pct(site.mauvais, site.totalResponses) }}%</td>
                 <td class="px-4 py-3 text-sm font-semibold">{{ site.satisfactionRate }}%</td>
                 <td class="px-4 py-3">
-                  <AppBadge v-if="sortedSites.length > 1 && site.siteId === bestSite?.siteId" variant="success">Meilleur</AppBadge>
-                  <AppBadge v-else-if="sortedSites.length > 1 && site.siteId === worstSite?.siteId" variant="warning">A ameliorer</AppBadge>
+                  <AppBadge v-if="sortedSites.length > 1 && site.siteId === bestSite?.siteId" variant="success">{{ t('feelback.best') }}</AppBadge>
+                  <AppBadge v-else-if="sortedSites.length > 1 && site.siteId === worstSite?.siteId" variant="warning">{{ t('feelback.toImprove') }}</AppBadge>
                 </td>
               </tr>
             </tbody>

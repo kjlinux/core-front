@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useFirmwareStore } from '@/stores/firmware.store'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
@@ -7,21 +8,22 @@ import AppButton from '@/components/ui/AppButton.vue'
 import DataTable from '@/components/data-display/DataTable.vue'
 import type { OtaUpdateStatus } from '@/types'
 
+const { t } = useI18n()
 const store = useFirmwareStore()
 
 const statusFilter = ref<OtaUpdateStatus | ''>('')
 const deviceKindFilter = ref('')
 
-const columns = [
-  { key: 'deviceName', label: 'Terminal' },
-  { key: 'deviceKind', label: 'Type' },
-  { key: 'firmwareVersion', label: 'Version' },
-  { key: 'triggeredBy', label: 'Declenchement' },
-  { key: 'status', label: 'Statut' },
-  { key: 'startedAt', label: 'Debut' },
-  { key: 'completedAt', label: 'Fin' },
-  { key: 'errorMessage', label: 'Erreur' },
-]
+const columns = computed(() => [
+  { key: 'deviceName', label: t('firmware.terminal') },
+  { key: 'deviceKind', label: t('firmware.deviceKind') },
+  { key: 'firmwareVersion', label: t('firmware.version') },
+  { key: 'triggeredBy', label: t('firmware.triggerType') },
+  { key: 'status', label: t('common.status') },
+  { key: 'startedAt', label: t('firmware.start') },
+  { key: 'completedAt', label: t('firmware.end') },
+  { key: 'errorMessage', label: t('firmware.errorLabel') },
+])
 
 const statusVariant: Record<OtaUpdateStatus, 'success' | 'warning' | 'danger' | 'info' | 'neutral'> = {
   success: 'success',
@@ -31,13 +33,13 @@ const statusVariant: Record<OtaUpdateStatus, 'success' | 'warning' | 'danger' | 
   skipped: 'neutral',
 }
 
-const statusLabel: Record<OtaUpdateStatus, string> = {
-  success: 'Succes',
-  in_progress: 'En cours',
-  pending: 'En attente',
-  failed: 'Echec',
-  skipped: 'Ignore',
-}
+const statusLabel = computed<Record<OtaUpdateStatus, string>>(() => ({
+  success: t('firmware.status.success'),
+  in_progress: t('firmware.status.in_progress'),
+  pending: t('firmware.status.pending'),
+  failed: t('firmware.status.failed'),
+  skipped: t('firmware.status.skipped'),
+}))
 
 onMounted(() => loadData())
 
@@ -56,7 +58,7 @@ function formatDatetime(d?: string) {
 
 <template>
   <div class="space-y-6">
-    <h1 class="text-2xl font-bold text-gray-900">Historique des mises a jour</h1>
+    <h1 class="text-2xl font-bold text-gray-900">{{ t('firmware.logsTitle') }}</h1>
 
     <AppCard>
       <div class="mb-4 flex flex-wrap items-center gap-3">
@@ -65,9 +67,9 @@ function formatDatetime(d?: string) {
           class="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           @change="loadData"
         >
-          <option value="">Tous les types</option>
-          <option value="rfid">RFID</option>
-          <option value="biometric">Biometrique</option>
+          <option value="">{{ t('firmware.allTypes') }}</option>
+          <option value="rfid">{{ t('firmware.deviceKinds.rfid') }}</option>
+          <option value="biometric">{{ t('firmware.deviceKinds.biometric') }}</option>
         </select>
 
         <select
@@ -75,27 +77,27 @@ function formatDatetime(d?: string) {
           class="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           @change="loadData"
         >
-          <option value="">Tous les statuts</option>
-          <option value="pending">En attente</option>
-          <option value="in_progress">En cours</option>
-          <option value="success">Succes</option>
-          <option value="failed">Echec</option>
-          <option value="skipped">Ignore</option>
+          <option value="">{{ t('firmware.allStatuses') }}</option>
+          <option value="pending">{{ t('firmware.status.pending') }}</option>
+          <option value="in_progress">{{ t('firmware.status.in_progress') }}</option>
+          <option value="success">{{ t('firmware.status.success') }}</option>
+          <option value="failed">{{ t('firmware.status.failed') }}</option>
+          <option value="skipped">{{ t('firmware.status.skipped') }}</option>
         </select>
 
-        <AppButton variant="ghost" size="sm" @click="loadData">Actualiser</AppButton>
+        <AppButton variant="ghost" size="sm" @click="loadData">{{ t('common.refresh') }}</AppButton>
       </div>
 
       <DataTable :columns="columns" :data="store.updateLogs" :loading="store.isLoading">
         <template #deviceKind="{ row }">
-          <AppBadge variant="info">{{ row.deviceKind === 'rfid' ? 'RFID' : 'Biometrique' }}</AppBadge>
+          <AppBadge variant="info">{{ row.deviceKind === 'rfid' ? t('firmware.deviceKinds.rfid') : t('firmware.deviceKinds.biometric') }}</AppBadge>
         </template>
         <template #firmwareVersion="{ row }">
           <span class="font-mono text-sm">{{ row.firmwareVersion || '-' }}</span>
         </template>
         <template #triggeredBy="{ row }">
           <AppBadge :variant="row.triggeredBy === 'auto' ? 'info' : 'neutral'">
-            {{ row.triggeredBy === 'auto' ? 'Automatique' : 'Manuel' }}
+            {{ row.triggeredBy === 'auto' ? t('firmware.triggeredBy.auto') : t('firmware.triggeredBy.manual') }}
           </AppBadge>
         </template>
         <template #status="{ row }">
@@ -112,7 +114,7 @@ function formatDatetime(d?: string) {
       </DataTable>
 
       <div v-if="store.pagination.totalPages > 1" class="mt-4 flex items-center justify-between text-sm text-gray-600">
-        <span>Page {{ store.pagination.currentPage }} / {{ store.pagination.totalPages }} — {{ store.pagination.total }} entrees</span>
+        <span>{{ t('common.page') }} {{ store.pagination.currentPage }} / {{ store.pagination.totalPages }} — {{ store.pagination.total }} {{ t('firmware.entries') }}</span>
         <div class="flex gap-2">
           <AppButton
             variant="ghost"
@@ -120,7 +122,7 @@ function formatDatetime(d?: string) {
             :disabled="store.pagination.currentPage <= 1"
             @click="store.fetchLogs({ page: store.pagination.currentPage - 1 })"
           >
-            Precedent
+            {{ t('common.previous') }}
           </AppButton>
           <AppButton
             variant="ghost"
@@ -128,7 +130,7 @@ function formatDatetime(d?: string) {
             :disabled="store.pagination.currentPage >= store.pagination.totalPages"
             @click="store.fetchLogs({ page: store.pagination.currentPage + 1 })"
           >
-            Suivant
+            {{ t('common.next') }}
           </AppButton>
         </div>
       </div>

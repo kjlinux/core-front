@@ -5,7 +5,7 @@
         variant="outline"
         @click="router.back()"
       >
-        Retour
+        {{ t('common.back') }}
       </AppButton>
     </div>
 
@@ -16,47 +16,47 @@
     <template v-else-if="department">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         <StatCard
-          title="Total Employes"
+          :title="t('departments.totalEmployees')"
           :value="department.employeeCount || 0"
           :icon="UsersIcon"
         />
         <StatCard
-          title="Employes Actifs"
+          :title="t('departments.activeEmployees')"
           :value="activeEmployeesCount"
           :icon="CheckCircleIcon"
         />
         <StatCard
-          title="Site"
+          :title="t('departments.site')"
           :value="siteName"
           :icon="MapPinIcon"
         />
       </div>
 
-      <AppCard title="Informations du Departement" class="mb-6">
+      <AppCard :title="t('departments.info')" class="mb-6">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Nom</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('common.name') }}</label>
             <p class="text-base text-gray-900">{{ department.name }}</p>
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Site</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('departments.site') }}</label>
             <p class="text-base text-gray-900">{{ siteName }}</p>
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Entreprise</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('departments.enterpriseLabel') }}</label>
             <p class="text-base text-gray-900">{{ companyName }}</p>
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Manager</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('departments.manager') }}</label>
             <p class="text-base text-gray-900">{{ managerName }}</p>
           </div>
         </div>
       </AppCard>
 
-      <AppCard title="Employes">
+      <AppCard :title="t('departments.employees')">
         <DataTable
           :columns="employeeColumns"
           :data="employeeTableData"
@@ -73,6 +73,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useDepartmentStore } from '@/stores/department.store'
 import { useCompanyStore } from '@/stores/company.store'
 import { useSiteStore } from '@/stores/site.store'
@@ -84,6 +85,7 @@ import AppCard from '@/components/ui/AppCard.vue'
 import type { TableColumn } from '@/types/common'
 import { UsersIcon, CheckCircleIcon, MapPinIcon } from '@heroicons/vue/24/outline'
 
+const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const departmentStore = useDepartmentStore()
@@ -119,12 +121,12 @@ const activeEmployeesCount = computed(() => {
   ).length
 })
 
-const employeeColumns: TableColumn[] = [
-  { key: 'name', label: 'Nom', sortable: true },
-  { key: 'position', label: 'Poste', sortable: true },
-  { key: 'email', label: 'Email', sortable: false },
-  { key: 'status', label: 'Statut', align: 'center' as const },
-]
+const employeeColumns = computed<TableColumn[]>(() => [
+  { key: 'name', label: t('common.name'), sortable: true },
+  { key: 'position', label: t('employees.position'), sortable: true },
+  { key: 'email', label: t('common.email'), sortable: false },
+  { key: 'status', label: t('common.status'), align: 'center' as const },
+])
 
 const employeeTableData = computed(() => {
   return employeeStore.employees
@@ -134,7 +136,7 @@ const employeeTableData = computed(() => {
       name: `${emp.firstName} ${emp.lastName}`,
       position: emp.position,
       email: emp.email,
-      status: emp.isActive ? 'Actif' : 'Inactif',
+      status: emp.isActive ? t('common.active') : t('common.inactive'),
     }))
 })
 

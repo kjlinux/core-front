@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import QRCode from 'qrcode'
 import { useQrcodeStore } from '@/stores/qrcode.store'
 import { usePermissions } from '@/composables/usePermissions'
@@ -13,6 +14,7 @@ import AppModal from '@/components/ui/AppModal.vue'
 import DataTable from '@/components/data-display/DataTable.vue'
 import { PlusIcon, TrashIcon, ArrowDownTrayIcon, PrinterIcon } from '@heroicons/vue/24/outline'
 
+const { t } = useI18n()
 const store = useQrcodeStore()
 const router = useRouter()
 const permissions = usePermissions()
@@ -22,14 +24,14 @@ const confirmRevokeId = ref<string | null>(null)
 const viewingQr = ref<QrCode | null>(null)
 const qrDataUrl = ref<string | null>(null)
 
-const columns = [
+const columns = computed(() => [
   { key: 'siteName', label: 'Site' },
-  { key: 'label', label: 'Libelle' },
-  { key: 'token', label: 'Token' },
-  { key: 'isActive', label: 'Statut' },
-  { key: 'generatedAt', label: 'Genere le' },
-  { key: 'actions', label: 'Actions' },
-]
+  { key: 'label', label: t('qrcode.label') },
+  { key: 'token', label: t('qrcode.token') },
+  { key: 'isActive', label: t('qrcode.status') },
+  { key: 'generatedAt', label: t('qrcode.generatedAt') },
+  { key: 'actions', label: t('common.actions') },
+])
 
 onMounted(() => store.fetchQrCodes())
 
@@ -67,7 +69,7 @@ function printQr() {
       <h2 style="margin-bottom:8px">${viewingQr.value.siteName ?? 'Site'}</h2>
       ${viewingQr.value.label ? `<p style="color:#64748b;margin-bottom:16px">${viewingQr.value.label}</p>` : ''}
       <img src="${qrDataUrl.value}" style="width:280px;height:280px" />
-      <p style="margin-top:16px;font-size:13px;color:#94a3b8">Scannez ce QR Code avec votre telephone pour pointer</p>
+      <p style="margin-top:16px;font-size:13px;color:#94a3b8">${t('qrcode.scanInstruction')}</p>
     </body></html>
   `)
   win.document.close()
@@ -77,10 +79,10 @@ function printQr() {
 async function handleRevoke(id: string) {
   try {
     await store.revokeQrCode(id)
-    toast.success('QR Code revoque')
+    toast.success(t('qrcode.revokedSuccess'))
     confirmRevokeId.value = null
   } catch {
-    toast.error('Erreur lors de la revocation')
+    toast.error(t('qrcode.revokeError'))
   }
 }
 </script>
@@ -89,9 +91,9 @@ async function handleRevoke(id: string) {
   <div class="space-y-6">
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">QR Codes de sites</h1>
+        <h1 class="text-2xl font-bold text-gray-900">{{ t('qrcode.list') }}</h1>
         <p class="mt-1 text-sm text-gray-500">
-          Un QR Code par site, affiché à l'entrée. Les employés scannent depuis leur téléphone enrôlé.
+          {{ t('qrcode.listSubtitle') }}
         </p>
       </div>
       <AppButton
@@ -100,7 +102,7 @@ async function handleRevoke(id: string) {
         @click="router.push({ name: 'qrcode-generate' })"
       >
         <PlusIcon class="mr-1 h-4 w-4" />
-        Generer un QR Code
+        {{ t('qrcode.generate') }}
       </AppButton>
     </div>
 
@@ -116,7 +118,7 @@ async function handleRevoke(id: string) {
 
         <template #isActive="{ row }">
           <AppBadge :variant="row.isActive ? 'success' : 'neutral'">
-            {{ row.isActive ? 'Actif' : 'Revoque' }}
+            {{ row.isActive ? t('qrcode.active') : t('qrcode.revoked') }}
           </AppBadge>
         </template>
 
@@ -135,7 +137,7 @@ async function handleRevoke(id: string) {
               size="sm"
               variant="ghost"
               class="text-red-600 hover:text-red-700"
-              title="Revoquer"
+              :title="t('qrcode.revoke')"
               @click="confirmRevokeId = row.id"
             >
               <TrashIcon class="h-4 w-4" />
@@ -159,18 +161,18 @@ async function handleRevoke(id: string) {
         </div>
         <img v-else :src="qrDataUrl" alt="QR Code" class="rounded-lg border border-gray-200" />
         <p class="text-xs text-gray-400">
-          Ce QR Code est unique pour ce site.
+          {{ t('qrcode.uniqueNote') }}
         </p>
       </div>
 
       <template #footer>
         <AppButton variant="ghost" @click="downloadQr">
           <ArrowDownTrayIcon class="mr-1 h-4 w-4" />
-          Telecharger
+          {{ t('qrcode.download') }}
         </AppButton>
         <AppButton variant="outline" @click="printQr">
           <PrinterIcon class="mr-1 h-4 w-4" />
-          Imprimer
+          {{ t('qrcode.print') }}
         </AppButton>
       </template>
     </AppModal>
@@ -182,13 +184,13 @@ async function handleRevoke(id: string) {
       @click.self="confirmRevokeId = null"
     >
       <div class="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-        <h3 class="mb-2 text-lg font-semibold text-gray-900">Revoquer le QR Code</h3>
+        <h3 class="mb-2 text-lg font-semibold text-gray-900">{{ t('qrcode.revoke') }}</h3>
         <p class="mb-6 text-sm text-gray-600">
-          Etes-vous sur de vouloir revoquer ce QR Code ? Les employes ne pourront plus pointer via ce code de site.
+          {{ t('qrcode.revokeConfirm') }}
         </p>
         <div class="flex justify-end gap-3">
-          <AppButton variant="ghost" @click="confirmRevokeId = null">Annuler</AppButton>
-          <AppButton variant="danger" @click="handleRevoke(confirmRevokeId!)">Revoquer</AppButton>
+          <AppButton variant="ghost" @click="confirmRevokeId = null">{{ t('common.cancel') }}</AppButton>
+          <AppButton variant="danger" @click="handleRevoke(confirmRevokeId!)">{{ t('qrcode.revoke') }}</AppButton>
         </div>
       </div>
     </div>

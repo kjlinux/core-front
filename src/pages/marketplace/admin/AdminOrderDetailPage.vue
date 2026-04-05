@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { useOrderStore } from '@/stores/order.store'
 import { useToast } from '@/composables/useToast'
@@ -10,6 +11,7 @@ import AppSelect from '@/components/ui/AppSelect.vue'
 import AppModal from '@/components/ui/AppModal.vue'
 import AppInput from '@/components/ui/AppInput.vue'
 
+const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const store = useOrderStore()
@@ -22,19 +24,23 @@ const showTrackingModal = ref(false)
 const newStatus = ref('')
 const trackingInfo = ref({ carrier: '', trackingNumber: '' })
 
-const statusOptions = [
-  { label: 'En attente', value: 'pending' },
-  { label: 'Confirmee', value: 'confirmed' },
-  { label: 'En traitement', value: 'processing' },
-  { label: 'Expediee', value: 'shipped' },
-  { label: 'Livree', value: 'delivered' },
-  { label: 'Annulee', value: 'cancelled' },
-]
+const statusOptions = computed(() => [
+  { label: t('marketplace.pending'), value: 'pending' },
+  { label: t('marketplace.confirmed'), value: 'confirmed' },
+  { label: t('marketplace.processing'), value: 'processing' },
+  { label: t('marketplace.shipped'), value: 'shipped' },
+  { label: t('marketplace.delivered'), value: 'delivered' },
+  { label: t('marketplace.cancelled'), value: 'cancelled' },
+])
 
-const statusLabels: Record<string, string> = {
-  pending: 'En attente', confirmed: 'Confirmee', processing: 'En traitement',
-  shipped: 'Expediee', delivered: 'Livree', cancelled: 'Annulee',
-}
+const statusLabels = computed<Record<string, string>>(() => ({
+  pending: t('marketplace.pending'),
+  confirmed: t('marketplace.confirmed'),
+  processing: t('marketplace.processing'),
+  shipped: t('marketplace.shipped'),
+  delivered: t('marketplace.delivered'),
+  cancelled: t('marketplace.cancelled'),
+}))
 
 const statusVariants: Record<string, string> = {
   pending: 'warning', confirmed: 'info', processing: 'info',
@@ -51,12 +57,12 @@ function formatDate(date: string) {
 
 function updateStatus() {
   if (newStatus.value) {
-    toast.showSuccess(`Statut mis a jour : ${statusLabels[newStatus.value]}`)
+    toast.showSuccess(`${t('marketplace.statusUpdatedTo')} ${statusLabels.value[newStatus.value]}`)
   }
 }
 
 function saveTracking() {
-  toast.showSuccess('Informations de suivi enregistrees')
+  toast.showSuccess(t('marketplace.trackingInfo'))
   showTrackingModal.value = false
 }
 
@@ -71,8 +77,8 @@ onMounted(async () => {
 <template>
   <div class="space-y-6">
     <div class="flex items-center gap-4">
-      <AppButton variant="ghost" @click="router.push('/marketplace/admin/orders')">&larr; Retour</AppButton>
-      <h1 class="text-2xl font-bold text-gray-900">Detail commande (Admin)</h1>
+      <AppButton variant="ghost" @click="router.push('/marketplace/admin/orders')">&larr; {{ t('common.back') }}</AppButton>
+      <h1 class="text-2xl font-bold text-gray-900">{{ t('marketplace.adminOrderDetail') }}</h1>
     </div>
 
     <div v-if="store.isLoading && !order" class="flex justify-center py-12">
@@ -82,15 +88,15 @@ onMounted(async () => {
     <template v-else-if="order">
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div class="lg:col-span-2 space-y-4">
-          <AppCard title="Articles">
+          <AppCard :title="t('marketplace.articles')">
             <div class="overflow-x-auto">
               <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                   <tr>
-                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Produit</th>
-                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Qte</th>
-                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Prix U.</th>
-                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">{{ t('marketplace.product') }}</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">{{ t('marketplace.qty') }}</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">{{ t('marketplace.unitPriceShort') }}</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">{{ t('marketplace.total') }}</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
@@ -104,13 +110,13 @@ onMounted(async () => {
               </table>
             </div>
             <div class="mt-3 pt-3 border-t text-right space-y-1">
-              <p class="text-sm text-gray-600">Sous-total : {{ formatPrice(order.subtotal, order.currency) }}</p>
-              <p class="text-sm text-gray-600">Livraison : {{ formatPrice(order.deliveryFee, order.currency) }}</p>
-              <p class="font-bold text-primary">Total : {{ formatPrice(order.total, order.currency) }}</p>
+              <p class="text-sm text-gray-600">{{ t('marketplace.subtotal') }} : {{ formatPrice(order.subtotal, order.currency) }}</p>
+              <p class="text-sm text-gray-600">{{ t('marketplace.shipping') }} : {{ formatPrice(order.deliveryFee, order.currency) }}</p>
+              <p class="font-bold text-primary">{{ t('marketplace.total') }} : {{ formatPrice(order.total, order.currency) }}</p>
             </div>
           </AppCard>
 
-          <AppCard title="Adresse de livraison">
+          <AppCard :title="t('marketplace.deliveryAddressLabel')">
             <div class="text-sm space-y-1">
               <p class="font-semibold text-gray-900">{{ order.deliveryAddress.fullName }}</p>
               <p class="text-gray-600">{{ order.deliveryAddress.phone }}</p>
@@ -121,50 +127,50 @@ onMounted(async () => {
         </div>
 
         <div class="space-y-4">
-          <AppCard title="Statut de la commande">
+          <AppCard :title="t('marketplace.orderStatus')">
             <div class="space-y-3">
               <div>
-                <p class="text-xs text-gray-500">Statut actuel</p>
+                <p class="text-xs text-gray-500">{{ t('marketplace.currentStatus') }}</p>
                 <AppBadge :variant="(statusVariants[order.status] ?? 'neutral') as any">
                   {{ statusLabels[order.status] }}
                 </AppBadge>
               </div>
               <div>
-                <label class="text-sm font-medium text-gray-700">Nouveau statut</label>
+                <label class="text-sm font-medium text-gray-700">{{ t('marketplace.newStatus') }}</label>
                 <AppSelect v-model="newStatus" :options="statusOptions" class="mt-1" />
               </div>
-              <AppButton variant="primary" class="w-full" @click="updateStatus">Mettre a jour</AppButton>
+              <AppButton variant="primary" class="w-full" @click="updateStatus">{{ t('marketplace.updateStatus') }}</AppButton>
             </div>
           </AppCard>
 
-          <AppCard title="Informations">
+          <AppCard :title="t('marketplace.info')">
             <div class="space-y-2 text-sm">
               <div>
-                <p class="text-gray-500">Entreprise</p>
+                <p class="text-gray-500">{{ t('marketplace.company') }}</p>
                 <p class="font-medium text-gray-900">{{ order.companyName }}</p>
               </div>
               <div>
-                <p class="text-gray-500">Date</p>
+                <p class="text-gray-500">{{ t('marketplace.date') }}</p>
                 <p class="font-medium">{{ formatDate(order.createdAt) }}</p>
               </div>
               <div>
-                <p class="text-gray-500">Paiement</p>
+                <p class="text-gray-500">{{ t('marketplace.payment') }}</p>
                 <p class="font-medium">{{ order.paymentMethod }} - {{ order.paymentStatus }}</p>
               </div>
             </div>
           </AppCard>
 
-          <AppCard title="Actions">
+          <AppCard :title="t('common.actions')">
             <div class="space-y-2">
               <AppButton variant="secondary" class="w-full" @click="showTrackingModal = true">
-                Ajouter suivi livraison
+                {{ t('marketplace.addTracking') }}
               </AppButton>
               <AppButton
                 v-if="order.invoiceUrl"
                 variant="ghost"
                 class="w-full"
               >
-                Telecharger facture
+                {{ t('marketplace.downloadInvoice') }}
               </AppButton>
             </div>
           </AppCard>
@@ -172,15 +178,15 @@ onMounted(async () => {
       </div>
     </template>
 
-    <AppModal v-model="showTrackingModal" title="Informations de suivi" size="sm">
+    <AppModal v-model="showTrackingModal" :title="t('marketplace.trackingInfo')" size="sm">
       <div class="space-y-4">
-        <AppInput v-model="trackingInfo.carrier" label="Transporteur" placeholder="Ex: DHL, Colissimo" />
-        <AppInput v-model="trackingInfo.trackingNumber" label="Numero de suivi" placeholder="Ex: 1Z999AA10123456784" />
+        <AppInput v-model="trackingInfo.carrier" :label="t('marketplace.carrier')" :placeholder="t('marketplace.carrierPlaceholder')" />
+        <AppInput v-model="trackingInfo.trackingNumber" :label="t('marketplace.trackingNumber')" :placeholder="t('marketplace.trackingPlaceholder')" />
       </div>
       <template #footer>
         <div class="flex justify-end gap-3">
-          <AppButton variant="secondary" @click="showTrackingModal = false">Annuler</AppButton>
-          <AppButton variant="primary" @click="saveTracking">Enregistrer</AppButton>
+          <AppButton variant="secondary" @click="showTrackingModal = false">{{ t('common.cancel') }}</AppButton>
+          <AppButton variant="primary" @click="saveTracking">{{ t('common.save') }}</AppButton>
         </div>
       </template>
     </AppModal>

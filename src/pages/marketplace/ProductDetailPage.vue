@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { useMarketplaceStore } from '@/stores/marketplace.store'
 import { useCartStore } from '@/stores/cart.store'
@@ -9,6 +10,7 @@ import AppButton from '@/components/ui/AppButton.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import AppInput from '@/components/ui/AppInput.vue'
 
+const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const store = useMarketplaceStore()
@@ -21,11 +23,11 @@ const customization = ref({ companyName: '', color: '#000000', logoUrl: '' })
 
 const product = computed(() => store.currentProduct)
 
-const categoryLabels: Record<string, string> = {
-  standard_card: 'Carte Standard',
-  custom_card: 'Carte Personnalisee',
-  enterprise_pack: 'Pack Entreprise',
-}
+const categoryLabels = computed<Record<string, string>>(() => ({
+  standard_card: t('marketplace.categories.standard'),
+  custom_card: t('marketplace.categories.custom'),
+  enterprise_pack: t('marketplace.categories.pack'),
+}))
 
 function formatPrice(amount: number, currency = 'FCFA') {
   return `${amount.toLocaleString('fr-FR')} ${currency}`
@@ -36,7 +38,7 @@ function addToCart() {
   const qty = Math.max(product.value.minQuantity, quantity.value)
   const customData = product.value.customizable ? customization.value : undefined
   cartStore.addItem(product.value, qty, customData)
-  toast.showSuccess(`${product.value.name} ajoute au panier`)
+  toast.showSuccess(`${product.value.name} ${t('marketplace.addedToCart')}`)
 }
 
 function orderNow() {
@@ -55,7 +57,7 @@ onMounted(async () => {
 <template>
   <div class="space-y-6">
     <div class="flex items-center gap-4">
-      <AppButton variant="ghost" @click="router.push('/marketplace')">&larr; Catalogue</AppButton>
+      <AppButton variant="ghost" @click="router.push('/marketplace')">&larr; {{ t('marketplace.catalog') }}</AppButton>
     </div>
 
     <div v-if="store.isLoading" class="flex justify-center py-12">
@@ -79,27 +81,27 @@ onMounted(async () => {
 
         <div class="flex gap-2">
           <AppBadge :variant="product.stockQuantity > 0 ? 'success' : 'danger'">
-            {{ product.stockQuantity > 0 ? `En stock (${product.stockQuantity})` : 'Rupture de stock' }}
+            {{ product.stockQuantity > 0 ? `${t('marketplace.inStock')} (${product.stockQuantity})` : t('marketplace.outOfStockFull') }}
           </AppBadge>
-          <AppBadge v-if="product.customizable" variant="neutral">Personnalisable</AppBadge>
+          <AppBadge v-if="product.customizable" variant="neutral">{{ t('marketplace.customizable') }}</AppBadge>
         </div>
 
         <p class="text-3xl font-bold text-primary">{{ formatPrice(product.price, product.currency) }}</p>
 
         <!-- Customization -->
         <div v-if="product.customizable" class="space-y-3 p-4 bg-gray-50 rounded-xl border border-gray-200">
-          <p class="font-semibold text-gray-800">Personnalisation</p>
-          <AppInput v-model="customization.companyName" label="Nom de l'entreprise" placeholder="Ex: TechBurk SARL" />
+          <p class="font-semibold text-gray-800">{{ t('marketplace.customization') }}</p>
+          <AppInput v-model="customization.companyName" :label="t('marketplace.companyName')" :placeholder="t('marketplace.companyNamePlaceholder')" />
           <div>
-            <label class="text-sm font-medium text-gray-700">Couleur principale</label>
+            <label class="text-sm font-medium text-gray-700">{{ t('marketplace.mainColor') }}</label>
             <input v-model="customization.color" type="color" class="ml-2 w-10 h-8 rounded border border-gray-300 cursor-pointer" />
           </div>
-          <AppInput v-model="customization.logoUrl" label="URL du logo (optionnel)" type="url" />
+          <AppInput v-model="customization.logoUrl" :label="t('marketplace.logoUrl')" type="url" />
         </div>
 
         <!-- Quantity -->
         <div>
-          <p class="text-sm font-medium text-gray-700 mb-2">Quantite (min. {{ product.minQuantity }})</p>
+          <p class="text-sm font-medium text-gray-700 mb-2">{{ t('marketplace.quantity') }} {{ product.minQuantity }})</p>
           <div class="flex items-center gap-3">
             <button
               class="w-9 h-9 rounded-full border-2 border-gray-300 hover:border-primary hover:text-primary transition-colors"
@@ -113,7 +115,7 @@ onMounted(async () => {
           </div>
         </div>
 
-        <p class="text-sm text-gray-600">Total : <span class="font-bold text-lg text-primary">{{ formatPrice(product.price * quantity, product.currency) }}</span></p>
+        <p class="text-sm text-gray-600">{{ t('marketplace.total') }} <span class="font-bold text-lg text-primary">{{ formatPrice(product.price * quantity, product.currency) }}</span></p>
 
         <div class="flex gap-3 pt-2">
           <AppButton
@@ -122,19 +124,19 @@ onMounted(async () => {
             class="flex-1"
             @click="addToCart"
           >
-            Ajouter au panier
+            {{ t('marketplace.addToCart') }}
           </AppButton>
           <AppButton
             variant="secondary"
             :disabled="product.stockQuantity === 0"
             @click="orderNow"
           >
-            Commander maintenant
+            {{ t('marketplace.orderNow') }}
           </AppButton>
         </div>
       </div>
     </div>
 
-    <div v-else class="text-center py-12 text-gray-500">Produit introuvable</div>
+    <div v-else class="text-center py-12 text-gray-500">{{ t('marketplace.productNotFound') }}</div>
   </div>
 </template>

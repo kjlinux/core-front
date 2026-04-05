@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import QRCode from 'qrcode'
 import { useQrcodeStore } from '@/stores/qrcode.store'
 import { useSiteStore } from '@/stores/site.store'
@@ -9,6 +10,7 @@ import AppButton from '@/components/ui/AppButton.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
 import AppInput from '@/components/ui/AppInput.vue'
 
+const { t } = useI18n()
 const store = useQrcodeStore()
 const siteStore = useSiteStore()
 const toast = useToast()
@@ -21,13 +23,13 @@ const generatedQr = ref<{ token: string; siteName?: string } | null>(null)
 onMounted(() => siteStore.fetchSites({ perPage: 200 }))
 
 const siteOptions = computed(() => [
-  { label: 'Selectionner un site', value: '' },
+  { label: t('qrcode.selectSite'), value: '' },
   ...siteStore.sites.map((s) => ({ label: s.name, value: s.id })),
 ])
 
 async function generate() {
   if (!selectedSiteId.value) {
-    toast.error('Veuillez selectionner un site')
+    toast.error(t('qrcode.siteRequired'))
     return
   }
   try {
@@ -39,9 +41,9 @@ async function generate() {
     // Le contenu du QR est l'URL de la page de scan avec le token en paramètre
     const scanUrl = `${window.location.origin}/qr-scan?token=${qrCode.token}`
     qrDataUrl.value = await QRCode.toDataURL(scanUrl, { width: 300, margin: 2 })
-    toast.success('QR Code de site genere')
+    toast.success(t('qrcode.generatedSuccess'))
   } catch {
-    toast.error('Erreur lors de la generation')
+    toast.error(t('qrcode.generateError'))
   }
 }
 
@@ -62,7 +64,7 @@ function printQr() {
       <h2 style="margin-bottom:8px">${generatedQr.value?.siteName ?? 'Site'}</h2>
       ${label.value ? `<p style="color:#64748b;margin-bottom:16px">${label.value}</p>` : ''}
       <img src="${qrDataUrl.value}" style="width:280px;height:280px" />
-      <p style="margin-top:16px;font-size:13px;color:#94a3b8">Scannez ce QR Code avec votre telephone pour pointer</p>
+      <p style="margin-top:16px;font-size:13px;color:#94a3b8">${t('qrcode.scanInstruction')}</p>
     </body></html>
   `)
   win.document.close()
@@ -73,9 +75,9 @@ function printQr() {
 <template>
   <div class="mx-auto max-w-lg space-y-6">
     <div>
-      <h1 class="text-2xl font-bold text-gray-900">QR Code de site</h1>
+      <h1 class="text-2xl font-bold text-gray-900">{{ t('qrcode.generateTitle') }}</h1>
       <p class="mt-1 text-sm text-gray-500">
-        Generez un QR Code unique par site a afficher a l'entree. Les employes scannent ce code depuis leur telephone enrole pour pointer.
+        {{ t('qrcode.generateDesc') }}
       </p>
     </div>
 
@@ -88,8 +90,8 @@ function printQr() {
         />
         <AppInput
           v-model="label"
-          label="Libelle (optionnel)"
-          placeholder="ex: Entree principale, Parking..."
+          :label="t('qrcode.labelOptional')"
+          :placeholder="t('qrcode.labelPlaceholder')"
         />
         <AppButton
           variant="primary"
@@ -98,7 +100,7 @@ function printQr() {
           class="w-full"
           @click="generate"
         >
-          Generer le QR Code
+          {{ t('qrcode.generateButton') }}
         </AppButton>
       </div>
     </AppCard>
@@ -111,11 +113,11 @@ function printQr() {
         </div>
         <img :src="qrDataUrl" alt="QR Code du site" class="rounded-lg border border-gray-200 shadow-sm" />
         <p class="text-xs text-gray-400">
-          Ce QR Code est unique pour ce site. Regenerer le code en invalide l'ancien.
+          {{ t('qrcode.generateNote') }}
         </p>
         <div class="flex gap-3">
-          <AppButton variant="ghost" @click="downloadQr">Telecharger PNG</AppButton>
-          <AppButton variant="outline" @click="printQr">Imprimer</AppButton>
+          <AppButton variant="ghost" @click="downloadQr">{{ t('qrcode.downloadPng') }}</AppButton>
+          <AppButton variant="outline" @click="printQr">{{ t('qrcode.print') }}</AppButton>
         </div>
       </div>
     </AppCard>

@@ -5,7 +5,7 @@
         variant="outline"
         @click="router.back()"
       >
-        Retour
+        {{ t('common.back') }}
       </AppButton>
     </div>
 
@@ -16,49 +16,49 @@
     <template v-else-if="site">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         <StatCard
-          title="Total Departements"
+          :title="t('sites.totalDepts')"
           :value="site.departments?.length || 0"
           :icon="RectangleGroupIcon"
         />
         <StatCard
-          title="Total Employes"
+          :title="t('sites.totalEmployees')"
           :value="totalEmployees"
           :icon="UsersIcon"
         />
         <StatCard
-          title="Entreprise"
+          :title="t('sites.company')"
           :value="companyName"
           :icon="BuildingOffice2Icon"
         />
       </div>
 
-      <AppCard title="Informations du Site" class="mb-6">
+      <AppCard :title="t('sites.info')" class="mb-6">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Nom</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('common.name') }}</label>
             <p class="text-base text-gray-900">{{ site.name }}</p>
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Entreprise</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('sites.company') }}</label>
             <p class="text-base text-gray-900">{{ companyName }}</p>
           </div>
 
           <div class="md:col-span-2">
-            <label class="block text-sm font-medium text-gray-700 mb-1">Adresse</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('sites.address') }}</label>
             <p class="text-base text-gray-900">{{ site.address }}</p>
           </div>
         </div>
       </AppCard>
 
-      <AppCard title="Departements">
+      <AppCard :title="t('sites.departments')">
         <template #actions>
           <AppButton
             v-if="canCreate"
             variant="primary"
             @click="openCreateDepartmentModal"
           >
-            Nouveau Departement
+            {{ t('sites.newDept') }}
           </AppButton>
         </template>
 
@@ -73,7 +73,7 @@
 
     <AppModal
       :is-open="showCreateDepartmentModal"
-      title="Nouveau Departement"
+      :title="t('departments.create')"
       size="lg"
       @close="closeCreateDepartmentModal"
     >
@@ -81,16 +81,16 @@
         <div class="space-y-4">
           <AppInput
             v-model="departmentFormData.name"
-            label="Nom"
-            placeholder="Nom du departement"
+            :label="t('common.name')"
+            :placeholder="t('common.name')"
             required
           />
 
           <AppSelect
             v-model="departmentFormData.managerId"
             :options="managerOptions"
-            label="Manager"
-            placeholder="Selectionner un manager"
+            :label="t('sites.manager')"
+            :placeholder="t('sites.selectManager')"
           />
         </div>
       </form>
@@ -100,7 +100,7 @@
           variant="outline"
           @click="closeCreateDepartmentModal"
         >
-          Annuler
+          {{ t('common.cancel') }}
         </AppButton>
         <AppButton
           form="dept-form"
@@ -108,7 +108,7 @@
           variant="primary"
           :loading="isSubmitting"
         >
-          Creer
+          {{ t('common.create') }}
         </AppButton>
       </template>
     </AppModal>
@@ -118,6 +118,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useSiteStore } from '@/stores/site.store'
 import { useCompanyStore } from '@/stores/company.store'
 import { useDepartmentStore } from '@/stores/department.store'
@@ -134,6 +135,7 @@ import AppSelect from '@/components/ui/AppSelect.vue'
 import type { TableColumn } from '@/types/common'
 import { RectangleGroupIcon, UsersIcon, BuildingOffice2Icon } from '@heroicons/vue/24/outline'
 
+const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const siteStore = useSiteStore()
@@ -174,7 +176,7 @@ const managerOptions = computed(() => {
   const opts = employeeStore.employees
     .filter(e => e.isActive)
     .map(e => ({ value: e.id, label: `${e.firstName} ${e.lastName} — ${e.position}` }))
-  return [{ value: '', label: 'Aucun manager' }, ...opts]
+  return [{ value: '', label: t('sites.selectManager') }, ...opts]
 })
 
 // Helper pour resoudre le nom d'un manager par son id
@@ -184,11 +186,11 @@ function getManagerName(managerId?: string): string {
   return emp ? `${emp.firstName} ${emp.lastName}` : '-'
 }
 
-const departmentColumns: TableColumn[] = [
-  { key: 'name', label: 'Nom', sortable: true },
-  { key: 'employeeCount', label: 'Employes', align: 'center' as const },
-  { key: 'manager', label: 'Manager', sortable: false },
-]
+const departmentColumns = computed<TableColumn[]>(() => [
+  { key: 'name', label: t('common.name'), sortable: true },
+  { key: 'employeeCount', label: t('departments.employees'), align: 'center' as const },
+  { key: 'manager', label: t('sites.manager'), sortable: false },
+])
 
 const departmentTableData = computed(() => {
   if (!site.value?.departments) return []
@@ -238,7 +240,7 @@ async function handleCreateDepartment() {
     closeCreateDepartmentModal()
     await siteStore.fetchSite(siteId.value)
   } catch (error: unknown) {
-    toast.error('Erreur', (error as Error)?.message || 'Erreur lors de la creation du departement')
+    toast.error(t('common.error'), (error as Error)?.message || t('sites.deptCreateError'))
   } finally {
     isSubmitting.value = false
   }

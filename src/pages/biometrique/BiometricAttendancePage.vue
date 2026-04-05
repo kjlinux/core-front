@@ -3,9 +3,9 @@
     <!-- En-tête -->
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">Pointage biométrique</h1>
+        <h1 class="text-2xl font-bold text-gray-900">{{ t('biometric.attendanceTitle') }}</h1>
         <p class="mt-1 text-sm text-gray-500">
-          Historique des pointages capturés par les terminaux biométriques
+          {{ t('biometric.attendanceSubtitle') }}
         </p>
       </div>
       <div class="flex items-center gap-3">
@@ -17,7 +17,7 @@
         />
         <AppButton variant="secondary" size="sm" @click="fetchData">
           <ArrowPathIcon class="w-4 h-4 mr-1" />
-          Actualiser
+          {{ t('common.refresh') }}
         </AppButton>
       </div>
     </div>
@@ -25,28 +25,28 @@
     <!-- Stat Cards -->
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <StatCard
-        title="Total pointages"
+        :title="t('biometric.totalAttendance')"
         :value="stats.totalEmployees"
         :icon="ClipboardDocumentListIcon"
         icon-bg-class="bg-blue-100"
         icon-color-class="text-blue-600"
       />
       <StatCard
-        title="Presents"
+        :title="t('biometric.present')"
         :value="stats.present"
         :icon="CheckCircleIcon"
         icon-bg-class="bg-green-100"
         icon-color-class="text-green-600"
       />
       <StatCard
-        title="En retard"
+        :title="t('biometric.late')"
         :value="stats.late"
         :icon="ClockIcon"
         icon-bg-class="bg-orange-100"
         icon-color-class="text-orange-600"
       />
       <StatCard
-        title="Double badge detecte"
+        :title="t('biometric.doubleBadge')"
         :value="stats.doubleBadgeCount"
         :icon="ExclamationTriangleIcon"
         icon-bg-class="bg-red-100"
@@ -55,13 +55,13 @@
     </div>
 
     <!-- Tableau des pointages -->
-    <AppCard title="Pointages du jour" :subtitle="formattedDate">
+    <AppCard :title="t('biometric.attendanceOfDay')" :subtitle="formattedDate">
       <div v-if="loading" class="flex justify-center py-12">
         <AppSpinner />
       </div>
 
       <div v-else-if="records.length === 0" class="py-12 text-center text-sm text-gray-500">
-        Aucun pointage biométrique pour cette date.
+        {{ t('biometric.noAttendance') }}
       </div>
 
       <div v-else class="overflow-x-auto">
@@ -69,28 +69,28 @@
           <thead class="bg-gray-50">
             <tr>
               <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                Employé
+                {{ t('biometric.employee') }}
               </th>
               <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                Département
+                {{ t('biometric.dept') }}
               </th>
               <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                Entrée
+                {{ t('biometric.entry') }}
               </th>
               <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                Sortie
+                {{ t('biometric.exit') }}
               </th>
               <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                Statut
+                {{ t('biometric.status') }}
               </th>
               <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                Retard
+                {{ t('biometric.lateTime') }}
               </th>
               <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                Double badge
+                {{ t('biometric.doubleBadgeCol') }}
               </th>
               <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                Notes
+                {{ t('biometric.notes') }}
               </th>
             </tr>
           </thead>
@@ -120,13 +120,13 @@
               </td>
               <td class="whitespace-nowrap px-4 py-4 text-sm">
                 <span v-if="record.lateMinutes > 0" class="font-medium text-orange-600">
-                  {{ record.lateMinutes }} min
+                  {{ record.lateMinutes }} {{ t('biometric.min') }}
                 </span>
                 <span v-else class="text-gray-400">—</span>
               </td>
               <td class="whitespace-nowrap px-4 py-4 text-sm">
                 <AppBadge v-if="record.isDoubleBadge" variant="danger" size="sm">
-                  Oui ({{ record.ignoredBadges }} ignoré{{ record.ignoredBadges > 1 ? 's' : '' }})
+                  {{ t('common.yes') }} ({{ record.ignoredBadges }} {{ record.ignoredBadges > 1 ? t('biometric.ignoredPl') : t('biometric.ignored') }})
                 </AppBadge>
                 <span v-else class="text-gray-400">—</span>
               </td>
@@ -152,6 +152,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useAttendanceStore } from '@/stores/attendance.store'
 import StatCard from '@/components/data-display/StatCard.vue'
 import AppCard from '@/components/ui/AppCard.vue'
@@ -167,6 +168,7 @@ import {
   ArrowPathIcon,
 } from '@heroicons/vue/24/outline'
 
+const { t } = useI18n()
 const attendanceStore = useAttendanceStore()
 
 const selectedDate = ref(new Date().toISOString().split('T')[0])
@@ -245,10 +247,10 @@ function formatTime(iso: string | null | undefined): string {
 
 function statusLabel(status: string): string {
   const map: Record<string, string> = {
-    present: 'Présent',
-    absent: 'Absent',
-    late: 'En retard',
-    left_early: 'Départ anticipé',
+    present: t('biometric.present_status'),
+    absent: t('biometric.absent_status'),
+    late: t('biometric.late_status'),
+    left_early: t('biometric.early_leave_status'),
   }
   return map[status] ?? status
 }

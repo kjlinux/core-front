@@ -3,13 +3,13 @@
     <div class="page-header">
       <div class="header-left">
         <AppButton variant="ghost" @click="goBack">
-          Retour
+          {{ t('common.back') }}
         </AppButton>
-        <h1>Pointage - {{ departmentName }}</h1>
+        <h1>{{ t('attendance.byDeptTitle', { departmentName }) }}</h1>
       </div>
       <div class="header-actions">
         <AppButton @click="handleExport">
-          Exporter
+          {{ t('attendance.exportBtn') }}
         </AppButton>
       </div>
     </div>
@@ -25,16 +25,16 @@
             <AppInput
               v-model="startDate"
               type="date"
-              placeholder="Date de début"
+              :placeholder="t('attendance.startDate')"
             />
             <span class="separator">-</span>
             <AppInput
               v-model="endDate"
               type="date"
-              placeholder="Date de fin"
+              :placeholder="t('attendance.endDate')"
             />
             <AppButton @click="setCurrentMonth">
-              Ce mois
+              {{ t('attendance.thisMonth') }}
             </AppButton>
           </div>
         </AppCard>
@@ -42,25 +42,25 @@
 
       <div class="stats-grid">
         <StatCard
-          title="Total Employés"
+          :title="t('attendance.totalEmployees')"
           :value="stats.totalEmployees"
           icon="users"
           color="blue"
         />
         <StatCard
-          title="Taux de présence moyen"
+          :title="t('attendance.avgAttendanceRate')"
           :value="`${stats.averageAttendanceRate}%`"
           icon="trending-up"
           color="green"
         />
         <StatCard
-          title="Total Absences"
+          :title="t('attendance.totalAbsences')"
           :value="stats.totalAbsences"
           icon="x-circle"
           color="red"
         />
         <StatCard
-          title="Total Retards"
+          :title="t('attendance.totalLates')"
           :value="stats.totalLateInstances"
           icon="clock"
           color="orange"
@@ -68,7 +68,7 @@
       </div>
 
       <AppCard>
-        <h3>Employés du département</h3>
+        <h3>{{ t('attendance.deptEmployees') }}</h3>
         <DataTable
           :columns="columns"
           :data="employeeRecords"
@@ -97,6 +97,7 @@
 // @ts-nocheck
 import { ref, onMounted, computed, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { useAttendanceStore } from '@/stores/attendance.store';
 import { useDateRange } from '@/composables/useDateRange';
 import DataTable from '@/components/data-display/DataTable.vue';
@@ -106,6 +107,7 @@ import StatCard from '@/components/data-display/StatCard.vue';
 import AppInput from '@/components/ui/AppInput.vue';
 import { useToast } from '@/composables/useToast';
 
+const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const attendanceStore = useAttendanceStore();
@@ -135,14 +137,14 @@ const total = computed(() => {
   return attendanceStore.departmentEmployeesTotal || 0;
 });
 
-const columns = [
-  { key: 'name', label: 'Nom', sortable: true },
-  { key: 'position', label: 'Poste', sortable: true },
-  { key: 'presentDays', label: 'Jours présents', sortable: true },
-  { key: 'absentDays', label: 'Jours absents', sortable: true },
-  { key: 'lateDays', label: 'Jours en retard', sortable: true },
-  { key: 'attendanceRate', label: 'Taux de présence', sortable: true },
-];
+const columns = computed(() => [
+  { key: 'name', label: t('common.name'), sortable: true },
+  { key: 'position', label: t('attendance.position'), sortable: true },
+  { key: 'presentDays', label: t('attendance.presentCount'), sortable: true },
+  { key: 'absentDays', label: t('attendance.absentCount'), sortable: true },
+  { key: 'lateDays', label: t('attendance.lateCount'), sortable: true },
+  { key: 'attendanceRate', label: t('attendance.attendanceRate'), sortable: true },
+]);
 
 const getAttendanceRateClass = (rate: number): string => {
   if (rate > 95) return 'rate-high';
@@ -186,7 +188,7 @@ const setCurrentMonth = () => {
 };
 
 const handleExport = () => {
-  info('Export en cours...');
+  info(t('attendance.exporting'));
 };
 
 const viewEmployee = (employeeId: string) => {

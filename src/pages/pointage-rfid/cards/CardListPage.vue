@@ -1,42 +1,42 @@
 <template>
   <div class="card-list-page">
     <div class="page-header">
-      <h1>Cartes RFID</h1>
+      <h1>{{ t('cards.title') }}</h1>
       <AppButton
         v-if="permissions.isAdminOrSuperOrTech.value"
         @click="navigateToRegister"
         variant="primary"
       >
         <PlusIcon class="w-4 h-4 mr-1" />
-        Enregistrer une carte
+        {{ t('cards.register') }}
       </AppButton>
     </div>
 
     <AppCard>
       <div class="filters">
         <div class="filter-group">
-          <label for="status-filter">Statut</label>
+          <label for="status-filter">{{ t('common.status') }}</label>
           <select
             id="status-filter"
             v-model="filters.status"
             class="filter-select"
           >
-            <option value="">Tous</option>
-            <option value="active">Actif</option>
-            <option value="inactive">Inactif</option>
-            <option value="blocked">Bloque</option>
-            <option value="lost">Perdu</option>
+            <option value="">{{ t('cards.allStatuses') }}</option>
+            <option value="active">{{ t('cards.status.active') }}</option>
+            <option value="inactive">{{ t('cards.status.inactive') }}</option>
+            <option value="blocked">{{ t('cards.status.blocked') }}</option>
+            <option value="lost">{{ t('cards.status.lost') }}</option>
           </select>
         </div>
 
         <div class="filter-group">
-          <label for="search-filter">Rechercher par UID</label>
+          <label for="search-filter">{{ t('cards.searchByUid') }}</label>
           <input
             id="search-filter"
             v-model="filters.search"
             type="text"
             class="filter-input"
-            placeholder="Entrez l'UID de la carte"
+            :placeholder="t('cards.enterUid')"
           />
         </div>
       </div>
@@ -49,7 +49,7 @@
       >
         <template #employee="{ row }">
           <span v-if="row.employeeName">{{ row.employeeName }}</span>
-          <span v-else class="unassigned">Non attribuee</span>
+          <span v-else class="unassigned">{{ t('cards.notUnassigned') }}</span>
         </template>
 
         <template #company="{ row }">
@@ -69,7 +69,7 @@
 
         <template #actions="{ row }">
           <div class="actions" @click.stop>
-            <AppButton size="sm" variant="ghost" @click="navigateToDetail(row.id)" title="Voir">
+            <AppButton size="sm" variant="ghost" @click="navigateToDetail(row.id)" :title="t('common.view')">
               <EyeIcon class="w-4 h-4" />
             </AppButton>
             <AppButton
@@ -78,7 +78,7 @@
               variant="ghost"
               class="text-blue-600 hover:text-blue-700"
               @click="handleAssign(row)"
-              title="Attribuer"
+              :title="t('cards.assign')"
             >
               <CheckIcon class="w-4 h-4" />
             </AppButton>
@@ -88,7 +88,7 @@
               variant="ghost"
               class="text-red-600 hover:text-red-700"
               @click="handleBlock(row)"
-              title="Bloquer"
+              :title="t('cards.block')"
             >
               <NoSymbolIcon class="w-4 h-4" />
             </AppButton>
@@ -98,7 +98,7 @@
               variant="ghost"
               class="text-green-600 hover:text-green-700"
               @click="handleUnblock(row)"
-              title="Debloquer"
+              :title="t('cards.unblock')"
             >
               <LockOpenIcon class="w-4 h-4" />
             </AppButton>
@@ -109,15 +109,15 @@
 
     <AppModal
       v-model="assignModalVisible"
-      title="Attribuer la carte"
+      :title="t('cards.assignModal')"
     >
       <div class="modal-content">
-        <p>Carte UID: <strong>{{ selectedCard?.uid }}</strong></p>
+        <p>{{ t('cards.uid') }}: <strong>{{ selectedCard?.uid }}</strong></p>
         <template v-if="permissions.isSuperAdmin.value">
           <div class="form-group">
             <AppSelect
               v-model="assignFilterCompanyId"
-              label="Filtrer par entreprise"
+              :label="t('cards.allCompanies')"
               :options="assignCompanyOptions"
               @update:model-value="assignFilterSiteId = ''; selectedEmployeeId = ''"
             />
@@ -125,20 +125,20 @@
           <div class="form-group">
             <AppSelect
               v-model="assignFilterSiteId"
-              label="Filtrer par site"
+              :label="t('cards.allSites')"
               :options="assignSiteOptions"
               @update:model-value="selectedEmployeeId = ''"
             />
           </div>
         </template>
         <div class="form-group">
-          <label for="employee-select">Selectionner un employe</label>
+          <label for="employee-select">{{ t('cards.selectEmployee') }}</label>
           <select
             id="employee-select"
             v-model="selectedEmployeeId"
             class="form-select"
           >
-            <option value="">-- Choisir un employe --</option>
+            <option value="">{{ t('cards.chooseEmployee') }}</option>
             <option
               v-for="employee in availableEmployees"
               :key="employee.id"
@@ -150,46 +150,46 @@
         </div>
       </div>
       <template #footer>
-        <AppButton variant="secondary" @click="cancelAssign">Annuler</AppButton>
-        <AppButton variant="primary" @click="confirmAssign">Attribuer</AppButton>
+        <AppButton variant="secondary" @click="cancelAssign">{{ t('common.cancel') }}</AppButton>
+        <AppButton variant="primary" @click="confirmAssign">{{ t('cards.assign') }}</AppButton>
       </template>
     </AppModal>
 
     <AppModal
       v-model="blockModalVisible"
-      title="Bloquer la carte"
+      :title="t('cards.blockModal')"
     >
       <div class="modal-content">
-        <p>Etes-vous sur de vouloir bloquer cette carte?</p>
-        <p>UID: <strong>{{ selectedCard?.uid }}</strong></p>
+        <p>{{ t('cards.blockConfirm') }}</p>
+        <p>{{ t('cards.uid') }}: <strong>{{ selectedCard?.uid }}</strong></p>
         <div class="form-group">
-          <label for="block-reason">Raison</label>
+          <label for="block-reason">{{ t('cards.blockReason') }}</label>
           <textarea
             id="block-reason"
             v-model="blockReason"
             class="form-textarea"
             rows="3"
-            placeholder="Entrez la raison du blocage"
+            :placeholder="t('cards.blockReasonPlaceholder')"
           ></textarea>
         </div>
       </div>
       <template #footer>
-        <AppButton variant="secondary" @click="cancelBlock">Annuler</AppButton>
-        <AppButton variant="danger" @click="confirmBlock">Bloquer</AppButton>
+        <AppButton variant="secondary" @click="cancelBlock">{{ t('common.cancel') }}</AppButton>
+        <AppButton variant="danger" @click="confirmBlock">{{ t('cards.block') }}</AppButton>
       </template>
     </AppModal>
 
     <AppModal
       v-model="unblockModalVisible"
-      title="Debloquer la carte"
+      :title="t('cards.unblockModal')"
     >
       <div class="modal-content">
-        <p>Etes-vous sur de vouloir debloquer cette carte?</p>
-        <p>UID: <strong>{{ selectedCard?.uid }}</strong></p>
+        <p>{{ t('cards.unblockConfirm') }}</p>
+        <p>{{ t('cards.uid') }}: <strong>{{ selectedCard?.uid }}</strong></p>
       </div>
       <template #footer>
-        <AppButton variant="secondary" @click="cancelUnblock">Annuler</AppButton>
-        <AppButton variant="success" @click="confirmUnblock">Debloquer</AppButton>
+        <AppButton variant="secondary" @click="cancelUnblock">{{ t('common.cancel') }}</AppButton>
+        <AppButton variant="success" @click="confirmUnblock">{{ t('cards.unblock') }}</AppButton>
       </template>
     </AppModal>
   </div>
@@ -199,6 +199,7 @@
 // @ts-nocheck
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import DataTable from '@/components/data-display/DataTable.vue';
 import AppButton from '@/components/ui/AppButton.vue';
 import AppCard from '@/components/ui/AppCard.vue';
@@ -215,6 +216,7 @@ import type { RfidCard } from '@/types/card'
 import { CardStatus } from '@/types/enums';
 import { EyeIcon, CheckIcon, NoSymbolIcon, LockOpenIcon, PlusIcon } from '@heroicons/vue/24/outline';
 
+const { t } = useI18n();
 const router = useRouter();
 const cardStore = useCardStore();
 const employeeStore = useEmployeeStore();
@@ -238,14 +240,14 @@ const blockReason = ref('');
 const assignFilterCompanyId = ref('');
 const assignFilterSiteId = ref('');
 
-const columns = [
-  { key: 'uid', label: 'UID', sortable: true },
-  { key: 'employee', label: 'Employe', sortable: false },
-  { key: 'company', label: 'Entreprise', sortable: false },
-  { key: 'status', label: 'Statut', sortable: true },
-  { key: 'assignedDate', label: 'Date d\'attribution', sortable: true },
-  { key: 'actions', label: 'Actions', sortable: false }
-];
+const columns = computed(() => [
+  { key: 'uid', label: t('cards.uid'), sortable: true },
+  { key: 'employee', label: t('employees.employee'), sortable: false },
+  { key: 'company', label: t('employees.company'), sortable: false },
+  { key: 'status', label: t('common.status'), sortable: true },
+  { key: 'assignedDate', label: t('cards.assignDate'), sortable: true },
+  { key: 'actions', label: t('common.actions'), sortable: false }
+]);
 
 const filteredCards = computed(() => {
   let cards = cardStore.cards;
@@ -265,7 +267,7 @@ const filteredCards = computed(() => {
 });
 
 const assignCompanyOptions = computed(() => [
-  { label: 'Toutes les entreprises', value: '' },
+  { label: t('cards.allCompanies'), value: '' },
   ...companyStore.companies.map((c) => ({ label: c.name, value: c.id })),
 ]);
 
@@ -274,7 +276,7 @@ const assignSiteOptions = computed(() => {
     ? siteStore.sites.filter((s) => s.companyId === assignFilterCompanyId.value)
     : siteStore.sites;
   return [
-    { label: 'Tous les sites', value: '' },
+    { label: t('cards.allSites'), value: '' },
     ...sites.map((s) => ({ label: s.name, value: s.id })),
   ];
 });
@@ -314,13 +316,13 @@ const getStatusVariant = (status: CardStatus): string => {
 const getStatusLabel = (status: CardStatus): string => {
   switch (status) {
     case CardStatus.ACTIVE:
-      return 'Actif';
+      return t('cards.status.active');
     case CardStatus.INACTIVE:
-      return 'Inactif';
+      return t('cards.status.inactive');
     case CardStatus.BLOCKED:
-      return 'Bloque';
+      return t('cards.status.blocked');
     case CardStatus.LOST:
-      return 'Perdu';
+      return t('cards.status.lost');
     default:
       return status;
   }
@@ -359,12 +361,12 @@ const confirmAssign = async () => {
 
   try {
     await cardStore.assignCard(selectedCard.value.id, selectedEmployeeId.value);
-    toast.success('Succes', 'Carte attribuee avec succes');
+    toast.success(t('common.success'), t('cards.assignedSuccess'));
     assignModalVisible.value = false;
     selectedCard.value = null;
     selectedEmployeeId.value = '';
   } catch (error: any) {
-    toast.error('Erreur', error.message || "Erreur lors de l'attribution");
+    toast.error(t('common.error'), error.message || t('cards.assignError'));
   }
 };
 
@@ -387,12 +389,12 @@ const confirmBlock = async () => {
 
   try {
     await cardStore.blockCard(selectedCard.value.id, blockReason.value);
-    toast.success('Succes', 'Carte bloquee avec succes');
+    toast.success(t('common.success'), t('cards.blockedSuccess'));
     blockModalVisible.value = false;
     selectedCard.value = null;
     blockReason.value = '';
   } catch (error: any) {
-    toast.error('Erreur', error.message || 'Erreur lors du blocage');
+    toast.error(t('common.error'), error.message || t('cards.blockError'));
   }
 };
 
@@ -412,11 +414,11 @@ const confirmUnblock = async () => {
 
   try {
     await cardStore.unblockCard(selectedCard.value.id);
-    toast.success('Succes', 'Carte debloquee avec succes');
+    toast.success(t('common.success'), t('cards.unblockedSuccess'));
     unblockModalVisible.value = false;
     selectedCard.value = null;
   } catch (error: any) {
-    toast.error('Erreur', error.message || 'Erreur lors du deblocage');
+    toast.error(t('common.error'), error.message || t('cards.unblockError'));
   }
 };
 
@@ -435,7 +437,7 @@ onMounted(async () => {
       siteStore.fetchSites({ perPage: 500 }),
     ]);
   } catch {
-    toast.error('Erreur', 'Impossible de charger les donnees');
+    toast.error(t('common.error'), t('cards.loadListError'));
   } finally {
     loading.value = false;
   }

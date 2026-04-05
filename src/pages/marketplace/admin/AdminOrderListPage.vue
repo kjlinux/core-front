@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useOrderStore } from '@/stores/order.store'
 import { useToast } from '@/composables/useToast'
@@ -10,6 +11,7 @@ import AppSelect from '@/components/ui/AppSelect.vue'
 import AppInput from '@/components/ui/AppInput.vue'
 import { EyeIcon } from '@heroicons/vue/24/outline'
 
+const { t } = useI18n()
 const router = useRouter()
 const store = useOrderStore()
 const toast = useToast()
@@ -18,22 +20,22 @@ const filterStatus = ref('')
 const filterPayment = ref('')
 const filterStartDate = ref('')
 
-const statusOptions = [
-  { label: 'Tous les statuts', value: '' },
-  { label: 'En attente', value: 'pending' },
-  { label: 'Confirmee', value: 'confirmed' },
-  { label: 'En traitement', value: 'processing' },
-  { label: 'Expediee', value: 'shipped' },
-  { label: 'Livree', value: 'delivered' },
-  { label: 'Annulee', value: 'cancelled' },
-]
+const statusOptions = computed(() => [
+  { label: t('common.all'), value: '' },
+  { label: t('marketplace.pending'), value: 'pending' },
+  { label: t('marketplace.confirmed'), value: 'confirmed' },
+  { label: t('marketplace.processing'), value: 'processing' },
+  { label: t('marketplace.shipped'), value: 'shipped' },
+  { label: t('marketplace.delivered'), value: 'delivered' },
+  { label: t('marketplace.cancelled'), value: 'cancelled' },
+])
 
-const paymentStatusOptions = [
-  { label: 'Tous les paiements', value: '' },
-  { label: 'En attente', value: 'pending' },
-  { label: 'Paye', value: 'paid' },
-  { label: 'Echec', value: 'failed' },
-]
+const paymentStatusOptions = computed(() => [
+  { label: t('marketplace.allPayments'), value: '' },
+  { label: t('marketplace.pending'), value: 'pending' },
+  { label: t('marketplace.paid'), value: 'paid' },
+  { label: t('marketplace.failed'), value: 'failed' },
+])
 
 const statusVariants: Record<string, string> = {
   pending: 'warning', confirmed: 'info', processing: 'info',
@@ -44,10 +46,14 @@ const paymentVariants: Record<string, string> = {
   pending: 'warning', paid: 'success', failed: 'danger', refunded: 'neutral',
 }
 
-const statusLabels: Record<string, string> = {
-  pending: 'En attente', confirmed: 'Confirmee', processing: 'En traitement',
-  shipped: 'Expediee', delivered: 'Livree', cancelled: 'Annulee',
-}
+const statusLabels = computed<Record<string, string>>(() => ({
+  pending: t('marketplace.pending'),
+  confirmed: t('marketplace.confirmed'),
+  processing: t('marketplace.processing'),
+  shipped: t('marketplace.shipped'),
+  delivered: t('marketplace.delivered'),
+  cancelled: t('marketplace.cancelled'),
+}))
 
 const filteredOrders = computed(() => {
   let list = store.orders
@@ -73,17 +79,17 @@ onMounted(async () => {
 <template>
   <div class="space-y-6">
     <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold text-gray-900">Toutes les commandes</h1>
+      <h1 class="text-2xl font-bold text-gray-900">{{ t('marketplace.adminOrdersTitle') }}</h1>
     </div>
 
     <AppCard>
       <div class="flex flex-wrap gap-4 mb-6">
         <AppSelect v-model="filterStatus" :options="statusOptions" class="w-48" />
         <AppSelect v-model="filterPayment" :options="paymentStatusOptions" class="w-48" />
-        <AppInput v-model="filterStartDate" type="date" placeholder="Date debut" />
+        <AppInput v-model="filterStartDate" type="date" />
       </div>
 
-      <p class="text-sm text-gray-500 mb-4">{{ filteredOrders.length }} commande(s)</p>
+      <p class="text-sm text-gray-500 mb-4">{{ filteredOrders.length }} {{ t('marketplace.ordersCountLabel') }}</p>
 
       <div v-if="store.isLoading" class="flex justify-center py-12">
         <div class="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
@@ -93,13 +99,13 @@ onMounted(async () => {
         <table class="min-w-full divide-y divide-gray-200">
           <thead class="bg-gray-50">
             <tr>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">N° commande</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Entreprise</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Statut</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Paiement</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('marketplace.orderNumber2') }}</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('marketplace.company') }}</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('marketplace.date') }}</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('marketplace.total') }}</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('marketplace.orderStatus') }}</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('marketplace.paymentStatus') }}</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('common.actions') }}</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-100">
@@ -119,7 +125,7 @@ onMounted(async () => {
                 </AppBadge>
               </td>
               <td class="px-4 py-3">
-                <AppButton size="sm" variant="ghost" @click="router.push(`/marketplace/admin/orders/${order.id}`)" title="Voir">
+                <AppButton size="sm" variant="ghost" @click="router.push(`/marketplace/admin/orders/${order.id}`)" :title="t('common.view')">
                   <EyeIcon class="w-4 h-4" />
                 </AppButton>
               </td>

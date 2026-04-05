@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useOrderStore } from '@/stores/order.store'
 import { useAuthStore } from '@/stores/auth.store'
@@ -11,6 +12,7 @@ import AppSelect from '@/components/ui/AppSelect.vue'
 import AppConfirmDialog from '@/components/ui/AppConfirmDialog.vue'
 import { EyeIcon, XMarkIcon } from '@heroicons/vue/24/outline'
 
+const { t } = useI18n()
 const router = useRouter()
 const store = useOrderStore()
 const authStore = useAuthStore()
@@ -20,24 +22,24 @@ const filterStatus = ref('')
 const showCancelDialog = ref(false)
 const cancelOrderId = ref('')
 
-const statusOptions = [
-  { label: 'Toutes les commandes', value: '' },
-  { label: 'En attente', value: 'pending' },
-  { label: 'Confirmee', value: 'confirmed' },
-  { label: 'En traitement', value: 'processing' },
-  { label: 'Expediee', value: 'shipped' },
-  { label: 'Livree', value: 'delivered' },
-  { label: 'Annulee', value: 'cancelled' },
-]
+const statusOptions = computed(() => [
+  { label: t('marketplace.allStatuses'), value: '' },
+  { label: t('marketplace.pending'), value: 'pending' },
+  { label: t('marketplace.confirmed'), value: 'confirmed' },
+  { label: t('marketplace.processing'), value: 'processing' },
+  { label: t('marketplace.shipped'), value: 'shipped' },
+  { label: t('marketplace.delivered'), value: 'delivered' },
+  { label: t('marketplace.cancelled'), value: 'cancelled' },
+])
 
-const statusLabels: Record<string, string> = {
-  pending: 'En attente',
-  confirmed: 'Confirmee',
-  processing: 'En traitement',
-  shipped: 'Expediee',
-  delivered: 'Livree',
-  cancelled: 'Annulee',
-}
+const statusLabels = computed<Record<string, string>>(() => ({
+  pending: t('marketplace.pending'),
+  confirmed: t('marketplace.confirmed'),
+  processing: t('marketplace.processing'),
+  shipped: t('marketplace.shipped'),
+  delivered: t('marketplace.delivered'),
+  cancelled: t('marketplace.cancelled'),
+}))
 
 const statusVariants: Record<string, string> = {
   pending: 'warning',
@@ -48,12 +50,12 @@ const statusVariants: Record<string, string> = {
   cancelled: 'danger',
 }
 
-const paymentLabels: Record<string, string> = {
-  pending: 'En attente',
-  paid: 'Paye',
-  failed: 'Echec',
-  refunded: 'Rembourse',
-}
+const paymentLabels = computed<Record<string, string>>(() => ({
+  pending: t('marketplace.pending'),
+  paid: t('marketplace.paid'),
+  failed: t('marketplace.failed'),
+  refunded: t('marketplace.refunded'),
+}))
 
 const paymentVariants: Record<string, string> = {
   pending: 'warning',
@@ -90,7 +92,7 @@ function openCancelDialog(orderId: string) {
 async function confirmCancel() {
   try {
     await store.cancelOrder(cancelOrderId.value)
-    toast.showSuccess('Commande annulee')
+    toast.showSuccess(t('marketplace.orderCancelled'))
   } catch {
     toast.showError("Erreur lors de l'annulation")
   }
@@ -103,7 +105,7 @@ onMounted(async () => {
 
 <template>
   <div class="space-y-6">
-    <h1 class="text-2xl font-bold text-gray-900">Mes commandes</h1>
+    <h1 class="text-2xl font-bold text-gray-900">{{ t('marketplace.ordersTitle') }}</h1>
 
     <AppCard>
       <div class="mb-6">
@@ -115,27 +117,27 @@ onMounted(async () => {
       </div>
 
       <div v-else-if="filteredOrders.length === 0" class="text-center py-12 text-gray-500">
-        Aucune commande trouvee
+        {{ t('marketplace.noOrder') }}
       </div>
 
       <div v-else class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
           <thead class="bg-gray-50">
             <tr>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">N° commande</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Articles</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Statut</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Paiement</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('marketplace.orderNumber2') }}</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('marketplace.date') }}</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('marketplace.articles') }}</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('marketplace.total') }}</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('marketplace.orderStatus') }}</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('marketplace.paymentStatus') }}</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('common.actions') }}</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-100">
             <tr v-for="order in filteredOrders" :key="order.id" class="hover:bg-gray-50">
               <td class="px-4 py-3 font-mono text-sm font-medium text-gray-900">{{ order.orderNumber }}</td>
               <td class="px-4 py-3 text-sm text-gray-600">{{ formatDate(order.createdAt) }}</td>
-              <td class="px-4 py-3 text-sm text-gray-600">{{ order.items.length }} article(s)</td>
+              <td class="px-4 py-3 text-sm text-gray-600">{{ order.items.length }} {{ t('marketplace.items') }}</td>
               <td class="px-4 py-3 text-sm font-semibold text-primary">{{ formatPrice(order.total, order.currency) }}</td>
               <td class="px-4 py-3">
                 <AppBadge :variant="(statusVariants[order.status] ?? 'neutral') as any">
@@ -149,7 +151,7 @@ onMounted(async () => {
               </td>
               <td class="px-4 py-3">
                 <div class="flex gap-1">
-                  <AppButton size="sm" variant="ghost" @click="router.push(`/marketplace/orders/${order.id}`)" title="Voir">
+                  <AppButton size="sm" variant="ghost" @click="router.push(`/marketplace/orders/${order.id}`)" :title="t('common.view')">
                     <EyeIcon class="w-4 h-4" />
                   </AppButton>
                   <AppButton
@@ -158,7 +160,7 @@ onMounted(async () => {
                     variant="ghost"
                     class="text-red-600 hover:text-red-700"
                     @click="openCancelDialog(order.id)"
-                    title="Annuler"
+                    :title="t('marketplace.cancelOrder')"
                   >
                     <XMarkIcon class="w-4 h-4" />
                   </AppButton>
@@ -173,8 +175,8 @@ onMounted(async () => {
     <AppConfirmDialog
       :open="showCancelDialog"
       @cancel="showCancelDialog = false"
-      title="Annuler la commande"
-      message="Etes-vous sur de vouloir annuler cette commande ? Cette action est irreversible."
+      :title="t('marketplace.cancelOrder')"
+      :message="t('marketplace.cancelConfirm')"
       @confirm="confirmCancel"
     />
   </div>

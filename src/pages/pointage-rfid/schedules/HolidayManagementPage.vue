@@ -3,14 +3,14 @@
     <AppCard>
       <template #header>
         <div class="flex justify-between items-center">
-          <h1 class="text-2xl font-bold">Jours feries</h1>
+          <h1 class="text-2xl font-bold">{{ t('holidays.title') }}</h1>
           <div class="flex gap-4 items-center">
             <select
               v-model="selectedYear"
               class="border rounded-md px-3 py-2"
               @change="filterHolidays"
             >
-              <option value="all">Toutes les années</option>
+              <option value="all">{{ t('holidays.allYears') }}</option>
               <option :value="currentYear">{{ currentYear }}</option>
               <option :value="currentYear + 1">{{ currentYear + 1 }}</option>
             </select>
@@ -20,7 +20,7 @@
               variant="primary"
             >
               <PlusIcon class="w-4 h-4 mr-1" />
-              Ajouter un jour ferie
+              {{ t('holidays.add') }}
             </AppButton>
           </div>
         </div>
@@ -37,13 +37,13 @@
 
         <template #isRecurring="{ row }">
           <AppBadge :variant="row.isRecurring ? 'success' : 'neutral'">
-            {{ row.isRecurring ? 'Oui' : 'Non' }}
+            {{ row.isRecurring ? t('common.yes') : t('common.no') }}
           </AppBadge>
         </template>
 
         <template #actions="{ row }">
           <div class="flex gap-1">
-            <AppButton @click="openEditModal(row)" variant="ghost" size="sm" title="Modifier">
+            <AppButton @click="openEditModal(row)" variant="ghost" size="sm" :title="t('common.edit')">
               <PencilIcon class="w-4 h-4" />
             </AppButton>
             <AppButton
@@ -52,7 +52,7 @@
               variant="ghost"
               size="sm"
               class="text-red-600 hover:text-red-700"
-              title="Supprimer"
+              :title="t('common.delete')"
             >
               <TrashIcon class="w-4 h-4" />
             </AppButton>
@@ -63,22 +63,22 @@
 
     <AppModal
       v-model="formModalVisible"
-      :title="editingHoliday ? 'Modifier le jour ferie' : 'Nouveau jour ferie'"
+      :title="editingHoliday ? t('holidays.editTitle') : t('holidays.createTitle')"
     >
       <form @submit.prevent="handleSubmit" class="space-y-4">
         <div>
-          <label class="block text-sm font-medium mb-1">Nom</label>
+          <label class="block text-sm font-medium mb-1">{{ t('holidays.name') }}</label>
           <input
             v-model="formData.name"
             type="text"
             required
             class="w-full border rounded-md px-3 py-2"
-            placeholder="Ex: Nouvel An"
+            :placeholder="t('holidays.namePlaceholder')"
           />
         </div>
 
         <div>
-          <label class="block text-sm font-medium mb-1">Date</label>
+          <label class="block text-sm font-medium mb-1">{{ t('holidays.date') }}</label>
           <input
             v-model="formData.date"
             type="date"
@@ -95,21 +95,21 @@
             class="rounded"
           />
           <label for="isRecurring" class="text-sm font-medium">
-            Recurrent chaque annee
+            {{ t('holidays.recurringLabel') }}
           </label>
         </div>
       </form>
 
       <template #footer>
-        <AppButton variant="secondary" size="sm" @click="formModalVisible = false">Annuler</AppButton>
-        <AppButton variant="primary" size="sm" @click="handleSubmit">Enregistrer</AppButton>
+        <AppButton variant="secondary" size="sm" @click="formModalVisible = false">{{ t('common.cancel') }}</AppButton>
+        <AppButton variant="primary" size="sm" @click="handleSubmit">{{ t('common.save') }}</AppButton>
       </template>
     </AppModal>
 
     <AppConfirmDialog
       :open="deleteModalVisible"
-      title="Confirmer la suppression"
-      :message="`Etes-vous sur de vouloir supprimer le jour ferie &quot;${holidayToDelete?.name}&quot; ? Cette action est irreversible.`"
+      :title="t('holidays.confirmDelete')"
+      :message="t('holidays.deleteConfirm', { name: holidayToDelete?.name })"
       @confirm="confirmDelete"
       @cancel="deleteModalVisible = false"
     />
@@ -119,6 +119,7 @@
 <script setup lang="ts">
 // @ts-nocheck
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import DataTable from '@/components/data-display/DataTable.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppCard from '@/components/ui/AppCard.vue'
@@ -133,6 +134,7 @@ import type { Holiday } from '@/types/schedule'
 import dayjs from 'dayjs'
 import { PencilIcon, TrashIcon, PlusIcon } from '@heroicons/vue/24/outline'
 
+const { t } = useI18n()
 const scheduleStore = useScheduleStore()
 const permissions = usePermissions()
 const { isSuperAdmin, isAdminEnterprise } = permissions
@@ -182,12 +184,12 @@ const filteredHolidays = computed(() => {
   })
 })
 
-const columns = [
-  { key: 'name', label: 'Nom', sortable: true },
-  { key: 'date', label: 'Date', sortable: true },
-  { key: 'isRecurring', label: 'Récurrent', sortable: true },
-  { key: 'actions', label: 'Actions', sortable: false }
-]
+const columns = computed(() => [
+  { key: 'name', label: t('holidays.name'), sortable: true },
+  { key: 'date', label: t('holidays.date'), sortable: true },
+  { key: 'isRecurring', label: t('holidays.recurring'), sortable: true },
+  { key: 'actions', label: t('common.actions'), sortable: false }
+])
 
 const openCreateModal = () => {
   editingHoliday.value = null
@@ -219,7 +221,7 @@ const handleSubmit = async () => {
     formModalVisible.value = false
     resetForm()
   } catch (error: unknown) {
-    toast.error('Erreur', (error as Error)?.message || 'Erreur lors de la sauvegarde du jour ferie')
+    toast.error(t('common.error'), (error as Error)?.message || t('holidays.saveError'))
   }
 }
 
@@ -235,7 +237,7 @@ const confirmDelete = async () => {
       deleteModalVisible.value = false
       holidayToDelete.value = null
     } catch (error: unknown) {
-      toast.error('Erreur', (error as Error)?.message || 'Erreur lors de la suppression du jour ferie')
+      toast.error(t('common.error'), (error as Error)?.message || t('holidays.deleteError'))
     }
   }
 }

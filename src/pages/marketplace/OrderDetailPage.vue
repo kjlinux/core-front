@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { useOrderStore } from '@/stores/order.store'
 import { useToast } from '@/composables/useToast'
@@ -7,6 +8,7 @@ import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 
+const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const store = useOrderStore()
@@ -16,13 +18,14 @@ const orderId = route.params.id as string
 const order = computed(() => store.currentOrder)
 
 const statusSteps = ['pending', 'confirmed', 'processing', 'shipped', 'delivered']
-const stepLabels: Record<string, string> = {
-  pending: 'En attente',
-  confirmed: 'Confirmee',
-  processing: 'En traitement',
-  shipped: 'Expediee',
-  delivered: 'Livree',
-}
+
+const stepLabels = computed<Record<string, string>>(() => ({
+  pending: t('marketplace.pending'),
+  confirmed: t('marketplace.confirmed'),
+  processing: t('marketplace.processing'),
+  shipped: t('marketplace.shipped'),
+  delivered: t('marketplace.delivered'),
+}))
 
 const paymentMethodLabels: Record<string, string> = {
   mobile_money: 'LigdiCash / Mobile Money',
@@ -30,12 +33,12 @@ const paymentMethodLabels: Record<string, string> = {
   manual: 'Paiement manuel',
 }
 
-const paymentStatusLabels: Record<string, string> = {
-  pending: 'En attente',
-  paid: 'Paye',
-  failed: 'Echec',
-  refunded: 'Rembourse',
-}
+const paymentStatusLabels = computed<Record<string, string>>(() => ({
+  pending: t('marketplace.pending'),
+  paid: t('marketplace.paid'),
+  failed: t('marketplace.failed'),
+  refunded: t('marketplace.refunded'),
+}))
 
 function formatPrice(amount: number, currency = 'FCFA') {
   return `${amount.toLocaleString('fr-FR')} ${currency}`
@@ -54,7 +57,7 @@ function getCurrentStepIndex() {
 async function cancelOrder() {
   try {
     await store.cancelOrder(orderId)
-    toast.showSuccess('Commande annulee')
+    toast.showSuccess(t('marketplace.orderCancelled'))
   } catch {
     toast.showError("Erreur lors de l'annulation")
   }
@@ -68,9 +71,9 @@ onMounted(async () => {
 <template>
   <div class="space-y-6">
     <div class="flex items-center gap-4">
-      <AppButton variant="ghost" @click="router.push('/marketplace/orders')">&larr; Mes commandes</AppButton>
+      <AppButton variant="ghost" @click="router.push('/marketplace/orders')">&larr; {{ t('marketplace.ordersLink') }}</AppButton>
       <h1 class="text-2xl font-bold text-gray-900">
-        Commande {{ order?.orderNumber ?? orderId }}
+        {{ t('marketplace.orderTitle') }} {{ order?.orderNumber ?? orderId }}
       </h1>
     </div>
 
@@ -80,7 +83,7 @@ onMounted(async () => {
 
     <template v-else-if="order">
       <!-- Suivi de livraison -->
-      <AppCard title="Suivi de livraison">
+      <AppCard :title="t('marketplace.trackDelivery')">
         <!-- Commande annulee -->
         <div v-if="order.status === 'cancelled'" class="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
           <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
@@ -89,8 +92,8 @@ onMounted(async () => {
             </svg>
           </div>
           <div>
-            <p class="font-semibold text-red-700">Commande annulee</p>
-            <p class="text-sm text-red-500">Cette commande a ete annulee le {{ formatDate(order.updatedAt) }}</p>
+            <p class="font-semibold text-red-700">{{ t('marketplace.cancelled') }}</p>
+            <p class="text-sm text-red-500">{{ t('marketplace.orderCancelledAt') }} {{ formatDate(order.updatedAt) }}</p>
           </div>
         </div>
 
@@ -98,9 +101,7 @@ onMounted(async () => {
         <div v-else class="overflow-x-auto pb-2">
           <div class="flex items-start min-w-max">
             <template v-for="(status, index) in statusSteps" :key="status">
-              <!-- Etape -->
               <div class="flex flex-col items-center gap-2 w-28">
-                <!-- Icone -->
                 <div
                   class="w-11 h-11 rounded-full flex items-center justify-center shrink-0 transition-all"
                   :class="index < getCurrentStepIndex()
@@ -109,11 +110,9 @@ onMounted(async () => {
                       ? 'bg-primary-700 text-white ring-4 ring-primary-100 shadow'
                       : 'bg-gray-100 text-gray-400'"
                 >
-                  <!-- Etape passee : checkmark -->
                   <svg v-if="index < getCurrentStepIndex()" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                   </svg>
-                  <!-- Etape courante : icones specifiques -->
                   <template v-else-if="index === getCurrentStepIndex()">
                     <svg v-if="status === 'pending'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2m6-2a10 10 0 11-20 0 10 10 0 0120 0z" />
@@ -131,22 +130,19 @@ onMounted(async () => {
                       <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
                     </svg>
                   </template>
-                  <!-- Etape future : numero -->
                   <span v-else class="text-sm font-semibold">{{ index + 1 }}</span>
                 </div>
-                <!-- Label + date -->
                 <div class="text-center">
                   <p class="text-xs font-semibold"
                     :class="index <= getCurrentStepIndex() ? 'text-gray-900' : 'text-gray-400'">
                     {{ stepLabels[status] }}
                   </p>
-                  <p v-if="index === getCurrentStepIndex()" class="text-xs text-primary-600 mt-0.5">En cours</p>
-                  <p v-else-if="index < getCurrentStepIndex()" class="text-xs text-green-600 mt-0.5">Valide</p>
+                  <p v-if="index === getCurrentStepIndex()" class="text-xs text-primary-600 mt-0.5">{{ t('marketplace.inProgress') }}</p>
+                  <p v-else-if="index < getCurrentStepIndex()" class="text-xs text-green-600 mt-0.5">{{ t('marketplace.validated') }}</p>
                   <p v-else class="text-xs text-gray-300 mt-0.5">—</p>
                 </div>
               </div>
 
-              <!-- Connecteur -->
               <div
                 v-if="index < statusSteps.length - 1"
                 class="h-0.5 flex-1 min-w-6 mt-5 transition-all"
@@ -156,26 +152,24 @@ onMounted(async () => {
           </div>
         </div>
 
-        <!-- Bouton annulation en bas du stepper si commande annulable -->
         <div v-if="order.status === 'pending'" class="mt-5 pt-4 border-t border-gray-100 flex justify-end">
           <AppButton variant="danger" size="sm" @click="cancelOrder">
-            Annuler la commande
+            {{ t('marketplace.cancelOrderBtn') }}
           </AppButton>
         </div>
       </AppCard>
 
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Items -->
         <div class="lg:col-span-2 space-y-4">
-          <AppCard title="Articles commandes">
+          <AppCard :title="t('marketplace.orderedArticles')">
             <div class="overflow-x-auto">
               <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                   <tr>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Produit</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Qte</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Prix unitaire</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('marketplace.product') }}</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('marketplace.qty') }}</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('marketplace.unitPrice') }}</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('marketplace.total') }}</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
@@ -190,21 +184,21 @@ onMounted(async () => {
             </div>
             <div class="mt-4 pt-4 border-t space-y-2 text-sm">
               <div class="flex justify-between">
-                <span class="text-gray-600">Sous-total</span>
+                <span class="text-gray-600">{{ t('marketplace.subtotal') }}</span>
                 <span>{{ formatPrice(order.subtotal, order.currency) }}</span>
               </div>
               <div class="flex justify-between">
-                <span class="text-gray-600">Livraison</span>
+                <span class="text-gray-600">{{ t('marketplace.shipping') }}</span>
                 <span>{{ formatPrice(order.deliveryFee, order.currency) }}</span>
               </div>
               <div class="flex justify-between font-bold text-base pt-1 border-t">
-                <span>Total</span>
+                <span>{{ t('marketplace.total') }}</span>
                 <span class="text-primary">{{ formatPrice(order.total, order.currency) }}</span>
               </div>
             </div>
           </AppCard>
 
-          <AppCard title="Adresse de livraison">
+          <AppCard :title="t('marketplace.deliveryAddressLabel')">
             <div class="text-sm space-y-1">
               <p class="font-semibold text-gray-900">{{ order.deliveryAddress.fullName }}</p>
               <p class="text-gray-600">{{ order.deliveryAddress.phone }}</p>
@@ -216,14 +210,14 @@ onMounted(async () => {
 
         <!-- Sidebar -->
         <div class="space-y-4">
-          <AppCard title="Paiement">
+          <AppCard :title="t('marketplace.payment')">
             <div class="space-y-2 text-sm">
               <div>
-                <p class="text-gray-500">Methode</p>
+                <p class="text-gray-500">{{ t('marketplace.method') }}</p>
                 <p class="font-medium">{{ paymentMethodLabels[order.paymentMethod] }}</p>
               </div>
               <div>
-                <p class="text-gray-500">Statut</p>
+                <p class="text-gray-500">{{ t('marketplace.paymentStatus') }}</p>
                 <AppBadge :variant="order.paymentStatus === 'paid' ? 'success' : order.paymentStatus === 'failed' ? 'danger' : 'warning'">
                   {{ paymentStatusLabels[order.paymentStatus] }}
                 </AppBadge>
@@ -231,14 +225,14 @@ onMounted(async () => {
             </div>
           </AppCard>
 
-          <AppCard title="Informations">
+          <AppCard :title="t('marketplace.info')">
             <div class="space-y-2 text-sm">
               <div>
-                <p class="text-gray-500">Date de commande</p>
+                <p class="text-gray-500">{{ t('marketplace.orderDate') }}</p>
                 <p class="font-medium">{{ formatDate(order.createdAt) }}</p>
               </div>
               <div>
-                <p class="text-gray-500">Derniere mise a jour</p>
+                <p class="text-gray-500">{{ t('marketplace.lastUpdate') }}</p>
                 <p class="font-medium">{{ formatDate(order.updatedAt) }}</p>
               </div>
             </div>
@@ -247,6 +241,6 @@ onMounted(async () => {
       </div>
     </template>
 
-    <div v-else class="text-center py-12 text-gray-500">Commande introuvable</div>
+    <div v-else class="text-center py-12 text-gray-500">{{ t('common.noData') }}</div>
   </div>
 </template>

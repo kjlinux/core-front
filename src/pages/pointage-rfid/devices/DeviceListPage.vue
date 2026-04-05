@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useRfidDeviceStore } from '@/stores/rfid-device.store'
 import { useCompanyStore } from '@/stores/company.store'
 import { useSiteStore } from '@/stores/site.store'
@@ -26,6 +27,7 @@ import {
   NoSymbolIcon,
 } from '@heroicons/vue/24/outline'
 
+const { t } = useI18n()
 const router = useRouter()
 const deviceStore = useRfidDeviceStore()
 const companyStore = useCompanyStore()
@@ -64,22 +66,22 @@ async function handleToggleStatus(device: { id: string; isOnline: boolean }) {
   togglingStatus.value = device.id
   try {
     await deviceStore.updateDevice(device.id, { isOnline: !device.isOnline })
-    toast.showSuccess(device.isOnline ? 'Terminal mis hors ligne' : 'Terminal mis en ligne')
+    toast.showSuccess(device.isOnline ? t('devices.setOfflineSuccess') : t('devices.setOnlineSuccess'))
   } catch {
-    toast.showError('Erreur lors du changement de statut')
+    toast.showError(t('devices.statusChangeError'))
   } finally {
     togglingStatus.value = null
   }
 }
 
-const statusOptions = [
-  { label: 'Tous les statuts', value: '' },
-  { label: 'En ligne', value: 'online' },
-  { label: 'Hors ligne', value: 'offline' },
-]
+const statusOptions = computed(() => [
+  { label: t('common.all'), value: '' },
+  { label: t('devices.online'), value: 'online' },
+  { label: t('devices.offline'), value: 'offline' },
+])
 
 const companyOptions = computed(() => [
-  { label: 'Toutes les entreprises', value: '' },
+  { label: t('companies.allCompanies'), value: '' },
   ...companyStore.companies.map((c) => ({ label: c.name, value: c.id })),
 ])
 
@@ -105,13 +107,13 @@ const filteredDevices = computed(() => {
 
 const canManage = computed(() => permissions.isAdminOrSuperOrTech.value)
 
-const commandLabels: Record<string, string> = {
-  RESET: 'Reset',
-  REBOOT: 'Reboot',
-  WAKE_UP: 'Reveil',
-  SLEEP: 'Veille',
-  STATUS: 'Statut',
-}
+const commandLabels = computed<Record<string, string>>(() => ({
+  RESET: t('devices.reset'),
+  REBOOT: t('devices.reboot'),
+  WAKE_UP: t('devices.wake'),
+  SLEEP: t('devices.sleep'),
+  STATUS: t('devices.statusCmd'),
+}))
 
 function formatDate(date: string) {
   return new Date(date).toLocaleString('fr-FR')
@@ -121,9 +123,9 @@ async function handleCommand(deviceId: string, command: DeviceCommand) {
   sendingCommand.value = `${deviceId}-${command}`
   try {
     await mqttApi.sendCommand(deviceId, 'rfid', command)
-    toast.showSuccess(`Commande ${commandLabels[command]} envoyee`)
+    toast.showSuccess(t('devices.commandSent', { label: commandLabels.value[command] }))
   } catch {
-    toast.showError(`Erreur lors de l'envoi de la commande ${commandLabels[command]}`)
+    toast.showError(t('devices.commandError', { label: commandLabels.value[command] }))
   } finally {
     sendingCommand.value = null
   }
@@ -132,25 +134,25 @@ async function handleCommand(deviceId: string, command: DeviceCommand) {
 async function handleDelete(id: string) {
   try {
     await deviceStore.deleteDevice(id)
-    toast.showSuccess('Terminal supprime')
+    toast.showSuccess(t('devices.deletedSuccess'))
   } catch {
-    toast.showError('Erreur lors de la suppression')
+    toast.showError(t('devices.deleteError'))
   }
 }
 
 async function handleAddDevice() {
   if (!newDevice.value.name) {
-    toast.showError('Veuillez remplir tous les champs obligatoires')
+    toast.showError(t('devices.fillRequired'))
     return
   }
   isSubmitting.value = true
   try {
     await deviceStore.registerDevice(newDevice.value)
-    toast.showSuccess('Terminal RFID ajoute')
+    toast.showSuccess(t('devices.addedSuccess'))
     showAddModal.value = false
     newDevice.value = { name: '', serialNumber: '', companyId: '', siteId: '', isOnline: false }
   } catch {
-    toast.showError("Erreur lors de l'ajout du terminal")
+    toast.showError(t('devices.addError'))
   } finally {
     isSubmitting.value = false
   }
@@ -169,11 +171,11 @@ onMounted(async () => {
   <div class="space-y-6">
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">Terminaux RFID</h1>
-        <p class="text-sm text-gray-500 mt-1">Gestion des lecteurs de cartes RFID</p>
+        <h1 class="text-2xl font-bold text-gray-900">{{ t('devices.rfidTitle') }}</h1>
+        <p class="text-sm text-gray-500 mt-1">{{ t('devices.rfidSubtitle') }}</p>
       </div>
       <AppButton v-if="canManage" variant="primary" @click="() => { newDevice.serialNumber = generateSerialNumber('RFID'); showAddModal = true }">
-        Ajouter un terminal
+        {{ t('devices.addDevice') }}
       </AppButton>
     </div>
 
@@ -188,20 +190,20 @@ onMounted(async () => {
       </div>
 
       <div v-else-if="filteredDevices.length === 0" class="text-center py-12 text-gray-500">
-        Aucun terminal trouve
+        {{ t('devices.notFound') }}
       </div>
 
       <div v-else class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
           <thead class="bg-gray-50">
             <tr>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Numero serie</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nom</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Site</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Statut</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Dernier ping</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Commandes</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('devices.serialNumber') }}</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('devices.name') }}</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('devices.site') }}</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('devices.status') }}</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('devices.lastPing') }}</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('devices.commands') }}</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('devices.actions') }}</th>
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-100">
@@ -216,7 +218,7 @@ onMounted(async () => {
               <td class="px-4 py-3 text-sm text-gray-600">{{ device.siteName }}</td>
               <td class="px-4 py-3">
                 <AppBadge :variant="device.isOnline ? 'success' : 'danger'">
-                  {{ device.isOnline ? 'En ligne' : 'Hors ligne' }}
+                  {{ device.isOnline ? t('devices.online') : t('devices.offline') }}
                 </AppBadge>
               </td>
               <td class="px-4 py-3 text-sm text-gray-600">{{ formatDate(device.lastPingAt) }}</td>
@@ -226,7 +228,7 @@ onMounted(async () => {
                     size="sm"
                     variant="ghost"
                     :disabled="sendingCommand === `${device.id}-RESET`"
-                    title="Reset"
+                    :title="t('devices.reset')"
                     @click="handleCommand(device.id, 'RESET')"
                   >
                     <ArrowPathRoundedSquareIcon class="w-4 h-4" />
@@ -235,7 +237,7 @@ onMounted(async () => {
                     size="sm"
                     variant="ghost"
                     :disabled="sendingCommand === `${device.id}-REBOOT`"
-                    title="Reboot"
+                    :title="t('devices.reboot')"
                     @click="handleCommand(device.id, 'REBOOT')"
                   >
                     <PowerIcon class="w-4 h-4" />
@@ -244,7 +246,7 @@ onMounted(async () => {
                     size="sm"
                     variant="ghost"
                     :disabled="sendingCommand === `${device.id}-WAKE_UP`"
-                    title="Reveil"
+                    :title="t('devices.wake')"
                     @click="handleCommand(device.id, 'WAKE_UP')"
                   >
                     <SunIcon class="w-4 h-4" />
@@ -253,7 +255,7 @@ onMounted(async () => {
                     size="sm"
                     variant="ghost"
                     :disabled="sendingCommand === `${device.id}-SLEEP`"
-                    title="Veille"
+                    :title="t('devices.sleep')"
                     @click="handleCommand(device.id, 'SLEEP')"
                   >
                     <MoonIcon class="w-4 h-4" />
@@ -262,7 +264,7 @@ onMounted(async () => {
                     size="sm"
                     variant="ghost"
                     :disabled="sendingCommand === `${device.id}-STATUS`"
-                    title="Statut"
+                    :title="t('devices.statusCmd')"
                     @click="handleCommand(device.id, 'STATUS')"
                   >
                     <SignalIcon class="w-4 h-4" />
@@ -271,7 +273,7 @@ onMounted(async () => {
               </td>
               <td class="px-4 py-3" @click.stop>
                 <div class="flex gap-2">
-                  <AppButton size="sm" variant="ghost" @click="router.push(`/pointage-rfid/devices/${device.id}`)" title="Voir">
+                  <AppButton size="sm" variant="ghost" @click="router.push(`/pointage-rfid/devices/${device.id}`)" :title="t('devices.view')">
                     <EyeIcon class="w-4 h-4" />
                   </AppButton>
                   <AppButton
@@ -280,13 +282,13 @@ onMounted(async () => {
                     :variant="device.isOnline ? 'ghost' : 'ghost'"
                     :class="device.isOnline ? 'text-green-600 hover:text-red-600' : 'text-gray-400 hover:text-green-600'"
                     :disabled="togglingStatus === device.id"
-                    :title="device.isOnline ? 'Mettre hors ligne' : 'Mettre en ligne'"
+                    :title="device.isOnline ? t('devices.setOffline') : t('devices.setOnline')"
                     @click="handleToggleStatus(device)"
                   >
                     <WifiIcon v-if="device.isOnline" class="w-4 h-4" />
                     <NoSymbolIcon v-else class="w-4 h-4" />
                   </AppButton>
-                  <AppButton v-if="canManage" size="sm" variant="ghost" class="text-red-600 hover:text-red-700" @click="handleDelete(device.id)" title="Supprimer">
+                  <AppButton v-if="canManage" size="sm" variant="ghost" class="text-red-600 hover:text-red-700" @click="handleDelete(device.id)" :title="t('devices.deleteBtn')">
                     <TrashIcon class="w-4 h-4" />
                   </AppButton>
                 </div>
@@ -297,30 +299,30 @@ onMounted(async () => {
       </div>
     </AppCard>
 
-    <AppModal v-model="showAddModal" title="Ajouter un terminal RFID" size="md">
+    <AppModal v-model="showAddModal" :title="t('devices.addRfidTitle')" size="md">
       <div class="space-y-4">
-        <AppInput v-model="newDevice.name" label="Nom du terminal *" placeholder="Ex: Lecteur Entree principale" />
+        <AppInput v-model="newDevice.name" :label="t('devices.deviceName')" :placeholder="t('devices.deviceNamePlaceholder')" />
         <div>
-          <p class="text-sm font-medium text-gray-700 mb-1">Numero de serie</p>
+          <p class="text-sm font-medium text-gray-700 mb-1">{{ t('devices.serialLabel') }}</p>
           <p class="font-mono text-sm bg-gray-50 border border-gray-200 rounded-md px-3 py-2 text-gray-900">{{ newDevice.serialNumber }}</p>
         </div>
         <AppSelect
           v-model="newDevice.companyId"
-          label="Entreprise"
+          :label="t('devices.companyLabel')"
           :options="companyOptions"
           @update:model-value="newDevice.siteId = ''"
         />
         <AppSelect
           v-model="newDevice.siteId"
-          label="Site"
+          :label="t('devices.siteLabel')"
           :options="siteOptionsForForm"
-          placeholder="Selectionner un site"
+          :placeholder="t('devices.selectSite')"
           :disabled="!newDevice.companyId"
         />
         <div class="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3">
           <div>
-            <p class="text-sm font-medium text-gray-700">Statut initial</p>
-            <p class="text-xs text-gray-500">{{ newDevice.isOnline ? 'En ligne' : 'Hors ligne' }}</p>
+            <p class="text-sm font-medium text-gray-700">{{ t('devices.initialStatus') }}</p>
+            <p class="text-xs text-gray-500">{{ newDevice.isOnline ? t('devices.online') : t('devices.offline') }}</p>
           </div>
           <button
             type="button"
@@ -341,8 +343,8 @@ onMounted(async () => {
       </div>
       <template #footer>
         <div class="flex justify-end gap-3">
-          <AppButton variant="secondary" @click="showAddModal = false">Annuler</AppButton>
-          <AppButton variant="primary" :loading="isSubmitting" @click="handleAddDevice">Ajouter</AppButton>
+          <AppButton variant="secondary" @click="showAddModal = false">{{ t('common.cancel') }}</AppButton>
+          <AppButton variant="primary" :loading="isSubmitting" @click="handleAddDevice">{{ t('devices.addBtn') }}</AppButton>
         </div>
       </template>
     </AppModal>

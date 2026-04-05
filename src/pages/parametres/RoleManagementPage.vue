@@ -1,54 +1,56 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { hasPermission, type Module, type Action } from '@/utils/permissions'
 import { usePermissions } from '@/composables/usePermissions'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import { CheckIcon, XMarkIcon } from '@heroicons/vue/24/solid'
 
+const { t } = useI18n()
 const permissions = usePermissions()
 
-const modules: { key: Module; label: string }[] = [
-  { key: 'dashboard', label: 'Tableau de bord' },
-  { key: 'pointage-rfid', label: 'Pointage RFID' },
-  { key: 'biometrique', label: 'Biometrique' },
-  { key: 'feelback', label: 'Feelback' },
-  { key: 'marketplace', label: 'Marketplace' },
-  { key: 'settings', label: 'Parametres' },
-]
+const modules = computed<{ key: Module; label: string }[]>(() => [
+  { key: 'dashboard', label: t('parametres.permDashboard') },
+  { key: 'pointage-rfid', label: t('parametres.permRfid') },
+  { key: 'biometrique', label: t('parametres.permBio') },
+  { key: 'feelback', label: t('parametres.permFeelback') },
+  { key: 'marketplace', label: t('parametres.permMarketplace') },
+  { key: 'settings', label: t('parametres.permSettings') },
+])
 
-const actions: { key: Action; label: string }[] = [
-  { key: 'view', label: 'Voir' },
-  { key: 'create', label: 'Creer' },
-  { key: 'edit', label: 'Modifier' },
-  { key: 'delete', label: 'Supprimer' },
-  { key: 'export', label: 'Exporter' },
-]
+const actions = computed<{ key: Action; label: string }[]>(() => [
+  { key: 'view', label: t('parametres.permView') },
+  { key: 'create', label: t('parametres.permCreate') },
+  { key: 'edit', label: t('parametres.permEdit') },
+  { key: 'delete', label: t('parametres.permDelete') },
+  { key: 'export', label: t('parametres.permExport') },
+])
 
-const allRoles: { key: string; label: string; description: string; variant: string }[] = [
+const allRoles = computed<{ key: string; label: string; description: string; variant: string }[]>(() => [
   {
     key: 'super_admin',
-    label: 'Super Administrateur',
-    description: 'Acces complet a toutes les fonctionnalites de la plateforme. Gestion de toutes les entreprises, utilisateurs, et parametres globaux.',
+    label: t('parametres.superAdminRole'),
+    description: t('parametres.superAdminDesc'),
     variant: 'danger',
   },
   {
     key: 'admin_enterprise',
-    label: 'Administrateur Entreprise',
-    description: 'Gestion de son entreprise : sites, departements, employes, terminaux et managers. Les donnees sont limitees a son entreprise.',
+    label: t('parametres.adminEnterpriseRole'),
+    description: t('parametres.adminEnterpriseDesc'),
     variant: 'warning',
   },
   {
     key: 'manager',
-    label: 'Manager',
-    description: 'Consultation des donnees de son entreprise : employes, presences, rapports. Pas de droits de creation ou modification.',
+    label: t('roles.manager'),
+    description: t('parametres.managerDesc'),
     variant: 'info',
   },
-]
+])
 
 const roles = computed(() => {
-  if (permissions.isSuperAdmin.value) return allRoles
-  return allRoles.filter((r) => r.key !== 'super_admin')
+  if (permissions.isSuperAdmin.value) return allRoles.value
+  return allRoles.value.filter((r) => r.key !== 'super_admin')
 })
 
 function check(role: string, module: Module, action: Action): boolean {
@@ -59,8 +61,8 @@ const totalPermissions = computed(() => {
   const totals: Record<string, number> = {}
   for (const role of roles.value) {
     let count = 0
-    for (const mod of modules) {
-      for (const act of actions) {
+    for (const mod of modules.value) {
+      for (const act of actions.value) {
         if (check(role.key, mod.key, act.key)) count++
       }
     }
@@ -73,9 +75,9 @@ const totalPermissions = computed(() => {
 <template>
   <div class="space-y-6">
     <div>
-      <h1 class="text-2xl font-bold text-gray-900">Roles et permissions</h1>
+      <h1 class="text-2xl font-bold text-gray-900">{{ t('parametres.rolesTitle') }}</h1>
       <p class="text-sm text-gray-500 mt-1">
-        Vue d'ensemble des permissions attribuees a chaque role dans le systeme
+        {{ t('parametres.rolesSubtitle') }}
       </p>
     </div>
 
@@ -96,7 +98,7 @@ const totalPermissions = computed(() => {
         <template #header>
           <div class="flex items-center gap-3">
             <AppBadge :variant="role.variant as any">{{ role.label }}</AppBadge>
-            <span class="text-sm text-gray-500">{{ totalPermissions[role.key] }} permissions actives</span>
+            <span class="text-sm text-gray-500">{{ totalPermissions[role.key] }} {{ t('parametres.activePermissions') }}</span>
           </div>
         </template>
 

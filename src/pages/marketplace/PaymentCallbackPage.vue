@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import AppButton from '@/components/ui/AppButton.vue'
 
+const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 
@@ -24,8 +26,8 @@ onMounted(() => {
       <!-- Processing -->
       <div v-if="!status">
         <div class="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto"></div>
-        <h2 class="text-xl font-bold text-gray-900 mt-4">Verification du paiement en cours...</h2>
-        <p class="text-gray-500 text-sm mt-2">Veuillez patienter, ne fermez pas cette page.</p>
+        <h2 class="text-xl font-bold text-gray-900 mt-4">{{ t('marketplace.paymentVerifying') }}</h2>
+        <p class="text-gray-500 text-sm mt-2">{{ t('marketplace.paymentWait') }}</p>
       </div>
 
       <!-- Success -->
@@ -35,14 +37,14 @@ onMounted(() => {
             <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
-        <h2 class="text-2xl font-bold text-gray-900">Paiement reussi !</h2>
-        <p class="text-gray-600">Votre commande a ete confirmee et est en cours de traitement.</p>
+        <h2 class="text-2xl font-bold text-gray-900">{{ t('marketplace.paymentSuccess') }}</h2>
+        <p class="text-gray-600">{{ t('marketplace.paymentSuccessMsg') }}</p>
         <p v-if="orderNumber" class="text-sm text-gray-500">
-          Commande : <span class="font-bold text-gray-900">{{ orderNumber }}</span>
+          {{ t('marketplace.orderLabel') }} <span class="font-bold text-gray-900">{{ orderNumber }}</span>
         </p>
-        <p class="text-xs text-gray-400">Redirection automatique dans 5 secondes...</p>
+        <p class="text-xs text-gray-400">{{ t('marketplace.autoRedirect') }}</p>
         <AppButton variant="primary" @click="router.push('/marketplace/orders')">
-          Voir mes commandes
+          {{ t('marketplace.viewMyOrders') }}
         </AppButton>
       </div>
 
@@ -53,14 +55,14 @@ onMounted(() => {
             <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
-        <h2 class="text-2xl font-bold text-gray-900">Echec du paiement</h2>
-        <p class="text-gray-600">Votre paiement n'a pas pu etre traite. Veuillez reessayer ou contacter le support.</p>
+        <h2 class="text-2xl font-bold text-gray-900">{{ t('marketplace.paymentFailed') }}</h2>
+        <p class="text-gray-600">{{ t('marketplace.paymentFailedMsg') }}</p>
         <div class="flex flex-col gap-3">
           <AppButton variant="primary" @click="router.push('/marketplace/checkout')">
-            Reessayer le paiement
+            {{ t('marketplace.retryPayment') }}
           </AppButton>
           <AppButton variant="secondary" @click="router.push('/marketplace/orders')">
-            Voir mes commandes
+            {{ t('marketplace.viewMyOrders') }}
           </AppButton>
         </div>
       </div>

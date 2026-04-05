@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useFeelbackStore } from '@/stores/feelback.store'
 import { useSiteStore } from '@/stores/site.store'
 import { useToast } from '@/composables/useToast'
@@ -9,6 +10,7 @@ import AppBadge from '@/components/ui/AppBadge.vue'
 import AppInput from '@/components/ui/AppInput.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
 
+const { t } = useI18n()
 const store = useFeelbackStore()
 const siteStore = useSiteStore()
 const toast = useToast()
@@ -20,15 +22,15 @@ const filterSite = ref('')
 const lastUpdated = ref(new Date().toLocaleTimeString('fr-FR'))
 let refreshInterval: ReturnType<typeof setInterval>
 
-const levelOptions = [
-  { label: 'Tous les niveaux', value: '' },
-  { label: 'Bon', value: 'bon' },
-  { label: 'Neutre', value: 'neutre' },
-  { label: 'Mauvais', value: 'mauvais' },
-]
+const levelOptions = computed(() => [
+  { label: t('feelback.allLevels'), value: '' },
+  { label: t('feelback.good'), value: 'bon' },
+  { label: t('feelback.neutral'), value: 'neutre' },
+  { label: t('feelback.bad'), value: 'mauvais' },
+])
 
 const siteOptions = computed(() => [
-  { label: 'Tous les sites', value: '' },
+  { label: t('feelback.allSites'), value: '' },
   ...siteStore.sites.map((s) => ({ label: s.name, value: s.id })),
 ])
 
@@ -54,9 +56,9 @@ function getLevelVariant(level: string) {
 
 function getLevelLabel(level: string) {
   switch (level) {
-    case 'bon': return 'Bon'
-    case 'neutre': return 'Neutre'
-    case 'mauvais': return 'Mauvais'
+    case 'bon': return t('feelback.good')
+    case 'neutre': return t('feelback.neutral')
+    case 'mauvais': return t('feelback.bad')
     default: return level
   }
 }
@@ -75,7 +77,7 @@ watch([filterLevel, filterSite, filterStartDate, filterEndDate], () => {
 })
 
 function exportData() {
-  toast.showSuccess('Export CSV en cours...')
+  toast.showSuccess(t('feelback.exportCsvLoading'))
 }
 
 onMounted(async () => {
@@ -92,38 +94,38 @@ onUnmounted(() => {
   <div class="space-y-6">
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">Donnees brutes Feelback</h1>
-        <p class="text-xs text-gray-400 mt-1">Derniere mise a jour : {{ lastUpdated }}</p>
+        <h1 class="text-2xl font-bold text-gray-900">{{ t('feelback.rawDataTitle') }}</h1>
+        <p class="text-xs text-gray-400 mt-1">{{ t('feelback.lastUpdate') }} {{ lastUpdated }}</p>
       </div>
-      <AppButton variant="secondary" @click="exportData">Exporter CSV</AppButton>
+      <AppButton variant="secondary" @click="exportData">{{ t('feelback.exportCsv') }}</AppButton>
     </div>
 
     <AppCard>
       <div class="flex flex-wrap gap-4 mb-6">
-        <AppInput v-model="filterStartDate" type="date" placeholder="Date debut" />
-        <AppInput v-model="filterEndDate" type="date" placeholder="Date fin" />
+        <AppInput v-model="filterStartDate" type="date" />
+        <AppInput v-model="filterEndDate" type="date" />
         <AppSelect v-model="filterLevel" :options="levelOptions" class="w-40" />
         <AppSelect v-model="filterSite" :options="siteOptions" class="w-48" />
       </div>
 
-      <p class="text-sm text-gray-500 mb-4">{{ store.entries.length }} reponse(s) trouvee(s)</p>
+      <p class="text-sm text-gray-500 mb-4">{{ store.entries.length }} {{ t('feelback.resultsCount') }}</p>
 
       <div v-if="store.isLoading" class="flex justify-center py-12">
         <div class="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
       </div>
 
       <div v-else-if="entries.length === 0" class="text-center py-12 text-gray-500">
-        Aucune donnee disponible
+        {{ t('feelback.noData') }}
       </div>
 
       <div v-else class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
           <thead class="bg-gray-50">
             <tr>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date/Heure</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Site</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Avis</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Terminal</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('feelback.dateTime') }}</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('feelback.site') }}</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('feelback.avis') }}</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('feelback.terminal') }}</th>
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-100">

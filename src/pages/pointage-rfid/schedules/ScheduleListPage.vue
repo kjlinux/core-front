@@ -1,14 +1,14 @@
 <template>
   <div class="schedule-list-page">
     <div class="flex justify-between items-center mb-6">
-      <h1 class="text-2xl font-bold">Horaires de travail</h1>
+      <h1 class="text-2xl font-bold">{{ t('schedules.title') }}</h1>
       <AppButton
         v-if="canCreate"
         @click="navigateToCreate"
         variant="primary"
       >
         <PlusIcon class="w-4 h-4 mr-1" />
-        Nouvel horaire
+        {{ t('schedules.create') }}
       </AppButton>
     </div>
 
@@ -16,7 +16,7 @@
       <AppSelect
         v-model="filterCompanyId"
         :options="companyOptions"
-        label="Entreprise"
+        :label="t('schedules.company')"
         class="w-full sm:w-64"
       />
     </AppCard>
@@ -34,7 +34,7 @@
 
         <template #type="{ row }">
           <AppBadge :variant="row.type === 'standard' ? 'blue' : 'purple'">
-            {{ row.type === 'standard' ? 'Standard' : 'Personnalise' }}
+            {{ row.type === 'standard' ? t('schedules.standard') : t('schedules.custom') }}
           </AppBadge>
         </template>
 
@@ -69,10 +69,10 @@
 
         <template #actions="{ row }">
           <div class="flex gap-1" @click.stop>
-            <AppButton v-if="canEdit" @click="navigateToEdit(row.id)" variant="ghost" size="sm" title="Modifier">
+            <AppButton v-if="canEdit" @click="navigateToEdit(row.id)" variant="ghost" size="sm" :title="t('common.edit')">
               <PencilIcon class="w-4 h-4" />
             </AppButton>
-            <AppButton v-if="canCreate" @click="handleDuplicate(row)" variant="ghost" size="sm" title="Dupliquer">
+            <AppButton v-if="canCreate" @click="handleDuplicate(row)" variant="ghost" size="sm" :title="t('schedules.duplicate')">
               <DocumentDuplicateIcon class="w-4 h-4" />
             </AppButton>
             <AppButton
@@ -81,7 +81,7 @@
               variant="ghost"
               size="sm"
               class="text-red-600 hover:text-red-700"
-              title="Supprimer"
+              :title="t('common.delete')"
             >
               <TrashIcon class="w-4 h-4" />
             </AppButton>
@@ -92,8 +92,8 @@
 
     <AppConfirmDialog
       :open="deleteModalVisible"
-      title="Confirmer la suppression"
-      :message="`Etes-vous sur de vouloir supprimer l\'horaire &quot;${scheduleToDelete?.name}&quot; ? Cette action est irreversible.`"
+      :title="t('schedules.confirmDelete')"
+      :message="t('schedules.deleteConfirm', { name: scheduleToDelete?.name })"
       @confirm="confirmDelete"
       @cancel="deleteModalVisible = false"
     />
@@ -104,6 +104,7 @@
 // @ts-nocheck
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import DataTable from '@/components/data-display/DataTable.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppCard from '@/components/ui/AppCard.vue'
@@ -117,6 +118,7 @@ import { useToast } from '@/composables/useToast'
 import type { Schedule } from '@/types/schedule'
 import { PencilIcon, DocumentDuplicateIcon, TrashIcon, PlusIcon } from '@heroicons/vue/24/outline'
 
+const { t } = useI18n()
 const router = useRouter()
 const scheduleStore = useScheduleStore()
 const companyStore = useCompanyStore()
@@ -134,7 +136,7 @@ const canEdit = computed(() => permissions.isAdminOrSuperOrTech.value)
 const canDelete = computed(() => permissions.isAdminOrSuperOrTech.value)
 
 const companyOptions = computed(() => [
-  { value: '', label: 'Toutes les entreprises' },
+  { value: '', label: t('schedules.allCompanies') },
   ...companyStore.companies.map(c => ({ value: c.id, label: c.name })),
 ])
 
@@ -147,17 +149,17 @@ const filteredSchedules = computed(() => {
   return list.filter(s => s.companyId === filterCompanyId.value)
 })
 
-const columns = [
-  { key: 'name', label: 'Nom', sortable: true },
-  { key: 'companyName', label: 'Entreprise', sortable: true },
-  { key: 'type', label: 'Type', sortable: true },
-  { key: 'startTime', label: 'Heure debut', sortable: true },
-  { key: 'endTime', label: 'Heure fin', sortable: true },
-  { key: 'workDays', label: 'Jours travailles', sortable: false },
-  { key: 'lateTolerance', label: 'Tolerance retard', sortable: true },
-  { key: 'departmentCount', label: 'Departements', sortable: true },
-  { key: 'actions', label: 'Actions', sortable: false }
-]
+const columns = computed(() => [
+  { key: 'name', label: t('common.name'), sortable: true },
+  { key: 'companyName', label: t('schedules.company'), sortable: true },
+  { key: 'type', label: t('schedules.type'), sortable: true },
+  { key: 'startTime', label: t('schedules.startTime'), sortable: true },
+  { key: 'endTime', label: t('schedules.endTime'), sortable: true },
+  { key: 'workDays', label: t('schedules.workedDays'), sortable: false },
+  { key: 'lateTolerance', label: t('schedules.lateTolerance'), sortable: true },
+  { key: 'departmentCount', label: t('schedules.departments'), sortable: true },
+  { key: 'actions', label: t('common.actions'), sortable: false }
+])
 
 const getDayBadges = (workDays: number[]): string[] => {
   const dayLabels: Record<number, string> = { 1: 'L', 2: 'M', 3: 'M', 4: 'J', 5: 'V', 6: 'S', 7: 'D' }
@@ -184,9 +186,9 @@ const handleDuplicate = async (schedule: Schedule) => {
       id: undefined
     }
     await scheduleStore.createSchedule(duplicatedData)
-    toast.success('Succes', 'Horaire duplique avec succes')
+    toast.success(t('common.success'), t('schedules.duplicatedSuccess'))
   } catch (error: any) {
-    toast.error('Erreur', error.message || 'Erreur lors de la duplication')
+    toast.error(t('common.error'), error.message || t('schedules.duplicateError'))
   }
 }
 
@@ -202,7 +204,7 @@ const confirmDelete = async () => {
       deleteModalVisible.value = false
       scheduleToDelete.value = null
     } catch (error: any) {
-      toast.error('Erreur', error.message || 'Erreur lors de la suppression')
+      toast.error(t('common.error'), error.message || t('schedules.deleteError'))
     }
   }
 }

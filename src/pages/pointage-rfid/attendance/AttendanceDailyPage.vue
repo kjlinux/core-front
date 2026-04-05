@@ -1,15 +1,15 @@
 <template>
   <div class="attendance-daily-page">
     <div class="page-header">
-      <h1>Pointage journalier</h1>
+      <h1>{{ t('attendance.dailyTitle') }}</h1>
       <div class="header-actions">
         <AppInput
           v-model="selectedDate"
           type="date"
-          placeholder="Sélectionner une date"
+          :placeholder="t('attendance.selectDate')"
         />
         <AppButton @click="handleExport">
-          Exporter
+          {{ t('attendance.exportBtn') }}
         </AppButton>
       </div>
     </div>
@@ -18,19 +18,19 @@
       <AppCard>
         <div class="summary-grid">
           <div class="summary-item">
-            <span class="summary-label">Total Employés</span>
+            <span class="summary-label">{{ t('attendance.totalEmployees') }}</span>
             <span class="summary-value">{{ summary.totalEmployees }}</span>
           </div>
           <div class="summary-item">
-            <span class="summary-label">Présents</span>
+            <span class="summary-label">{{ t('attendance.present') }}</span>
             <span class="summary-value text-green">{{ summary.presentPercentage }}%</span>
           </div>
           <div class="summary-item">
-            <span class="summary-label">Absents</span>
+            <span class="summary-label">{{ t('attendance.absent') }}</span>
             <span class="summary-value text-red">{{ summary.absentPercentage }}%</span>
           </div>
           <div class="summary-item">
-            <span class="summary-label">En Retard</span>
+            <span class="summary-label">{{ t('attendance.late') }}</span>
             <span class="summary-value text-orange">{{ summary.latePercentage }}%</span>
           </div>
         </div>
@@ -42,17 +42,17 @@
         <AppSelect
           v-model="filters.departmentId"
           :options="departmentOptions"
-          placeholder="Tous les départements"
+          :placeholder="t('attendance.allDepts')"
         />
         <AppSelect
           v-model="filters.siteId"
           :options="siteOptions"
-          placeholder="Tous les sites"
+          :placeholder="t('attendance.allSites')"
         />
         <AppSelect
           v-model="filters.status"
           :options="statusOptions"
-          placeholder="Tous les statuts"
+          :placeholder="t('attendance.allStatuses')"
         />
       </div>
 
@@ -86,7 +86,7 @@
         </template>
         <template #actions="{ row }">
           <AppButton size="small" variant="ghost" @click="viewDetail(row)">
-            Détail
+            {{ t('common.detail') }}
           </AppButton>
         </template>
       </DataTable>
@@ -98,6 +98,7 @@
 // @ts-nocheck
 import { ref, onMounted, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { useAttendanceStore } from '@/stores/attendance.store';
 import type { AttendanceRecord } from '@/types/attendance';
 import DataTable from '@/components/data-display/DataTable.vue';
@@ -109,6 +110,7 @@ import { useToast } from '@/composables/useToast';
 import { departmentApi } from '@/services/api/department.api';
 import { siteApi } from '@/services/api/site.api';
 
+const { t } = useI18n();
 const router = useRouter();
 const attendanceStore = useAttendanceStore();
 const { info } = useToast();
@@ -124,16 +126,19 @@ const filters = ref({
   status: '',
 });
 
-const departmentOptions = ref([{ label: 'Tous les départements', value: '' }]);
-const siteOptions = ref([{ label: 'Tous les sites', value: '' }]);
+const departmentOptions = computed(() => [{ label: t('attendance.allDepts'), value: '' }, ...rawDepartments.value]);
+const siteOptions = computed(() => [{ label: t('attendance.allSites'), value: '' }, ...rawSites.value]);
 
-const statusOptions = [
-  { label: 'Tous les statuts', value: '' },
-  { label: 'Présent', value: 'present' },
-  { label: 'Absent', value: 'absent' },
-  { label: 'En retard', value: 'late' },
-  { label: 'Départ anticipé', value: 'left_early' },
-];
+const rawDepartments = ref<{ label: string; value: string }[]>([]);
+const rawSites = ref<{ label: string; value: string }[]>([]);
+
+const statusOptions = computed(() => [
+  { label: t('attendance.allStatuses'), value: '' },
+  { label: t('attendance.status.present'), value: 'present' },
+  { label: t('attendance.status.absent'), value: 'absent' },
+  { label: t('attendance.status.late'), value: 'late' },
+  { label: t('attendance.status.left_early'), value: 'left_early' },
+]);
 
 const attendanceRecords = computed(() => {
   const recs = [...(attendanceStore.dailyAttendance || [])];
@@ -169,22 +174,22 @@ const summary = computed(() => {
   };
 });
 
-const columns = [
-  { key: 'employeeName', label: 'Employé', sortable: true },
-  { key: 'department', label: 'Département', sortable: true },
-  { key: 'entryTime', label: "Heure d'entrée", sortable: true },
-  { key: 'exitTime', label: 'Heure de sortie', sortable: true },
-  { key: 'status', label: 'Statut', sortable: true },
-  { key: 'lateMinutes', label: 'Retard', sortable: true },
-  { key: 'actions', label: 'Actions', sortable: false },
-];
+const columns = computed(() => [
+  { key: 'employeeName', label: t('attendance.employee'), sortable: true },
+  { key: 'department', label: t('attendance.dept'), sortable: true },
+  { key: 'entryTime', label: t('attendance.entryTime'), sortable: true },
+  { key: 'exitTime', label: t('attendance.exitTime'), sortable: true },
+  { key: 'status', label: t('common.status'), sortable: true },
+  { key: 'lateMinutes', label: t('attendance.lateTime'), sortable: true },
+  { key: 'actions', label: t('common.actions'), sortable: false },
+]);
 
 const getStatusLabel = (status: string): string => {
   const labels: Record<string, string> = {
-    present: 'Présent',
-    absent: 'Absent',
-    late: 'En retard',
-    left_early: 'Départ anticipé',
+    present: t('attendance.status.present'),
+    absent: t('attendance.status.absent'),
+    late: t('attendance.status.late'),
+    left_early: t('attendance.status.left_early'),
   };
   return labels[status] || status;
 };
@@ -217,16 +222,10 @@ const loadFilters = async () => {
       departmentApi.getAll({ perPage: 200 }),
       siteApi.getAll({ perPage: 200 }),
     ]);
-    departmentOptions.value = [
-      { label: 'Tous les départements', value: '' },
-      ...(depts.data || []).map((d) => ({ label: d.name, value: d.id })),
-    ];
-    siteOptions.value = [
-      { label: 'Tous les sites', value: '' },
-      ...(sites.data || []).map((s) => ({ label: s.name, value: s.id })),
-    ];
+    rawDepartments.value = (depts.data || []).map((d) => ({ label: d.name, value: d.id }));
+    rawSites.value = (sites.data || []).map((s) => ({ label: s.name, value: s.id }));
   } catch {
-    // silently fail — filtres restent vides
+    // silently fail
   }
 };
 
@@ -235,7 +234,7 @@ const handlePageChange = (page: number) => {
 };
 
 const handleExport = () => {
-  info('Export en cours...');
+  info(t('attendance.exporting'));
 };
 
 const viewDetail = (record: AttendanceRecord) => {

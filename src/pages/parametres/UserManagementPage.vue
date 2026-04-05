@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { usePermissions } from '@/composables/usePermissions'
 import { useToast } from '@/composables/useToast'
 import { useAuthStore } from '@/stores/auth.store'
@@ -14,6 +15,7 @@ import AppSelect from '@/components/ui/AppSelect.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import { PencilIcon, EyeIcon, EyeSlashIcon, KeyIcon, UserPlusIcon } from '@heroicons/vue/24/outline'
 
+const { t } = useI18n()
 const permissions = usePermissions()
 const toast = useToast()
 const authStore = useAuthStore()
@@ -37,12 +39,12 @@ const createForm = ref({
 
 const users = ref<UserData[]>([])
 
-const roleLabels: Record<string, string> = {
-  super_admin: 'Super Admin',
-  admin_enterprise: 'Admin Entreprise',
-  manager: 'Manager',
-  technicien: 'Technicien',
-}
+const roleLabels = computed<Record<string, string>>(() => ({
+  super_admin: t('parametres.superAdmin'),
+  admin_enterprise: t('parametres.adminEnterprise'),
+  manager: t('parametres.managerRole'),
+  technicien: t('parametres.technicienRole'),
+}))
 
 const roleBadgeVariant: Record<string, string> = {
   super_admin: 'danger',
@@ -54,29 +56,29 @@ const roleBadgeVariant: Record<string, string> = {
 const roleOptions = computed(() => {
   if (permissions.isSuperAdmin.value) {
     return [
-      { label: 'Selectionner un role', value: '' },
-      { label: 'Super Administrateur', value: 'super_admin' },
-      { label: 'Administrateur Entreprise', value: 'admin_enterprise' },
-      { label: 'Manager', value: 'manager' },
-      { label: 'Technicien', value: 'technicien' },
+      { label: t('parametres.selectRole'), value: '' },
+      { label: t('roles.super_admin'), value: 'super_admin' },
+      { label: t('roles.admin_enterprise'), value: 'admin_enterprise' },
+      { label: t('roles.manager'), value: 'manager' },
+      { label: t('roles.technicien'), value: 'technicien' },
     ]
   }
   if (permissions.isTechnicien.value) {
     return [
-      { label: 'Selectionner un role', value: '' },
-      { label: 'Administrateur Entreprise', value: 'admin_enterprise' },
-      { label: 'Manager', value: 'manager' },
+      { label: t('parametres.selectRole'), value: '' },
+      { label: t('roles.admin_enterprise'), value: 'admin_enterprise' },
+      { label: t('roles.manager'), value: 'manager' },
     ]
   }
   return [
-    { label: 'Selectionner un role', value: '' },
-    { label: 'Manager', value: 'manager' },
+    { label: t('parametres.selectRole'), value: '' },
+    { label: t('roles.manager'), value: 'manager' },
   ]
 })
 
 const companyOptions = computed(() => {
   return [
-    { label: 'Selectionner une entreprise', value: '' },
+    { label: t('parametres.selectCompany'), value: '' },
     ...companyStore.companies.map((c) => ({
       label: c.name,
       value: c.id,
@@ -93,7 +95,7 @@ async function fetchUsers() {
   try {
     users.value = await userApi.getAll()
   } catch {
-    toast.showError('Erreur lors du chargement des utilisateurs')
+    toast.showError(t('parametres.userCreateError'))
   } finally {
     isLoading.value = false
   }
@@ -111,37 +113,37 @@ async function toggleActive(user: UserData) {
     if (index !== -1) {
       users.value[index] = updated
     }
-    toast.showSuccess(updated.isActive ? 'Utilisateur active' : 'Utilisateur desactive')
+    toast.showSuccess(updated.isActive ? t('parametres.userActivated') : t('parametres.userDeactivated'))
   } catch {
-    toast.showError('Erreur lors du changement de statut')
+    toast.showError(t('parametres.statusChangeError'))
   }
 }
 
 async function resetPassword(user: UserData) {
   try {
     await userApi.resetPassword(user.id)
-    toast.showSuccess(`Email de reinitialisation envoye a ${user.email}`)
+    toast.showSuccess(t('parametres.resetEmailSent', { email: user.email }))
   } catch {
-    toast.showError('Erreur lors de la reinitialisation du mot de passe')
+    toast.showError(t('parametres.resetEmailError'))
   }
 }
 
 async function handleCreate() {
   if (!createForm.value.firstName || !createForm.value.email || !createForm.value.role) {
-    toast.showError('Veuillez remplir tous les champs obligatoires')
+    toast.showError(t('parametres.fillRequired'))
     return
   }
   if (!createForm.value.password) {
-    toast.showError('Veuillez saisir un mot de passe')
+    toast.showError(t('parametres.enterPassword'))
     return
   }
   if (createForm.value.password !== createForm.value.confirmPassword) {
-    toast.showError('Les mots de passe ne correspondent pas')
+    toast.showError(t('parametres.passwordMismatch'))
     return
   }
   // super_admin doit choisir une entreprise pour les roles non-super_admin
   if (permissions.isSuperAdmin.value && createForm.value.role !== 'super_admin' && !createForm.value.companyId) {
-    toast.showError('Veuillez selectionner une entreprise')
+    toast.showError(t('parametres.companyRequired'))
     return
   }
 
@@ -157,11 +159,11 @@ async function handleCreate() {
       password_confirmation: createForm.value.confirmPassword,
     })
     users.value.push(created)
-    toast.showSuccess('Utilisateur cree avec succes')
+    toast.showSuccess(t('parametres.userCreated'))
     showCreateModal.value = false
     createForm.value = { firstName: '', lastName: '', email: '', role: '', companyId: '', password: '', confirmPassword: '' }
   } catch {
-    toast.showError("Erreur lors de la creation de l'utilisateur")
+    toast.showError(t('parametres.userCreateError'))
   } finally {
     isSaving.value = false
   }
@@ -181,10 +183,10 @@ async function handleEditSave() {
     if (index !== -1) {
       users.value[index] = updated
     }
-    toast.showSuccess('Utilisateur mis a jour')
+    toast.showSuccess(t('parametres.userUpdated'))
     showEditModal.value = false
   } catch {
-    toast.showError("Erreur lors de la mise a jour de l'utilisateur")
+    toast.showError(t('parametres.userUpdateError'))
   } finally {
     isSaving.value = false
   }
@@ -202,12 +204,12 @@ onMounted(async () => {
   <div class="space-y-6">
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">Gestion des utilisateurs</h1>
-        <p class="text-sm text-gray-500 mt-1">{{ users.length }} utilisateur(s) dans le systeme</p>
+        <h1 class="text-2xl font-bold text-gray-900">{{ t('parametres.usersTitle') }}</h1>
+        <p class="text-sm text-gray-500 mt-1">{{ users.length }} {{ t('parametres.usersCount') }}</p>
       </div>
       <AppButton variant="primary" @click="showCreateModal = true">
         <UserPlusIcon class="w-4 h-4 mr-1" />
-        Creer un utilisateur
+        {{ t('parametres.createUser') }}
       </AppButton>
     </div>
 
@@ -220,13 +222,13 @@ onMounted(async () => {
         <table class="min-w-full divide-y divide-gray-200">
           <thead class="bg-gray-50">
             <tr>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nom</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Entreprise</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Statut</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date creation</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('common.name') }}</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('common.email') }}</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('parametres.role') }}</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('companies.title') }}</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('common.status') }}</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('common.date') }}</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('common.actions') }}</th>
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-100">
@@ -239,13 +241,13 @@ onMounted(async () => {
               <td class="px-4 py-3 text-sm text-gray-600">{{ u.companyName ?? '-' }}</td>
               <td class="px-4 py-3">
                 <AppBadge :variant="u.isActive ? 'success' : 'neutral'">
-                  {{ u.isActive ? 'Actif' : 'Inactif' }}
+                  {{ u.isActive ? t('common.active') : t('common.inactive') }}
                 </AppBadge>
               </td>
               <td class="px-4 py-3 text-sm text-gray-600">{{ formatDate(u.createdAt) }}</td>
               <td class="px-4 py-3">
                 <div class="flex gap-1">
-                  <AppButton size="sm" variant="ghost" @click="openEditModal(u)" title="Modifier">
+                  <AppButton size="sm" variant="ghost" @click="openEditModal(u)" :title="t('parametres.edit')">
                     <PencilIcon class="w-4 h-4" />
                   </AppButton>
                   <AppButton
@@ -253,13 +255,13 @@ onMounted(async () => {
                     variant="ghost"
                     :class="u.isActive ? 'text-red-600 hover:text-red-700' : 'text-green-600 hover:text-green-700'"
                     @click="toggleActive(u)"
-                    :title="u.isActive ? 'Desactiver' : 'Activer'"
+                    :title="u.isActive ? t('parametres.deactivate') : t('parametres.activate')"
                     :disabled="u.id === authStore.user?.id"
                   >
                     <EyeSlashIcon v-if="u.isActive" class="w-4 h-4" />
                     <EyeIcon v-else class="w-4 h-4" />
                   </AppButton>
-                  <AppButton size="sm" variant="ghost" @click="resetPassword(u)" title="Reinitialiser le mot de passe">
+                  <AppButton size="sm" variant="ghost" @click="resetPassword(u)" :title="t('parametres.resetPassword')">
                     <KeyIcon class="w-4 h-4" />
                   </AppButton>
                 </div>
@@ -269,50 +271,50 @@ onMounted(async () => {
         </table>
       </div>
       <div v-if="!isLoading && users.length === 0" class="text-center py-8 text-gray-500">
-        Aucun utilisateur trouve
+        {{ t('parametres.noUser') }}
       </div>
     </AppCard>
 
     <!-- Create User Modal -->
-    <AppModal v-model="showCreateModal" title="Creer un utilisateur" size="lg">
+    <AppModal v-model="showCreateModal" :title="t('parametres.createUserTitle')" size="lg">
       <div class="space-y-4">
         <div class="grid grid-cols-2 gap-4">
-          <AppInput v-model="createForm.firstName" label="Prenom *" />
-          <AppInput v-model="createForm.lastName" label="Nom *" />
+          <AppInput v-model="createForm.firstName" :label="t('parametres.firstNameLabel')" />
+          <AppInput v-model="createForm.lastName" :label="t('parametres.lastNameLabel')" />
         </div>
-        <AppInput v-model="createForm.email" label="Email *" type="email" />
-        <AppSelect v-model="createForm.role" label="Role *" :options="roleOptions" />
+        <AppInput v-model="createForm.email" :label="t('parametres.emailLabel')" type="email" />
+        <AppSelect v-model="createForm.role" :label="t('parametres.roleLabel')" :options="roleOptions" />
         <AppSelect
           v-if="permissions.isSuperAdmin.value && createForm.role && createForm.role !== 'super_admin'"
           v-model="createForm.companyId"
-          label="Entreprise *"
+          :label="t('companies.title')"
           :options="companyOptions"
         />
-        <AppInput v-model="createForm.password" label="Mot de passe *" type="password" />
-        <AppInput v-model="createForm.confirmPassword" label="Confirmer le mot de passe *" type="password" />
+        <AppInput v-model="createForm.password" :label="t('parametres.passwordLabel')" type="password" />
+        <AppInput v-model="createForm.confirmPassword" :label="t('parametres.confirmPasswordLabel')" type="password" />
       </div>
       <template #footer>
         <div class="flex justify-end gap-3">
-          <AppButton variant="secondary" @click="showCreateModal = false">Annuler</AppButton>
-          <AppButton variant="primary" :loading="isSaving" @click="handleCreate">Creer</AppButton>
+          <AppButton variant="secondary" @click="showCreateModal = false">{{ t('common.cancel') }}</AppButton>
+          <AppButton variant="primary" :loading="isSaving" @click="handleCreate">{{ t('common.create') }}</AppButton>
         </div>
       </template>
     </AppModal>
 
     <!-- Edit User Modal -->
-    <AppModal v-if="editingUser" v-model="showEditModal" title="Modifier l'utilisateur" size="lg">
+    <AppModal v-if="editingUser" v-model="showEditModal" :title="t('parametres.editUserTitle')" size="lg">
       <div class="space-y-4">
         <div class="grid grid-cols-2 gap-4">
-          <AppInput v-model="editingUser.firstName" label="Prenom" />
-          <AppInput v-model="editingUser.lastName" label="Nom" />
+          <AppInput v-model="editingUser.firstName" :label="t('parametres.firstName')" />
+          <AppInput v-model="editingUser.lastName" :label="t('parametres.lastName')" />
         </div>
-        <AppInput v-model="editingUser.email" label="Email" type="email" />
-        <AppSelect v-model="editingUser.role" label="Role" :options="roleOptions" />
+        <AppInput v-model="editingUser.email" :label="t('common.email')" type="email" />
+        <AppSelect v-model="editingUser.role" :label="t('parametres.role')" :options="roleOptions" />
       </div>
       <template #footer>
         <div class="flex justify-end gap-3">
-          <AppButton variant="secondary" @click="showEditModal = false">Annuler</AppButton>
-          <AppButton variant="primary" :loading="isSaving" @click="handleEditSave">Enregistrer</AppButton>
+          <AppButton variant="secondary" @click="showEditModal = false">{{ t('common.cancel') }}</AppButton>
+          <AppButton variant="primary" :loading="isSaving" @click="handleEditSave">{{ t('common.save') }}</AppButton>
         </div>
       </template>
     </AppModal>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
 import AppButton from '@/components/ui/AppButton.vue'
@@ -14,6 +15,7 @@ import { companyApi } from '@/services/api/company.api'
 import type { TableColumn } from '@/types/common'
 import type { Company, Site, Department } from '@/types'
 
+const { t } = useI18n()
 const { success, error } = useToast()
 const authStore = useAuthStore()
 
@@ -38,13 +40,13 @@ const departments = ref<Department[]>([])
 const isSuperAdmin = computed(() => authStore.userRole === 'super_admin')
 
 // ---------- Report type options ----------
-const reportTypeOptions = [
-  { label: 'Rapport journalier', value: 'daily' },
-  { label: 'Rapport hebdomadaire', value: 'weekly' },
-  { label: 'Rapport mensuel', value: 'monthly' },
-  { label: 'Rapport de retards', value: 'late' },
-  { label: "Rapport d'absences", value: 'absence' },
-]
+const reportTypeOptions = computed(() => [
+  { label: t('reports.daily'), value: 'daily' },
+  { label: t('reports.weekly'), value: 'weekly' },
+  { label: t('reports.monthly'), value: 'monthly' },
+  { label: t('reports.lates'), value: 'late' },
+  { label: t('reports.absences'), value: 'absence' },
+])
 
 const exportFormatOptions = [
   { label: 'PDF', value: 'pdf' },
@@ -52,62 +54,62 @@ const exportFormatOptions = [
 ]
 
 // ---------- Dynamic columns per report type ----------
-const columnsByType: Record<string, TableColumn[]> = {
+const columnsByType = computed<Record<string, TableColumn[]>>(() => ({
   daily: [
-    { key: 'employee', label: 'Employe' },
-    { key: 'department', label: 'Departement' },
-    { key: 'site', label: 'Site' },
-    { key: 'present', label: 'Present', align: 'center' },
-    { key: 'absent', label: 'Absent', align: 'center' },
-    { key: 'late', label: 'Retards', align: 'center' },
-    { key: 'overtime', label: 'Heures sup.', align: 'center' },
-    { key: 'rate', label: 'Taux presence', align: 'center' },
+    { key: 'employee', label: t('reports.employee') },
+    { key: 'department', label: t('reports.dept') },
+    { key: 'site', label: t('reports.site') },
+    { key: 'present', label: t('reports.presentCount'), align: 'center' },
+    { key: 'absent', label: t('reports.absentCount'), align: 'center' },
+    { key: 'late', label: t('reports.lateCount'), align: 'center' },
+    { key: 'overtime', label: t('reports.overtime'), align: 'center' },
+    { key: 'rate', label: t('reports.attendanceRate'), align: 'center' },
   ],
   weekly: [
-    { key: 'employee', label: 'Employe' },
-    { key: 'department', label: 'Departement' },
-    { key: 'site', label: 'Site' },
-    { key: 'present', label: 'Jours presents', align: 'center' },
-    { key: 'absent', label: 'Absences', align: 'center' },
-    { key: 'late', label: 'Retards', align: 'center' },
-    { key: 'overtime', label: 'Heures sup.', align: 'center' },
-    { key: 'rate', label: 'Taux presence', align: 'center' },
+    { key: 'employee', label: t('reports.employee') },
+    { key: 'department', label: t('reports.dept') },
+    { key: 'site', label: t('reports.site') },
+    { key: 'present', label: t('reports.presentDays'), align: 'center' },
+    { key: 'absent', label: t('reports.absencesCount'), align: 'center' },
+    { key: 'late', label: t('reports.lateCount'), align: 'center' },
+    { key: 'overtime', label: t('reports.overtime'), align: 'center' },
+    { key: 'rate', label: t('reports.attendanceRate'), align: 'center' },
   ],
   monthly: [
-    { key: 'employee', label: 'Employe' },
-    { key: 'department', label: 'Departement' },
-    { key: 'site', label: 'Site' },
-    { key: 'present', label: 'Jours presents', align: 'center' },
-    { key: 'absent', label: 'Absences', align: 'center' },
-    { key: 'late', label: 'Retards', align: 'center' },
-    { key: 'overtime', label: 'Heures sup.', align: 'center' },
-    { key: 'rate', label: 'Taux presence', align: 'center' },
+    { key: 'employee', label: t('reports.employee') },
+    { key: 'department', label: t('reports.dept') },
+    { key: 'site', label: t('reports.site') },
+    { key: 'present', label: t('reports.presentDays'), align: 'center' },
+    { key: 'absent', label: t('reports.absencesCount'), align: 'center' },
+    { key: 'late', label: t('reports.lateCount'), align: 'center' },
+    { key: 'overtime', label: t('reports.overtime'), align: 'center' },
+    { key: 'rate', label: t('reports.attendanceRate'), align: 'center' },
   ],
   late: [
-    { key: 'employee', label: 'Employe' },
-    { key: 'department', label: 'Departement' },
-    { key: 'site', label: 'Site' },
-    { key: 'late', label: 'Nb retards', align: 'center' },
-    { key: 'overtime', label: 'Heures sup.', align: 'center' },
-    { key: 'rate', label: 'Taux presence', align: 'center' },
+    { key: 'employee', label: t('reports.employee') },
+    { key: 'department', label: t('reports.dept') },
+    { key: 'site', label: t('reports.site') },
+    { key: 'late', label: t('reports.lateNumber'), align: 'center' },
+    { key: 'overtime', label: t('reports.overtime'), align: 'center' },
+    { key: 'rate', label: t('reports.attendanceRate'), align: 'center' },
   ],
   absence: [
-    { key: 'employee', label: 'Employe' },
-    { key: 'department', label: 'Departement' },
-    { key: 'site', label: 'Site' },
-    { key: 'absent', label: 'Absences', align: 'center' },
-    { key: 'rate', label: 'Taux presence', align: 'center' },
+    { key: 'employee', label: t('reports.employee') },
+    { key: 'department', label: t('reports.dept') },
+    { key: 'site', label: t('reports.site') },
+    { key: 'absent', label: t('reports.absencesCount'), align: 'center' },
+    { key: 'rate', label: t('reports.attendanceRate'), align: 'center' },
   ],
-}
+}))
 
-const currentColumns = computed<TableColumn[]>(() => columnsByType[reportType.value] ?? columnsByType.daily!)
+const currentColumns = computed<TableColumn[]>(() => columnsByType.value[reportType.value] ?? columnsByType.value.daily!)
 
 const currentReportLabel = computed(() => {
-  return reportTypeOptions.find((o) => o.value === reportType.value)?.label ?? 'Rapport'
+  return reportTypeOptions.value.find((o) => o.value === reportType.value)?.label ?? t('reports.title')
 })
 
 const periodLabel = computed(() => {
-  if (startDate.value && endDate.value) return `Periode: ${startDate.value} au ${endDate.value}`
+  if (startDate.value && endDate.value) return t('reports.period', { start: startDate.value, end: endDate.value })
   return ''
 })
 
@@ -116,20 +118,20 @@ const summaryStats = computed(() => {
   if (!report.value) return []
   const r = report.value
   const base = [
-    { title: 'Employes', value: r.totalEmployees },
+    { title: t('reports.employeesTotal'), value: r.totalEmployees },
   ]
   if (reportType.value === 'late') {
-    base.push({ title: 'Total retards', value: r.totalLate })
+    base.push({ title: t('reports.totalLates'), value: r.totalLate })
     return base
   }
   if (reportType.value === 'absence') {
-    base.push({ title: 'Total absences', value: r.totalAbsent })
+    base.push({ title: t('reports.totalAbsences'), value: r.totalAbsent })
     return base
   }
   base.push(
-    { title: 'Jours presents', value: r.totalPresent },
-    { title: 'Absences', value: r.totalAbsent },
-    { title: 'Retards', value: r.totalLate },
+    { title: t('reports.presentDays'), value: r.totalPresent },
+    { title: t('reports.absencesCount'), value: r.totalAbsent },
+    { title: t('reports.lateCount'), value: r.totalLate },
   )
   return base
 })
@@ -180,11 +182,11 @@ watch(reportType, () => {
 // ---------- Generate report ----------
 const generateReport = async () => {
   if (!startDate.value || !endDate.value) {
-    error('Champs requis', 'Veuillez selectionner une periode')
+    error(t('reports.requiredFields'), t('reports.periodRequired'))
     return
   }
   if (isSuperAdmin.value && !selectedCompany.value) {
-    error('Champs requis', 'Veuillez selectionner une entreprise')
+    error(t('reports.requiredFields'), t('reports.companyRequired'))
     return
   }
   loading.value = true
@@ -200,9 +202,9 @@ const generateReport = async () => {
 
     report.value = await attendanceReportApi.getReport(params)
     reportGenerated.value = true
-    success('Rapport genere', 'Le rapport a ete genere avec succes')
+    success(t('reports.generated'), t('reports.generatedMsg'))
   } catch {
-    error('Erreur', 'Erreur lors de la generation du rapport')
+    error(t('common.error'), t('reports.generateError'))
   } finally {
     loading.value = false
   }
@@ -223,14 +225,14 @@ function buildSummaryRows() {
 
 const handleExport = async () => {
   if (!report.value || report.value.rows.length === 0) {
-    error('Export impossible', 'Aucune donnee a exporter')
+    error(t('reports.exportImpossible'), t('reports.noDataExport'))
     return
   }
 
   exporting.value = true
   try {
     const baseFilename = `pointage-${reportType.value}-${startDate.value}`
-    const title = `Rapport de pointage - ${currentReportLabel.value}`
+    const title = `${t('reports.title')} - ${currentReportLabel.value}`
 
     if (exportFormat.value === 'pdf') {
       await exportToPdf({
@@ -241,7 +243,7 @@ const handleExport = async () => {
         columns: buildExportColumns(),
         data: report.value.rows as Record<string, unknown>[],
       })
-      success('Export PDF', 'Le fichier PDF a ete telecharge')
+      success(t('reports.pdfTitle'), t('reports.pdfExported'))
     } else {
       await exportToExcel({
         filename: baseFilename,
@@ -251,10 +253,10 @@ const handleExport = async () => {
         columns: buildExportColumns(),
         data: report.value.rows as Record<string, unknown>[],
       })
-      success('Export Excel', 'Le fichier Excel a ete telecharge')
+      success(t('reports.excelTitle'), t('reports.excelExported'))
     }
   } catch {
-    error('Erreur export', 'Erreur lors du telechargement du fichier')
+    error(t('reports.exportErrorTitle'), t('reports.exportError'))
   } finally {
     exporting.value = false
   }
@@ -264,55 +266,55 @@ const handleExport = async () => {
 <template>
   <div class="space-y-6">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-      <h1 class="text-2xl font-bold text-gray-900">Rapports de pointage</h1>
+      <h1 class="text-2xl font-bold text-gray-900">{{ t('reports.title') }}</h1>
     </div>
 
     <!-- Filters -->
-    <AppCard title="Parametres du rapport">
+    <AppCard :title="t('reports.params')">
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Type de rapport</label>
+          <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('reports.reportType') }}</label>
           <AppSelect v-model="reportType" :options="reportTypeOptions" />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Date debut</label>
+          <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('reports.startDate') }}</label>
           <AppInput v-model="startDate" type="date" />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Date fin</label>
+          <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('reports.endDate') }}</label>
           <AppInput v-model="endDate" type="date" />
         </div>
 
         <!-- Location filters -->
         <div v-if="isSuperAdmin">
-          <label class="block text-sm font-medium text-gray-700 mb-1">Entreprise</label>
+          <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('reports.company') }}</label>
           <AppSelect
             v-model="selectedCompany"
             :options="companies.map(c => ({ label: c.name, value: c.id }))"
-            placeholder="Selectionner une entreprise"
+            :placeholder="t('reports.selectCompany')"
           />
         </div>
         <div v-if="sites.length > 0">
-          <label class="block text-sm font-medium text-gray-700 mb-1">Site</label>
+          <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('reports.site') }}</label>
           <AppSelect
             v-model="selectedSite"
             :options="sites.map(s => ({ label: s.name, value: s.id }))"
-            placeholder="Tous les sites"
+            :placeholder="t('reports.allSites')"
           />
         </div>
         <div v-if="departments.length > 0">
-          <label class="block text-sm font-medium text-gray-700 mb-1">Departement</label>
+          <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('reports.department') }}</label>
           <AppSelect
             v-model="selectedDepartment"
             :options="departments.map(d => ({ label: d.name, value: d.id }))"
-            placeholder="Tous les departements"
+            :placeholder="t('reports.allDepts')"
           />
         </div>
       </div>
 
       <div class="flex flex-wrap items-end gap-3 mt-4">
         <AppButton :loading="loading" @click="generateReport">
-          Generer le rapport
+          {{ t('reports.generate') }}
         </AppButton>
       </div>
     </AppCard>
@@ -339,7 +341,7 @@ const handleExport = async () => {
               class="w-28"
             />
             <AppButton variant="outline" size="sm" :loading="exporting" @click="handleExport">
-              Telecharger
+              {{ t('reports.download') }}
             </AppButton>
           </div>
         </template>

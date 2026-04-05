@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useEmployeeStore } from '@/stores/employee.store'
 import { useCompanyStore } from '@/stores/company.store'
 import { useCardStore } from '@/stores/card.store'
@@ -13,6 +14,7 @@ import AppBadge from '@/components/ui/AppBadge.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
 import { ArrowLeftIcon, PencilIcon, NoSymbolIcon, CheckCircleIcon } from '@heroicons/vue/24/outline'
 
+const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const employeeStore = useEmployeeStore()
@@ -131,11 +133,11 @@ const handleConfirmAssignCard = async () => {
   if (!selectedCardId.value) return
   try {
     await cardStore.assignCard(selectedCardId.value, employeeId)
-    toast.success('Succes', 'Carte assignee avec succes')
+    toast.success(t('common.success'), t('employees.cardAssignedSuccess'))
     closeAssignCardModal()
     await employeeStore.fetchEmployee(employeeId)
   } catch (error: any) {
-    toast.error('Erreur', error.message || "Erreur lors de l'assignation de la carte")
+    toast.error(t('common.error'), error.message || t('employees.cardAssignError'))
   }
 }
 
@@ -148,9 +150,9 @@ async function handleToggleActive() {
   if (!employee.value) return
   try {
     await employeeStore.toggleActive(employeeId)
-    toast.success('Succes', employee.value.isActive ? 'Employe desactive' : 'Employe active')
+    toast.success(t('common.success'), employee.value.isActive ? t('employees.deactivated') : t('employees.activated'))
   } catch (error: any) {
-    toast.error('Erreur', error.message || 'Erreur lors du changement de statut')
+    toast.error(t('common.error'), error.message || t('common.error'))
   }
 }
 </script>
@@ -158,15 +160,15 @@ async function handleToggleActive() {
 <template>
   <div>
     <div class="mb-6 flex items-center justify-between">
-      <h1 class="text-2xl font-bold text-gray-900">Details de l'employe</h1>
+      <h1 class="text-2xl font-bold text-gray-900">{{ t('employees.details') }}</h1>
       <div class="flex space-x-3">
         <AppButton variant="secondary" @click="handleBack">
           <ArrowLeftIcon class="w-4 h-4 mr-1" />
-          Retour
+          {{ t('common.back') }}
         </AppButton>
         <AppButton v-if="canEdit && employee" @click="handleEdit">
           <PencilIcon class="w-4 h-4 mr-1" />
-          Modifier
+          {{ t('common.edit') }}
         </AppButton>
         <AppButton
           v-if="canEdit && employee"
@@ -175,7 +177,7 @@ async function handleToggleActive() {
         >
           <NoSymbolIcon v-if="employee.isActive" class="w-4 h-4 mr-1" />
           <CheckCircleIcon v-else class="w-4 h-4 mr-1" />
-          {{ employee.isActive ? 'Desactiver' : 'Activer' }}
+          {{ employee.isActive ? t('employees.deactivate') : t('employees.activate') }}
         </AppButton>
       </div>
     </div>
@@ -185,7 +187,7 @@ async function handleToggleActive() {
     </div>
 
     <div v-else-if="!employee" class="py-12 text-center">
-      <p class="text-sm text-gray-500">Employe introuvable</p>
+      <p class="text-sm text-gray-500">{{ t('employees.notFound') }}</p>
     </div>
 
     <div v-else class="space-y-6">
@@ -201,16 +203,16 @@ async function handleToggleActive() {
                 {{ employee.firstName }} {{ employee.lastName }}
               </h2>
               <AppBadge :variant="employee.isActive ? 'success' : 'neutral'">
-                {{ employee.isActive ? 'Actif' : 'Inactif' }}
+                {{ employee.isActive ? t('common.active') : t('common.inactive') }}
               </AppBadge>
             </div>
 
             <div class="mt-2 space-y-1">
               <p class="text-lg text-gray-600">
-                <span class="font-medium">Matricule:</span> {{ employee.employeeNumber }}
+                <span class="font-medium">{{ t('employees.matricule') }}:</span> {{ employee.employeeNumber }}
               </p>
               <p v-if="employee.position" class="text-lg text-gray-600">
-                <span class="font-medium">Poste:</span> {{ employee.position }}
+                <span class="font-medium">{{ t('employees.position') }}:</span> {{ employee.position }}
               </p>
             </div>
           </div>
@@ -218,51 +220,51 @@ async function handleToggleActive() {
 
         <div class="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
           <div>
-            <h3 class="text-sm font-medium text-gray-500">Contact</h3>
+            <h3 class="text-sm font-medium text-gray-500">{{ t('employees.contact') }}</h3>
             <div class="mt-2 space-y-2">
               <p class="text-sm text-gray-900">
-                <span class="font-medium">Email:</span> {{ employee.email }}
+                <span class="font-medium">{{ t('common.email') }}:</span> {{ employee.email }}
               </p>
               <p v-if="employee.phone" class="text-sm text-gray-900">
-                <span class="font-medium">Telephone:</span> {{ employee.phone }}
+                <span class="font-medium">{{ t('common.phone') }}:</span> {{ employee.phone }}
               </p>
             </div>
           </div>
 
           <div>
-            <h3 class="text-sm font-medium text-gray-500">Affectation</h3>
+            <h3 class="text-sm font-medium text-gray-500">{{ t('employees.assignment') }}</h3>
             <div class="mt-2 space-y-2">
               <p class="text-sm text-gray-900">
-                <span class="font-medium">Entreprise:</span> {{ companyName }}
+                <span class="font-medium">{{ t('employees.company') }}:</span> {{ companyName }}
               </p>
               <p class="text-sm text-gray-900">
-                <span class="font-medium">Site:</span> {{ siteName }}
+                <span class="font-medium">{{ t('employees.site') }}:</span> {{ siteName }}
               </p>
               <p class="text-sm text-gray-900">
-                <span class="font-medium">Departement:</span> {{ departmentName }}
+                <span class="font-medium">{{ t('employees.department') }}:</span> {{ departmentName }}
               </p>
             </div>
           </div>
 
           <div>
-            <h3 class="text-sm font-medium text-gray-500">Informations RH</h3>
+            <h3 class="text-sm font-medium text-gray-500">{{ t('employees.hrInfo') }}</h3>
             <div class="mt-2 space-y-2">
               <p class="text-sm text-gray-900">
-                <span class="font-medium">Date d'embauche:</span> {{ formattedHireDate }}
+                <span class="font-medium">{{ t('employees.hireDate') }}:</span> {{ formattedHireDate }}
               </p>
             </div>
           </div>
 
           <div>
-            <h3 class="text-sm font-medium text-gray-500">Acces</h3>
+            <h3 class="text-sm font-medium text-gray-500">{{ t('employees.access') }}</h3>
             <div class="mt-2 space-y-2">
               <div class="flex items-center space-x-2">
-                <span class="text-sm font-medium text-gray-900">Carte RFID:</span>
+                <span class="text-sm font-medium text-gray-900">{{ t('employees.rfidCard') }}:</span>
                 <AppBadge v-if="employee.rfidCardId" variant="success">
-                  Assignee
+                  {{ t('employees.cardAssigned') }}
                 </AppBadge>
                 <AppBadge v-else variant="warning">
-                  Non assignee
+                  {{ t('employees.cardNotAssigned') }}
                 </AppBadge>
               </div>
               <p v-if="employee.rfidCardId" class="text-sm text-gray-600">
@@ -270,15 +272,15 @@ async function handleToggleActive() {
               </p>
 
               <div class="flex items-center space-x-2">
-                <span class="text-sm font-medium text-gray-900">Biometrie:</span>
+                <span class="text-sm font-medium text-gray-900">{{ t('employees.biometrics') }}:</span>
                 <AppBadge :variant="employee.biometricEnrolled ? 'success' : 'neutral'">
-                  {{ employee.biometricEnrolled ? 'Enrolee' : 'Non enrolee' }}
+                  {{ employee.biometricEnrolled ? t('employees.bioEnrolled') : t('employees.bioNotEnrolled') }}
                 </AppBadge>
               </div>
 
               <div v-if="canEdit" class="mt-4">
                 <AppButton size="sm" @click="handleAssignCard">
-                  {{ employee.rfidCardId ? 'Modifier la carte' : 'Assigner une carte' }}
+                  {{ employee.rfidCardId ? t('employees.editCard') : t('employees.assignCard') }}
                 </AppButton>
               </div>
             </div>
@@ -287,24 +289,24 @@ async function handleToggleActive() {
       </AppCard>
 
       <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
-        <AppCard title="Jours de presence">
+        <AppCard :title="t('employees.attendanceDays')">
           <div class="text-center">
             <p class="text-4xl font-bold text-primary-600">{{ totalAttendanceDays }}</p>
-            <p class="mt-2 text-sm text-gray-500">Ce mois</p>
+            <p class="mt-2 text-sm text-gray-500">{{ t('employees.thisMonth') }}</p>
           </div>
         </AppCard>
 
-        <AppCard title="Retards">
+        <AppCard :title="t('employees.lates')">
           <div class="text-center">
             <p class="text-4xl font-bold text-red-600">{{ lateDays }}</p>
-            <p class="mt-2 text-sm text-gray-500">Ce mois</p>
+            <p class="mt-2 text-sm text-gray-500">{{ t('employees.thisMonth') }}</p>
           </div>
         </AppCard>
 
-        <AppCard title="Ponctualite">
+        <AppCard :title="t('employees.punctuality')">
           <div class="text-center">
             <p class="text-4xl font-bold text-green-600">{{ onTimePercentage }}%</p>
-            <p class="mt-2 text-sm text-gray-500">A l'heure</p>
+            <p class="mt-2 text-sm text-gray-500">{{ t('employees.onTime') }}</p>
           </div>
         </AppCard>
       </div>
@@ -316,29 +318,29 @@ async function handleToggleActive() {
       @click.self="closeAssignCardModal"
     >
       <div class="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
-        <h3 class="text-lg font-semibold text-gray-900">Assigner une carte RFID</h3>
+        <h3 class="text-lg font-semibold text-gray-900">{{ t('employees.assignCard') }}</h3>
         <p class="mt-2 text-sm text-gray-500">
-          Selectionnez une carte disponible parmi les cartes non attribuees.
+          {{ t('employees.assignCardDesc') }}
         </p>
 
         <div class="mt-4">
           <AppSelect
             v-model="selectedCardId"
             :options="availableCardOptions"
-            label="Carte RFID"
-            placeholder="Selectionner une carte"
+            :label="t('employees.rfidCardLabel')"
+            :placeholder="t('employees.selectCard')"
           />
           <p v-if="availableCardOptions.length === 0" class="mt-2 text-sm text-gray-500">
-            Aucune carte disponible.
+            {{ t('employees.noCardAvailable') }}
           </p>
         </div>
 
         <div class="mt-6 flex justify-end space-x-3">
           <AppButton variant="secondary" @click="closeAssignCardModal">
-            Annuler
+            {{ t('common.cancel') }}
           </AppButton>
           <AppButton :disabled="!selectedCardId" @click="handleConfirmAssignCard">
-            Assigner
+            {{ t('cards.assign') }}
           </AppButton>
         </div>
       </div>

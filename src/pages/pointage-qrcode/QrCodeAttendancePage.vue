@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useQrcodeStore } from '@/stores/qrcode.store'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
@@ -7,20 +8,21 @@ import AppBadge from '@/components/ui/AppBadge.vue'
 import AppInput from '@/components/ui/AppInput.vue'
 import DataTable from '@/components/data-display/DataTable.vue'
 
+const { t } = useI18n()
 const store = useQrcodeStore()
 const dateFilter = ref(new Date().toISOString().split('T')[0])
 const currentPage = ref(1)
 const perPage = 20
 
-const columns = [
-  { key: 'employeeName', label: 'Employé' },
-  { key: 'date', label: 'Date' },
-  { key: 'entryTime', label: 'Entrée' },
-  { key: 'exitTime', label: 'Sortie' },
-  { key: 'status', label: 'Statut' },
-  { key: 'gpsVerified', label: 'GPS' },
-  { key: 'scannedAt', label: 'Scanné le' },
-]
+const columns = computed(() => [
+  { key: 'employeeName', label: t('biometric.employee') },
+  { key: 'date', label: t('common.date') },
+  { key: 'entryTime', label: t('qrcode.entryLabel') },
+  { key: 'exitTime', label: t('qrcode.exitLabel') },
+  { key: 'status', label: t('common.status') },
+  { key: 'gpsVerified', label: t('qrcode.gpsLabel') },
+  { key: 'scannedAt', label: t('qrcode.scannedAt') },
+])
 
 onMounted(() => loadData())
 
@@ -44,7 +46,12 @@ function getStatusVariant(status: string): 'success' | 'danger' | 'warning' | 'i
 }
 
 function getStatusLabel(status: string) {
-  const map: Record<string, string> = { present: 'Présent', absent: 'Absent', late: 'En retard', left_early: 'Parti tôt' }
+  const map: Record<string, string> = {
+    present: t('attendance.status.present'),
+    absent: t('attendance.status.absent'),
+    late: t('attendance.status.late'),
+    left_early: t('attendance.status.left_early'),
+  }
   return map[status] || status
 }
 </script>
@@ -52,19 +59,19 @@ function getStatusLabel(status: string) {
 <template>
   <div class="space-y-6">
     <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold text-gray-900">Pointage QR Code</h1>
+      <h1 class="text-2xl font-bold text-gray-900">{{ t('qrcode.attendance') }}</h1>
     </div>
 
     <AppCard>
       <div class="mb-4 flex items-end gap-4">
         <AppInput
           v-model="dateFilter"
-          label="Date"
+          :label="t('common.date')"
           type="date"
           class="w-48"
         />
         <AppButton variant="outline" :loading="store.isLoading" @click="loadData">
-          Filtrer
+          {{ t('common.filter') }}
         </AppButton>
       </div>
 
@@ -76,7 +83,7 @@ function getStatusLabel(status: string) {
         </template>
         <template #gpsVerified="{ row }">
           <AppBadge :variant="row.gpsVerified ? 'success' : 'warning'">
-            {{ row.gpsVerified ? `Oui (${row.distanceMeters}m)` : 'Non' }}
+            {{ row.gpsVerified ? `${t('common.yes')} (${row.distanceMeters}m)` : t('common.no') }}
           </AppBadge>
         </template>
         <template #scannedAt="{ row }">{{ formatDateTime(row.scannedAt) }}</template>
@@ -88,8 +95,9 @@ function getStatusLabel(status: string) {
         class="mt-4 flex items-center justify-between border-t border-gray-100 pt-4"
       >
         <p class="text-sm text-gray-500">
-          {{ store.pagination.total }} pointage{{ store.pagination.total > 1 ? 's' : '' }} —
-          page {{ currentPage }} / {{ store.pagination.totalPages }}
+          {{ store.pagination.total }}
+          {{ store.pagination.total > 1 ? t('qrcode.attendancePl') : t('qrcode.attendanceList') }} —
+          {{ t('common.page') }} {{ currentPage }} / {{ store.pagination.totalPages }}
         </p>
         <div class="flex gap-2">
           <AppButton
@@ -98,7 +106,7 @@ function getStatusLabel(status: string) {
             :disabled="currentPage <= 1 || store.isLoading"
             @click="goToPage(currentPage - 1)"
           >
-            Précédent
+            {{ t('common.previous') }}
           </AppButton>
           <AppButton
             variant="outline"
@@ -106,7 +114,7 @@ function getStatusLabel(status: string) {
             :disabled="currentPage >= store.pagination.totalPages || store.isLoading"
             @click="goToPage(currentPage + 1)"
           >
-            Suivant
+            {{ t('common.next') }}
           </AppButton>
         </div>
       </div>

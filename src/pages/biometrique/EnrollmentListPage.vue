@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useBiometricStore } from '@/stores/biometric.store'
 import { useToast } from '@/composables/useToast'
 import AppCard from '@/components/ui/AppCard.vue'
@@ -9,6 +10,7 @@ import AppBadge from '@/components/ui/AppBadge.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
 import { ArrowPathIcon, TrashIcon, PlusIcon } from '@heroicons/vue/24/outline'
 
+const { t } = useI18n()
 const router = useRouter()
 const store = useBiometricStore()
 const toast = useToast()
@@ -16,15 +18,15 @@ const toast = useToast()
 const filterStatus = ref('')
 const filterDevice = ref('')
 
-const statusOptions = [
-  { label: 'Tous les statuts', value: '' },
-  { label: 'En attente', value: 'pending' },
-  { label: 'Inscrit', value: 'enrolled' },
-  { label: 'Echec', value: 'failed' },
-]
+const statusOptions = computed(() => [
+  { label: t('biometric.allStatuses'), value: '' },
+  { label: t('biometric.statusPending'), value: 'pending' },
+  { label: t('biometric.statusEnrolled'), value: 'enrolled' },
+  { label: t('biometric.statusFailed'), value: 'failed' },
+])
 
 const deviceOptions = computed(() => [
-  { label: 'Tous les terminaux', value: '' },
+  { label: t('biometric.devicesTitle'), value: '' },
   ...store.devices.map((d) => ({ label: d.name, value: d.id })),
 ])
 
@@ -49,9 +51,9 @@ function getStatusVariant(status: string) {
 
 function getStatusLabel(status: string) {
   switch (status) {
-    case 'enrolled': return 'Inscrit'
-    case 'failed': return 'Echec'
-    default: return 'En attente'
+    case 'enrolled': return t('biometric.statusEnrolled')
+    case 'failed': return t('biometric.statusFailed')
+    default: return t('biometric.statusPending')
   }
 }
 
@@ -67,9 +69,9 @@ function truncateHash(hash: string) {
 async function handleDelete(id: string) {
   try {
     await store.deleteEnrollment(id)
-    toast.showSuccess('Inscription supprimee')
+    toast.showSuccess(t('biometric.enrollmentDeleted'))
   } catch {
-    toast.showError("Erreur lors de la suppression")
+    toast.showError(t('biometric.enrollmentDeleteError'))
   }
 }
 
@@ -82,12 +84,12 @@ onMounted(async () => {
   <div class="space-y-6">
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">Inscriptions biometriques</h1>
-        <p class="text-sm text-gray-500 mt-1">Liste des empreintes digitales enregistrees</p>
+        <h1 class="text-2xl font-bold text-gray-900">{{ t('biometric.enrollmentsTitle') }}</h1>
+        <p class="text-sm text-gray-500 mt-1">{{ t('biometric.enrollmentsSubtitle') }}</p>
       </div>
       <AppButton variant="primary" @click="router.push('/biometrique/enrollment/new')">
         <PlusIcon class="w-4 h-4 mr-1" />
-        Nouvelle inscription
+        {{ t('biometric.newEnrollment') }}
       </AppButton>
     </div>
 
@@ -102,19 +104,19 @@ onMounted(async () => {
       </div>
 
       <div v-else-if="filteredEnrollments.length === 0" class="text-center py-12 text-gray-500">
-        Aucune inscription trouvee
+        {{ t('biometric.noEnrollmentFound') }}
       </div>
 
       <div v-else class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
           <thead class="bg-gray-50">
             <tr>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Employe</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Terminal</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Statut</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date inscription</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Template</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('biometric.employee') }}</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('biometric.deviceLabel') }}</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('biometric.status') }}</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('biometric.enrollDate') }}</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('biometric.template') }}</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('biometric.actions') }}</th>
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-100">
@@ -137,11 +139,11 @@ onMounted(async () => {
                     size="sm"
                     variant="ghost"
                     @click="router.push({ name: 'bio-enrollment-new', query: { deviceId: enrollment.deviceId, employeeId: enrollment.employeeId } })"
-                    :title="enrollment.status === 'pending' ? 'Reprendre' : 'Recommencer'"
+                    :title="enrollment.status === 'pending' ? t('biometric.resume') : t('biometric.restart')"
                   >
                     <ArrowPathIcon class="w-4 h-4" />
                   </AppButton>
-                  <AppButton size="sm" variant="ghost" class="text-red-600 hover:text-red-700" @click="handleDelete(enrollment.id)" title="Supprimer">
+                  <AppButton size="sm" variant="ghost" class="text-red-600 hover:text-red-700" @click="handleDelete(enrollment.id)" :title="t('common.delete')">
                     <TrashIcon class="w-4 h-4" />
                   </AppButton>
                 </div>

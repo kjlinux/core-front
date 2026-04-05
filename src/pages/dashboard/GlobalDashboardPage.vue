@@ -51,16 +51,16 @@ function val(v: number | undefined | null): number | string {
 const attendanceTrendData = computed(() => {
   if (charts.value?.attendanceTrend?.length) return charts.value.attendanceTrend.map(p => ({ name: p.label, value: p.value }))
   return [
-    { name: 'Lun', value: 0 }, { name: 'Mar', value: 0 }, { name: 'Mer', value: 0 },
-    { name: 'Jeu', value: 0 }, { name: 'Ven', value: 0 }, { name: 'Sam', value: 0 },
+    { name: t('dashboard.days.mon'), value: 0 }, { name: t('dashboard.days.tue'), value: 0 }, { name: t('dashboard.days.wed'), value: 0 },
+    { name: t('dashboard.days.thu'), value: 0 }, { name: t('dashboard.days.fri'), value: 0 }, { name: t('dashboard.days.sat'), value: 0 },
   ]
 })
 
 const satisfactionTrendData = computed(() => {
   if (charts.value?.satisfactionTrend?.length) return charts.value.satisfactionTrend.map(p => ({ name: p.label, value: p.value }))
   return [
-    { name: 'Lun', value: 0 }, { name: 'Mar', value: 0 }, { name: 'Mer', value: 0 },
-    { name: 'Jeu', value: 0 }, { name: 'Ven', value: 0 }, { name: 'Sam', value: 0 },
+    { name: t('dashboard.days.mon'), value: 0 }, { name: t('dashboard.days.tue'), value: 0 }, { name: t('dashboard.days.wed'), value: 0 },
+    { name: t('dashboard.days.thu'), value: 0 }, { name: t('dashboard.days.fri'), value: 0 }, { name: t('dashboard.days.sat'), value: 0 },
   ]
 })
 
@@ -72,8 +72,8 @@ const attendanceByDeptData = computed(() => {
 const revenueMonthlyData = computed(() => {
   if (charts.value?.revenueMonthly?.length) return charts.value.revenueMonthly.map(p => ({ name: p.label, value: p.value }))
   return [
-    { name: 'Jan', value: 0 }, { name: 'Fev', value: 0 }, { name: 'Mar', value: 0 },
-    { name: 'Avr', value: 0 }, { name: 'Mai', value: 0 }, { name: 'Jun', value: 0 },
+    { name: t('dashboard.months.jan'), value: 0 }, { name: t('dashboard.months.feb'), value: 0 }, { name: t('dashboard.months.mar'), value: 0 },
+    { name: t('dashboard.months.apr'), value: 0 }, { name: t('dashboard.months.may'), value: 0 }, { name: t('dashboard.months.jun'), value: 0 },
   ]
 })
 

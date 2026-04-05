@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useCompanyStore } from '@/stores/company.store'
 import { useToast } from '@/composables/useToast'
 import type { Company } from '@/types'
@@ -9,6 +10,7 @@ import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import { ArrowLeftIcon } from '@heroicons/vue/24/outline'
 
+const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const companyStore = useCompanyStore()
@@ -31,7 +33,7 @@ onMounted(async () => {
       }
     }
   } catch (error: any) {
-    toast.error('Erreur', error.message || 'Erreur lors du chargement de l\'entreprise')
+    toast.error(t('common.error'), error.message || t('companies.loadError'))
     router.push({ name: 'rfid-companies' })
   }
 })
@@ -39,10 +41,10 @@ onMounted(async () => {
 async function handleSubmit() {
   try {
     await companyStore.updateCompany(companyId.value, formData.value)
-    toast.success('Succès', 'Entreprise modifiée avec succès')
+    toast.success(t('common.success'), t('companies.updatedSuccess'))
     router.push({ name: 'rfid-company-detail', params: { id: companyId.value } })
   } catch (error: any) {
-    toast.error('Erreur', error.message || 'Erreur lors de la modification de l\'entreprise')
+    toast.error(t('common.error'), error.message || t('companies.updateError'))
   }
 }
 
@@ -56,7 +58,7 @@ function handleCancel() {
     <div class="mb-6">
       <AppButton variant="outline" size="sm" @click="handleCancel">
         <ArrowLeftIcon class="h-4 w-4 mr-2 inline" />
-        Retour
+        {{ t('common.back') }}
       </AppButton>
     </div>
 
@@ -67,9 +69,9 @@ function handleCancel() {
 
       <div v-else>
         <div class="mb-6">
-          <h1 class="text-2xl font-bold text-gray-900">Modifier entreprise</h1>
+          <h1 class="text-2xl font-bold text-gray-900">{{ t('companies.editTitle') }}</h1>
           <p class="mt-1 text-sm text-gray-500">
-            Modifier les informations de l'entreprise {{ companyStore.currentCompany?.name }}
+            {{ t('companies.editSubtitle', { name: companyStore.currentCompany?.name }) }}
           </p>
         </div>
 
@@ -81,14 +83,14 @@ function handleCancel() {
 
         <div class="mt-6 flex justify-end gap-3">
           <AppButton variant="outline" @click="handleCancel" :disabled="companyStore.isLoading">
-            Annuler
+            {{ t('common.cancel') }}
           </AppButton>
           <AppButton
             type="submit"
             :loading="companyStore.isLoading"
             @click="handleSubmit"
           >
-            Enregistrer les modifications
+            {{ t('common.saveChanges') }}
           </AppButton>
         </div>
       </div>

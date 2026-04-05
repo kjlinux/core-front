@@ -2,8 +2,8 @@
   <div class="space-y-6">
     <!-- Form Header -->
     <div>
-      <h2 class="text-2xl font-bold text-primary-900">Connexion</h2>
-      <p class="mt-1 text-sm text-primary-500">Connectez-vous à votre compte</p>
+      <h2 class="text-2xl font-bold text-primary-900">{{ t('auth.login') }}</h2>
+      <p class="mt-1 text-sm text-primary-500">{{ t('auth.loginSubtitle') }}</p>
     </div>
 
     <!-- Session Expired Message -->
@@ -11,7 +11,7 @@
       v-if="sessionExpired"
       class="bg-warning-50 border border-warning-200 text-warning-700 px-4 py-3 rounded-lg text-sm"
     >
-      Votre session a expire. Veuillez vous reconnecter.
+      {{ t('auth.sessionExpired') }}
     </div>
 
     <!-- Error Message -->
@@ -27,7 +27,7 @@
       <AppInput
         v-model="formData.email"
         type="email"
-        label="Email"
+        :label="t('auth.email')"
         placeholder=""
         :error="errors.email"
         :disabled="authStore.isLoading"
@@ -36,7 +36,7 @@
       <AppInput
         v-model="formData.password"
         type="password"
-        label="Mot de passe"
+        :label="t('auth.password')"
         placeholder="••••••••"
         :error="errors.password"
         :disabled="authStore.isLoading"
@@ -47,7 +47,7 @@
           to="/forgot-password"
           class="text-sm text-primary-600 hover:text-primary-800 font-medium transition-colors"
         >
-          Mot de passe oublié ?
+          {{ t('auth.forgotPassword') }}
         </router-link>
       </div>
 
@@ -58,7 +58,7 @@
         :loading="authStore.isLoading"
         :disabled="authStore.isLoading"
       >
-        Se connecter
+        {{ t('auth.loginButton') }}
       </AppButton>
     </form>
   </div>
@@ -67,10 +67,12 @@
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth.store'
 import AppInput from '@/components/ui/AppInput.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 
+const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
@@ -97,15 +99,15 @@ function validateForm(): boolean {
   let isValid = true
 
   if (!formData.email) {
-    errors.email = 'L\'email est requis'
+    errors.email = t('auth.emailRequired')
     isValid = false
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-    errors.email = 'L\'email n\'est pas valide'
+    errors.email = t('auth.emailInvalid')
     isValid = false
   }
 
   if (!formData.password) {
-    errors.password = 'Le mot de passe est requis'
+    errors.password = t('auth.passwordRequired')
     isValid = false
   }
 
@@ -127,7 +129,7 @@ async function handleLogin() {
     const redirect = route.query.redirect as string
     router.push(redirect || '/')
   } catch (error: any) {
-    errorMessage.value = error.response?.data?.message || error.message || 'Echec de la connexion. Verifiez vos identifiants.'
+    errorMessage.value = error.response?.data?.message || error.message || t('auth.loginErrorFallback')
   }
 }
 </script>

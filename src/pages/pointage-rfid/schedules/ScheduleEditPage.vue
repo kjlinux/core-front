@@ -1,20 +1,20 @@
 <template>
   <div class="schedule-edit-page">
     <div class="flex justify-between items-center mb-6">
-      <h1 class="text-2xl font-bold">Modifier horaire</h1>
+      <h1 class="text-2xl font-bold">{{ t('schedules.editTitle') }}</h1>
       <AppButton
         v-if="canDelete && schedule"
         @click="showDeleteModal = true"
         variant="danger"
       >
         <TrashIcon class="w-4 h-4 mr-1" />
-        Supprimer
+        {{ t('schedules.deleteBtn') }}
       </AppButton>
     </div>
 
     <AppCard>
       <div v-if="loadingSchedule" class="flex justify-center py-8">
-        <p>Chargement...</p>
+        <p>{{ t('common.loading') }}</p>
       </div>
 
       <ScheduleForm
@@ -28,14 +28,14 @@
       />
 
       <div v-else class="text-center py-8">
-        <p class="text-gray-600">Horaire non trouvé</p>
+        <p class="text-gray-600">{{ t('schedules.notFound') }}</p>
       </div>
     </AppCard>
 
     <AppConfirmDialog
       :open="showDeleteModal"
-      title="Confirmer la suppression"
-      :message="`Etes-vous sur de vouloir supprimer l\'horaire &quot;${schedule?.name}&quot; ? Cette action est irreversible.`"
+      :title="t('schedules.confirmDelete')"
+      :message="t('schedules.deleteConfirm', { name: schedule?.name })"
       @confirm="handleDelete"
       @cancel="showDeleteModal = false"
     />
@@ -46,6 +46,7 @@
 // @ts-nocheck
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppConfirmDialog from '@/components/ui/AppConfirmDialog.vue'
@@ -58,6 +59,7 @@ import { useToast } from '@/composables/useToast'
 import type { Schedule } from '@/types/schedule'
 import { TrashIcon } from '@heroicons/vue/24/outline'
 
+const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const scheduleStore = useScheduleStore()
@@ -80,10 +82,10 @@ const handleSubmit = async (data: Partial<Schedule>) => {
   loading.value = true
   try {
     await scheduleStore.updateSchedule(scheduleId.value, data)
-    toast.success('Succes', 'Horaire mis a jour')
+    toast.success(t('common.success'), t('schedules.updatedSuccess'))
     router.push('/pointage-rfid/schedules')
   } catch (error: any) {
-    toast.error('Erreur', error.message || 'Erreur lors de la mise a jour')
+    toast.error(t('common.error'), error.message || t('schedules.updateError'))
   } finally {
     loading.value = false
   }
@@ -99,7 +101,7 @@ const handleDelete = async () => {
     showDeleteModal.value = false
     router.push('/pointage-rfid/schedules')
   } catch (error: any) {
-    toast.error('Erreur', error.message || 'Erreur lors de la suppression')
+    toast.error(t('common.error'), error.message || t('schedules.deleteError'))
   }
 }
 
@@ -112,7 +114,7 @@ onMounted(async () => {
     ])
     schedule.value = await scheduleStore.fetchScheduleById(scheduleId.value)
   } catch {
-    toast.error('Erreur', "Impossible de charger l'horaire")
+    toast.error(t('common.error'), t('schedules.loadError'))
   } finally {
     loadingSchedule.value = false
   }

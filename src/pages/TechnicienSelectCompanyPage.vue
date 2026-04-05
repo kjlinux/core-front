@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useActiveCompanyStore } from '@/stores/active-company.store'
 import { useCompanyStore } from '@/stores/company.store'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import { BuildingOffice2Icon } from '@heroicons/vue/24/outline'
 
+const { t } = useI18n()
 const router = useRouter()
 const activeCompanyStore = useActiveCompanyStore()
 const companyStore = useCompanyStore()
@@ -32,9 +34,9 @@ async function confirm() {
         <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
           <BuildingOffice2Icon class="h-7 w-7 text-primary" />
         </div>
-        <h1 class="text-2xl font-bold text-gray-900">Choisir une entreprise</h1>
+        <h1 class="text-2xl font-bold text-gray-900">{{ t('technicien.selectCompany') }}</h1>
         <p class="mt-1 text-sm text-gray-500">
-          Selectionnez l'entreprise pour laquelle vous intervenez.
+          {{ t('technicien.selectCompanyHint') }}
         </p>
       </div>
 
@@ -62,7 +64,7 @@ async function confirm() {
           </button>
 
           <p v-if="companyStore.companies.length === 0" class="py-4 text-center text-sm text-gray-400">
-            Aucune entreprise disponible
+            {{ t('technicien.noCompany') }}
           </p>
         </div>
 
@@ -74,7 +76,7 @@ async function confirm() {
             :loading="activeCompanyStore.isLoading"
             @click="confirm"
           >
-            Confirmer et continuer
+            {{ t('technicien.confirm') }}
           </AppButton>
         </div>
       </AppCard>

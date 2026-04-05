@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useTechnicienReport } from '@/composables/useTechnicienReport'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 
+const { t } = useI18n()
 const { isLoading, reportData, buildReport, generatePdf } = useTechnicienReport()
 
 const statusVariant: Record<string, 'success' | 'warning' | 'danger'> = {
@@ -13,11 +15,11 @@ const statusVariant: Record<string, 'success' | 'warning' | 'danger'> = {
   error: 'danger',
 }
 
-const statusLabel: Record<string, string> = {
-  ok: 'OK',
-  warning: 'Incomplet',
-  error: 'Probleme',
-}
+const statusLabel = computed<Record<string, string>>(() => ({
+  ok: t('parametres.statusOk'),
+  warning: t('parametres.statusIncomplete'),
+  error: t('parametres.statusProblem'),
+}))
 
 onMounted(() => buildReport())
 </script>
@@ -26,14 +28,14 @@ onMounted(() => buildReport())
   <div class="space-y-6">
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">Rapport de mise en service</h1>
+        <h1 class="text-2xl font-bold text-gray-900">{{ t('parametres.techReportTitle') }}</h1>
         <p class="mt-1 text-sm text-gray-500">
-          Bilan automatique de la configuration client — ce rapport peut etre telecharge en PDF.
+          {{ t('parametres.techReportSubtitle') }}
         </p>
       </div>
       <div class="flex gap-3">
         <AppButton variant="ghost" :disabled="isLoading" @click="buildReport">
-          Actualiser
+          {{ t('common.refresh') }}
         </AppButton>
         <AppButton
           v-if="reportData"
@@ -41,14 +43,14 @@ onMounted(() => buildReport())
           :disabled="isLoading"
           @click="generatePdf(reportData!)"
         >
-          Telecharger PDF
+          {{ t('parametres.downloadPdf') }}
         </AppButton>
       </div>
     </div>
 
     <div v-if="isLoading" class="flex flex-col items-center justify-center py-20 text-gray-500">
       <div class="mb-3 h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-gray-600" />
-      <p class="text-sm">Collecte des donnees en cours...</p>
+      <p class="text-sm">{{ t('parametres.collecting') }}</p>
     </div>
 
     <template v-else-if="reportData">
@@ -56,11 +58,11 @@ onMounted(() => buildReport())
       <AppCard>
         <div class="flex items-center justify-between">
           <div>
-            <p class="text-sm text-gray-500">Score global de mise en service</p>
+            <p class="text-sm text-gray-500">{{ t('parametres.globalScore') }}</p>
             <p class="mt-1 text-4xl font-bold text-gray-900">{{ reportData.globalScore }}%</p>
             <p class="mt-1 text-sm text-gray-500">
               {{ reportData.sections.filter((s) => s.status === 'ok').length }} /
-              {{ reportData.sections.length }} sections completes
+              {{ reportData.sections.length }} {{ t('parametres.completedSections') }}
             </p>
           </div>
           <div class="text-right text-sm text-gray-500">
@@ -88,7 +90,7 @@ onMounted(() => buildReport())
             <div>
               <h3 class="font-semibold text-gray-900">{{ section.title }}</h3>
               <p class="mt-0.5 text-sm text-gray-500">
-                {{ section.done }} / {{ section.total }} realise(s)
+                {{ section.done }} / {{ section.total }} {{ t('parametres.done') }}
               </p>
             </div>
             <AppBadge :variant="statusVariant[section.status]">
@@ -116,14 +118,13 @@ onMounted(() => buildReport())
             </li>
           </ul>
           <p v-else class="mt-3 text-xs text-gray-500">
-            Configuration complete, aucun point d'attention.
+            {{ t('parametres.allComplete') }}
           </p>
         </AppCard>
       </div>
 
       <p class="text-center text-xs text-gray-400">
-        Ce rapport est genere automatiquement a partir des donnees du systeme au moment de la consultation.
-        Cliquez sur "Telecharger PDF" pour obtenir un document imprimable.
+        {{ t('parametres.autoReportNote') }}
       </p>
     </template>
   </div>

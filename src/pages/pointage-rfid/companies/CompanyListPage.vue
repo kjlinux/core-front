@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useCompanyStore } from '@/stores/company.store'
 import { usePermissions } from '@/composables/usePermissions'
 import type { Company } from '@/types'
@@ -10,6 +11,7 @@ import AppBadge from '@/components/ui/AppBadge.vue'
 import { EyeIcon, PencilIcon, NoSymbolIcon, CheckCircleIcon } from '@heroicons/vue/24/outline'
 import { useToast } from '@/composables/useToast'
 
+const { t } = useI18n()
 const router = useRouter()
 const companyStore = useCompanyStore()
 const { isSuperAdmin } = usePermissions()
@@ -46,9 +48,9 @@ function handleSort(column: string, direction: 'asc' | 'desc') {
 async function handleToggleActive(company: Company) {
   try {
     await companyStore.toggleActive(company.id)
-    toast.success('Succes', company.isActive ? 'Entreprise desactivee' : 'Entreprise activee')
+    toast.success(t('common.success'), company.isActive ? t('companies.deactivated') : t('companies.activated'))
   } catch (error: any) {
-    toast.error('Erreur', error.message || 'Erreur lors du changement de statut')
+    toast.error(t('common.error'), error.message || t('companies.statusError'))
   }
 }
 </script>
@@ -58,12 +60,12 @@ async function handleToggleActive(company: Company) {
     <AppCard>
       <template #actions>
         <AppButton v-if="isSuperAdmin" @click="handleCreateCompany">
-          Nouvelle entreprise
+          {{ t('companies.create') }}
         </AppButton>
       </template>
 
       <div class="mb-6">
-        <h1 class="text-2xl font-bold text-gray-900">Entreprises</h1>
+        <h1 class="text-2xl font-bold text-gray-900">{{ t('companies.title') }}</h1>
       </div>
 
       <div v-if="companyStore.isLoading" class="flex justify-center py-12">
@@ -76,22 +78,22 @@ async function handleToggleActive(company: Company) {
             <thead class="bg-gray-50">
               <tr>
                 <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  Nom
+                  {{ t('common.name') }}
                 </th>
                 <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  Email
+                  {{ t('common.email') }}
                 </th>
                 <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  Téléphone
+                  {{ t('common.phone') }}
                 </th>
                 <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  Statut
+                  {{ t('common.status') }}
                 </th>
                 <th class="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">
-                  Employés
+                  {{ t('companies.employees') }}
                 </th>
                 <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
-                  Actions
+                  {{ t('common.actions') }}
                 </th>
               </tr>
             </thead>
@@ -113,7 +115,7 @@ async function handleToggleActive(company: Company) {
                 </td>
                 <td class="whitespace-nowrap px-6 py-4">
                   <AppBadge :variant="company.isActive ? 'success' : 'neutral'">
-                    {{ company.isActive ? 'Actif' : 'Inactif' }}
+                    {{ company.isActive ? t('common.active') : t('common.inactive') }}
                   </AppBadge>
                 </td>
                 <td class="whitespace-nowrap px-6 py-4 text-center text-sm text-gray-900">
@@ -123,7 +125,7 @@ async function handleToggleActive(company: Company) {
                   <button
                     @click.stop="handleViewCompany(company.id)"
                     class="text-blue-600 hover:text-blue-900 mr-3"
-                    title="Voir"
+                    :title="t('common.view')"
                   >
                     <EyeIcon class="h-5 w-5 inline" />
                   </button>
@@ -131,7 +133,7 @@ async function handleToggleActive(company: Company) {
                     v-if="isSuperAdmin"
                     @click.stop="handleEditCompany(company.id)"
                     class="text-gray-600 hover:text-gray-900 mr-3"
-                    title="Modifier"
+                    :title="t('common.edit')"
                   >
                     <PencilIcon class="h-5 w-5 inline" />
                   </button>
@@ -139,7 +141,7 @@ async function handleToggleActive(company: Company) {
                     v-if="isSuperAdmin"
                     @click.stop="handleToggleActive(company)"
                     :class="company.isActive ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'"
-                    :title="company.isActive ? 'Desactiver' : 'Activer'"
+                    :title="company.isActive ? t('common.deactivate') : t('common.activate')"
                   >
                     <NoSymbolIcon v-if="company.isActive" class="h-5 w-5 inline" />
                     <CheckCircleIcon v-else class="h-5 w-5 inline" />
@@ -165,7 +167,7 @@ async function handleToggleActive(company: Company) {
                 d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
               />
             </svg>
-            <p class="mt-2 text-sm font-medium">Aucune entreprise disponible</p>
+            <p class="mt-2 text-sm font-medium">{{ t('common.noData') }}</p>
           </div>
         </div>
       </div>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useCartStore } from '@/stores/cart.store'
 import { useOrderStore } from '@/stores/order.store'
@@ -12,6 +13,7 @@ import AppInput from '@/components/ui/AppInput.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
 import type { DeliveryAddress } from '@/types'
 
+const { t } = useI18n()
 const router = useRouter()
 const cartStore = useCartStore()
 const orderStore = useOrderStore()
@@ -55,17 +57,23 @@ const countryOptions = [
   { label: 'Mali', value: 'Mali' },
 ]
 
+const steps = computed(() => [
+  t('marketplace.delivery'),
+  t('marketplace.payment'),
+  t('marketplace.confirmation'),
+])
+
 function formatPrice(amount: number, currency = 'FCFA') {
   return `${amount.toLocaleString('fr-FR')} ${currency}`
 }
 
 function goToPayment() {
   if (isSuperAdmin.value && !selectedCompanyId.value) {
-    toast.showError('Veuillez selectionner une entreprise')
+    toast.showError(t('marketplace.selectCompanyRequired'))
     return
   }
   if (!deliveryAddress.value.fullName || !deliveryAddress.value.phone || !deliveryAddress.value.street || !deliveryAddress.value.city) {
-    toast.showError('Veuillez remplir tous les champs')
+    toast.showError(t('marketplace.fillRequired'))
     return
   }
   step.value = 2
@@ -73,11 +81,11 @@ function goToPayment() {
 
 async function confirmOrder() {
   if (isSuperAdmin.value && !selectedCompanyId.value) {
-    toast.showError('Veuillez selectionner une entreprise')
+    toast.showError(t('marketplace.selectCompanyRequired'))
     return
   }
   if (selectedPaymentMethod.value === 'mobile_money' && !mobileNumber.value.trim()) {
-    toast.showError('Veuillez saisir votre numero Mobile Money')
+    toast.showError(t('marketplace.mobileMoneyRequired'))
     return
   }
   isSubmitting.value = true
@@ -102,15 +110,13 @@ async function confirmOrder() {
     if (order) {
       selectedOrderId.value = order.orderNumber ?? order.id
       const paymentResult = await orderStore.initiatePayment(order.id, selectedPaymentMethod.value as any, mobileNumber.value || undefined)
-      // Si LigdiCash retourne une URL de paiement, rediriger vers la passerelle
       if (paymentResult && (paymentResult as any).payment_url) {
         cartStore.clearCart()
         window.location.href = (paymentResult as any).payment_url
         return
       }
-      // Sinon (manual ou passerelle indisponible) : confirmation directe
       if ((paymentResult as any)?.pending) {
-        toast.showWarning('La passerelle de paiement est indisponible. Votre commande est enregistree et sera traitee manuellement.')
+        toast.showWarning(t('marketplace.gatewayUnavailable'))
       }
     }
     cartStore.clearCart()
@@ -125,11 +131,11 @@ async function confirmOrder() {
 
 <template>
   <div class="space-y-6">
-    <h1 class="text-2xl font-bold text-gray-900">Finaliser la commande</h1>
+    <h1 class="text-2xl font-bold text-gray-900">{{ t('marketplace.checkoutTitle') }}</h1>
 
     <!-- Steps -->
     <div class="flex items-center gap-4 overflow-x-auto">
-      <div v-for="(s, index) in ['Livraison', 'Paiement', 'Confirmation']" :key="index" class="flex items-center gap-2">
+      <div v-for="(s, index) in steps" :key="index" class="flex items-center gap-2">
         <div
           class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0"
           :class="step > index + 1 ? 'bg-green-500 text-white' : step === index + 1 ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-500'"
@@ -141,38 +147,37 @@ async function confirmOrder() {
 
     <!-- Step 1: Address -->
     <div v-if="step === 1" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <AppCard title="Adresse de livraison" class="lg:col-span-2">
+      <AppCard :title="t('marketplace.deliveryAddress')" class="lg:col-span-2">
         <div class="space-y-4">
           <AppSelect
             v-if="isSuperAdmin"
             v-model="selectedCompanyId"
-            label="Entreprise *"
+            :label="`${t('marketplace.fullName')} *`"
             :options="companyOptions"
-            placeholder="Selectionner une entreprise"
           />
-          <AppInput v-model="deliveryAddress.fullName" label="Nom complet *" />
-          <AppInput v-model="deliveryAddress.phone" label="Telephone *" type="tel" />
-          <AppInput v-model="deliveryAddress.street" label="Adresse *" />
-          <AppInput v-model="deliveryAddress.city" label="Ville *" />
-          <AppSelect v-model="deliveryAddress.country" label="Pays" :options="countryOptions" />
+          <AppInput v-model="deliveryAddress.fullName" :label="t('marketplace.fullName')" />
+          <AppInput v-model="deliveryAddress.phone" :label="t('marketplace.phone')" type="tel" />
+          <AppInput v-model="deliveryAddress.street" :label="t('marketplace.address')" />
+          <AppInput v-model="deliveryAddress.city" :label="t('marketplace.city')" />
+          <AppSelect v-model="deliveryAddress.country" :label="t('marketplace.country')" :options="countryOptions" />
         </div>
         <div class="mt-6 flex gap-3">
-          <AppButton variant="secondary" @click="router.push('/marketplace/cart')">Retour au panier</AppButton>
-          <AppButton variant="primary" @click="goToPayment">Continuer</AppButton>
+          <AppButton variant="secondary" @click="router.push('/marketplace/cart')">{{ t('marketplace.backToCart') }}</AppButton>
+          <AppButton variant="primary" @click="goToPayment">{{ t('marketplace.continue') }}</AppButton>
         </div>
       </AppCard>
-      <AppCard title="Recapitulatif">
+      <AppCard :title="t('marketplace.summary')">
         <div class="space-y-2 text-sm">
           <div class="flex justify-between">
-            <span class="text-gray-600">{{ cartStore.itemCount }} article(s)</span>
+            <span class="text-gray-600">{{ cartStore.itemCount }} {{ t('marketplace.items') }}</span>
             <span>{{ formatPrice(cartStore.subtotal) }}</span>
           </div>
           <div class="flex justify-between">
-            <span class="text-gray-600">Livraison</span>
+            <span class="text-gray-600">{{ t('marketplace.shipping') }}</span>
             <span>{{ formatPrice(DELIVERY_FEE) }}</span>
           </div>
           <div class="border-t pt-2 flex justify-between font-bold">
-            <span>Total</span>
+            <span>{{ t('marketplace.total') }}</span>
             <span class="text-primary">{{ formatPrice(cartStore.subtotal + DELIVERY_FEE) }}</span>
           </div>
         </div>
@@ -182,7 +187,7 @@ async function confirmOrder() {
     <!-- Step 2: Payment -->
     <div v-if="step === 2" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div class="lg:col-span-2 space-y-4">
-        <AppCard title="Methode de paiement">
+        <AppCard :title="t('marketplace.paymentMethod')">
           <div class="space-y-3">
             <!-- LigdiCash -->
             <label
@@ -196,13 +201,13 @@ async function confirmOrder() {
               </div>
               <img src="/ligdicash.png" alt="LigdiCash" class="h-8 object-contain" onerror="this.style.display='none'" />
               <div>
-                <p class="font-semibold text-gray-900">LigdiCash - Mobile Money</p>
-                <p class="text-sm text-gray-500">Paiement rapide et securise</p>
+                <p class="font-semibold text-gray-900">{{ t('marketplace.ligdicash') }}</p>
+                <p class="text-sm text-gray-500">{{ t('marketplace.ligdicashHint') }}</p>
               </div>
             </label>
 
             <div v-if="selectedPaymentMethod === 'mobile_money'" class="px-4 pb-2">
-              <AppInput v-model="mobileNumber" label="Numero de telephone Mobile Money" type="tel" placeholder="+226 XX XX XX XX" />
+              <AppInput v-model="mobileNumber" :label="t('marketplace.mobileMoneyPhone')" type="tel" :placeholder="t('marketplace.mobileMoneyPlaceholder')" />
             </div>
 
             <!-- Paiement manuel -->
@@ -221,39 +226,39 @@ async function confirmOrder() {
                 </svg>
               </div>
               <div>
-                <p class="font-semibold text-gray-900">Paiement manuel</p>
-                <p class="text-sm text-gray-500">Virement bancaire ou depot cash</p>
+                <p class="font-semibold text-gray-900">{{ t('marketplace.manualPayment') }}</p>
+                <p class="text-sm text-gray-500">{{ t('marketplace.manualPaymentHint') }}</p>
               </div>
             </label>
 
             <div v-if="selectedPaymentMethod === 'manual'" class="px-4 pb-2">
               <div class="rounded-lg bg-amber-50 border border-amber-200 p-4 text-sm text-amber-800">
-                <p class="font-semibold mb-1">Instructions de paiement</p>
-                <p>Votre commande sera enregistree en attente de validation. Un administrateur vous contactera pour confirmer la reception du paiement par virement bancaire ou depot cash avant l'expedition.</p>
+                <p class="font-semibold mb-1">{{ t('marketplace.paymentInstructions') }}</p>
+                <p>{{ t('marketplace.manualPaymentDesc') }}</p>
               </div>
             </div>
 
           </div>
         </AppCard>
         <div class="flex gap-3">
-          <AppButton variant="secondary" @click="step = 1">Retour</AppButton>
+          <AppButton variant="secondary" @click="step = 1">{{ t('common.back') }}</AppButton>
           <AppButton variant="primary" :loading="isSubmitting" @click="confirmOrder">
-            Confirmer la commande - {{ formatPrice(cartStore.subtotal + DELIVERY_FEE) }}
+            {{ t('marketplace.confirmOrder') }} {{ formatPrice(cartStore.subtotal + DELIVERY_FEE) }}
           </AppButton>
         </div>
       </div>
-      <AppCard title="Recapitulatif">
+      <AppCard :title="t('marketplace.summary')">
         <div class="space-y-2 text-sm">
           <div class="flex justify-between">
-            <span class="text-gray-600">Sous-total</span>
+            <span class="text-gray-600">{{ t('marketplace.subtotal') }}</span>
             <span>{{ formatPrice(cartStore.subtotal) }}</span>
           </div>
           <div class="flex justify-between">
-            <span class="text-gray-600">Livraison</span>
+            <span class="text-gray-600">{{ t('marketplace.shipping') }}</span>
             <span>{{ formatPrice(DELIVERY_FEE) }}</span>
           </div>
           <div class="border-t pt-2 flex justify-between font-bold">
-            <span>Total</span>
+            <span>{{ t('marketplace.total') }}</span>
             <span class="text-primary">{{ formatPrice(cartStore.subtotal + DELIVERY_FEE) }}</span>
           </div>
         </div>
@@ -269,17 +274,17 @@ async function confirmOrder() {
               <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <h2 class="text-2xl font-bold text-gray-900">Commande confirmee !</h2>
-          <p class="text-gray-600">Votre commande a ete enregistree avec succes.</p>
+          <h2 class="text-2xl font-bold text-gray-900">{{ t('marketplace.orderConfirmed') }}</h2>
+          <p class="text-gray-600">{{ t('marketplace.orderConfirmedMsg') }}</p>
           <p v-if="selectedOrderId" class="text-sm text-gray-500">
-            Numero de commande : <span class="font-bold text-gray-900">{{ selectedOrderId }}</span>
+            {{ t('marketplace.orderNumber') }} <span class="font-bold text-gray-900">{{ selectedOrderId }}</span>
           </p>
           <div class="flex flex-col gap-3 pt-4">
             <AppButton variant="primary" @click="router.push('/marketplace/orders')">
-              Voir mes commandes
+              {{ t('marketplace.viewMyOrders') }}
             </AppButton>
             <AppButton variant="secondary" @click="router.push('/marketplace')">
-              Retour au catalogue
+              {{ t('marketplace.backToCatalog') }}
             </AppButton>
           </div>
         </div>

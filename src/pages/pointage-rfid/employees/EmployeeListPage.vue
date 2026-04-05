@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useEmployeeStore } from '@/stores/employee.store'
 import { useCompanyStore } from '@/stores/company.store'
 import { useSiteStore } from '@/stores/site.store'
@@ -19,6 +20,7 @@ import type { Employee } from '@/types'
 import { EyeIcon, PlusIcon, ArrowsRightLeftIcon } from '@heroicons/vue/24/outline'
 import type { EmployeeFilters } from '@/services/api/employee.api'
 
+const { t } = useI18n()
 const router = useRouter()
 const employeeStore = useEmployeeStore()
 const companyStore = useCompanyStore()
@@ -64,11 +66,11 @@ function onTransferSiteChange() {
 async function handleTransfer() {
   if (!transferEmployee.value) return
   if (!transferForm.value.siteId) {
-    toast.showError('Veuillez selectionner un site')
+    toast.showError(t('employees.siteRequired'))
     return
   }
   if (!transferForm.value.departmentId) {
-    toast.showError('Veuillez selectionner un departement')
+    toast.showError(t('employees.departmentRequired'))
     return
   }
   isTransferring.value = true
@@ -77,11 +79,11 @@ async function handleTransfer() {
       siteId: transferForm.value.siteId,
       departmentId: transferForm.value.departmentId,
     })
-    toast.showSuccess('Employe transfere avec succes')
+    toast.showSuccess(t('employees.transferedSuccess'))
     showTransferModal.value = false
     loadEmployees()
   } catch {
-    toast.showError('Erreur lors du transfert')
+    toast.showError(t('employees.transferError'))
   } finally {
     isTransferring.value = false
   }
@@ -100,7 +102,7 @@ const filters = ref({
 let searchTimeout: ReturnType<typeof setTimeout> | null = null
 
 const companyOptions = computed(() => [
-  { value: '', label: 'Toutes les entreprises' },
+  { value: '', label: t('companies.allCompanies') },
   ...companyStore.companies.map(c => ({ value: c.id, label: c.name })),
 ])
 
@@ -109,7 +111,7 @@ const siteOptions = computed(() => {
     ? siteStore.sites.filter(s => s.companyId === filters.value.companyId)
     : siteStore.sites
   return [
-    { value: '', label: 'Tous les sites' },
+    { value: '', label: t('employees.allSites') },
     ...sites.map(s => ({ value: s.id, label: s.name })),
   ]
 })
@@ -122,26 +124,26 @@ const departmentOptions = computed(() => {
     depts = depts.filter(d => d.companyId === filters.value.companyId)
   }
   return [
-    { value: '', label: 'Tous les departements' },
+    { value: '', label: t('employees.allDepartments') },
     ...depts.map(d => ({ value: d.id, label: d.name })),
   ]
 })
 
-const statusOptions = [
-  { value: '', label: 'Tous les statuts' },
-  { value: 'true', label: 'Actif' },
-  { value: 'false', label: 'Inactif' },
-]
+const statusOptions = computed(() => [
+  { value: '', label: t('employees.allStatuses') },
+  { value: 'true', label: t('common.active') },
+  { value: 'false', label: t('common.inactive') },
+])
 
-const columns: TableColumn[] = [
-  { key: 'fullName', label: 'Nom', sortable: true },
-  { key: 'employeeNumber', label: 'Matricule', sortable: true },
-  { key: 'position', label: 'Poste', sortable: false },
-  { key: 'site', label: 'Site', sortable: false },
-  { key: 'department', label: 'Departement', sortable: false },
-  { key: 'status', label: 'Statut', sortable: false, align: 'center' as const },
-  { key: 'actions', label: 'Actions', sortable: false, align: 'right' as const, width: '100px' },
-]
+const columns = computed<TableColumn[]>(() => [
+  { key: 'fullName', label: t('common.name'), sortable: true },
+  { key: 'employeeNumber', label: t('employees.matricule'), sortable: true },
+  { key: 'position', label: t('employees.position'), sortable: false },
+  { key: 'site', label: t('employees.site'), sortable: false },
+  { key: 'department', label: t('employees.department'), sortable: false },
+  { key: 'status', label: t('common.status'), sortable: false, align: 'center' as const },
+  { key: 'actions', label: t('common.actions'), sortable: false, align: 'right' as const, width: '100px' },
+])
 
 const tableData = computed(() =>
   employeeStore.employees.map(e => {
@@ -211,14 +213,14 @@ onMounted(async () => {
 <template>
   <div>
     <div class="mb-6 flex items-center justify-between">
-      <h1 class="text-2xl font-bold text-gray-900">Employes</h1>
+      <h1 class="text-2xl font-bold text-gray-900">{{ t('employees.title') }}</h1>
       <AppButton
         v-if="canCreate"
         variant="primary"
         @click="router.push({ name: 'rfid-employee-create' })"
       >
         <PlusIcon class="w-4 h-4 mr-1" />
-        Nouvel employe
+        {{ t('employees.create') }}
       </AppButton>
     </div>
 
@@ -227,32 +229,32 @@ onMounted(async () => {
         <AppSelect
           v-model="filters.companyId"
           :options="companyOptions"
-          label="Entreprise"
+          :label="t('employees.company')"
           @update:model-value="handleCompanyChange"
         />
         <AppSelect
           v-model="filters.siteId"
           :options="siteOptions"
-          label="Site"
+          :label="t('employees.site')"
           @update:model-value="handleSiteChange"
         />
         <AppSelect
           v-model="filters.departmentId"
           :options="departmentOptions"
-          label="Departement"
+          :label="t('employees.department')"
           @update:model-value="applyFilters"
         />
         <AppSelect
           v-model="filters.isActive"
           :options="statusOptions"
-          label="Statut"
+          :label="t('common.status')"
           @update:model-value="applyFilters"
         />
       </div>
       <div class="mt-4">
         <AppInput
           v-model="filters.search"
-          placeholder="Rechercher par nom, email, matricule..."
+          :placeholder="t('employees.searchPlaceholder')"
           @update:model-value="handleSearchInput"
         />
       </div>
@@ -269,7 +271,7 @@ onMounted(async () => {
       >
         <template #status="{ row }">
           <AppBadge :variant="row.isActive ? 'success' : 'neutral'">
-            {{ row.isActive ? 'Actif' : 'Inactif' }}
+            {{ row.isActive ? t('common.active') : t('common.inactive') }}
           </AppBadge>
         </template>
 
@@ -279,14 +281,14 @@ onMounted(async () => {
               v-if="canEdit"
               @click.stop="openTransferModal(row._raw)"
               class="text-gray-500 hover:text-primary"
-              title="Changer site / departement"
+              :title="t('employees.changeSiteDept')"
             >
               <ArrowsRightLeftIcon class="h-5 w-5" />
             </button>
             <button
               @click.stop="router.push({ name: 'rfid-employee-detail', params: { id: row.id } })"
               class="text-gray-600 hover:text-gray-900"
-              title="Voir"
+              :title="t('common.view')"
             >
               <EyeIcon class="h-5 w-5" />
             </button>
@@ -298,45 +300,45 @@ onMounted(async () => {
     <!-- Modal transfert site / departement -->
     <AppModal
       :is-open="showTransferModal"
-      title="Changer site et departement"
+      :title="t('employees.transferTitle')"
       size="md"
       @close="showTransferModal = false"
     >
       <div v-if="transferEmployee" class="space-y-4">
         <p class="text-sm text-gray-600">
-          Employe : <span class="font-semibold text-gray-900">{{ transferEmployee.firstName }} {{ transferEmployee.lastName }}</span>
+          {{ t('employees.transferEmployee', { name: `${transferEmployee.firstName} ${transferEmployee.lastName}` }) }}
         </p>
 
         <AppSelect
           v-model="transferForm.siteId"
-          label="Site"
+          :label="t('employees.site')"
           :options="transferSiteOptions"
-          placeholder="Selectionner un site"
+          :placeholder="t('employees.selectSite')"
           @update:model-value="onTransferSiteChange"
         />
 
         <AppSelect
           v-model="transferForm.departmentId"
-          label="Departement"
+          :label="t('employees.department')"
           :options="transferDeptOptions"
-          placeholder="Selectionner un departement"
+          :placeholder="t('employees.selectDepartment')"
           :disabled="!transferForm.siteId || transferDeptOptions.length === 0"
         />
 
         <p v-if="transferForm.siteId && transferDeptOptions.length === 0" class="text-xs text-amber-600">
-          Aucun departement disponible pour ce site.
+          {{ t('employees.noDepartmentForSite') }}
         </p>
       </div>
 
       <template #footer>
-        <AppButton variant="outline" @click="showTransferModal = false">Annuler</AppButton>
+        <AppButton variant="outline" @click="showTransferModal = false">{{ t('common.cancel') }}</AppButton>
         <AppButton
           variant="primary"
           :loading="isTransferring"
           :disabled="!transferForm.siteId || !transferForm.departmentId"
           @click="handleTransfer"
         >
-          Confirmer le transfert
+          {{ t('employees.confirmTransfer') }}
         </AppButton>
       </template>
     </AppModal>

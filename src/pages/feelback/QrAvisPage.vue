@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useReviewStore } from '@/stores/review.store'
 import { useAuthStore } from '@/stores/auth.store'
 import { useToast } from '@/composables/useToast'
@@ -10,6 +11,7 @@ import ChannelBuilder from '@/components/review/ChannelBuilder.vue'
 import PieChart from '@/components/charts/PieChart.vue'
 import { QrCodeIcon, DocumentArrowDownIcon, ArrowPathIcon, Cog6ToothIcon, ChartBarIcon } from '@heroicons/vue/24/outline'
 
+const { t } = useI18n()
 const reviewStore = useReviewStore()
 const authStore = useAuthStore()
 const toast = useToast()
@@ -26,6 +28,12 @@ const config = computed(() => reviewStore.config)
 const stats = computed(() => reviewStore.stats)
 const submissions = computed(() => reviewStore.submissions)
 
+const tabs = computed(() => [
+  { key: 'qr', label: t('feelback.qrCodeTab'), icon: QrCodeIcon },
+  { key: 'questionnaire', label: t('feelback.questionnaireTab'), icon: Cog6ToothIcon },
+  { key: 'stats', label: t('feelback.statsTab'), icon: ChartBarIcon },
+])
+
 onMounted(async () => {
   await reviewStore.fetchConfig()
   if (config.value) {
@@ -41,7 +49,7 @@ async function saveQuestionnaire() {
   const validChannels = localChannels.value.filter((c) => c.name.trim())
 
   if (validQuestions.length === 0) {
-    toast.error('Ajoutez au moins une question avant de sauvegarder.')
+    toast.error(t('feelback.addQuestionFirst'))
     return
   }
 
@@ -51,22 +59,22 @@ async function saveQuestionnaire() {
       questions: validQuestions,
       channels: validChannels,
     })
-    toast.success('Questionnaire sauvegardé avec succès.')
+    toast.success(t('feelback.questionnaireSaved'))
   } catch {
-    toast.error('Erreur lors de la sauvegarde.')
+    toast.error(t('feelback.questionnaireSaveError'))
   } finally {
     isSubmitting.value = false
   }
 }
 
 async function regenerateToken() {
-  if (!confirm('Regénérer le lien ? L\'ancien QR code ne fonctionnera plus.')) return
+  if (!confirm(t('feelback.regenerateWarning'))) return
   isSubmitting.value = true
   try {
     await reviewStore.regenerateToken()
-    toast.success('Nouveau lien généré.')
+    toast.success(t('feelback.regenerateLink'))
   } catch {
-    toast.error('Erreur lors de la génération du lien.')
+    toast.error(t('feelback.questionnaireSaveError'))
   } finally {
     isSubmitting.value = false
   }
@@ -74,7 +82,7 @@ async function regenerateToken() {
 
 async function generateAndDownloadPdf() {
   if (!config.value) {
-    toast.error('Configurez d\'abord votre questionnaire.')
+    toast.error(t('feelback.noQrConfigured'))
     return
   }
 
@@ -94,48 +102,42 @@ async function generateAndDownloadPdf() {
     const pageWidth = doc.internal.pageSize.getWidth()
     const centerX = pageWidth / 2
 
-    // Header background - couleur sidebar #1e293b
     doc.setFillColor(30, 41, 59)
     doc.rect(0, 0, pageWidth, 45, 'F')
 
-    // Company name
     doc.setTextColor(255, 255, 255)
     doc.setFontSize(22)
     doc.setFont('helvetica', 'bold')
     doc.text(companyName.value, centerX, 20, { align: 'center' })
 
-    // Subtitle
     doc.setFontSize(13)
     doc.setFont('helvetica', 'normal')
     doc.text('Donnez-nous votre avis', centerX, 33, { align: 'center' })
 
-    // QR code
     const qrSize = 110
     const qrX = (pageWidth - qrSize) / 2
     doc.addImage(qrDataUrl, 'PNG', qrX, 55, qrSize, qrSize)
 
-    // Border around QR
     doc.setDrawColor(200, 200, 200)
     doc.setLineWidth(0.5)
     doc.rect(qrX - 5, 50, qrSize + 10, qrSize + 10)
 
-    // Instruction text
     doc.setTextColor(30, 30, 30)
     doc.setFontSize(14)
     doc.setFont('helvetica', 'bold')
-    doc.text('Scannez ce code QR avec votre téléphone', centerX, 180, { align: 'center' })
+    doc.text(t('feelback.scanQrInstruction'), centerX, 180, { align: 'center' })
 
     doc.setFontSize(11)
     doc.setFont('helvetica', 'normal')
     doc.setTextColor(100, 100, 100)
-    doc.text('Votre avis nous aide à améliorer nos services.', centerX, 190, { align: 'center' })
-    doc.text('Merci de prendre quelques secondes pour répondre.', centerX, 198, { align: 'center' })
+    doc.text(t('feelback.scanQrHint'), centerX, 190, { align: 'center' })
+    doc.text(t('feelback.scanQrHint2'), centerX, 198, { align: 'center' })
 
     doc.save(`avis-qr-${companyName.value}.pdf`)
-    toast.success('PDF téléchargé avec succès.')
+    toast.success(t('feelback.downloadPdf'))
   } catch (err) {
     console.error(err)
-    toast.error('Erreur lors de la génération du PDF.')
+    toast.error(t('feelback.questionnaireSaveError'))
   } finally {
     isGeneratingPdf.value = false
   }
@@ -144,7 +146,7 @@ async function generateAndDownloadPdf() {
 function copyLink() {
   if (!config.value) return
   navigator.clipboard.writeText(config.value.reviewUrl)
-  toast.success('Lien copié dans le presse-papier.')
+  toast.success(t('feelback.copy'))
 }
 
 async function switchTab(tab: 'qr' | 'questionnaire' | 'stats') {
@@ -166,9 +168,9 @@ const channelChartData = computed(() => {
 <template>
   <div class="space-y-6">
     <div>
-      <h1 class="text-2xl font-bold text-gray-900">Avis QR</h1>
+      <h1 class="text-2xl font-bold text-gray-900">{{ t('feelback.qrAvisTitle') }}</h1>
       <p class="mt-1 text-sm text-gray-500">
-        Générez un QR code imprimable pour collecter les avis de vos clients.
+        {{ t('feelback.qrAvisSubtitle') }}
       </p>
     </div>
 
@@ -176,11 +178,7 @@ const channelChartData = computed(() => {
     <div class="border-b border-gray-200">
       <nav class="-mb-px flex gap-6">
         <button
-          v-for="tab in [
-            { key: 'qr', label: 'QR Code', icon: QrCodeIcon },
-            { key: 'questionnaire', label: 'Questionnaire', icon: Cog6ToothIcon },
-            { key: 'stats', label: 'Statistiques', icon: ChartBarIcon },
-          ]"
+          v-for="tab in tabs"
           :key="tab.key"
           type="button"
           :class="[
@@ -204,17 +202,17 @@ const channelChartData = computed(() => {
           <div v-if="!config" class="text-center py-8">
             <QrCodeIcon class="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <p class="text-gray-500 mb-4">
-              Aucun QR code configuré. Configurez d'abord votre questionnaire, puis revenez ici pour générer votre QR code.
+              {{ t('feelback.noQrConfigured') }}
             </p>
             <AppButton variant="primary" @click="activeTab = 'questionnaire'">
-              Configurer le questionnaire
+              {{ t('feelback.configQuestionnaire') }}
             </AppButton>
           </div>
 
           <template v-else>
             <!-- Review URL -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Lien de votre page d'avis</label>
+              <label class="block text-sm font-medium text-gray-700 mb-2">{{ t('feelback.reviewPageLink') }}</label>
               <div class="flex items-center gap-2">
                 <input
                   :value="config.reviewUrl"
@@ -222,7 +220,7 @@ const channelChartData = computed(() => {
                   class="flex-1 rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-600"
                 />
                 <AppButton variant="secondary" size="sm" @click="copyLink">
-                  Copier
+                  {{ t('feelback.copy') }}
                 </AppButton>
               </div>
             </div>
@@ -235,7 +233,7 @@ const channelChartData = computed(() => {
                 @click="generateAndDownloadPdf"
               >
                 <DocumentArrowDownIcon class="w-4 h-4 mr-2" />
-                Télécharger le PDF
+                {{ t('feelback.downloadPdf') }}
               </AppButton>
               <AppButton
                 variant="secondary"
@@ -243,12 +241,12 @@ const channelChartData = computed(() => {
                 @click="regenerateToken"
               >
                 <ArrowPathIcon class="w-4 h-4 mr-2" />
-                Regénérer le lien
+                {{ t('feelback.regenerateLink') }}
               </AppButton>
             </div>
 
             <div class="rounded-lg bg-amber-50 border border-amber-200 p-4 text-sm text-amber-800">
-              Si vous regénérez le lien, l'ancien QR code imprimé ne fonctionnera plus. Pensez à réimprimer et remplacer les affiches.
+              {{ t('feelback.regenerateWarning') }}
             </div>
           </template>
         </div>
@@ -260,24 +258,24 @@ const channelChartData = computed(() => {
       <AppCard>
         <div class="p-6 space-y-6">
           <div>
-            <h2 class="text-base font-semibold text-gray-900 mb-1">Questions (notation sur 5 étoiles)</h2>
+            <h2 class="text-base font-semibold text-gray-900 mb-1">{{ t('feelback.questionsTitle') }}</h2>
             <p class="text-sm text-gray-500 mb-4">
-              Ces questions seront présentées à vos clients avec un système de notation par étoiles.
+              {{ t('feelback.questionsHint') }}
             </p>
             <QuestionBuilder v-model="localQuestions" />
           </div>
 
           <div class="border-t border-gray-100 pt-6">
-            <h2 class="text-base font-semibold text-gray-900 mb-1">Canaux de découverte</h2>
+            <h2 class="text-base font-semibold text-gray-900 mb-1">{{ t('feelback.channelsTitle') }}</h2>
             <p class="text-sm text-gray-500 mb-4">
-              Indiquez les canaux sur lesquels vous êtes présents. Vos clients pourront indiquer comment ils vous ont connus.
+              {{ t('feelback.channelsHint') }}
             </p>
             <ChannelBuilder v-model="localChannels" />
           </div>
 
           <div class="flex justify-end pt-2">
             <AppButton variant="primary" :loading="isSubmitting" @click="saveQuestionnaire">
-              Enregistrer le questionnaire
+              {{ t('feelback.saveQuestionnaire') }}
             </AppButton>
           </div>
         </div>
@@ -294,14 +292,14 @@ const channelChartData = computed(() => {
       </div>
       <div v-else-if="!stats || stats.totalSubmissions === 0" class="text-center py-12">
         <ChartBarIcon class="w-16 h-16 text-gray-300 mx-auto mb-4" />
-        <p class="text-gray-500">Aucun avis reçu pour l'instant.</p>
+        <p class="text-gray-500">{{ t('feelback.noReviews') }}</p>
       </div>
 
       <template v-else>
         <!-- Summary stat -->
         <AppCard>
           <div class="p-6">
-            <p class="text-sm text-gray-500">Total des avis reçus</p>
+            <p class="text-sm text-gray-500">{{ t('feelback.totalReviews') }}</p>
             <p class="text-4xl font-bold text-gray-900 mt-1">{{ stats.totalSubmissions }}</p>
           </div>
         </AppCard>
@@ -309,7 +307,7 @@ const channelChartData = computed(() => {
         <!-- Average per question -->
         <AppCard v-if="stats.averagePerQuestion.length">
           <div class="p-6 space-y-4">
-            <h2 class="text-base font-semibold text-gray-900">Moyennes par question</h2>
+            <h2 class="text-base font-semibold text-gray-900">{{ t('feelback.avgByQuestion') }}</h2>
             <div
               v-for="q in stats.averagePerQuestion"
               :key="q.questionId"
@@ -332,7 +330,7 @@ const channelChartData = computed(() => {
         <!-- Channel distribution -->
         <AppCard v-if="channelChartData">
           <div class="p-6">
-            <h2 class="text-base font-semibold text-gray-900 mb-4">Canaux de découverte</h2>
+            <h2 class="text-base font-semibold text-gray-900 mb-4">{{ t('feelback.channelsDistrib') }}</h2>
             <PieChart
               :data="channelChartData"
               height="280px"
@@ -343,7 +341,7 @@ const channelChartData = computed(() => {
         <!-- Submissions list (recommendations) -->
         <AppCard v-if="submissions.length">
           <div class="p-6 space-y-4">
-            <h2 class="text-base font-semibold text-gray-900">Recommandations et suggestions</h2>
+            <h2 class="text-base font-semibold text-gray-900">{{ t('feelback.suggestions') }}</h2>
             <div
               v-for="sub in submissions.filter((s) => s.recommendations)"
               :key="sub.id"
@@ -355,7 +353,7 @@ const channelChartData = computed(() => {
               </p>
             </div>
             <p v-if="!submissions.some((s) => s.recommendations)" class="text-sm text-gray-400 italic">
-              Aucune recommandation textuelle pour l'instant.
+              {{ t('feelback.noSuggestions') }}
             </p>
           </div>
         </AppCard>

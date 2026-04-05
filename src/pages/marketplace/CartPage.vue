@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useCartStore } from '@/stores/cart.store'
 import { useToast } from '@/composables/useToast'
@@ -6,6 +7,7 @@ import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppEmptyState from '@/components/ui/AppEmptyState.vue'
 
+const { t } = useI18n()
 const router = useRouter()
 const cartStore = useCartStore()
 const toast = useToast()
@@ -18,24 +20,24 @@ function formatPrice(amount: number, currency = 'FCFA') {
 
 function removeItem(productId: string) {
   cartStore.removeItem(productId)
-  toast.showSuccess('Produit retire du panier')
+  toast.showSuccess(t('marketplace.removedFromCart'))
 }
 </script>
 
 <template>
   <div class="space-y-6">
     <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold text-gray-900">Mon panier</h1>
+      <h1 class="text-2xl font-bold text-gray-900">{{ t('marketplace.cartTitle') }}</h1>
       <AppButton variant="ghost" @click="router.push('/marketplace')">
-        Continuer les achats
+        {{ t('marketplace.continueShopping') }}
       </AppButton>
     </div>
 
     <div v-if="cartStore.isEmpty" class="py-12">
       <AppEmptyState
-        title="Votre panier est vide"
-        description="Parcourez le catalogue pour ajouter des produits"
-        action-label="Voir le catalogue"
+        :title="t('marketplace.emptyCart')"
+        :description="t('marketplace.emptyCartHint')"
+        :action-label="t('marketplace.viewCatalog')"
         @action="router.push('/marketplace')"
       />
     </div>
@@ -77,12 +79,12 @@ function removeItem(productId: string) {
                   class="text-red-400 hover:text-red-600 text-sm"
                   @click="removeItem(item.productId)"
                 >
-                  Retirer
+                  {{ t('marketplace.remove') }}
                 </button>
               </div>
               <div v-if="item.customization" class="text-xs text-gray-500">
-                <span v-if="item.customization.companyName">Entreprise: {{ item.customization.companyName }}</span>
-                <span v-if="item.customization.color"> | Couleur: {{ item.customization.color }}</span>
+                <span v-if="item.customization.companyName">{{ t('marketplace.enterprise') }} {{ item.customization.companyName }}</span>
+                <span v-if="item.customization.color"> | {{ t('marketplace.color') }} {{ item.customization.color }}</span>
               </div>
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-3">
@@ -97,7 +99,7 @@ function removeItem(productId: string) {
                   >+</button>
                 </div>
                 <div class="text-right">
-                  <p class="text-xs text-gray-500">{{ formatPrice(item.product.price, item.product.currency) }} / unite</p>
+                  <p class="text-xs text-gray-500">{{ formatPrice(item.product.price, item.product.currency) }} / {{ t('marketplace.unit') }}</p>
                   <p class="font-bold text-primary">{{ formatPrice(item.product.price * item.quantity, item.product.currency) }}</p>
                 </div>
               </div>
@@ -108,23 +110,23 @@ function removeItem(productId: string) {
 
       <!-- Order Summary -->
       <div class="space-y-4">
-        <AppCard title="Recapitulatif">
+        <AppCard :title="t('marketplace.summary')">
           <div class="space-y-3">
             <div class="flex justify-between text-sm">
-              <span class="text-gray-600">Sous-total</span>
+              <span class="text-gray-600">{{ t('marketplace.subtotal') }}</span>
               <span class="font-medium">{{ formatPrice(cartStore.subtotal) }}</span>
             </div>
             <div class="flex justify-between text-sm">
-              <span class="text-gray-600">Livraison</span>
+              <span class="text-gray-600">{{ t('marketplace.shipping') }}</span>
               <span class="font-medium">{{ formatPrice(DELIVERY_FEE) }}</span>
             </div>
             <div class="border-t border-gray-200 pt-3 flex justify-between">
-              <span class="font-semibold text-gray-900">Total</span>
+              <span class="font-semibold text-gray-900">{{ t('marketplace.total') }}</span>
               <span class="font-bold text-lg text-primary">{{ formatPrice(cartStore.subtotal + DELIVERY_FEE) }}</span>
             </div>
           </div>
           <AppButton variant="primary" class="w-full mt-4" @click="router.push('/marketplace/checkout')">
-            Passer la commande
+            {{ t('marketplace.checkout') }}
           </AppButton>
         </AppCard>
 

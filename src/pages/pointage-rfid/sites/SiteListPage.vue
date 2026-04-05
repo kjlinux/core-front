@@ -1,13 +1,13 @@
 <template>
   <div>
     <div class="mb-6 flex items-center justify-between">
-      <h1 class="text-2xl font-bold text-gray-900">Sites</h1>
+      <h1 class="text-2xl font-bold text-gray-900">{{ t('sites.title') }}</h1>
       <AppButton
         v-if="canCreate"
         variant="primary"
         @click="showCreateModal = true"
       >
-        Nouveau Site
+        {{ t('sites.create') }}
       </AppButton>
     </div>
 
@@ -16,8 +16,8 @@
         <AppSelect
           v-model="filters.companyId"
           :options="companyOptions"
-          label="Entreprise"
-          placeholder="Toutes les entreprises"
+          :label="t('sites.company')"
+          :placeholder="t('sites.allCompanies')"
           @update:model-value="handleFilterChange"
         />
       </div>
@@ -37,14 +37,14 @@
             <button
               @click.stop="openEditModal(row._raw)"
               class="text-gray-600 hover:text-gray-900"
-              title="Modifier"
+              :title="t('common.edit')"
             >
               <PencilIcon class="h-5 w-5" />
             </button>
             <button
               @click.stop="handleDeleteSite(row._raw)"
               class="text-red-600 hover:text-red-900"
-              title="Supprimer"
+              :title="t('common.delete')"
             >
               <TrashIcon class="h-5 w-5" />
             </button>
@@ -55,7 +55,7 @@
 
     <AppModal
       :is-open="showCreateModal"
-      title="Nouveau Site"
+      :title="t('sites.create')"
       size="lg"
       @close="closeCreateModal"
     >
@@ -63,40 +63,40 @@
         <div class="space-y-4">
           <AppInput
             v-model="formData.name"
-            label="Nom"
-            placeholder="Nom du site"
+            :label="t('common.name')"
+            :placeholder="t('common.name')"
             required
           />
 
           <AppInput
             v-model="formData.address"
-            label="Adresse"
-            placeholder="Adresse du site"
+            :label="t('sites.address')"
+            :placeholder="t('sites.address')"
             required
           />
 
           <AppSelect
             v-model="formData.companyId"
             :options="companyOptions"
-            label="Entreprise"
-            placeholder="Selectionner une entreprise"
+            :label="t('sites.company')"
+            :placeholder="t('sites.selectCompany')"
             required
           />
 
           <div class="grid grid-cols-2 gap-4">
             <AppInput
               v-model="formData.latitude"
-              label="Latitude"
+              :label="t('sites.lat')"
               type="number"
-              placeholder="ex: 12.3456"
+              :placeholder="t('sites.latPlaceholder')"
               step="any"
               required
             />
             <AppInput
               v-model="formData.longitude"
-              label="Longitude"
+              :label="t('sites.lng')"
               type="number"
-              placeholder="ex: -1.5678"
+              :placeholder="t('sites.lngPlaceholder')"
               step="any"
               required
             />
@@ -104,7 +104,7 @@
 
           <AppInput
             v-model="formData.geofenceRadius"
-            label="Rayon de geofence (metres)"
+            :label="t('sites.geofence')"
             type="number"
             placeholder="100"
             required
@@ -117,7 +117,7 @@
           variant="outline"
           @click="closeCreateModal"
         >
-          Annuler
+          {{ t('common.cancel') }}
         </AppButton>
         <AppButton
           form="site-form"
@@ -125,30 +125,30 @@
           variant="primary"
           :loading="isSubmitting"
         >
-          Creer
+          {{ t('common.create') }}
         </AppButton>
       </template>
     </AppModal>
 
     <AppModal
       :is-open="showDeleteModal"
-      title="Supprimer le site"
+      :title="t('sites.deleteTitle')"
       size="sm"
       @close="closeDeleteModal"
     >
       <p class="text-sm text-gray-600">
-        Etes-vous sur de vouloir supprimer le site <strong>{{ deletingSite?.name }}</strong> ? Cette action est irreversible.
+        {{ t('sites.deleteConfirm', { name: deletingSite?.name }) }}
       </p>
 
       <template #footer>
-        <AppButton variant="outline" @click="closeDeleteModal">Annuler</AppButton>
-        <AppButton variant="danger" :loading="isSubmitting" @click="confirmDeleteSite">Supprimer</AppButton>
+        <AppButton variant="outline" @click="closeDeleteModal">{{ t('common.cancel') }}</AppButton>
+        <AppButton variant="danger" :loading="isSubmitting" @click="confirmDeleteSite">{{ t('common.delete') }}</AppButton>
       </template>
     </AppModal>
 
     <AppModal
       :is-open="showEditModal"
-      title="Modifier le Site"
+      :title="t('sites.editTitle')"
       size="lg"
       @close="closeEditModal"
     >
@@ -156,40 +156,40 @@
         <div class="space-y-4">
           <AppInput
             v-model="formData.name"
-            label="Nom"
-            placeholder="Nom du site"
+            :label="t('common.name')"
+            :placeholder="t('common.name')"
             required
           />
 
           <AppInput
             v-model="formData.address"
-            label="Adresse"
-            placeholder="Adresse du site"
+            :label="t('sites.address')"
+            :placeholder="t('sites.address')"
             required
           />
 
           <AppSelect
             v-model="formData.companyId"
             :options="companyOptions"
-            label="Entreprise"
-            placeholder="Selectionner une entreprise"
+            :label="t('sites.company')"
+            :placeholder="t('sites.selectCompany')"
             required
           />
 
           <div class="grid grid-cols-2 gap-4">
             <AppInput
               v-model="formData.latitude"
-              label="Latitude"
+              :label="t('sites.lat')"
               type="number"
-              placeholder="ex: 12.3456"
+              :placeholder="t('sites.latPlaceholder')"
               step="any"
               required
             />
             <AppInput
               v-model="formData.longitude"
-              label="Longitude"
+              :label="t('sites.lng')"
               type="number"
-              placeholder="ex: -1.5678"
+              :placeholder="t('sites.lngPlaceholder')"
               step="any"
               required
             />
@@ -197,7 +197,7 @@
 
           <AppInput
             v-model="formData.geofenceRadius"
-            label="Rayon de geofence (metres)"
+            :label="t('sites.geofence')"
             type="number"
             placeholder="100"
             required
@@ -210,7 +210,7 @@
           variant="outline"
           @click="closeEditModal"
         >
-          Annuler
+          {{ t('common.cancel') }}
         </AppButton>
         <AppButton
           form="site-edit-form"
@@ -218,7 +218,7 @@
           variant="primary"
           :loading="isSubmitting"
         >
-          Enregistrer
+          {{ t('common.save') }}
         </AppButton>
       </template>
     </AppModal>
@@ -228,6 +228,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useSiteStore } from '@/stores/site.store'
 import { useCompanyStore } from '@/stores/company.store'
 import { usePermissions } from '@/composables/usePermissions'
@@ -242,6 +243,7 @@ import type { Site } from '@/types'
 import { useToast } from '@/composables/useToast'
 import { PencilIcon, TrashIcon } from '@heroicons/vue/24/outline'
 
+const { t } = useI18n()
 const router = useRouter()
 const siteStore = useSiteStore()
 const companyStore = useCompanyStore()
@@ -275,7 +277,7 @@ const canCreate = computed(() =>
 )
 
 const companyOptions = computed(() => [
-  { value: '', label: 'Toutes les entreprises' },
+  { value: '', label: t('sites.allCompanies') },
   ...companyStore.companies.map(company => ({
     value: company.id,
     label: company.name,
@@ -284,14 +286,14 @@ const companyOptions = computed(() => [
 
 const columns = computed<TableColumn[]>(() => {
   const cols: TableColumn[] = [
-    { key: 'name', label: 'Nom', sortable: true },
-    { key: 'companyName', label: 'Entreprise', sortable: true },
-    { key: 'address', label: 'Adresse', sortable: false },
-    { key: 'departmentCount', label: 'Departements', align: 'center' as const },
-    { key: 'employeeCount', label: 'Employes', align: 'center' as const },
+    { key: 'name', label: t('common.name'), sortable: true },
+    { key: 'companyName', label: t('sites.company'), sortable: true },
+    { key: 'address', label: t('sites.address'), sortable: false },
+    { key: 'departmentCount', label: t('sites.departments'), align: 'center' as const },
+    { key: 'employeeCount', label: t('sites.employees'), align: 'center' as const },
   ]
   if (canCreate.value) {
-    cols.push({ key: 'actions', label: 'Actions', align: 'right' as const, width: '120px' })
+    cols.push({ key: 'actions', label: t('common.actions'), align: 'right' as const, width: '120px' })
   }
   return cols
 })
@@ -343,11 +345,11 @@ async function handleCreateSite() {
       longitude: Number(formData.value.longitude),
       geofenceRadius: Number(formData.value.geofenceRadius),
     })
-    toast.success('Succes', 'Site cree avec succes')
+    toast.success(t('common.success'), t('sites.createdSuccess'))
     closeCreateModal()
     await siteStore.fetchSites(filters.value)
   } catch (error: any) {
-    toast.error('Erreur', error.message || 'Erreur lors de la creation du site')
+    toast.error(t('common.error'), error.message || t('sites.createError'))
   } finally {
     isSubmitting.value = false
   }
@@ -378,11 +380,11 @@ async function handleEditSite() {
       longitude: Number(formData.value.longitude),
       geofenceRadius: Number(formData.value.geofenceRadius),
     })
-    toast.success('Succes', 'Site modifie avec succes')
+    toast.success(t('common.success'), t('sites.updatedSuccess'))
     closeEditModal()
     await siteStore.fetchSites(filters.value)
   } catch (error: any) {
-    toast.error('Erreur', error.message || 'Erreur lors de la modification du site')
+    toast.error(t('common.error'), error.message || t('sites.updateError'))
   } finally {
     isSubmitting.value = false
   }
@@ -398,11 +400,11 @@ async function confirmDeleteSite() {
   isSubmitting.value = true
   try {
     await siteStore.deleteSite(deletingSite.value.id)
-    toast.success('Succes', 'Site supprime avec succes')
+    toast.success(t('common.success'), t('sites.deletedSuccess'))
     closeDeleteModal()
     await siteStore.fetchSites(filters.value)
   } catch (error: any) {
-    toast.error('Erreur', error.message || 'Erreur lors de la suppression du site')
+    toast.error(t('common.error'), error.message || t('sites.deleteError'))
   } finally {
     isSubmitting.value = false
   }

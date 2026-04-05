@@ -3,9 +3,9 @@
     <div class="page-header">
       <div class="header-left">
         <AppButton variant="ghost" @click="goBack">
-          Retour
+          {{ t('common.back') }}
         </AppButton>
-        <h1>Pointage - {{ employeeName }}</h1>
+        <h1>{{ t('attendance.byEmployeeTitle', { employeeName }) }}</h1>
       </div>
     </div>
 
@@ -20,16 +20,16 @@
             <AppInput
               v-model="startDate"
               type="date"
-              placeholder="Date de début"
+              :placeholder="t('attendance.startDate')"
             />
             <span class="separator">-</span>
             <AppInput
               v-model="endDate"
               type="date"
-              placeholder="Date de fin"
+              :placeholder="t('attendance.endDate')"
             />
             <AppButton @click="setCurrentMonth">
-              Ce mois
+              {{ t('attendance.thisMonth') }}
             </AppButton>
           </div>
         </AppCard>
@@ -37,25 +37,25 @@
 
       <div class="stats-grid">
         <StatCard
-          title="Jours travaillés"
+          :title="t('attendance.workedDays')"
           :value="stats.totalDays"
           icon="calendar"
           color="blue"
         />
         <StatCard
-          title="Jours présents"
+          :title="t('attendance.presentDays')"
           :value="stats.presentDays"
           icon="check-circle"
           color="green"
         />
         <StatCard
-          title="Jours en retard"
+          :title="t('attendance.lateDays')"
           :value="stats.lateDays"
           icon="clock"
           color="orange"
         />
         <StatCard
-          title="Ponctualité"
+          :title="t('attendance.punctuality')"
           :value="`${stats.onTimePercentage}%`"
           icon="award"
           color="purple"
@@ -63,7 +63,7 @@
       </div>
 
       <AppCard class="calendar-view">
-        <h3>Vue calendrier</h3>
+        <h3>{{ t('attendance.calendarView') }}</h3>
         <div class="calendar-grid">
           <div
             v-for="day in calendarDays"
@@ -78,25 +78,25 @@
         <div class="calendar-legend">
           <div class="legend-item">
             <span class="legend-color status-present"></span>
-            <span>Présent</span>
+            <span>{{ t('attendance.status.present') }}</span>
           </div>
           <div class="legend-item">
             <span class="legend-color status-late"></span>
-            <span>En retard</span>
+            <span>{{ t('attendance.status.late') }}</span>
           </div>
           <div class="legend-item">
             <span class="legend-color status-absent"></span>
-            <span>Absent</span>
+            <span>{{ t('attendance.status.absent') }}</span>
           </div>
           <div class="legend-item">
             <span class="legend-color status-weekend"></span>
-            <span>Weekend</span>
+            <span>{{ t('attendance.weekend') }}</span>
           </div>
         </div>
       </AppCard>
 
       <AppCard class="details-table">
-        <h3>Détails du pointage</h3>
+        <h3>{{ t('attendance.attendanceDetails') }}</h3>
         <DataTable
           :columns="columns"
           :data="attendanceRecords"
@@ -126,6 +126,7 @@
 // @ts-nocheck
 import { ref, onMounted, computed, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { useAttendanceStore } from '@/stores/attendance.store';
 import { useDateRange } from '@/composables/useDateRange';
 import { formatDate } from '@/utils/format';
@@ -135,6 +136,7 @@ import AppCard from '@/components/ui/AppCard.vue';
 import StatCard from '@/components/data-display/StatCard.vue';
 import AppInput from '@/components/ui/AppInput.vue';
 
+const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const attendanceStore = useAttendanceStore();
@@ -167,20 +169,20 @@ const calendarDays = computed(() => {
   return attendanceStore.employeeCalendar || [];
 });
 
-const columns = [
-  { key: 'date', label: 'Date', sortable: true },
-  { key: 'entryTime', label: 'Heure d\'entrée', sortable: true },
-  { key: 'exitTime', label: 'Heure de sortie', sortable: true },
-  { key: 'status', label: 'Statut', sortable: true },
-  { key: 'lateMinutes', label: 'Retard', sortable: true },
-  { key: 'notes', label: 'Notes', sortable: false },
-];
+const columns = computed(() => [
+  { key: 'date', label: t('common.date'), sortable: true },
+  { key: 'entryTime', label: t('attendance.entryTime'), sortable: true },
+  { key: 'exitTime', label: t('attendance.exitTime'), sortable: true },
+  { key: 'status', label: t('common.status'), sortable: true },
+  { key: 'lateMinutes', label: t('attendance.lateTime'), sortable: true },
+  { key: 'notes', label: t('attendance.notes'), sortable: false },
+]);
 
 const getStatusLabel = (status: string): string => {
   const labels: Record<string, string> = {
-    present: 'Présent',
-    absent: 'Absent',
-    late: 'En retard',
+    present: t('attendance.status.present'),
+    absent: t('attendance.status.absent'),
+    late: t('attendance.status.late'),
   };
   return labels[status] || status;
 };

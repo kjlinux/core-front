@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useBiometricStore } from '@/stores/biometric.store'
 import { useToast } from '@/composables/useToast'
 import AppCard from '@/components/ui/AppCard.vue'
@@ -8,6 +9,7 @@ import AppButton from '@/components/ui/AppButton.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import { TrashIcon, ArrowLeftIcon } from '@heroicons/vue/24/outline'
 
+const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const store = useBiometricStore()
@@ -25,9 +27,9 @@ function formatDate(date: string) {
 async function handleDeleteEnrollment(enrollmentId: string) {
   try {
     await store.deleteEnrollment(enrollmentId)
-    toast.showSuccess('Inscription supprimee')
+    toast.showSuccess(t('biometric.enrollmentDeleted'))
   } catch {
-    toast.showError("Erreur lors de la suppression")
+    toast.showError(t('biometric.enrollmentDeleteError'))
   }
 }
 
@@ -44,9 +46,9 @@ onMounted(async () => {
     <div class="flex items-center gap-4">
       <AppButton variant="ghost" @click="router.push('/biometrique/devices')">
         <ArrowLeftIcon class="w-4 h-4 mr-1" />
-        Retour
+        {{ t('common.back') }}
       </AppButton>
-      <h1 class="text-2xl font-bold text-gray-900">Detail du terminal</h1>
+      <h1 class="text-2xl font-bold text-gray-900">{{ t('biometric.deviceDetail') }}</h1>
     </div>
 
     <div v-if="store.isLoading && !device" class="flex justify-center py-12">
@@ -54,51 +56,51 @@ onMounted(async () => {
     </div>
 
     <template v-else-if="device">
-      <AppCard title="Informations du terminal">
+      <AppCard :title="t('biometric.deviceInfo')">
         <div class="flex items-start justify-between">
           <div class="grid grid-cols-2 gap-6">
             <div>
-              <p class="text-xs text-gray-500 uppercase tracking-wide">Nom</p>
+              <p class="text-xs text-gray-500 uppercase tracking-wide">{{ t('biometric.name') }}</p>
               <p class="mt-1 font-semibold text-gray-900">{{ device.name }}</p>
             </div>
             <div>
-              <p class="text-xs text-gray-500 uppercase tracking-wide">Numero de serie</p>
+              <p class="text-xs text-gray-500 uppercase tracking-wide">{{ t('biometric.serialNumber') }}</p>
               <p class="mt-1 font-mono text-gray-900">{{ device.serialNumber }}</p>
             </div>
             <div>
-              <p class="text-xs text-gray-500 uppercase tracking-wide">Statut</p>
+              <p class="text-xs text-gray-500 uppercase tracking-wide">{{ t('biometric.status') }}</p>
               <AppBadge :variant="device.isOnline ? 'success' : 'danger'" class="mt-1">
-                {{ device.isOnline ? 'En ligne' : 'Hors ligne' }}
+                {{ device.isOnline ? t('biometric.online') : t('biometric.offline') }}
               </AppBadge>
             </div>
             <div>
-              <p class="text-xs text-gray-500 uppercase tracking-wide">Version firmware</p>
+              <p class="text-xs text-gray-500 uppercase tracking-wide">{{ t('biometric.versionFirmware') }}</p>
               <p class="mt-1 text-gray-900">{{ device.firmwareVersion }}</p>
             </div>
             <div>
-              <p class="text-xs text-gray-500 uppercase tracking-wide">Employes inscrits</p>
+              <p class="text-xs text-gray-500 uppercase tracking-wide">{{ t('biometric.enrolledEmployees') }}</p>
               <p class="mt-1 text-2xl font-bold text-primary">{{ device.enrolledCount }}</p>
             </div>
             <div>
-              <p class="text-xs text-gray-500 uppercase tracking-wide">Derniere synchronisation</p>
+              <p class="text-xs text-gray-500 uppercase tracking-wide">{{ t('biometric.lastSync') }}</p>
               <p class="mt-1 text-gray-900">{{ formatDate(device.lastSyncAt) }}</p>
             </div>
           </div>
         </div>
       </AppCard>
 
-      <AppCard title="Employes inscrits">
+      <AppCard :title="t('biometric.enrolledEmployees')">
         <div v-if="deviceEnrollments.length === 0" class="text-center py-8 text-gray-500">
-          Aucune inscription sur ce terminal
+          {{ t('biometric.noEnrollment') }}
         </div>
         <div v-else class="overflow-x-auto">
           <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
               <tr>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Employe</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Statut</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date inscription</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('biometric.employee') }}</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('biometric.status') }}</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('biometric.enrollDate') }}</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('biometric.actions') }}</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
@@ -108,14 +110,14 @@ onMounted(async () => {
                   <AppBadge
                     :variant="enrollment.status === 'enrolled' ? 'success' : enrollment.status === 'failed' ? 'danger' : 'warning'"
                   >
-                    {{ enrollment.status === 'enrolled' ? 'Inscrit' : enrollment.status === 'failed' ? 'Echec' : 'En attente' }}
+                    {{ enrollment.status === 'enrolled' ? t('biometric.statusEnrolled') : enrollment.status === 'failed' ? t('biometric.statusFailed') : t('biometric.statusPending') }}
                   </AppBadge>
                 </td>
                 <td class="px-4 py-3 text-sm text-gray-600">
                   {{ enrollment.enrolledAt ? formatDate(enrollment.enrolledAt) : '-' }}
                 </td>
                 <td class="px-4 py-3">
-                  <AppButton size="sm" variant="ghost" class="text-red-600 hover:text-red-700" @click="handleDeleteEnrollment(enrollment.id)" title="Supprimer">
+                  <AppButton size="sm" variant="ghost" class="text-red-600 hover:text-red-700" @click="handleDeleteEnrollment(enrollment.id)" :title="t('biometric.deleteEnrollment')">
                     <TrashIcon class="w-4 h-4" />
                   </AppButton>
                 </td>
@@ -127,7 +129,7 @@ onMounted(async () => {
     </template>
 
     <div v-else class="text-center py-12 text-gray-500">
-      Terminal introuvable
+      {{ t('biometric.deviceNotFound') }}
     </div>
   </div>
 </template>

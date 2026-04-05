@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth.store'
 import { useToast } from '@/composables/useToast'
 import {
@@ -18,12 +19,12 @@ import StatCard from '@/components/data-display/StatCard.vue'
 import DataTable from '@/components/data-display/DataTable.vue'
 import type { TableColumn } from '@/types/common'
 
+const { t } = useI18n()
 const auth = useAuthStore()
 const toast = useToast()
 
 const isSuperAdmin = computed(() => auth.userRole === 'super_admin')
 
-// Parametres du rapport
 const reportType = ref<'global' | 'site' | 'department' | 'period'>('global')
 const startDate = ref('')
 const endDate = ref('')
@@ -32,7 +33,6 @@ const selectedSite = ref('')
 const selectedDepartment = ref('')
 const periodGranularity = ref<'day' | 'week' | 'month'>('month')
 
-// Options dynamiques
 const companyOptions = ref<{ label: string; value: string }[]>([])
 const siteOptions = ref<{ label: string; value: string }[]>([])
 const departmentOptions = ref<{ label: string; value: string }[]>([])
@@ -44,20 +44,19 @@ const loading = ref(false)
 const reportGenerated = ref(false)
 const report = ref<FeelbackReportData | null>(null)
 
-const reportTypes = [
-  { label: 'Rapport global', value: 'global' },
-  { label: 'Rapport par site', value: 'site' },
-  { label: 'Rapport par departement', value: 'department' },
-  { label: 'Rapport par periode', value: 'period' },
-]
+const reportTypes = computed(() => [
+  { label: t('feelback.globalReport'), value: 'global' },
+  { label: t('feelback.bySiteReport'), value: 'site' },
+  { label: t('feelback.byDeptReport'), value: 'department' },
+  { label: t('feelback.byPeriodReport'), value: 'period' },
+])
 
-const granularityOptions = [
-  { label: 'Par jour', value: 'day' },
-  { label: 'Par semaine', value: 'week' },
-  { label: 'Par mois', value: 'month' },
-]
+const granularityOptions = computed(() => [
+  { label: t('feelback.byDay'), value: 'day' },
+  { label: t('feelback.byWeek'), value: 'week' },
+  { label: t('feelback.byMonth'), value: 'month' },
+])
 
-// Champs conditionnels selon le type de rapport
 const showSiteFilter = computed(() =>
   reportType.value === 'site' || reportType.value === 'department',
 )
@@ -90,7 +89,7 @@ async function loadSites() {
   try {
     const sites = await companyApi.getSites(companyId)
     siteOptions.value = [
-      { label: 'Tous les sites', value: '' },
+      { label: t('feelback.allSites'), value: '' },
       ...sites.map((s) => ({ label: s.name, value: s.id })),
     ]
   } catch {
@@ -128,7 +127,6 @@ watch(selectedSite, () => {
 })
 
 watch(reportType, () => {
-  // Recharger les donnees dependantes si besoin
   if (showSiteFilter.value && siteOptions.value.length === 0) loadSites()
   if (!showDepartmentFilter.value) {
     selectedDepartment.value = ''
@@ -142,36 +140,33 @@ onMounted(() => {
   if (isSuperAdmin.value) {
     loadCompanies()
   } else {
-    // Pour admin_enterprise / manager, charger directement les sites de leur entreprise
     loadSites()
   }
 })
 
-// Colonnes dynamiques selon le type de rapport
 const activeColumns = computed<TableColumn[]>(() => {
   const common = [
-    { key: 'totalResponses', label: 'Total reponses', align: 'center' as const },
-    { key: 'bon', label: 'Bon', align: 'center' as const },
-    { key: 'neutre', label: 'Neutre', align: 'center' as const },
-    { key: 'mauvais', label: 'Mauvais', align: 'center' as const },
-    { key: 'satisfactionRateFormatted', label: 'Taux satisfaction', align: 'center' as const },
+    { key: 'totalResponses', label: t('feelback.totalResponses'), align: 'center' as const },
+    { key: 'bon', label: t('feelback.good'), align: 'center' as const },
+    { key: 'neutre', label: t('feelback.neutral'), align: 'center' as const },
+    { key: 'mauvais', label: t('feelback.bad'), align: 'center' as const },
+    { key: 'satisfactionRateFormatted', label: t('feelback.satisfactionRate'), align: 'center' as const },
   ]
 
   if (reportType.value === 'site') {
-    return [{ key: 'site', label: 'Site' }, ...common]
+    return [{ key: 'site', label: t('feelback.siteLabel') }, ...common]
   }
   if (reportType.value === 'department') {
     return [
-      { key: 'department', label: 'Departement' },
-      { key: 'site', label: 'Site' },
+      { key: 'department', label: t('feelback.deptLabel') },
+      { key: 'site', label: t('feelback.siteLabel') },
       ...common,
     ]
   }
   if (reportType.value === 'period') {
-    return [{ key: 'period', label: 'Periode' }, ...common]
+    return [{ key: 'period', label: t('feelback.selectPeriod') }, ...common]
   }
-  // global
-  return [{ key: 'site', label: 'Site' }, ...common]
+  return [{ key: 'site', label: t('feelback.siteLabel') }, ...common]
 })
 
 const tableData = computed(() => {
@@ -198,20 +193,20 @@ const periodLabel = computed(() => {
 })
 
 const reportLabel = computed(
-  () => reportTypes.find((o) => o.value === reportType.value)?.label ?? 'Rapport',
+  () => reportTypes.value.find((o) => o.value === reportType.value)?.label ?? 'Rapport',
 )
 
 function validate(): boolean {
   if (!startDate.value || !endDate.value) {
-    toast.showError('Veuillez selectionner une periode')
+    toast.showError(t('feelback.selectPeriod'))
     return false
   }
   if (isSuperAdmin.value && !selectedCompany.value) {
-    toast.showError('Veuillez selectionner une entreprise')
+    toast.showError(t('feelback.companyRequired'))
     return false
   }
   if (showSiteFilter.value && siteOptions.value.length <= 1) {
-    toast.showError('Aucun site disponible pour cette entreprise')
+    toast.showError(t('feelback.noSiteAvailable'))
     return false
   }
   return true
@@ -241,9 +236,9 @@ async function generateReport() {
 
     report.value = await feelbackReportApi.getReport(params)
     reportGenerated.value = true
-    toast.showSuccess('Rapport genere avec succes')
+    toast.showSuccess(t('feelback.reportGeneratedSuccess'))
   } catch {
-    toast.showError('Erreur lors de la generation du rapport')
+    toast.showError(t('feelback.reportGenerateError'))
   } finally {
     loading.value = false
   }
@@ -252,10 +247,10 @@ async function generateReport() {
 const summaryRows = computed(() => {
   if (!report.value) return []
   return [
-    { label: 'Total reponses', value: report.value.totalResponses },
-    { label: 'Taux bon', value: formatPercent(report.value.bonRate) },
-    { label: 'Taux neutre', value: formatPercent(report.value.neutreRate) },
-    { label: 'Taux mauvais', value: formatPercent(report.value.mauvaisRate) },
+    { label: t('feelback.totalResponses'), value: report.value.totalResponses },
+    { label: t('feelback.goodRate'), value: formatPercent(report.value.bonRate) },
+    { label: t('feelback.neutralRate'), value: formatPercent(report.value.neutreRate) },
+    { label: t('feelback.badRate'), value: formatPercent(report.value.mauvaisRate) },
   ]
 })
 
@@ -269,7 +264,7 @@ async function handleExportPdf() {
     columns: activeColumns.value.map((c) => ({ header: c.label, key: c.key })),
     data: tableData.value,
   })
-  toast.showSuccess('Le fichier PDF a ete telecharge')
+  toast.showSuccess(t('marketplace.pdfDownloaded'))
 }
 
 async function handleExportExcel() {
@@ -282,92 +277,83 @@ async function handleExportExcel() {
     columns: activeColumns.value.map((c) => ({ header: c.label, key: c.key, width: 18 })),
     data: tableData.value,
   })
-  toast.showSuccess('Le fichier Excel a ete telecharge')
+  toast.showSuccess(t('marketplace.excelDownloaded'))
 }
 </script>
 
 <template>
   <div class="space-y-6">
     <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold text-gray-900">Rapports Feelback</h1>
+      <h1 class="text-2xl font-bold text-gray-900">{{ t('feelback.reportsTitle') }}</h1>
     </div>
 
     <!-- Parametres du rapport -->
-    <AppCard title="Parametres du rapport">
+    <AppCard :title="t('feelback.reportParams')">
       <div class="space-y-4">
-        <!-- Ligne 1 : type + entreprise (si super_admin) -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <AppSelect v-model="reportType" label="Type de rapport" :options="reportTypes" />
+          <AppSelect v-model="reportType" :label="t('feelback.reportType')" :options="reportTypes" />
 
           <AppSelect
             v-if="isSuperAdmin"
             v-model="selectedCompany"
-            label="Entreprise"
+            :label="t('feelback.company')"
             :options="companyOptions"
             :disabled="loadingCompanies"
-            placeholder="Selectionner une entreprise"
           />
 
-          <!-- Granularite si rapport periode -->
           <AppSelect
             v-if="showGranularity"
             v-model="periodGranularity"
-            label="Granularite"
+            :label="t('feelback.granularity')"
             :options="granularityOptions"
           />
         </div>
 
-        <!-- Ligne 2 : periode -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <AppInput v-model="startDate" label="Date debut" type="date" />
-          <AppInput v-model="endDate" label="Date fin" type="date" />
+          <AppInput v-model="startDate" :label="t('feelback.startDate')" type="date" />
+          <AppInput v-model="endDate" :label="t('feelback.endDate')" type="date" />
         </div>
 
-        <!-- Ligne 3 : filtres site / departement (conditionnels) -->
         <div v-if="showSiteFilter" class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <AppSelect
             v-model="selectedSite"
-            label="Site"
+            :label="t('feelback.siteLabel')"
             :options="siteOptions"
             :disabled="loadingSites || siteOptions.length === 0"
-            placeholder="Selectionner un site"
           />
 
           <AppSelect
             v-if="showDepartmentFilter"
             v-model="selectedDepartment"
-            label="Departement"
+            :label="t('feelback.deptLabel')"
             :options="departmentOptions"
             :disabled="loadingDepartments || !selectedSite"
-            placeholder="Selectionner un departement"
           />
         </div>
       </div>
 
       <div class="flex gap-3 mt-6">
-        <AppButton :loading="loading" @click="generateReport">Generer le rapport</AppButton>
+        <AppButton :loading="loading" @click="generateReport">{{ t('feelback.generateReport') }}</AppButton>
       </div>
     </AppCard>
 
     <!-- Resultats -->
     <template v-if="reportGenerated && report">
-      <!-- Statistiques globales -->
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Total reponses" :value="report.totalResponses" />
-        <StatCard title="Taux bon" :value="formatPercent(report.bonRate)" />
-        <StatCard title="Taux neutre" :value="formatPercent(report.neutreRate)" />
-        <StatCard title="Taux mauvais" :value="formatPercent(report.mauvaisRate)" />
+        <StatCard :title="t('feelback.totalResponses')" :value="report.totalResponses" />
+        <StatCard :title="t('feelback.goodRate')" :value="formatPercent(report.bonRate)" />
+        <StatCard :title="t('feelback.neutralRate')" :value="formatPercent(report.neutreRate)" />
+        <StatCard :title="t('feelback.badRate')" :value="formatPercent(report.mauvaisRate)" />
       </div>
 
-      <!-- Tableau detaille -->
       <AppCard :title="reportLabel">
         <template #actions>
           <div class="flex gap-2">
             <AppButton variant="outline" size="sm" @click="handleExportPdf">
-              Exporter PDF
+              {{ t('common.exportPdf') }}
             </AppButton>
             <AppButton variant="outline" size="sm" @click="handleExportExcel">
-              Exporter Excel
+              {{ t('common.exportExcel') }}
             </AppButton>
           </div>
         </template>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useBiometricStore } from '@/stores/biometric.store'
 import { useToast } from '@/composables/useToast'
 import StatCard from '@/components/data-display/StatCard.vue'
@@ -8,7 +9,6 @@ import AppCard from '@/components/ui/AppCard.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppSpinner from '@/components/ui/AppSpinner.vue'
-import type { TableColumn } from '@/types/common'
 import {
   DevicePhoneMobileIcon,
   SignalIcon,
@@ -19,6 +19,7 @@ import {
   ArrowRightIcon,
 } from '@heroicons/vue/24/outline'
 
+const { t } = useI18n()
 const router = useRouter()
 const biometricStore = useBiometricStore()
 const toast = useToast()
@@ -28,26 +29,8 @@ const onlineDevices = computed(() => biometricStore.devices.filter(d => d.isOnli
 const totalEnrollments = computed(() => biometricStore.enrollments.length)
 const pendingEnrollments = computed(() => biometricStore.enrollments.filter(e => e.status === 'pending').length)
 
-const deviceColumns: TableColumn[] = [
-  { key: 'serialNumber', label: 'Numero de serie', sortable: true },
-  { key: 'name', label: 'Nom', sortable: true },
-  { key: 'siteId', label: 'Site', sortable: false },
-  { key: 'statusLabel', label: 'Statut', sortable: false },
-  { key: 'enrolledCount', label: 'Inscrits', sortable: true },
-  { key: 'firmwareVersion', label: 'Firmware', sortable: false },
-  { key: 'lastSyncAt', label: 'Derniere synchro', sortable: true },
-]
-
-const devicesTableData = computed(() =>
-  biometricStore.devices.map(d => ({
-    ...d,
-    statusLabel: d.isOnline ? 'En ligne' : 'Hors ligne',
-    lastSyncAt: d.lastSyncAt ? new Date(d.lastSyncAt).toLocaleString('fr-FR') : '-',
-  }))
-)
-
 function syncDevice(deviceId: string) {
-  toast.success('Synchronisation lancee', `Le terminal ${deviceId} est en cours de synchronisation.`)
+  toast.success(t('biometric.syncLaunched'), `Le terminal ${deviceId} est en cours de synchronisation.`)
 }
 
 function viewDevice(deviceId: string) {
@@ -63,34 +46,34 @@ onMounted(() => {
 <template>
   <div class="space-y-6">
     <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold text-gray-900">Tableau de bord Biometrique</h1>
+      <h1 class="text-2xl font-bold text-gray-900">{{ t('biometric.dashboardTitle') }}</h1>
     </div>
 
     <!-- Stat Cards -->
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <StatCard
-        title="Total terminaux"
+        :title="t('biometric.totalDevices')"
         :value="totalDevices"
         :icon="DevicePhoneMobileIcon"
         icon-bg-class="bg-blue-100"
         icon-color-class="text-blue-600"
       />
       <StatCard
-        title="Terminaux en ligne"
+        :title="t('biometric.onlineDevices')"
         :value="onlineDevices"
         :icon="SignalIcon"
         icon-bg-class="bg-green-100"
         icon-color-class="text-green-600"
       />
       <StatCard
-        title="Total inscriptions"
+        :title="t('biometric.totalEnrollments')"
         :value="totalEnrollments"
         :icon="HandRaisedIcon"
         icon-bg-class="bg-purple-100"
         icon-color-class="text-purple-600"
       />
       <StatCard
-        title="Inscriptions en attente"
+        :title="t('biometric.pendingEnrollments')"
         :value="pendingEnrollments"
         :icon="ClockIcon"
         icon-bg-class="bg-yellow-100"
@@ -99,10 +82,10 @@ onMounted(() => {
     </div>
 
     <!-- Devices Section -->
-    <AppCard title="Terminaux biometriques" subtitle="Liste de tous les terminaux enregistres">
+    <AppCard :title="t('biometric.devicesSection')" :subtitle="t('biometric.devicesSubtitle')">
       <template #actions>
         <AppButton size="sm" variant="secondary" @click="router.push('/biometrique/devices')">
-          Voir tous
+          {{ t('biometric.viewAll') }}
           <ArrowRightIcon class="w-4 h-4 ml-1" />
         </AppButton>
       </template>
@@ -112,7 +95,7 @@ onMounted(() => {
       </div>
 
       <div v-else-if="biometricStore.devices.length === 0" class="py-12 text-center text-sm text-gray-500">
-        Aucun terminal enregistre.
+        {{ t('biometric.noDevice') }}
       </div>
 
       <div v-else class="overflow-x-auto">
@@ -120,28 +103,28 @@ onMounted(() => {
           <thead class="bg-gray-50">
             <tr>
               <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                Numero de serie
+                {{ t('biometric.serialNumber') }}
               </th>
               <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                Nom
+                {{ t('biometric.name') }}
               </th>
               <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                Site
+                {{ t('biometric.site') }}
               </th>
               <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                Statut
+                {{ t('biometric.status') }}
               </th>
               <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                Inscrits
+                {{ t('biometric.enrolled') }}
               </th>
               <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                Firmware
+                {{ t('biometric.firmware') }}
               </th>
               <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                Derniere synchro
+                {{ t('biometric.lastSync') }}
               </th>
               <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">
-                Actions
+                {{ t('biometric.actions') }}
               </th>
             </tr>
           </thead>
@@ -162,7 +145,7 @@ onMounted(() => {
               </td>
               <td class="whitespace-nowrap px-4 py-4">
                 <AppBadge :variant="device.isOnline ? 'success' : 'danger'" size="sm">
-                  {{ device.isOnline ? 'En ligne' : 'Hors ligne' }}
+                  {{ device.isOnline ? t('biometric.online') : t('biometric.offline') }}
                 </AppBadge>
               </td>
               <td class="whitespace-nowrap px-4 py-4 text-sm text-gray-900">
@@ -176,10 +159,10 @@ onMounted(() => {
               </td>
               <td class="whitespace-nowrap px-4 py-4 text-right">
                 <div class="flex items-center justify-end gap-2">
-                  <AppButton size="sm" variant="ghost" @click="viewDevice(device.id)" title="Detail">
+                  <AppButton size="sm" variant="ghost" @click="viewDevice(device.id)" :title="t('biometric.detail')">
                     <EyeIcon class="w-4 h-4" />
                   </AppButton>
-                  <AppButton size="sm" variant="ghost" @click="syncDevice(device.id)" title="Synchroniser">
+                  <AppButton size="sm" variant="ghost" @click="syncDevice(device.id)" :title="t('biometric.sync')">
                     <ArrowPathIcon class="w-4 h-4" />
                   </AppButton>
                 </div>

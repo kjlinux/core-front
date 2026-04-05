@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useFirmwareStore } from '@/stores/firmware.store'
 import { usePermissions } from '@/composables/usePermissions'
 import { useToast } from '@/composables/useToast'
@@ -11,6 +12,7 @@ import AppToggle from '@/components/ui/AppToggle.vue'
 import DataTable from '@/components/data-display/DataTable.vue'
 import { PlusIcon, TrashIcon, BellAlertIcon } from '@heroicons/vue/24/outline'
 
+const { t } = useI18n()
 const store = useFirmwareStore()
 const router = useRouter()
 const permissions = usePermissions()
@@ -20,16 +22,16 @@ const deviceKindFilter = ref('')
 const confirmDeleteId = ref<string | null>(null)
 const publishingId = ref<string | null>(null)
 
-const columns = [
-  { key: 'version', label: 'Version' },
-  { key: 'deviceKind', label: 'Type' },
-  { key: 'description', label: 'Description' },
-  { key: 'fileSize', label: 'Taille' },
-  { key: 'isAutoUpdate', label: 'Auto' },
-  { key: 'isPublished', label: 'Publie' },
-  { key: 'uploadedAt', label: 'Mis en ligne' },
-  { key: 'actions', label: 'Actions' },
-]
+const columns = computed(() => [
+  { key: 'version', label: t('firmware.version') },
+  { key: 'deviceKind', label: t('firmware.deviceKind') },
+  { key: 'description', label: t('firmware.description') },
+  { key: 'fileSize', label: t('firmware.fileSize') },
+  { key: 'isAutoUpdate', label: t('firmware.auto') },
+  { key: 'isPublished', label: t('firmware.published') },
+  { key: 'uploadedAt', label: t('firmware.uploadedAt') },
+  { key: 'actions', label: t('common.actions') },
+])
 
 onMounted(() => loadData())
 
@@ -49,20 +51,20 @@ function formatDate(d: string) {
 async function toggleAutoUpdate(id: string, current: boolean) {
   try {
     await store.setAutoUpdate(id, !current)
-    toast.success('Mise a jour automatique modifiee')
+    toast.success(t('firmware.autoUpdateChanged'))
   } catch {
-    toast.error('Erreur')
+    toast.error(t('common.error'))
   }
 }
 
 async function handlePublish(id: string) {
-  if (!confirm('Notifier tous les admins et techniciens de cette mise a jour ?')) return
+  if (!confirm(t('firmware.notifyConfirm'))) return
   publishingId.value = id
   try {
     await store.publishVersion(id)
-    toast.success('Version publiee. Emails envoyes aux admins et techniciens.')
+    toast.success(t('firmware.publishedSuccess'))
   } catch {
-    toast.error('Erreur lors de la publication')
+    toast.error(t('firmware.publishError'))
   } finally {
     publishingId.value = null
   }
@@ -71,10 +73,10 @@ async function handlePublish(id: string) {
 async function handleDelete(id: string) {
   try {
     await store.deleteVersion(id)
-    toast.success('Version supprimee')
+    toast.success(t('firmware.deletedSuccess'))
     confirmDeleteId.value = null
   } catch {
-    toast.error('Erreur lors de la suppression')
+    toast.error(t('firmware.deleteError'))
   }
 }
 </script>
@@ -82,14 +84,14 @@ async function handleDelete(id: string) {
 <template>
   <div class="space-y-6">
     <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold text-gray-900">Versions Firmware</h1>
+      <h1 class="text-2xl font-bold text-gray-900">{{ t('firmware.versions') }}</h1>
       <AppButton
         v-if="permissions.isSetupRole.value"
         variant="primary"
         @click="router.push({ name: 'firmware-upload' })"
       >
         <PlusIcon class="mr-1 h-4 w-4" />
-        Telecharger firmware
+        {{ t('firmware.upload') }}
       </AppButton>
     </div>
 
@@ -100,15 +102,15 @@ async function handleDelete(id: string) {
           class="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           @change="loadData"
         >
-          <option value="">Tous les types</option>
-          <option value="rfid">RFID</option>
-          <option value="biometric">Biometrique</option>
+          <option value="">{{ t('firmware.allTypes') }}</option>
+          <option value="rfid">{{ t('firmware.deviceKinds.rfid') }}</option>
+          <option value="biometric">{{ t('firmware.deviceKinds.biometric') }}</option>
         </select>
       </div>
 
       <DataTable :columns="columns" :data="store.versions" :loading="store.isLoading">
         <template #deviceKind="{ row }">
-          <AppBadge variant="info">{{ row.deviceKind === 'rfid' ? 'RFID' : 'Biometrique' }}</AppBadge>
+          <AppBadge variant="info">{{ row.deviceKind === 'rfid' ? t('firmware.deviceKinds.rfid') : t('firmware.deviceKinds.biometric') }}</AppBadge>
         </template>
         <template #fileSize="{ row }">{{ formatSize(row.fileSize) }}</template>
         <template #isAutoUpdate="{ row }">
@@ -120,20 +122,20 @@ async function handleDelete(id: string) {
         </template>
         <template #isPublished="{ row }">
           <AppBadge :variant="row.isPublished ? 'success' : 'neutral'">
-            {{ row.isPublished ? 'Publie' : 'Non publie' }}
+            {{ row.isPublished ? t('firmware.published') : t('firmware.notPublished') }}
           </AppBadge>
         </template>
         <template #uploadedAt="{ row }">{{ formatDate(row.uploadedAt) }}</template>
         <template #actions="{ row }">
           <div class="flex items-center gap-2" @click.stop>
-            <!-- Bouton Notifier les admins (super_admin uniquement, désactivé si déjà publié) -->
+            <!-- Bouton Notifier les admins (super_admin uniquement, desactive si deja publie) -->
             <AppButton
               v-if="permissions.isSuperAdmin.value"
               size="sm"
               variant="outline"
               :disabled="row.isPublished || publishingId === row.id"
               :loading="publishingId === row.id"
-              title="Notifier les admins"
+              :title="t('firmware.published')"
               @click="handlePublish(row.id)"
             >
               <BellAlertIcon class="h-4 w-4" />
@@ -143,7 +145,7 @@ async function handleDelete(id: string) {
               size="sm"
               variant="ghost"
               class="text-red-600 hover:text-red-700"
-              title="Supprimer"
+              :title="t('common.delete')"
               @click="confirmDeleteId = row.id"
             >
               <TrashIcon class="h-4 w-4" />
@@ -159,11 +161,11 @@ async function handleDelete(id: string) {
       @click.self="confirmDeleteId = null"
     >
       <div class="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-        <h3 class="mb-2 text-lg font-semibold text-gray-900">Supprimer cette version</h3>
-        <p class="mb-6 text-sm text-gray-600">Cette action est irreversible.</p>
+        <h3 class="mb-2 text-lg font-semibold text-gray-900">{{ t('firmware.deleteTitle') }}</h3>
+        <p class="mb-6 text-sm text-gray-600">{{ t('firmware.deleteIrreversible') }}</p>
         <div class="flex justify-end gap-3">
-          <AppButton variant="ghost" @click="confirmDeleteId = null">Annuler</AppButton>
-          <AppButton variant="danger" @click="handleDelete(confirmDeleteId!)">Supprimer</AppButton>
+          <AppButton variant="ghost" @click="confirmDeleteId = null">{{ t('common.cancel') }}</AppButton>
+          <AppButton variant="danger" @click="handleDelete(confirmDeleteId!)">{{ t('common.delete') }}</AppButton>
         </div>
       </div>
     </div>

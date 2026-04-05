@@ -2,43 +2,43 @@
   <div class="card-history-page">
     <div class="page-header">
       <AppButton variant="secondary" @click="navigateBack">
-        Retour
+        {{ t('common.back') }}
       </AppButton>
-      <h1>Historique carte {{ card?.uid }}</h1>
+      <h1>{{ t('cards.history', { uid: card?.uid || '' }) }}</h1>
     </div>
 
     <div v-if="loading" class="loading">
-      Chargement...
+      {{ t('common.loading') }}
     </div>
 
     <div v-else-if="card" class="history-content">
       <AppCard>
         <div class="card-summary">
           <div class="summary-item">
-            <label>UID</label>
+            <label>{{ t('cards.uid') }}</label>
             <span class="uid">{{ card.uid }}</span>
           </div>
           <div class="summary-item">
-            <label>Statut actuel</label>
+            <label>{{ t('cards.currentStatus') }}</label>
             <AppBadge :variant="getStatusVariant(card.status)">
               {{ getStatusLabel(card.status) }}
             </AppBadge>
           </div>
           <div class="summary-item">
-            <label>Employe</label>
+            <label>{{ t('cards.employee') }}</label>
             <span v-if="card.employee">
               {{ card.employee.firstName }} {{ card.employee.lastName }}
             </span>
-            <span v-else class="unassigned">Non attribuee</span>
+            <span v-else class="unassigned">{{ t('cards.notUnassigned') }}</span>
           </div>
         </div>
       </AppCard>
 
       <AppCard class="timeline-card">
-        <h2>Historique des actions</h2>
+        <h2>{{ t('cards.historyTitle') }}</h2>
 
         <div v-if="history.length === 0" class="no-history">
-          Aucune action enregistree pour cette carte
+          {{ t('cards.noHistory') }}
         </div>
 
         <div v-else class="timeline">
@@ -57,17 +57,17 @@
               </div>
               <div class="action-details">
                 <p v-if="action.performedBy" class="performed-by">
-                  Par: <strong>{{ action.performedBy.firstName }} {{ action.performedBy.lastName }}</strong>
+                  {{ t('cards.actionBy', { name: `${action.performedBy.firstName} ${action.performedBy.lastName}` }) }}
                 </p>
                 <p v-if="action.details" class="action-description">
                   {{ action.details }}
                 </p>
                 <div v-if="action.reason" class="action-reason">
-                  <label>Raison:</label>
+                  <label>{{ t('cards.reason') }}</label>
                   <p>{{ action.reason }}</p>
                 </div>
                 <div v-if="action.employee" class="action-employee">
-                  <label>Employe:</label>
+                  <label>{{ t('cards.employee') }}</label>
                   <p>{{ action.employee.firstName }} {{ action.employee.lastName }}</p>
                 </div>
               </div>
@@ -78,7 +78,7 @@
     </div>
 
     <div v-else class="error">
-      Carte non trouvee
+      {{ t('cards.notFound') }}
     </div>
   </div>
 </template>
@@ -87,6 +87,7 @@
 // @ts-nocheck
 import { ref, computed, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import AppButton from '@/components/ui/AppButton.vue';
 import AppCard from '@/components/ui/AppCard.vue';
 import AppBadge from '@/components/ui/AppBadge.vue';
@@ -94,6 +95,7 @@ import { useCardStore } from '@/stores/card.store';
 import { CardStatus } from '@/types/enums';
 import { useToast } from '@/composables/useToast';
 
+const { t } = useI18n();
 const router = useRouter();
 const route = useRoute();
 const cardStore = useCardStore();
@@ -123,13 +125,13 @@ const getStatusVariant = (status: CardStatus): string => {
 const getStatusLabel = (status: CardStatus): string => {
   switch (status) {
     case CardStatus.ACTIVE:
-      return 'Actif';
+      return t('cards.status.active');
     case CardStatus.INACTIVE:
-      return 'Inactif';
+      return t('cards.status.inactive');
     case CardStatus.BLOCKED:
-      return 'Bloque';
+      return t('cards.status.blocked');
     case CardStatus.LOST:
-      return 'Perdu';
+      return t('cards.status.lost');
     default:
       return status;
   }
@@ -159,19 +161,19 @@ const getActionClass = (actionType: string): string => {
 const getActionLabel = (actionType: string): string => {
   switch (actionType) {
     case 'assigned':
-      return 'Carte attribuee';
+      return t('cards.actions.assigned');
     case 'unassigned':
-      return 'Carte desattribuee';
+      return t('cards.actions.unassigned');
     case 'activated':
-      return 'Carte activee';
+      return t('cards.actions.activated');
     case 'deactivated':
-      return 'Carte desactivee';
+      return t('cards.actions.deactivated');
     case 'blocked':
-      return 'Carte bloquee';
+      return t('cards.actions.blocked');
     case 'unblocked':
-      return 'Carte debloquee';
+      return t('cards.actions.unblocked');
     case 'created':
-      return 'Carte creee';
+      return t('cards.actions.created');
     default:
       return actionType;
   }
@@ -199,7 +201,7 @@ onMounted(async () => {
       cardStore.fetchHistory(cardId.value)
     ]);
   } catch {
-    toast.error('Erreur', 'Impossible de charger l\'historique de la carte');
+    toast.error(t('common.error'), t('cards.historyError'));
   } finally {
     loading.value = false;
   }

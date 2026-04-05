@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useBiometricStore } from '@/stores/biometric.store'
 import { useCompanyStore } from '@/stores/company.store'
 import { useEmployeeStore } from '@/stores/employee.store'
@@ -16,6 +17,7 @@ import {
   ArrowLeftIcon,
 } from '@heroicons/vue/24/outline'
 
+const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const store = useBiometricStore()
@@ -39,33 +41,33 @@ const enrollmentId = ref<string | null>(null)
 // --- Cascading options ---
 
 const companyOptions = computed(() => [
-  { label: 'Selectionner une entreprise', value: '' },
+  { label: t('biometric.companyLabel'), value: '' },
   ...companyStore.companies.map((c) => ({ label: c.name, value: c.id })),
 ])
 
 const siteOptions = computed(() => {
-  if (!selectedCompanyId.value) return [{ label: 'Selectionner un site', value: '' }]
+  if (!selectedCompanyId.value) return [{ label: t('biometric.siteLabel'), value: '' }]
   const sites = siteStore.sites.filter((s) => s.companyId === selectedCompanyId.value)
   return [
-    { label: 'Selectionner un site', value: '' },
+    { label: t('biometric.siteLabel'), value: '' },
     ...sites.map((s) => ({ label: s.name, value: s.id })),
   ]
 })
 
 const employeeOptions = computed(() => {
-  if (!selectedSiteId.value) return [{ label: 'Selectionner un employe', value: '' }]
+  if (!selectedSiteId.value) return [{ label: t('biometric.employeeLabel'), value: '' }]
   const list = employeeStore.employees.filter((e) => e.siteId === selectedSiteId.value)
   return [
-    { label: 'Selectionner un employe', value: '' },
+    { label: t('biometric.employeeLabel'), value: '' },
     ...list.map((e) => ({ label: `${e.firstName} ${e.lastName}`, value: e.id })),
   ]
 })
 
 const deviceOptions = computed(() => {
-  if (!selectedCompanyId.value) return [{ label: 'Selectionner un terminal', value: '' }]
+  if (!selectedCompanyId.value) return [{ label: t('biometric.deviceLabel'), value: '' }]
   const devices = store.devices.filter((d) => d.companyId === selectedCompanyId.value)
   return [
-    { label: 'Selectionner un terminal', value: '' },
+    { label: t('biometric.deviceLabel'), value: '' },
     ...devices.map((d) => ({ label: `${d.name} (${d.serialNumber})`, value: d.id })),
   ]
 })
@@ -87,17 +89,17 @@ watch(selectedSiteId, () => {
 
 const captureStatusLabel = computed(() => {
   switch (captureStatus.value) {
-    case 'waiting': return 'Envoi de la commande...'
-    case 'capturing': return "En attente de l'empreinte sur le terminal..."
-    case 'success': return 'Empreinte capturee avec succes!'
-    case 'error': return captureError.value || 'Erreur lors de la capture'
-    default: return 'Pret'
+    case 'waiting': return t('biometric.sendingCmd')
+    case 'capturing': return t('biometric.waitingFinger')
+    case 'success': return t('biometric.captureSuccess')
+    case 'error': return captureError.value || t('biometric.captureFailed')
+    default: return t('biometric.ready')
   }
 })
 
 function goToStep2() {
   if (!selectedEmployeeId.value || !selectedDeviceId.value) {
-    toast.showError('Veuillez selectionner un employe et un terminal')
+    toast.showError(t('biometric.selectBoth'))
     return
   }
   step.value = 2
@@ -123,18 +125,18 @@ async function launchCapture() {
           captureStatus.value = 'success'
         } else if (updated.status === 'failed') {
           captureStatus.value = 'error'
-          captureError.value = "Le terminal n'a pas pu capturer l'empreinte"
+          captureError.value = t('biometric.captureFailed')
         }
       },
       { interval: 2000, timeout: 60000 },
     )
 
     captureStatus.value = 'success'
-    toast.showSuccess('Empreinte capturee et enregistree avec succes')
+    toast.showSuccess(t('biometric.savedSuccess'))
   } catch (error: unknown) {
     captureStatus.value = 'error'
     const axiosMessage = (error as { response?: { data?: { message?: string } } })?.response?.data?.message
-    const message = axiosMessage || (error instanceof Error ? error.message : 'Erreur lors de la capture')
+    const message = axiosMessage || (error instanceof Error ? error.message : t('biometric.captureFailed'))
     captureError.value = message
     toast.showError(message)
   }
@@ -182,9 +184,9 @@ onMounted(async () => {
     <div class="flex items-center gap-4">
       <AppButton variant="ghost" @click="router.push('/biometrique/enrollment')">
         <ArrowLeftIcon class="w-4 h-4 mr-1" />
-        Retour
+        {{ t('common.back') }}
       </AppButton>
-      <h1 class="text-2xl font-bold text-gray-900">Nouvelle inscription biometrique</h1>
+      <h1 class="text-2xl font-bold text-gray-900">{{ t('biometric.enrollTitle') }}</h1>
     </div>
 
     <!-- Steps indicator -->
@@ -194,7 +196,7 @@ onMounted(async () => {
           class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold"
           :class="step >= 1 ? 'bg-primary text-white' : 'bg-gray-200 text-gray-500'"
         >1</div>
-        <span class="text-sm font-medium" :class="step >= 1 ? 'text-primary' : 'text-gray-400'">Selection</span>
+        <span class="text-sm font-medium" :class="step >= 1 ? 'text-primary' : 'text-gray-400'">{{ t('biometric.step1') }}</span>
       </div>
       <div class="h-px flex-1 bg-gray-200"></div>
       <div class="flex items-center gap-2">
@@ -202,36 +204,36 @@ onMounted(async () => {
           class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold"
           :class="step >= 2 ? 'bg-primary text-white' : 'bg-gray-200 text-gray-500'"
         >2</div>
-        <span class="text-sm font-medium" :class="step >= 2 ? 'text-primary' : 'text-gray-400'">Capture</span>
+        <span class="text-sm font-medium" :class="step >= 2 ? 'text-primary' : 'text-gray-400'">{{ t('biometric.step2') }}</span>
       </div>
     </div>
 
     <!-- Step 1: Selection -->
-    <AppCard v-if="step === 1" title="Etape 1 - Selection de l'employe et du terminal">
+    <AppCard v-if="step === 1" :title="t('biometric.step1Title')">
       <div class="space-y-4 max-w-md">
         <AppSelect
           v-model="selectedCompanyId"
-          label="Entreprise *"
+          :label="t('biometric.companyLabel')"
           :options="companyOptions"
         />
 
         <AppSelect
           v-model="selectedSiteId"
-          label="Site *"
+          :label="t('biometric.siteLabel')"
           :options="siteOptions"
           :disabled="!selectedCompanyId"
         />
 
         <AppSelect
           v-model="selectedEmployeeId"
-          label="Employe *"
+          :label="t('biometric.employeeLabel')"
           :options="employeeOptions"
           :disabled="!selectedSiteId"
         />
 
         <AppSelect
           v-model="selectedDeviceId"
-          label="Terminal biometrique *"
+          :label="t('biometric.deviceLabel')"
           :options="deviceOptions"
           :disabled="!selectedCompanyId"
         />
@@ -242,24 +244,24 @@ onMounted(async () => {
             :disabled="!selectedEmployeeId || !selectedDeviceId"
             @click="goToStep2"
           >
-            Continuer
+            {{ t('biometric.continueBtn') }}
           </AppButton>
         </div>
       </div>
     </AppCard>
 
     <!-- Step 2: Capture -->
-    <AppCard v-if="step === 2" title="Etape 2 - Capture de l'empreinte">
+    <AppCard v-if="step === 2" :title="t('biometric.step2Title')">
       <div class="space-y-6">
         <div class="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
           <div>
-            <p class="text-xs text-gray-500 uppercase">Employe</p>
+            <p class="text-xs text-gray-500 uppercase">{{ t('biometric.employee') }}</p>
             <p class="font-semibold text-gray-900">
               {{ selectedEmployee ? `${selectedEmployee.firstName} ${selectedEmployee.lastName}` : '-' }}
             </p>
           </div>
           <div>
-            <p class="text-xs text-gray-500 uppercase">Terminal</p>
+            <p class="text-xs text-gray-500 uppercase">{{ t('biometric.deviceLabel') }}</p>
             <p class="font-semibold text-gray-900">{{ selectedDevice?.name ?? '-' }}</p>
           </div>
         </div>
@@ -287,7 +289,7 @@ onMounted(async () => {
               'text-green-600': captureStatus === 'success',
               'text-red-600': captureStatus === 'error',
             }">
-              {{ captureStatus === 'idle' ? 'Placez votre doigt sur le lecteur' : captureStatusLabel }}
+              {{ captureStatus === 'idle' ? t('biometric.placeFinger') : captureStatusLabel }}
             </p>
           </div>
 
@@ -297,7 +299,7 @@ onMounted(async () => {
               @click="step = 1"
               :disabled="captureStatus === 'waiting' || captureStatus === 'capturing'"
             >
-              Retour
+              {{ t('common.back') }}
             </AppButton>
 
             <AppButton
@@ -305,7 +307,7 @@ onMounted(async () => {
               variant="primary"
               @click="launchCapture"
             >
-              Lancer la capture
+              {{ t('biometric.launchCapture') }}
             </AppButton>
 
             <AppButton
@@ -314,7 +316,7 @@ onMounted(async () => {
               :loading="true"
               disabled
             >
-              {{ captureStatus === 'waiting' ? 'Envoi...' : 'Capture en cours...' }}
+              {{ captureStatus === 'waiting' ? t('biometric.sending') : t('biometric.capturing') }}
             </AppButton>
 
             <AppButton
@@ -322,7 +324,7 @@ onMounted(async () => {
               variant="primary"
               @click="router.push('/biometrique/enrollment')"
             >
-              Voir les inscriptions
+              {{ t('biometric.viewEnrollments') }}
             </AppButton>
 
             <AppButton
@@ -330,7 +332,7 @@ onMounted(async () => {
               variant="primary"
               @click="retryCapture"
             >
-              Reessayer
+              {{ t('biometric.retryBtn') }}
             </AppButton>
           </div>
         </div>

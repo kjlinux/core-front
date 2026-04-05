@@ -3,32 +3,32 @@
     <div class="page-header">
       <AppButton variant="secondary" @click="navigateBack">
         <ArrowLeftIcon class="w-4 h-4 mr-1" />
-        Retour
+        {{ t('common.back') }}
       </AppButton>
-      <h1>Details de la carte RFID</h1>
+      <h1>{{ t('cards.details') }}</h1>
     </div>
 
     <div v-if="loading" class="loading">
-      Chargement...
+      {{ t('common.loading') }}
     </div>
 
     <div v-else-if="card" class="card-content">
       <AppCard>
         <div class="card-info">
           <div class="uid-section">
-            <label>UID de la carte</label>
+            <label>{{ t('cards.uid') }}</label>
             <div class="uid-value">{{ card.uid }}</div>
           </div>
 
           <div class="info-row">
-            <label>Statut</label>
+            <label>{{ t('cards.currentStatus') }}</label>
             <AppBadge :variant="getStatusVariant(card.status)">
               {{ getStatusLabel(card.status) }}
             </AppBadge>
           </div>
 
           <div v-if="card.employeeId" class="employee-section">
-            <h3>Informations de l'employe</h3>
+            <h3>{{ t('cards.employeeInfo') }}</h3>
             <div class="employee-info">
               <div class="employee-photo">
                 <div class="photo-placeholder">
@@ -37,7 +37,7 @@
               </div>
               <div class="employee-details">
                 <div class="info-row">
-                  <label>Nom complet</label>
+                  <label>{{ t('cards.fullName') }}</label>
                   <span>{{ card.employeeName || '-' }}</span>
                 </div>
               </div>
@@ -45,21 +45,21 @@
           </div>
 
           <div v-else class="unassigned-section">
-            <p class="unassigned-text">Cette carte n'est pas attribuee a un employe</p>
+            <p class="unassigned-text">{{ t('cards.notAssigned') }}</p>
           </div>
 
           <div class="info-row">
-            <label>Date d'attribution</label>
+            <label>{{ t('cards.assignedDate') }}</label>
             <span>{{ card.assignedAt ? formatDate(card.assignedAt) : '-' }}</span>
           </div>
 
           <div class="info-row">
-            <label>Entreprise</label>
+            <label>{{ t('cards.company') }}</label>
             <span>{{ companyStore.companies.find(c => c.id === card.companyId)?.name || card.companyId || '-' }}</span>
           </div>
 
           <div class="info-row">
-            <label>Date de creation</label>
+            <label>{{ t('cards.createdAt') }}</label>
             <span>{{ formatDate(card.createdAt) }}</span>
           </div>
         </div>
@@ -72,7 +72,7 @@
           @click="openAssignModal"
         >
           <CheckIcon class="w-4 h-4 mr-1" />
-          Attribuer a un employe
+          {{ t('cards.assignToEmployee') }}
         </AppButton>
 
         <AppButton
@@ -81,7 +81,7 @@
           @click="openUnassignModal"
         >
           <XMarkIcon class="w-4 h-4 mr-1" />
-          Desattribuer
+          {{ t('cards.unassignCard') }}
         </AppButton>
 
         <AppButton
@@ -90,7 +90,7 @@
           @click="openBlockModal"
         >
           <NoSymbolIcon class="w-4 h-4 mr-1" />
-          Bloquer la carte
+          {{ t('cards.blockCard') }}
         </AppButton>
 
         <AppButton
@@ -99,7 +99,7 @@
           @click="openUnblockModal"
         >
           <LockOpenIcon class="w-4 h-4 mr-1" />
-          Debloquer la carte
+          {{ t('cards.unblockCard') }}
         </AppButton>
 
         <AppButton
@@ -107,46 +107,46 @@
           @click="navigateToHistory"
         >
           <ClockIcon class="w-4 h-4 mr-1" />
-          Voir l'historique
+          {{ t('cards.viewHistory') }}
         </AppButton>
       </div>
     </div>
 
     <div v-else class="error">
-      Carte non trouvee
+      {{ t('cards.notFound') }}
     </div>
 
     <AppModal
       v-model="assignModalVisible"
-      title="Attribuer la carte"
+      :title="t('cards.assignModal')"
     >
       <div class="modal-content">
         <!-- Filtres entreprise+site : super admin seulement -->
         <template v-if="permissions.isSuperAdmin.value">
           <div class="form-group">
-            <label>Entreprise</label>
+            <label>{{ t('cards.allCompanies') }}</label>
             <select v-model="assignFilterCompanyId" class="form-select" @change="handleAssignCompanyChange">
-              <option value="">Toutes les entreprises</option>
+              <option value="">{{ t('cards.allCompanies') }}</option>
               <option v-for="c in companyStore.companies" :key="c.id" :value="c.id">{{ c.name }}</option>
             </select>
           </div>
           <div class="form-group">
-            <label>Site</label>
+            <label>{{ t('cards.allSites') }}</label>
             <select v-model="assignFilterSiteId" class="form-select" :disabled="!assignFilterCompanyId">
-              <option value="">Tous les sites</option>
+              <option value="">{{ t('cards.allSites') }}</option>
               <option v-for="s in assignSiteOptions" :key="s.id" :value="s.id">{{ s.name }}</option>
             </select>
           </div>
         </template>
 
         <div class="form-group">
-          <label for="employee-select">Selectionner un employe</label>
+          <label for="employee-select">{{ t('cards.selectEmployee') }}</label>
           <select
             id="employee-select"
             v-model="selectedEmployeeId"
             class="form-select"
           >
-            <option value="">-- Choisir un employe --</option>
+            <option value="">{{ t('cards.chooseEmployee') }}</option>
             <option
               v-for="employee in filteredAvailableEmployees"
               :key="employee.id"
@@ -156,66 +156,66 @@
             </option>
           </select>
           <p v-if="filteredAvailableEmployees.length === 0" class="mt-1 text-sm text-gray-500">
-            Aucun employe disponible{{ assignFilterCompanyId ? ' pour cette selection' : '' }}.
+            {{ t('cards.noEmployeeAvailable', { suffix: assignFilterCompanyId ? ' pour cette selection' : '' }) }}
           </p>
         </div>
       </div>
       <template #footer>
-        <AppButton variant="secondary" @click="cancelAssign">Annuler</AppButton>
-        <AppButton variant="primary" :disabled="!selectedEmployeeId" @click="confirmAssign">Attribuer</AppButton>
+        <AppButton variant="secondary" @click="cancelAssign">{{ t('common.cancel') }}</AppButton>
+        <AppButton variant="primary" :disabled="!selectedEmployeeId" @click="confirmAssign">{{ t('cards.assign') }}</AppButton>
       </template>
     </AppModal>
 
     <AppModal
       v-model="unassignModalVisible"
-      title="Desattribuer la carte"
+      :title="t('cards.unassignModal')"
     >
       <div class="modal-content">
-        <p>Etes-vous sur de vouloir desattribuer cette carte?</p>
+        <p>{{ t('cards.unassignConfirm') }}</p>
         <p v-if="card?.employeeName">
-          Employe actuel: <strong>{{ card.employeeName }}</strong>
+          {{ t('cards.currentEmployee', { name: card.employeeName }) }}
         </p>
       </div>
       <template #footer>
-        <AppButton variant="secondary" @click="cancelUnassign">Annuler</AppButton>
-        <AppButton variant="primary" @click="confirmUnassign">Desattribuer</AppButton>
+        <AppButton variant="secondary" @click="cancelUnassign">{{ t('common.cancel') }}</AppButton>
+        <AppButton variant="primary" @click="confirmUnassign">{{ t('cards.unassign') }}</AppButton>
       </template>
     </AppModal>
 
     <AppModal
       v-model="blockModalVisible"
-      title="Bloquer la carte"
+      :title="t('cards.blockModal')"
     >
       <div class="modal-content">
-        <p>Etes-vous sur de vouloir bloquer cette carte?</p>
+        <p>{{ t('cards.blockConfirm') }}</p>
         <div class="form-group">
-          <label for="block-reason">Raison du blocage</label>
+          <label for="block-reason">{{ t('cards.blockReason') }}</label>
           <textarea
             id="block-reason"
             v-model="blockReason"
             class="form-textarea"
             rows="3"
-            placeholder="Entrez la raison du blocage"
+            :placeholder="t('cards.blockReasonPlaceholder')"
             required
           ></textarea>
         </div>
       </div>
       <template #footer>
-        <AppButton variant="secondary" @click="cancelBlock">Annuler</AppButton>
-        <AppButton variant="danger" @click="confirmBlock">Bloquer</AppButton>
+        <AppButton variant="secondary" @click="cancelBlock">{{ t('common.cancel') }}</AppButton>
+        <AppButton variant="danger" @click="confirmBlock">{{ t('cards.block') }}</AppButton>
       </template>
     </AppModal>
 
     <AppModal
       v-model="unblockModalVisible"
-      title="Debloquer la carte"
+      :title="t('cards.unblockModal')"
     >
       <div class="modal-content">
-        <p>Etes-vous sur de vouloir debloquer cette carte?</p>
+        <p>{{ t('cards.unblockConfirm') }}</p>
       </div>
       <template #footer>
-        <AppButton variant="secondary" @click="cancelUnblock">Annuler</AppButton>
-        <AppButton variant="success" @click="confirmUnblock">Debloquer</AppButton>
+        <AppButton variant="secondary" @click="cancelUnblock">{{ t('common.cancel') }}</AppButton>
+        <AppButton variant="success" @click="confirmUnblock">{{ t('cards.unblock') }}</AppButton>
       </template>
     </AppModal>
   </div>
@@ -225,6 +225,7 @@
 // @ts-nocheck
 import { ref, computed, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import AppButton from '@/components/ui/AppButton.vue';
 import AppCard from '@/components/ui/AppCard.vue';
 import AppBadge from '@/components/ui/AppBadge.vue';
@@ -238,6 +239,7 @@ import { usePermissions } from '@/composables/usePermissions';
 import { useToast } from '@/composables/useToast';
 import { CardStatus } from '@/types/enums';
 
+const { t } = useI18n();
 const router = useRouter();
 const route = useRoute();
 const cardStore = useCardStore();
@@ -304,13 +306,13 @@ const getStatusVariant = (status: CardStatus): string => {
 const getStatusLabel = (status: CardStatus): string => {
   switch (status) {
     case CardStatus.ACTIVE:
-      return 'Actif';
+      return t('cards.status.active');
     case CardStatus.INACTIVE:
-      return 'Inactif';
+      return t('cards.status.inactive');
     case CardStatus.BLOCKED:
-      return 'Bloque';
+      return t('cards.status.blocked');
     case CardStatus.LOST:
-      return 'Perdu';
+      return t('cards.status.lost');
     default:
       return status;
   }
@@ -324,10 +326,6 @@ const formatDate = (date: string | Date): string => {
     hour: '2-digit',
     minute: '2-digit'
   });
-};
-
-const getInitials = (firstName: string, lastName: string): string => {
-  return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
 };
 
 const navigateBack = () => {
@@ -350,12 +348,12 @@ const confirmAssign = async () => {
 
   try {
     await cardStore.assignCard(cardId.value, selectedEmployeeId.value);
-    toast.showSuccess('Carte attribuee avec succes');
+    toast.showSuccess(t('cards.assignedSuccess'));
     assignModalVisible.value = false;
     selectedEmployeeId.value = '';
     await cardStore.fetchCard(cardId.value);
   } catch (error: any) {
-    toast.showError(error.message || "Erreur lors de l'attribution");
+    toast.showError(error.message || t('cards.assignError'));
   }
 };
 
@@ -371,11 +369,11 @@ const openUnassignModal = () => {
 const confirmUnassign = async () => {
   try {
     await cardStore.unassignCard(cardId.value);
-    toast.showSuccess('Carte desattribuee avec succes');
+    toast.showSuccess(t('cards.unassignedSuccess'));
     unassignModalVisible.value = false;
     await cardStore.fetchCard(cardId.value);
   } catch (error: any) {
-    toast.showError(error.message || 'Erreur lors de la desattribution');
+    toast.showError(error.message || t('cards.unassignError'));
   }
 };
 
@@ -393,12 +391,12 @@ const confirmBlock = async () => {
 
   try {
     await cardStore.blockCard(cardId.value, blockReason.value);
-    toast.showSuccess('Carte bloquee avec succes');
+    toast.showSuccess(t('cards.blockedSuccess'));
     blockModalVisible.value = false;
     blockReason.value = '';
     await cardStore.fetchCard(cardId.value);
   } catch (error: any) {
-    toast.showError(error.message || 'Erreur lors du blocage');
+    toast.showError(error.message || t('cards.blockError'));
   }
 };
 
@@ -414,11 +412,11 @@ const openUnblockModal = () => {
 const confirmUnblock = async () => {
   try {
     await cardStore.unblockCard(cardId.value);
-    toast.showSuccess('Carte debloquee avec succes');
+    toast.showSuccess(t('cards.unblockedSuccess'));
     unblockModalVisible.value = false;
     await cardStore.fetchCard(cardId.value);
   } catch (error: any) {
-    toast.showError(error.message || 'Erreur lors du deblocage');
+    toast.showError(error.message || t('cards.unblockError'));
   }
 };
 
@@ -439,7 +437,7 @@ onMounted(async () => {
     }
     await Promise.all(promises);
   } catch {
-    toast.showError('Impossible de charger les donnees de la carte');
+    toast.showError(t('cards.loadError'));
   } finally {
     loading.value = false;
   }

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useCompanyStore } from '@/stores/company.store'
 import { usePermissions } from '@/composables/usePermissions'
 import { useToast } from '@/composables/useToast'
@@ -9,6 +10,7 @@ import AppButton from '@/components/ui/AppButton.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import { ArrowLeftIcon, PencilIcon, BuildingOfficeIcon, MapPinIcon, EnvelopeIcon, PhoneIcon } from '@heroicons/vue/24/outline'
 
+const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const companyStore = useCompanyStore()
@@ -32,16 +34,16 @@ const subscriptionBadgeVariant = computed(() => {
 
 const subscriptionLabel = computed(() => {
   const subscription = company.value?.subscription
-  if (subscription === 'enterprise') return 'Enterprise'
-  if (subscription === 'premium') return 'Premium'
-  return 'Basic'
+  if (subscription === 'enterprise') return t('companies.subscription.enterprise')
+  if (subscription === 'premium') return t('companies.subscription.premium')
+  return t('companies.subscription.basic')
 })
 
 onMounted(async () => {
   try {
     await companyStore.fetchCompany(companyId.value)
   } catch (error: any) {
-    toast.error('Erreur', error.message || 'Erreur lors du chargement de l\'entreprise')
+    toast.error(t('common.error'), error.message || t('companies.loadError'))
     router.push({ name: 'rfid-companies' })
   }
 })
@@ -64,11 +66,11 @@ function viewSite(siteId: string) {
     <div class="mb-6 flex items-center justify-between">
       <AppButton variant="outline" size="sm" @click="handleBack">
         <ArrowLeftIcon class="h-4 w-4 mr-2 inline" />
-        Retour
+        {{ t('common.back') }}
       </AppButton>
       <AppButton v-if="isSuperAdmin && company" variant="primary" @click="handleEdit">
         <PencilIcon class="h-4 w-4 mr-2 inline" />
-        Modifier
+        {{ t('common.edit') }}
       </AppButton>
     </div>
 
@@ -91,7 +93,7 @@ function viewSite(siteId: string) {
               <h1 class="text-3xl font-bold text-gray-900">{{ company.name }}</h1>
               <div class="mt-2 flex items-center gap-3">
                 <AppBadge :variant="company.isActive ? 'success' : 'neutral'">
-                  {{ company.isActive ? 'Actif' : 'Inactif' }}
+                  {{ company.isActive ? t('common.active') : t('common.inactive') }}
                 </AppBadge>
                 <AppBadge :variant="subscriptionBadgeVariant">
                   {{ subscriptionLabel }}
@@ -103,12 +105,12 @@ function viewSite(siteId: string) {
       </AppCard>
 
       <!-- Contact Information -->
-      <AppCard title="Informations de contact">
+      <AppCard :title="t('companies.contactInfo')">
         <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
           <div class="flex items-start gap-3">
             <EnvelopeIcon class="h-5 w-5 text-gray-400 mt-0.5" />
             <div>
-              <div class="text-sm font-medium text-gray-500">Email</div>
+              <div class="text-sm font-medium text-gray-500">{{ t('common.email') }}</div>
               <div class="mt-1 text-sm text-gray-900">
                 <a :href="`mailto:${company.email}`" class="hover:text-blue-600">
                   {{ company.email }}
@@ -120,7 +122,7 @@ function viewSite(siteId: string) {
           <div class="flex items-start gap-3">
             <PhoneIcon class="h-5 w-5 text-gray-400 mt-0.5" />
             <div>
-              <div class="text-sm font-medium text-gray-500">Téléphone</div>
+              <div class="text-sm font-medium text-gray-500">{{ t('common.phone') }}</div>
               <div class="mt-1 text-sm text-gray-900">
                 <a :href="`tel:${company.phone}`" class="hover:text-blue-600">
                   {{ company.phone }}
@@ -132,7 +134,7 @@ function viewSite(siteId: string) {
           <div class="flex items-start gap-3 md:col-span-2">
             <MapPinIcon class="h-5 w-5 text-gray-400 mt-0.5" />
             <div>
-              <div class="text-sm font-medium text-gray-500">Adresse</div>
+              <div class="text-sm font-medium text-gray-500">{{ t('companies.address') }}</div>
               <div class="mt-1 text-sm text-gray-900">{{ company.address }}</div>
             </div>
           </div>
@@ -144,27 +146,27 @@ function viewSite(siteId: string) {
         <AppCard>
           <div class="text-center">
             <div class="text-3xl font-bold text-gray-900">{{ totalSites }}</div>
-            <div class="mt-1 text-sm text-gray-500">Sites</div>
+            <div class="mt-1 text-sm text-gray-500">{{ t('companies.sites') }}</div>
           </div>
         </AppCard>
 
         <AppCard>
           <div class="text-center">
             <div class="text-3xl font-bold text-gray-900">{{ totalDepartments }}</div>
-            <div class="mt-1 text-sm text-gray-500">Départements</div>
+            <div class="mt-1 text-sm text-gray-500">{{ t('companies.departments') }}</div>
           </div>
         </AppCard>
 
         <AppCard>
           <div class="text-center">
             <div class="text-3xl font-bold text-gray-900">{{ company.employeeCount }}</div>
-            <div class="mt-1 text-sm text-gray-500">Employés</div>
+            <div class="mt-1 text-sm text-gray-500">{{ t('companies.employees') }}</div>
           </div>
         </AppCard>
       </div>
 
       <!-- Sites List -->
-      <AppCard title="Sites" :subtitle="`${totalSites} site(s) associé(s)`">
+      <AppCard :title="t('companies.sites')" :subtitle="t('companies.sitesCount', { count: totalSites })">
         <div v-if="company.sites && company.sites.length > 0" class="divide-y divide-gray-200">
           <div
             v-for="site in company.sites"
@@ -180,21 +182,21 @@ function viewSite(siteId: string) {
               </div>
             </div>
             <div class="text-sm text-gray-500">
-              {{ site.departments?.length || 0 }} département(s)
+              {{ site.departments?.length || 0 }} {{ t('companies.departments').toLowerCase() }}
             </div>
           </div>
         </div>
         <div v-else class="py-12 text-center text-gray-500">
           <BuildingOfficeIcon class="mx-auto h-12 w-12 text-gray-400" />
-          <p class="mt-2 text-sm">Aucun site associé</p>
+          <p class="mt-2 text-sm">{{ t('companies.noSite') }}</p>
         </div>
       </AppCard>
 
       <!-- Metadata -->
-      <AppCard title="Informations système">
+      <AppCard :title="t('companies.systemInfo')">
         <div class="grid grid-cols-1 gap-4 text-sm md:grid-cols-2">
           <div>
-            <span class="font-medium text-gray-500">Créé le:</span>
+            <span class="font-medium text-gray-500">{{ t('companies.createdAt') }}</span>
             <span class="ml-2 text-gray-900">
               {{ new Date(company.createdAt).toLocaleDateString('fr-FR', {
                 year: 'numeric',
@@ -206,7 +208,7 @@ function viewSite(siteId: string) {
             </span>
           </div>
           <div>
-            <span class="font-medium text-gray-500">Dernière modification:</span>
+            <span class="font-medium text-gray-500">{{ t('companies.updatedAt') }}</span>
             <span class="ml-2 text-gray-900">
               {{ new Date(company.updatedAt).toLocaleDateString('fr-FR', {
                 year: 'numeric',
@@ -224,7 +226,7 @@ function viewSite(siteId: string) {
     <div v-else class="py-12 text-center">
       <div class="text-gray-500">
         <BuildingOfficeIcon class="mx-auto h-12 w-12 text-gray-400" />
-        <p class="mt-2 text-sm font-medium">Entreprise introuvable</p>
+        <p class="mt-2 text-sm font-medium">{{ t('companies.notFound') }}</p>
       </div>
     </div>
   </div>

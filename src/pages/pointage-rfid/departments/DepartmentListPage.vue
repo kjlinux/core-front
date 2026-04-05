@@ -1,13 +1,13 @@
 <template>
   <div>
     <div class="mb-6 flex items-center justify-between">
-      <h1 class="text-2xl font-bold text-gray-900">Departements</h1>
+      <h1 class="text-2xl font-bold text-gray-900">{{ t('departments.title') }}</h1>
       <AppButton
         v-if="canCreate"
         variant="primary"
         @click="showCreateModal = true"
       >
-        Nouveau Departement
+        {{ t('departments.create') }}
       </AppButton>
     </div>
 
@@ -16,16 +16,16 @@
         <AppSelect
           v-model="filters.companyId"
           :options="companyOptions"
-          label="Entreprise"
-          placeholder="Toutes les entreprises"
+          :label="t('departments.company')"
+          :placeholder="t('departments.allCompanies')"
           @update:model-value="handleCompanyFilterChange"
         />
 
         <AppSelect
           v-model="filters.siteId"
           :options="siteOptions"
-          label="Site"
-          placeholder="Tous les sites"
+          :label="t('departments.site')"
+          :placeholder="t('departments.allSites')"
           @update:model-value="handleFilterChange"
         />
       </div>
@@ -45,14 +45,14 @@
             <button
               @click.stop="openEditModal(row._raw)"
               class="text-gray-600 hover:text-gray-900"
-              title="Modifier"
+              :title="t('common.edit')"
             >
               <PencilIcon class="h-5 w-5" />
             </button>
             <button
               @click.stop="handleDeleteDepartment(row._raw)"
               class="text-red-600 hover:text-red-900"
-              title="Supprimer"
+              :title="t('common.delete')"
             >
               <TrashIcon class="h-5 w-5" />
             </button>
@@ -63,7 +63,7 @@
 
     <AppModal
       :is-open="showCreateModal"
-      title="Nouveau Departement"
+      :title="t('departments.create')"
       size="lg"
       @close="closeCreateModal"
     >
@@ -71,16 +71,16 @@
         <div class="space-y-4">
           <AppInput
             v-model="formData.name"
-            label="Nom"
-            placeholder="Nom du departement"
+            :label="t('common.name')"
+            :placeholder="t('common.name')"
             required
           />
 
           <AppSelect
             v-model="formData.companyId"
             :options="companyOptions"
-            label="Entreprise"
-            placeholder="Selectionner une entreprise"
+            :label="t('departments.company')"
+            :placeholder="t('departments.selectCompany')"
             required
             @update:model-value="handleFormCompanyChange"
           />
@@ -88,16 +88,16 @@
           <AppSelect
             v-model="formData.siteId"
             :options="formSiteOptions"
-            label="Site"
-            placeholder="Selectionner un site"
+            :label="t('departments.site')"
+            :placeholder="t('departments.selectSite')"
             required
           />
 
           <AppSelect
             v-model="formData.managerId"
             :options="managerOptions"
-            label="Manager"
-            placeholder="Selectionner un manager"
+            :label="t('departments.manager')"
+            :placeholder="t('departments.selectManager')"
           />
         </div>
       </form>
@@ -107,7 +107,7 @@
           variant="outline"
           @click="closeCreateModal"
         >
-          Annuler
+          {{ t('common.cancel') }}
         </AppButton>
         <AppButton
           form="dept-list-form"
@@ -115,14 +115,14 @@
           variant="primary"
           :loading="isSubmitting"
         >
-          Creer
+          {{ t('common.create') }}
         </AppButton>
       </template>
     </AppModal>
 
     <AppModal
       :is-open="showEditModal"
-      title="Modifier le Departement"
+      :title="t('departments.editTitle')"
       size="lg"
       @close="closeEditModal"
     >
@@ -130,16 +130,16 @@
         <div class="space-y-4">
           <AppInput
             v-model="formData.name"
-            label="Nom"
-            placeholder="Nom du departement"
+            :label="t('common.name')"
+            :placeholder="t('common.name')"
             required
           />
 
           <AppSelect
             v-model="formData.companyId"
             :options="companyOptions"
-            label="Entreprise"
-            placeholder="Selectionner une entreprise"
+            :label="t('departments.company')"
+            :placeholder="t('departments.selectCompany')"
             required
             @update:model-value="handleFormCompanyChange"
           />
@@ -147,16 +147,16 @@
           <AppSelect
             v-model="formData.siteId"
             :options="formSiteOptions"
-            label="Site"
-            placeholder="Selectionner un site"
+            :label="t('departments.site')"
+            :placeholder="t('departments.selectSite')"
             required
           />
 
           <AppSelect
             v-model="formData.managerId"
             :options="managerOptions"
-            label="Manager"
-            placeholder="Selectionner un manager"
+            :label="t('departments.manager')"
+            :placeholder="t('departments.selectManager')"
           />
         </div>
       </form>
@@ -166,7 +166,7 @@
           variant="outline"
           @click="closeEditModal"
         >
-          Annuler
+          {{ t('common.cancel') }}
         </AppButton>
         <AppButton
           form="dept-edit-form"
@@ -174,7 +174,7 @@
           variant="primary"
           :loading="isSubmitting"
         >
-          Enregistrer
+          {{ t('common.save') }}
         </AppButton>
       </template>
     </AppModal>
@@ -184,6 +184,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useDepartmentStore } from '@/stores/department.store'
 import { useCompanyStore } from '@/stores/company.store'
 import { useSiteStore } from '@/stores/site.store'
@@ -200,6 +201,7 @@ import { useToast } from '@/composables/useToast'
 import { userApi, type UserData } from '@/services/api/user.api'
 import { PencilIcon, TrashIcon } from '@heroicons/vue/24/outline'
 
+const { t } = useI18n()
 const router = useRouter()
 const departmentStore = useDepartmentStore()
 const companyStore = useCompanyStore()
@@ -232,7 +234,7 @@ const canCreate = computed(() =>
 )
 
 const companyOptions = computed(() => [
-  { value: '', label: 'Toutes les entreprises' },
+  { value: '', label: t('departments.allCompanies') },
   ...companyStore.companies.map(company => ({
     value: company.id,
     label: company.name,
@@ -245,7 +247,7 @@ const siteOptions = computed(() => {
     : siteStore.sites
 
   return [
-    { value: '', label: 'Tous les sites' },
+    { value: '', label: t('departments.allSites') },
     ...sites.map(site => ({
       value: site.id,
       label: site.name,
@@ -259,7 +261,7 @@ const formSiteOptions = computed(() => {
     : []
 
   return [
-    { value: '', label: 'Selectionner un site' },
+    { value: '', label: t('departments.selectSite') },
     ...sites.map(site => ({
       value: site.id,
       label: site.name,
@@ -268,7 +270,7 @@ const formSiteOptions = computed(() => {
 })
 
 const managerOptions = computed(() => [
-  { value: '', label: 'Aucun manager' },
+  { value: '', label: t('departments.selectManager') },
   ...managers.value.map((u) => ({
     value: u.id,
     label: `${u.firstName} ${u.lastName}`,
@@ -277,14 +279,14 @@ const managerOptions = computed(() => [
 
 const columns = computed<TableColumn[]>(() => {
   const cols: TableColumn[] = [
-    { key: 'name', label: 'Nom', sortable: true },
-    { key: 'siteName', label: 'Site', sortable: true },
-    { key: 'companyName', label: 'Entreprise', sortable: true },
-    { key: 'manager', label: 'Manager', sortable: false },
-    { key: 'employeeCount', label: 'Employes', align: 'center' as const },
+    { key: 'name', label: t('common.name'), sortable: true },
+    { key: 'siteName', label: t('departments.site'), sortable: true },
+    { key: 'companyName', label: t('departments.company'), sortable: true },
+    { key: 'manager', label: t('departments.manager'), sortable: false },
+    { key: 'employeeCount', label: t('departments.employees'), align: 'center' as const },
   ]
   if (canCreate.value) {
-    cols.push({ key: 'actions', label: 'Actions', align: 'right' as const, width: '120px' })
+    cols.push({ key: 'actions', label: t('common.actions'), align: 'right' as const, width: '120px' })
   }
   return cols
 })
@@ -352,11 +354,11 @@ async function handleCreateDepartment() {
       companyId: formData.value.companyId,
       managerId: formData.value.managerId || undefined,
     })
-    toast.success('Succes', 'Departement cree avec succes')
+    toast.success(t('common.success'), t('departments.createdSuccess'))
     closeCreateModal()
     await departmentStore.fetchDepartments(filters.value)
   } catch (error: any) {
-    toast.error('Erreur', error.message || 'Erreur lors de la creation du departement')
+    toast.error(t('common.error'), error.message || t('departments.createError'))
   } finally {
     isSubmitting.value = false
   }
@@ -383,24 +385,24 @@ async function handleEditDepartment() {
       companyId: formData.value.companyId,
       managerId: formData.value.managerId || undefined,
     })
-    toast.success('Succes', 'Departement modifie avec succes')
+    toast.success(t('common.success'), t('departments.updatedSuccess'))
     closeEditModal()
     await departmentStore.fetchDepartments(filters.value)
   } catch (error: any) {
-    toast.error('Erreur', error.message || 'Erreur lors de la modification du departement')
+    toast.error(t('common.error'), error.message || t('departments.updateError'))
   } finally {
     isSubmitting.value = false
   }
 }
 
 async function handleDeleteDepartment(dept: Department) {
-  if (!confirm(`Supprimer le departement "${dept.name}" ?`)) return
+  if (!confirm(t('departments.deleteConfirm', { name: dept.name }))) return
   try {
     await departmentStore.deleteDepartment(dept.id)
-    toast.success('Succes', 'Departement supprime avec succes')
+    toast.success(t('common.success'), t('departments.deletedSuccess'))
     await departmentStore.fetchDepartments(filters.value)
   } catch (error: any) {
-    toast.error('Erreur', error.message || 'Erreur lors de la suppression du departement')
+    toast.error(t('common.error'), error.message || t('departments.deleteError'))
   }
 }
 

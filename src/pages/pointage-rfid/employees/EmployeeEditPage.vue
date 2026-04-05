@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useEmployeeStore } from '@/stores/employee.store'
 import { useCompanyStore } from '@/stores/company.store'
 import { useSiteStore } from '@/stores/site.store'
@@ -12,6 +13,7 @@ import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import { ArrowLeftIcon } from '@heroicons/vue/24/outline'
 
+const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const employeeStore = useEmployeeStore()
@@ -47,10 +49,10 @@ const handleSubmit = async () => {
   try {
     const { employeeNumber, ...updateData } = formData.value as any
     await employeeStore.updateEmployee(employeeId, updateData)
-    toast.success('Succes', 'Employe modifie avec succes')
+    toast.success(t('common.success'), t('employees.updatedSuccess'))
     router.push({ name: 'rfid-employee-detail', params: { id: employeeId } })
   } catch (error: any) {
-    toast.error('Erreur', error.message || "Erreur lors de la modification de l'employe")
+    toast.error(t('common.error'), error.message || t('employees.updateError'))
   }
 }
 
@@ -62,21 +64,21 @@ const handleCancel = () => {
 <template>
   <div>
     <div class="mb-6 flex items-center justify-between">
-      <h1 class="text-2xl font-bold text-gray-900">Modifier employe</h1>
+      <h1 class="text-2xl font-bold text-gray-900">{{ t('common.edit') }} {{ t('employees.title').toLowerCase() }}</h1>
       <AppButton variant="secondary" @click="handleCancel">
         <ArrowLeftIcon class="w-4 h-4 mr-1" />
-        Retour
+        {{ t('common.back') }}
       </AppButton>
     </div>
 
     <AppCard>
       <div v-if="isLoadingData" class="py-12 text-center">
         <div class="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary-600 border-r-transparent" />
-        <p class="mt-4 text-sm text-gray-500">Chargement des données...</p>
+        <p class="mt-4 text-sm text-gray-500">{{ t('employees.loadingData') }}</p>
       </div>
 
       <div v-else-if="!employeeStore.currentEmployee" class="py-12 text-center">
-        <p class="text-sm text-gray-500">Employe introuvable</p>
+        <p class="text-sm text-gray-500">{{ t('employees.notFound') }}</p>
       </div>
 
       <div v-else>
@@ -91,10 +93,10 @@ const handleCancel = () => {
 
         <div class="mt-6 flex justify-end space-x-3">
           <AppButton variant="secondary" @click="handleCancel" :disabled="employeeStore.isLoading">
-            Annuler
+            {{ t('common.cancel') }}
           </AppButton>
           <AppButton :loading="employeeStore.isLoading" @click="handleSubmit">
-            Enregistrer les modifications
+            {{ t('common.saveChanges') }}
           </AppButton>
         </div>
       </div>

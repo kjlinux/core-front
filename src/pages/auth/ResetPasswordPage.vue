@@ -1,9 +1,9 @@
 <template>
   <div class="space-y-6">
     <div>
-      <h2 class="text-2xl font-bold text-primary-900">Nouveau mot de passe</h2>
+      <h2 class="text-2xl font-bold text-primary-900">{{ t('auth.newPassword') }}</h2>
       <p class="mt-1 text-sm text-primary-500">
-        Choisissez un nouveau mot de passe securise pour votre compte.
+        {{ t('auth.newPasswordSubtitle') }}
       </p>
     </div>
 
@@ -19,30 +19,30 @@
       class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm"
     >
       {{ successMessage }}
-      <router-link to="/login" class="underline font-medium ml-1">Se connecter</router-link>
+      <router-link to="/login" class="underline font-medium ml-1">{{ t('auth.signIn') }}</router-link>
     </div>
 
     <form v-if="!successMessage && tokenValid" @submit.prevent="handleSubmit" class="space-y-5">
       <AppInput
         v-model="form.password"
         type="password"
-        label="Nouveau mot de passe"
-        placeholder="Minimum 8 caracteres"
+        :label="t('auth.newPasswordLabel')"
+        :placeholder="t('auth.newPasswordPlaceholder')"
         :disabled="isLoading"
       />
       <AppInput
         v-model="form.passwordConfirmation"
         type="password"
-        label="Confirmer le mot de passe"
+        :label="t('auth.confirmPassword')"
         :disabled="isLoading"
       />
 
       <div class="text-xs text-gray-500 space-y-1">
-        <p class="font-medium text-gray-700">Exigences :</p>
-        <p>- Minimum 8 caracteres</p>
-        <p>- Au moins une majuscule</p>
-        <p>- Au moins une minuscule</p>
-        <p>- Au moins un chiffre</p>
+        <p class="font-medium text-gray-700">{{ t('auth.requirements') }}</p>
+        <p>{{ t('auth.req8chars') }}</p>
+        <p>{{ t('auth.reqUppercase') }}</p>
+        <p>{{ t('auth.reqLowercase') }}</p>
+        <p>{{ t('auth.reqDigit') }}</p>
       </div>
 
       <AppButton
@@ -52,7 +52,7 @@
         :loading="isLoading"
         :disabled="isLoading"
       >
-        Reinitialiser le mot de passe
+        {{ t('auth.resetButton') }}
       </AppButton>
     </form>
 
@@ -64,7 +64,7 @@
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
         </svg>
-        Retour a la connexion
+        {{ t('auth.backToLogin') }}
       </router-link>
     </div>
   </div>
@@ -73,10 +73,12 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { authApi } from '@/services/api/auth.api'
 import AppInput from '@/components/ui/AppInput.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 
+const { t } = useI18n()
 const route = useRoute()
 
 const form = ref({ password: '', passwordConfirmation: '' })
@@ -93,30 +95,30 @@ onMounted(() => {
   email.value = (route.query.email as string) ?? ''
   if (!token.value || !email.value) {
     tokenValid.value = false
-    errorMessage.value = 'Lien de reinitialisation invalide ou expire. Veuillez faire une nouvelle demande.'
+    errorMessage.value = t('auth.invalidResetLink')
   }
 })
 
 function validate(): boolean {
   errorMessage.value = ''
   if (form.value.password.length < 8) {
-    errorMessage.value = 'Le mot de passe doit contenir au moins 8 caracteres'
+    errorMessage.value = t('auth.passwordMin8')
     return false
   }
   if (!/[A-Z]/.test(form.value.password)) {
-    errorMessage.value = 'Le mot de passe doit contenir au moins une majuscule'
+    errorMessage.value = t('auth.passwordUppercase')
     return false
   }
   if (!/[a-z]/.test(form.value.password)) {
-    errorMessage.value = 'Le mot de passe doit contenir au moins une minuscule'
+    errorMessage.value = t('auth.passwordLowercase')
     return false
   }
   if (!/\d/.test(form.value.password)) {
-    errorMessage.value = 'Le mot de passe doit contenir au moins un chiffre'
+    errorMessage.value = t('auth.passwordDigit')
     return false
   }
   if (form.value.password !== form.value.passwordConfirmation) {
-    errorMessage.value = 'Les mots de passe ne correspondent pas'
+    errorMessage.value = t('auth.passwordMismatch')
     return false
   }
   return true
@@ -132,9 +134,9 @@ async function handleSubmit() {
       password: form.value.password,
       password_confirmation: form.value.passwordConfirmation,
     })
-    successMessage.value = 'Mot de passe reinitialise avec succes.'
+    successMessage.value = t('auth.passwordResetSuccess')
   } catch (err: any) {
-    errorMessage.value = err?.response?.data?.message ?? 'Lien invalide ou expire. Veuillez faire une nouvelle demande.'
+    errorMessage.value = err?.response?.data?.message ?? t('auth.invalidLinkFallback')
   } finally {
     isLoading.value = false
   }

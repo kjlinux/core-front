@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useFeelbackDeviceStore } from '@/stores/feelback-device.store'
 import { useCompanyStore } from '@/stores/company.store'
 import { useSiteStore } from '@/stores/site.store'
@@ -14,6 +15,7 @@ import AppSelect from '@/components/ui/AppSelect.vue'
 import type { FeelbackDevice } from '@/types'
 import { TrashIcon, WifiIcon, PlusIcon, PencilIcon } from '@heroicons/vue/24/outline'
 
+const { t } = useI18n()
 const deviceStore = useFeelbackDeviceStore()
 const companyStore = useCompanyStore()
 const siteStore = useSiteStore()
@@ -49,36 +51,36 @@ const editForm = ref({
   siteId: '',
 })
 
-const statusOptions = [
-  { label: 'Tous les statuts', value: '' },
-  { label: 'En ligne', value: 'online' },
-  { label: 'Hors ligne', value: 'offline' },
-]
+const statusOptions = computed(() => [
+  { label: t('feelback.allStatuses'), value: '' },
+  { label: t('common.online'), value: 'online' },
+  { label: t('common.offline'), value: 'offline' },
+])
 
 const companyOptions = computed(() => [
-  { label: 'Toutes les entreprises', value: '' },
+  { label: t('feelback.allCompanies'), value: '' },
   ...companyStore.companies.map((c) => ({ label: c.name, value: c.id })),
 ])
 
 const addCompanyOptions = computed(() => [
-  { label: 'Selectionner une entreprise', value: '' },
+  { label: t('feelback.company'), value: '' },
   ...companyStore.companies.map((c) => ({ label: c.name, value: c.id })),
 ])
 
 const addSiteOptions = computed(() => {
-  if (!newDevice.value.companyId) return [{ label: 'Selectionner un site', value: '' }]
+  if (!newDevice.value.companyId) return [{ label: t('feelback.site'), value: '' }]
   const sites = siteStore.sites.filter((s) => s.companyId === newDevice.value.companyId)
   return [
-    { label: 'Selectionner un site', value: '' },
+    { label: t('feelback.site'), value: '' },
     ...sites.map((s) => ({ label: s.name, value: s.id })),
   ]
 })
 
 const editSiteOptions = computed(() => {
-  if (!editForm.value.companyId) return [{ label: 'Selectionner un site', value: '' }]
+  if (!editForm.value.companyId) return [{ label: t('feelback.site'), value: '' }]
   const sites = siteStore.sites.filter((s) => s.companyId === editForm.value.companyId)
   return [
-    { label: 'Selectionner un site', value: '' },
+    { label: t('feelback.site'), value: '' },
     ...sites.map((s) => ({ label: s.name, value: s.id })),
   ]
 })
@@ -126,10 +128,10 @@ async function handleToggleOnline(device: FeelbackDevice) {
 }
 
 async function handleDelete(id: string) {
-  if (!confirm('Confirmer la suppression de ce terminal ?')) return
+  if (!confirm(t('common.confirm_delete'))) return
   try {
     await deviceStore.deleteDevice(id)
-    toast.showSuccess('Terminal supprime')
+    toast.showSuccess(t('common.delete'))
   } catch {
     toast.showError('Erreur lors de la suppression')
   }
@@ -143,7 +145,7 @@ async function handleAddDevice() {
   isSubmitting.value = true
   try {
     await deviceStore.registerDevice(newDevice.value)
-    toast.showSuccess('Terminal Feelback ajoute')
+    toast.showSuccess(t('feelback.addDevice'))
     showAddModal.value = false
     newDevice.value = { serialNumber: '', companyId: '', siteId: '' }
   } catch {
@@ -179,12 +181,12 @@ onMounted(async () => {
   <div class="space-y-6">
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">Terminaux Feelback</h1>
-        <p class="text-sm text-gray-500 mt-1">Gestion des bornes de satisfaction client</p>
+        <h1 class="text-2xl font-bold text-gray-900">{{ t('feelback.devicesTitle') }}</h1>
+        <p class="text-sm text-gray-500 mt-1">{{ t('feelback.devicesSubtitle') }}</p>
       </div>
       <AppButton v-if="canManage" variant="primary" @click="() => { newDevice.serialNumber = generateSerialNumber('FLB'); showAddModal = true }">
         <PlusIcon class="w-4 h-4 mr-1" />
-        Ajouter un terminal
+        {{ t('feelback.addDevice') }}
       </AppButton>
     </div>
 
@@ -199,19 +201,19 @@ onMounted(async () => {
       </div>
 
       <div v-else-if="filteredDevices.length === 0" class="text-center py-12 text-gray-500">
-        Aucun terminal trouve
+        {{ t('feelback.noDevice') }}
       </div>
 
       <div v-else class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
           <thead class="bg-gray-50">
             <tr>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Serie</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Site</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Statut</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Dernier ping</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Entreprise</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('feelback.serial') }}</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('feelback.site') }}</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('feelback.status') }}</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('feelback.lastPing') }}</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('feelback.company') }}</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('common.actions') }}</th>
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-100">
@@ -220,7 +222,7 @@ onMounted(async () => {
               <td class="px-4 py-3 text-sm text-gray-900">{{ device.siteName }}</td>
               <td class="px-4 py-3">
                 <AppBadge :variant="device.isOnline ? 'success' : 'danger'">
-                  {{ device.isOnline ? 'En ligne' : 'Hors ligne' }}
+                  {{ device.isOnline ? t('common.online') : t('common.offline') }}
                 </AppBadge>
               </td>
               <td class="px-4 py-3 text-sm text-gray-600">{{ formatDate(device.lastPingAt) }}</td>
@@ -233,15 +235,15 @@ onMounted(async () => {
                     size="sm"
                     variant="ghost"
                     :class="device.isOnline ? 'text-green-600' : 'text-gray-400'"
-                    :title="device.isOnline ? 'Mettre hors ligne' : 'Mettre en ligne'"
+                    :title="device.isOnline ? t('common.offline') : t('common.online')"
                     @click="handleToggleOnline(device)"
                   >
                     <WifiIcon class="w-4 h-4" />
                   </AppButton>
-                  <AppButton size="sm" variant="ghost" title="Modifier" @click="openEditModal(device)">
+                  <AppButton size="sm" variant="ghost" :title="t('common.edit')" @click="openEditModal(device)">
                     <PencilIcon class="w-4 h-4" />
                   </AppButton>
-                  <AppButton size="sm" variant="ghost" class="text-red-600 hover:text-red-700" @click="handleDelete(device.id)" title="Supprimer">
+                  <AppButton size="sm" variant="ghost" class="text-red-600 hover:text-red-700" @click="handleDelete(device.id)" :title="t('common.delete')">
                     <TrashIcon class="w-4 h-4" />
                   </AppButton>
                 </div>
@@ -252,36 +254,36 @@ onMounted(async () => {
       </div>
     </AppCard>
 
-    <AppModal v-model="showAddModal" title="Ajouter un terminal Feelback" size="md">
+    <AppModal v-model="showAddModal" :title="t('feelback.addDeviceTitle')" size="md">
       <div class="space-y-4">
         <div>
-          <p class="text-sm font-medium text-gray-700 mb-1">Numero de serie</p>
+          <p class="text-sm font-medium text-gray-700 mb-1">{{ t('feelback.serialNumber') }}</p>
           <p class="font-mono text-sm bg-gray-50 border border-gray-200 rounded-md px-3 py-2 text-gray-900">{{ newDevice.serialNumber }}</p>
         </div>
-        <AppSelect v-model="newDevice.companyId" label="Entreprise *" :options="addCompanyOptions" />
-        <AppSelect v-model="newDevice.siteId" label="Site *" :options="addSiteOptions" :disabled="!newDevice.companyId" />
+        <AppSelect v-model="newDevice.companyId" :label="`${t('feelback.company')} *`" :options="addCompanyOptions" />
+        <AppSelect v-model="newDevice.siteId" :label="`${t('feelback.site')} *`" :options="addSiteOptions" :disabled="!newDevice.companyId" />
       </div>
       <template #footer>
         <div class="flex justify-end gap-3">
-          <AppButton variant="secondary" @click="showAddModal = false">Annuler</AppButton>
-          <AppButton variant="primary" :loading="isSubmitting" @click="handleAddDevice">Ajouter</AppButton>
+          <AppButton variant="secondary" @click="showAddModal = false">{{ t('common.cancel') }}</AppButton>
+          <AppButton variant="primary" :loading="isSubmitting" @click="handleAddDevice">{{ t('common.add') }}</AppButton>
         </div>
       </template>
     </AppModal>
 
-    <AppModal v-model="showEditModal" title="Modifier le terminal" size="md">
+    <AppModal v-model="showEditModal" :title="t('feelback.editDevice')" size="md">
       <div class="space-y-4">
         <div>
-          <p class="text-sm text-gray-500">Numero de serie</p>
+          <p class="text-sm text-gray-500">{{ t('feelback.serialNumber') }}</p>
           <p class="font-mono text-sm font-medium">{{ editDevice?.serialNumber }}</p>
         </div>
-        <AppSelect v-model="editForm.companyId" label="Entreprise *" :options="addCompanyOptions" />
-        <AppSelect v-model="editForm.siteId" label="Site *" :options="editSiteOptions" :disabled="!editForm.companyId" />
+        <AppSelect v-model="editForm.companyId" :label="`${t('feelback.company')} *`" :options="addCompanyOptions" />
+        <AppSelect v-model="editForm.siteId" :label="`${t('feelback.site')} *`" :options="editSiteOptions" :disabled="!editForm.companyId" />
       </div>
       <template #footer>
         <div class="flex justify-end gap-3">
-          <AppButton variant="secondary" @click="showEditModal = false">Annuler</AppButton>
-          <AppButton variant="primary" :loading="isSubmitting" @click="handleEditDevice">Enregistrer</AppButton>
+          <AppButton variant="secondary" @click="showEditModal = false">{{ t('common.cancel') }}</AppButton>
+          <AppButton variant="primary" :loading="isSubmitting" @click="handleEditDevice">{{ t('common.save') }}</AppButton>
         </div>
       </template>
     </AppModal>

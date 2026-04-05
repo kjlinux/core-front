@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import QRCode from 'qrcode'
 import { qrcodeApi } from '@/services/api/qrcode.api'
 import { employeeApi } from '@/services/api/employee.api'
@@ -10,6 +11,7 @@ import AppButton from '@/components/ui/AppButton.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 
+const { t } = useI18n()
 const toast = useToast()
 
 const employees = ref<Employee[]>([])
@@ -39,7 +41,7 @@ onUnmounted(() => {
 })
 
 const employeeOptions = computed(() => [
-  { label: 'Selectionner un employe', value: '' },
+  { label: t('qrcode.selectEmployee'), value: '' },
   ...employees.value.map((e) => ({
     label: `${e.firstName} ${e.lastName} (${e.employeeNumber})`,
     value: e.id,
@@ -65,7 +67,7 @@ async function startEnrollment() {
     startPolling(session.value!.sessionToken)
     startCountdown()
   } catch {
-    toast.error('Erreur lors de la creation de la session')
+    toast.error(t('qrcode.sessionCreateError'))
   } finally {
     isLoading.value = false
   }
@@ -78,7 +80,7 @@ function startPolling(token: string) {
       if (status.status === 'completed') {
         sessionStatus.value = 'completed'
         stopPolling()
-        toast.success(`Telephone de ${status.employeeName} enrole avec succes`)
+        toast.success(t('qrcode.enrolledSuccess', { name: status.employeeName }))
         // Rafraîchir la liste
         const response = await employeeApi.getAll({ perPage: 200 })
         employees.value = response.data
@@ -126,11 +128,11 @@ const timeLeftFormatted = computed(() => {
 async function revokeDevice(employeeId: string, name: string) {
   try {
     await qrcodeApi.revokeDevice(employeeId)
-    toast.success(`Telephone de ${name} revoque`)
+    toast.success(t('qrcode.enrolledSuccess', { name }))
     const response = await employeeApi.getAll({ perPage: 200 })
     employees.value = response.data
   } catch {
-    toast.error('Erreur lors de la revocation')
+    toast.error(t('qrcode.revokeDeviceError'))
   }
 }
 </script>
@@ -138,9 +140,9 @@ async function revokeDevice(employeeId: string, name: string) {
 <template>
   <div class="space-y-6">
     <div>
-      <h1 class="text-2xl font-bold text-gray-900">Enrolement des telephones</h1>
+      <h1 class="text-2xl font-bold text-gray-900">{{ t('qrcode.enrollTitle') }}</h1>
       <p class="mt-1 text-sm text-gray-500">
-        Associez le telephone de chaque employe a son compte pour le pointage QR.
+        {{ t('qrcode.enrollDesc') }}
       </p>
     </div>
 
@@ -148,14 +150,14 @@ async function revokeDevice(employeeId: string, name: string) {
       <!-- Formulaire d'enrôlement -->
       <div class="space-y-4">
         <AppCard>
-          <h2 class="mb-4 font-semibold text-gray-900">Enroler un telephone</h2>
+          <h2 class="mb-4 font-semibold text-gray-900">{{ t('qrcode.enrollPhone') }}</h2>
 
           <!-- Étape 1 : sélection employé -->
           <template v-if="!session">
             <div class="space-y-4">
               <AppSelect
                 v-model="selectedEmployeeId"
-                label="Employe"
+                :label="t('qrcode.employeeLabel')"
                 :options="employeeOptions"
               />
               <AppButton
@@ -165,7 +167,7 @@ async function revokeDevice(employeeId: string, name: string) {
                 class="w-full"
                 @click="startEnrollment"
               >
-                Generer le QR d'enrolement
+                {{ t('qrcode.generateEnrollQr') }}
               </AppButton>
             </div>
           </template>
@@ -180,11 +182,11 @@ async function revokeDevice(employeeId: string, name: string) {
                 </svg>
               </div>
               <div class="text-center">
-                <p class="font-semibold text-gray-900">Telephone enrole</p>
+                <p class="font-semibold text-gray-900">{{ t('qrcode.phoneEnrolledTitle') }}</p>
                 <p class="text-sm text-gray-500">{{ session.employeeName }}</p>
               </div>
               <AppButton variant="outline" class="w-full" @click="cancelSession">
-                Enroler un autre employe
+                {{ t('qrcode.enrollAnother') }}
               </AppButton>
             </div>
 
@@ -196,11 +198,11 @@ async function revokeDevice(employeeId: string, name: string) {
                 </svg>
               </div>
               <div class="text-center">
-                <p class="font-semibold text-gray-900">Session expiree</p>
-                <p class="text-sm text-gray-500">Le QR Code n'est plus valide.</p>
+                <p class="font-semibold text-gray-900">{{ t('qrcode.sessionExpired') }}</p>
+                <p class="text-sm text-gray-500">{{ t('qrcode.sessionExpiredMsg') }}</p>
               </div>
               <AppButton variant="primary" class="w-full" @click="cancelSession">
-                Recommencer
+                {{ t('qrcode.restart') }}
               </AppButton>
             </div>
 
@@ -211,7 +213,7 @@ async function revokeDevice(employeeId: string, name: string) {
                   {{ session.employeeName }}
                 </p>
                 <p class="mt-0.5 text-xs text-gray-500">
-                  Demandez a l'employe de scanner ce QR Code avec son telephone
+                  {{ t('qrcode.scanInstructions') }}
                 </p>
               </div>
 
@@ -219,23 +221,23 @@ async function revokeDevice(employeeId: string, name: string) {
                 <img
                   v-if="qrDataUrl"
                   :src="qrDataUrl"
-                  alt="QR Code d'enrolement"
+                  :alt="t('qrcode.enrollQrTitle')"
                   class="rounded-lg border border-gray-200"
                 />
                 <div
                   class="absolute -bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-gray-800 px-3 py-1 text-xs font-medium text-white"
                 >
-                  Expire dans {{ timeLeftFormatted }}
+                  {{ t('qrcode.expiresIn') }} {{ timeLeftFormatted }}
                 </div>
               </div>
 
               <div class="flex items-center gap-2 text-sm text-gray-500">
                 <div class="h-2 w-2 animate-pulse rounded-full bg-primary" />
-                En attente du scan...
+                {{ t('qrcode.waitingScan') }}
               </div>
 
               <AppButton variant="ghost" size="sm" @click="cancelSession">
-                Annuler
+                {{ t('common.cancel') }}
               </AppButton>
             </div>
           </template>
@@ -244,23 +246,23 @@ async function revokeDevice(employeeId: string, name: string) {
         <!-- Stats rapides -->
         <div class="grid grid-cols-2 gap-3">
           <AppCard>
-            <p class="text-sm font-medium text-gray-700">Enroles</p>
+            <p class="text-sm font-medium text-gray-700">{{ t('qrcode.enrolledCount') }}</p>
             <p class="mt-1 text-2xl font-bold text-gray-900">{{ enrolledEmployees.length }}</p>
-            <p class="text-xs text-gray-400">telephones actifs</p>
+            <p class="text-xs text-gray-400">{{ t('qrcode.activePhones') }}</p>
           </AppCard>
           <AppCard>
-            <p class="text-sm font-medium text-gray-700">En attente</p>
+            <p class="text-sm font-medium text-gray-700">{{ t('qrcode.waitingPhones') }}</p>
             <p class="mt-1 text-2xl font-bold text-gray-900">{{ unenrolledEmployees.length }}</p>
-            <p class="text-xs text-gray-400">employes actifs</p>
+            <p class="text-xs text-gray-400">{{ t('qrcode.activeEmployees') }}</p>
           </AppCard>
         </div>
       </div>
 
       <!-- Liste des appareils enrôlés -->
       <AppCard>
-        <h2 class="mb-4 font-semibold text-gray-900">Appareils enroles ({{ enrolledEmployees.length }})</h2>
+        <h2 class="mb-4 font-semibold text-gray-900">{{ t('qrcode.enrolledDevices') }} ({{ enrolledEmployees.length }})</h2>
         <div v-if="enrolledEmployees.length === 0" class="py-8 text-center text-sm text-gray-500">
-          Aucun telephone enrole pour l'instant.
+          {{ t('qrcode.noEnrolledPhones') }}
         </div>
         <div v-else class="divide-y divide-gray-100">
           <div
@@ -274,14 +276,14 @@ async function revokeDevice(employeeId: string, name: string) {
               <p v-if="emp.deviceInfo" class="text-xs text-gray-500">{{ emp.deviceInfo }}</p>
             </div>
             <div class="ml-3 flex items-center gap-2 shrink-0">
-              <AppBadge variant="success">Enrole</AppBadge>
+              <AppBadge variant="success">{{ t('qrcode.enrolled') }}</AppBadge>
               <AppButton
                 size="sm"
                 variant="ghost"
                 class="text-red-600 hover:text-red-700"
                 @click="revokeDevice(emp.id, `${emp.firstName} ${emp.lastName}`)"
               >
-                Revoquer
+                {{ t('qrcode.revoke') }}
               </AppButton>
             </div>
           </div>

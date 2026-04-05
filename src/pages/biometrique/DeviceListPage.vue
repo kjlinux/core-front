@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useBiometricStore } from '@/stores/biometric.store'
 import { useCompanyStore } from '@/stores/company.store'
 import { useSiteStore } from '@/stores/site.store'
@@ -28,6 +29,7 @@ import {
   WifiIcon,
 } from '@heroicons/vue/24/outline'
 
+const { t } = useI18n()
 const router = useRouter()
 const store = useBiometricStore()
 const companyStore = useCompanyStore()
@@ -60,27 +62,27 @@ function generateSerialNumber(prefix: string): string {
   return `${prefix}-${year}-${String(max + 1).padStart(3, '0')}`
 }
 
-const statusOptions = [
-  { label: 'Tous les statuts', value: '' },
-  { label: 'En ligne', value: 'online' },
-  { label: 'Hors ligne', value: 'offline' },
-]
+const statusOptions = computed(() => [
+  { label: t('biometric.allStatuses'), value: '' },
+  { label: t('biometric.online'), value: 'online' },
+  { label: t('biometric.offline'), value: 'offline' },
+])
 
 const companyOptions = computed(() => [
-  { label: 'Toutes les entreprises', value: '' },
+  { label: t('companies.allCompanies'), value: '' },
   ...companyStore.companies.map((c) => ({ label: c.name, value: c.id })),
 ])
 
 const addCompanyOptions = computed(() => [
-  { label: 'Selectionner une entreprise', value: '' },
+  { label: t('biometric.selectSite'), value: '' },
   ...companyStore.companies.map((c) => ({ label: c.name, value: c.id })),
 ])
 
 const addSiteOptions = computed(() => {
-  if (!newDevice.value.companyId) return [{ label: 'Selectionner un site', value: '' }]
+  if (!newDevice.value.companyId) return [{ label: t('biometric.selectSite'), value: '' }]
   const sites = siteStore.sites.filter((s) => s.companyId === newDevice.value.companyId)
   return [
-    { label: 'Selectionner un site', value: '' },
+    { label: t('biometric.selectSite'), value: '' },
     ...sites.map((s) => ({ label: s.name, value: s.id })),
   ]
 })
@@ -104,14 +106,14 @@ const filteredDevices = computed(() => {
 
 const canManage = computed(() => permissions.isAdminOrSuperOrTech.value)
 
-const commandLabels: Record<string, string> = {
-  RESET: 'Reset',
-  REBOOT: 'Reboot',
-  WAKE_UP: 'Reveil',
-  SLEEP: 'Veille',
-  STATUS: 'Statut',
-  ENROLE: 'Enrolement',
-}
+const commandLabels = computed<Record<string, string>>(() => ({
+  RESET: t('biometric.reset'),
+  REBOOT: t('biometric.reboot'),
+  WAKE_UP: t('biometric.wake'),
+  SLEEP: t('biometric.sleep'),
+  STATUS: t('biometric.statusCmd'),
+  ENROLE: t('biometric.enrollment'),
+}))
 
 function formatDate(date: string) {
   return new Date(date).toLocaleString('fr-FR')
@@ -121,9 +123,9 @@ async function handleCommand(deviceId: string, command: DeviceCommand) {
   sendingCommand.value = `${deviceId}-${command}`
   try {
     await mqttApi.sendCommand(deviceId, 'biometric', command)
-    toast.showSuccess(`Commande ${commandLabels[command]} envoyee`)
+    toast.showSuccess(`${t('devices.commandSent', { label: commandLabels.value[command] })}`)
   } catch {
-    toast.showError(`Erreur lors de l'envoi de la commande ${commandLabels[command]}`)
+    toast.showError(`${t('devices.commandError', { label: commandLabels.value[command] })}`)
   } finally {
     sendingCommand.value = null
   }
@@ -134,33 +136,33 @@ async function handleToggleOnline(device: BiometricDevice) {
     await store.setDeviceOnline(device.id, !device.isOnline)
     toast.showSuccess(device.isOnline ? device.name + ' mis hors ligne' : device.name + ' mis en ligne')
   } catch {
-    toast.showError('Erreur lors du changement de statut')
+    toast.showError(t('devices.statusChangeError'))
   }
 }
 
 async function handleSync(device: BiometricDevice) {
   try {
     await store.syncDevice(device.id)
-    toast.showSuccess('Synchronisation lancee pour ' + device.name)
+    toast.showSuccess(t('biometric.syncLaunched') + ' ' + device.name)
   } catch {
-    toast.showError('Erreur lors de la synchronisation')
+    toast.showError(t('devices.statusChangeError'))
   }
 }
 
 async function handleAddDevice() {
   if (!newDevice.value.name || !newDevice.value.companyId || !newDevice.value.siteId) {
-    toast.showError('Veuillez remplir tous les champs obligatoires')
+    toast.showError(t('devices.fillRequired'))
     return
   }
   isSubmitting.value = true
   try {
     await store.createDevice(newDevice.value)
-    toast.showSuccess('Terminal ajoute avec succes')
+    toast.showSuccess(t('devices.addedSuccess'))
     showAddModal.value = false
     newDevice.value = { name: '', serialNumber: '', companyId: '', siteId: '', firmwareVersion: '' }
     await store.fetchDevices()
   } catch {
-    toast.showError("Erreur lors de l'ajout du terminal")
+    toast.showError(t('devices.addError'))
   } finally {
     isSubmitting.value = false
   }
@@ -175,12 +177,12 @@ onMounted(async () => {
   <div class="space-y-6">
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">Terminaux biometriques</h1>
-        <p class="text-sm text-gray-500 mt-1">Gestion des lecteurs d'empreintes digitales</p>
+        <h1 class="text-2xl font-bold text-gray-900">{{ t('biometric.devicesTitle') }}</h1>
+        <p class="text-sm text-gray-500 mt-1">{{ t('biometric.devicesDesc') }}</p>
       </div>
       <AppButton v-if="canManage" variant="primary" @click="() => { newDevice.serialNumber = generateSerialNumber('BIO'); showAddModal = true }">
         <PlusIcon class="w-4 h-4 mr-1" />
-        Ajouter un terminal
+        {{ t('biometric.addDevice') }}
       </AppButton>
     </div>
 
@@ -195,21 +197,21 @@ onMounted(async () => {
       </div>
 
       <div v-else-if="filteredDevices.length === 0" class="text-center py-12 text-gray-500">
-        Aucun terminal trouve
+        {{ t('biometric.notFound') }}
       </div>
 
       <div v-else class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
           <thead class="bg-gray-50">
             <tr>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Numero serie</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nom</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Statut</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Inscrits</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Firmware</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Derniere synchro</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Commandes</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('biometric.serialNumber') }}</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('biometric.name') }}</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('biometric.status') }}</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('biometric.enrolled') }}</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('biometric.firmware') }}</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('biometric.lastSync') }}</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('biometric.commands') }}</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('biometric.actions') }}</th>
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-100">
@@ -223,7 +225,7 @@ onMounted(async () => {
               <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ device.name }}</td>
               <td class="px-4 py-3">
                 <AppBadge :variant="device.isOnline ? 'success' : 'danger'">
-                  {{ device.isOnline ? 'En ligne' : 'Hors ligne' }}
+                  {{ device.isOnline ? t('biometric.online') : t('biometric.offline') }}
                 </AppBadge>
               </td>
               <td class="px-4 py-3 text-sm text-gray-600">{{ device.enrolledCount }}</td>
@@ -235,7 +237,7 @@ onMounted(async () => {
                     size="sm"
                     variant="ghost"
                     :disabled="sendingCommand === `${device.id}-RESET`"
-                    title="Reset"
+                    :title="t('biometric.reset')"
                     @click="handleCommand(device.id, 'RESET')"
                   >
                     <ArrowPathRoundedSquareIcon class="w-4 h-4" />
@@ -244,7 +246,7 @@ onMounted(async () => {
                     size="sm"
                     variant="ghost"
                     :disabled="sendingCommand === `${device.id}-REBOOT`"
-                    title="Reboot"
+                    :title="t('biometric.reboot')"
                     @click="handleCommand(device.id, 'REBOOT')"
                   >
                     <PowerIcon class="w-4 h-4" />
@@ -253,7 +255,7 @@ onMounted(async () => {
                     size="sm"
                     variant="ghost"
                     :disabled="sendingCommand === `${device.id}-WAKE_UP`"
-                    title="Reveil"
+                    :title="t('biometric.wake')"
                     @click="handleCommand(device.id, 'WAKE_UP')"
                   >
                     <SunIcon class="w-4 h-4" />
@@ -262,7 +264,7 @@ onMounted(async () => {
                     size="sm"
                     variant="ghost"
                     :disabled="sendingCommand === `${device.id}-SLEEP`"
-                    title="Veille"
+                    :title="t('biometric.sleep')"
                     @click="handleCommand(device.id, 'SLEEP')"
                   >
                     <MoonIcon class="w-4 h-4" />
@@ -271,7 +273,7 @@ onMounted(async () => {
                     size="sm"
                     variant="ghost"
                     :disabled="sendingCommand === `${device.id}-STATUS`"
-                    title="Statut"
+                    :title="t('biometric.statusCmd')"
                     @click="handleCommand(device.id, 'STATUS')"
                   >
                     <SignalIcon class="w-4 h-4" />
@@ -279,7 +281,7 @@ onMounted(async () => {
                   <AppButton
                     size="sm"
                     variant="ghost"
-                    title="Enrolement"
+                    :title="t('biometric.enrollment')"
                     @click="router.push({ name: 'bio-enrollment-new', query: { deviceId: device.id } })"
                   >
                     <FingerPrintIcon class="w-4 h-4" />
@@ -288,10 +290,10 @@ onMounted(async () => {
               </td>
               <td class="px-4 py-3" @click.stop>
                 <div class="flex gap-2">
-                  <AppButton size="sm" variant="ghost" @click="router.push(`/biometrique/devices/${device.id}`)" title="Voir">
+                  <AppButton size="sm" variant="ghost" @click="router.push(`/biometrique/devices/${device.id}`)" :title="t('biometric.view')">
                     <EyeIcon class="w-4 h-4" />
                   </AppButton>
-                  <AppButton v-if="canManage" size="sm" variant="ghost" @click="handleSync(device)" title="Synchroniser">
+                  <AppButton v-if="canManage" size="sm" variant="ghost" @click="handleSync(device)" :title="t('biometric.sync')">
                     <ArrowPathIcon class="w-4 h-4" />
                   </AppButton>
                   <AppButton
@@ -299,7 +301,7 @@ onMounted(async () => {
                     size="sm"
                     :variant="device.isOnline ? 'ghost' : 'ghost'"
                     :class="device.isOnline ? 'text-green-600' : 'text-gray-400'"
-                    :title="device.isOnline ? 'Mettre hors ligne' : 'Mettre en ligne'"
+                    :title="device.isOnline ? t('biometric.setOffline') : t('biometric.setOnline')"
                     @click="handleToggleOnline(device)"
                   >
                     <WifiIcon class="w-4 h-4" />
@@ -312,21 +314,21 @@ onMounted(async () => {
       </div>
     </AppCard>
 
-    <AppModal v-model="showAddModal" title="Ajouter un terminal biometrique" size="md">
+    <AppModal v-model="showAddModal" :title="t('biometric.addBioTitle')" size="md">
       <div class="space-y-4">
-        <AppInput v-model="newDevice.name" label="Nom du terminal *" placeholder="Ex: Lecteur Entree principale" />
+        <AppInput v-model="newDevice.name" :label="t('biometric.name') + ' *'" placeholder="Ex: Lecteur Entree principale" />
         <div>
-          <p class="text-sm font-medium text-gray-700 mb-1">Numero de serie</p>
+          <p class="text-sm font-medium text-gray-700 mb-1">{{ t('biometric.serialNumber') }}</p>
           <p class="font-mono text-sm bg-gray-50 border border-gray-200 rounded-md px-3 py-2 text-gray-900">{{ newDevice.serialNumber }}</p>
         </div>
-        <AppSelect v-model="newDevice.companyId" label="Entreprise *" :options="addCompanyOptions" />
-        <AppSelect v-model="newDevice.siteId" label="Site *" :options="addSiteOptions" :disabled="!newDevice.companyId" />
-        <AppInput v-model="newDevice.firmwareVersion" label="Version firmware" placeholder="Ex: 2.1.0" />
+        <AppSelect v-model="newDevice.companyId" :label="t('biometric.companyLabel')" :options="addCompanyOptions" />
+        <AppSelect v-model="newDevice.siteId" :label="t('biometric.siteLabel')" :options="addSiteOptions" :disabled="!newDevice.companyId" />
+        <AppInput v-model="newDevice.firmwareVersion" :label="t('biometric.firmware')" placeholder="Ex: 2.1.0" />
       </div>
       <template #footer>
         <div class="flex justify-end gap-3">
-          <AppButton variant="secondary" @click="showAddModal = false">Annuler</AppButton>
-          <AppButton variant="primary" :loading="isSubmitting" @click="handleAddDevice">Ajouter</AppButton>
+          <AppButton variant="secondary" @click="showAddModal = false">{{ t('common.cancel') }}</AppButton>
+          <AppButton variant="primary" :loading="isSubmitting" @click="handleAddDevice">{{ t('biometric.addBtn') }}</AppButton>
         </div>
       </template>
     </AppModal>

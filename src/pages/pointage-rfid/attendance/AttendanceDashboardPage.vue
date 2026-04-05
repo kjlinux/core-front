@@ -1,15 +1,15 @@
 <template>
   <div class="attendance-dashboard-page">
     <div class="page-header">
-      <h1>Pointage - Tableau de bord</h1>
+      <h1>{{ t('attendance.dashboard') }}</h1>
       <div class="header-actions">
         <AppInput
           v-model="selectedDate"
           type="date"
-          placeholder="Sélectionner une date"
+          :placeholder="t('attendance.selectDate')"
         />
         <AppButton @click="refreshData" :loading="loading">
-          Actualiser
+          {{ t('common.refresh') }}
         </AppButton>
       </div>
     </div>
@@ -21,27 +21,27 @@
     <template v-else>
       <div class="stats-grid">
         <StatCard
-          title="Total Employes"
+          :title="t('attendance.totalEmployees')"
           :value="stats.totalEmployees"
           iconBgClass="bg-blue-100"
           iconColorClass="text-blue-600"
         />
         <StatCard
-          title="Presents"
+          :title="t('attendance.present')"
           :value="stats.present"
           :suffix="`(${stats.presentPercentage}%)`"
           iconBgClass="bg-green-100"
           iconColorClass="text-green-600"
         />
         <StatCard
-          title="Absents"
+          :title="t('attendance.absent')"
           :value="stats.absent"
           :suffix="`(${stats.absentPercentage}%)`"
           iconBgClass="bg-red-100"
           iconColorClass="text-red-600"
         />
         <StatCard
-          title="En Retard"
+          :title="t('attendance.late')"
           :value="stats.late"
           :suffix="`(${stats.latePercentage}%)`"
           iconBgClass="bg-orange-100"
@@ -51,18 +51,18 @@
 
       <div class="quick-stats">
         <AppCard>
-          <h3>Statistiques Rapides</h3>
+          <h3>{{ t('attendance.quickStats') }}</h3>
           <div class="quick-stats-grid">
             <div class="stat-item">
-              <span class="stat-label">Heure moyenne d'entree</span>
+              <span class="stat-label">{{ t('attendance.avgEntry') }}</span>
               <span class="stat-value">{{ stats.averageEntryTime }}</span>
             </div>
             <div class="stat-item">
-              <span class="stat-label">Employes en retard</span>
+              <span class="stat-label">{{ t('attendance.lateEmployees') }}</span>
               <span class="stat-value">{{ stats.lateCount }}</span>
             </div>
             <div class="stat-item">
-              <span class="stat-label">Departs anticipes</span>
+              <span class="stat-label">{{ t('attendance.earlyLeaves') }}</span>
               <span class="stat-value">{{ stats.earlyDepartures }}</span>
             </div>
           </div>
@@ -70,7 +70,7 @@
       </div>
 
       <AppCard class="recent-activity">
-        <h3>Activite Recente</h3>
+        <h3>{{ t('attendance.recentActivity') }}</h3>
         <DataTable
           :columns="activityColumns"
           :data="recentActivity"
@@ -85,7 +85,7 @@
           </template>
           <template #pointageType="{ row }">
             <span :class="['status-badge', row.exitTime ? 'status-exit' : 'status-entry']">
-              {{ row.exitTime ? 'Sortie' : 'Entree' }}
+              {{ row.exitTime ? t('attendance.exit') : t('attendance.entry') }}
             </span>
           </template>
           <template #status="{ row }">
@@ -102,6 +102,7 @@
 <script setup lang="ts">
 // @ts-nocheck
 import { ref, onMounted, computed, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useAttendanceStore } from '@/stores/attendance.store';
 import DataTable from '@/components/data-display/DataTable.vue';
 import AppButton from '@/components/ui/AppButton.vue';
@@ -109,6 +110,7 @@ import AppCard from '@/components/ui/AppCard.vue';
 import StatCard from '@/components/data-display/StatCard.vue';
 import AppInput from '@/components/ui/AppInput.vue';
 
+const { t } = useI18n();
 const attendanceStore = useAttendanceStore();
 const loading = ref(false);
 const selectedDate = ref(new Date().toISOString().split('T')[0]);
@@ -122,7 +124,6 @@ const stats = computed(() => {
   const absent = records.filter((r) => r.status === 'absent').length;
   const late = records.filter((r) => r.status === 'late').length;
 
-  // Calcul heure moyenne d'entrée à partir des records
   const entryTimes = records
     .filter((r) => r.entryTime)
     .map((r) => new Date(r.entryTime!).getTime());
@@ -132,7 +133,6 @@ const stats = computed(() => {
     averageEntryTime = new Date(avg).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
   }
 
-  // Départs anticipés = records avec earlyDepartureMinutes > 0
   const earlyDepartures = records.filter((r) => (r.earlyDepartureMinutes ?? 0) > 0).length;
 
   return {
@@ -172,21 +172,20 @@ const activityPagination = computed(() => {
   return { currentPage: activityPage.value, totalPages, perPage: activityPerPage, total };
 });
 
-// Colonnes alignées sur les vrais champs de AttendanceRecord
-const activityColumns = [
-  { key: 'employeeName', label: 'Employé', sortable: true },
-  { key: 'entryTime', label: 'Heure entrée', sortable: true },
-  { key: 'exitTime', label: 'Heure sortie', sortable: true },
-  { key: 'pointageType', label: 'Type', sortable: false },
-  { key: 'status', label: 'Statut', sortable: true },
-];
+const activityColumns = computed(() => [
+  { key: 'employeeName', label: t('attendance.employee'), sortable: true },
+  { key: 'entryTime', label: t('attendance.entryTime'), sortable: true },
+  { key: 'exitTime', label: t('attendance.exitTime'), sortable: true },
+  { key: 'pointageType', label: t('attendance.type'), sortable: false },
+  { key: 'status', label: t('common.status'), sortable: true },
+]);
 
 const getStatusLabel = (status: string): string => {
   const labels: Record<string, string> = {
-    present: 'Présent',
-    late: 'En retard',
-    absent: 'Absent',
-    left_early: 'Départ anticipé',
+    present: t('attendance.status.present'),
+    late: t('attendance.status.late'),
+    absent: t('attendance.status.absent'),
+    left_early: t('attendance.status.left_early'),
   };
   return labels[status] || status;
 };

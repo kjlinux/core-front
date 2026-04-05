@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useQrcodeStore } from '@/stores/qrcode.store'
 import StatCard from '@/components/data-display/StatCard.vue'
 import AppCard from '@/components/ui/AppCard.vue'
@@ -7,6 +8,7 @@ import AppButton from '@/components/ui/AppButton.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import { QrCodeIcon, UsersIcon, ClockIcon, ChartBarIcon, DevicePhoneMobileIcon } from '@heroicons/vue/24/outline'
 
+const { t } = useI18n()
 const store = useQrcodeStore()
 
 onMounted(async () => {
@@ -29,10 +31,10 @@ function getStatusVariant(status: string): 'success' | 'danger' | 'warning' | 'i
 
 function getStatusLabel(status: string) {
   const map: Record<string, string> = {
-    present: 'Present',
-    absent: 'Absent',
-    late: 'En retard',
-    left_early: 'Parti tot',
+    present: t('attendance.status.present'),
+    absent: t('attendance.status.absent'),
+    late: t('attendance.status.late'),
+    left_early: t('attendance.status.left_early'),
   }
   return map[status] || status
 }
@@ -41,22 +43,22 @@ function getStatusLabel(status: string) {
 <template>
   <div class="space-y-6">
     <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold text-gray-900">Tableau de bord QR Code</h1>
+      <h1 class="text-2xl font-bold text-gray-900">{{ t('qrcode.dashboard') }}</h1>
       <AppButton variant="outline" :loading="store.isLoading" @click="store.fetchStats()">
-        Actualiser
+        {{ t('common.refresh') }}
       </AppButton>
     </div>
 
     <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
       <StatCard
-        title="QR Codes de sites"
+        :title="t('qrcode.siteCodes')"
         :value="store.stats?.activeQrCodes ?? 0"
         :icon="QrCodeIcon"
         icon-bg-class="bg-blue-100"
         icon-color-class="text-blue-600"
       />
       <StatCard
-        title="Telephones enroles"
+        :title="t('qrcode.phonesEnrolled')"
         :value="store.stats?.enrolledDevices ?? 0"
         :suffix="store.stats ? ` / ${store.stats.totalEmployees}` : ''"
         :icon="DevicePhoneMobileIcon"
@@ -64,14 +66,14 @@ function getStatusLabel(status: string) {
         icon-color-class="text-green-600"
       />
       <StatCard
-        title="Scans aujourd'hui"
+        :title="t('qrcode.scansToday')"
         :value="store.stats?.scansToday ?? 0"
         :icon="ClockIcon"
         icon-bg-class="bg-orange-100"
         icon-color-class="text-orange-600"
       />
       <StatCard
-        title="Taux de presence"
+        :title="t('qrcode.attendanceRate')"
         :value="store.stats?.attendanceRate ?? 0"
         suffix="%"
         :icon="ChartBarIcon"
@@ -80,10 +82,10 @@ function getStatusLabel(status: string) {
       />
     </div>
 
-    <AppCard title="Activite recente">
-      <div v-if="store.isLoading" class="py-8 text-center text-gray-500">Chargement...</div>
+    <AppCard :title="t('qrcode.recentActivity')">
+      <div v-if="store.isLoading" class="py-8 text-center text-gray-500">{{ t('common.loading') }}</div>
       <div v-else-if="store.attendanceRecords.length === 0" class="py-8 text-center text-gray-500">
-        Aucune activite recente
+        {{ t('qrcode.noRecentActivity') }}
       </div>
       <div v-else class="divide-y divide-gray-100">
         <div
@@ -100,7 +102,7 @@ function getStatusLabel(status: string) {
               {{ record.entryTime ?? '-' }} → {{ record.exitTime ?? '-' }}
             </span>
             <AppBadge v-if="record.gpsVerified !== undefined" :variant="record.gpsVerified ? 'success' : 'warning'" class="text-xs">
-              {{ record.gpsVerified ? 'GPS ok' : 'GPS non verifie' }}
+              {{ record.gpsVerified ? t('qrcode.gpsOk') : t('qrcode.gpsNotVerified') }}
             </AppBadge>
             <AppBadge :variant="getStatusVariant(record.status)">
               {{ getStatusLabel(record.status) }}

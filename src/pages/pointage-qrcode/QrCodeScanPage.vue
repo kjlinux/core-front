@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useDeviceFingerprint } from '@/composables/useDeviceFingerprint'
 import { qrcodeApi } from '@/services/api/qrcode.api'
 import type { QrAttendanceRecord, DeviceIdentifyResponse } from '@/types'
@@ -8,6 +9,7 @@ import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 
+const { t } = useI18n()
 const route = useRoute()
 const { getOrCreate, getDeviceInfo } = useDeviceFingerprint()
 
@@ -26,17 +28,21 @@ const gpsStatus = ref<'idle' | 'loading' | 'ok' | 'denied' | 'unavailable'>('idl
 const coords = ref<{ lat: number; lng: number } | null>(null)
 const enrolledName = ref('')
 
-const statusLabel: Record<string, string> = {
-  present: 'Present',
-  late: 'En retard',
-  left_early: 'Parti tot',
-  absent: 'Absent',
-}
 const statusVariant: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'neutral'> = {
   present: 'success',
   late: 'warning',
   left_early: 'info',
   absent: 'danger',
+}
+
+function getStatusLabel(status: string) {
+  const map: Record<string, string> = {
+    present: t('attendance.status.present'),
+    late: t('attendance.status.late'),
+    left_early: t('attendance.status.left_early'),
+    absent: t('attendance.status.absent'),
+  }
+  return map[status] ?? status
 }
 
 onMounted(async () => {
@@ -51,7 +57,7 @@ onMounted(async () => {
       return
     } catch (e: unknown) {
       const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message
-      errorMsg.value = msg || 'Erreur lors de l\'enrolement'
+      errorMsg.value = msg || t('qrcode.enrollError')
       step.value = 'enroll-error'
       return
     }
@@ -90,7 +96,7 @@ async function requestGps(): Promise<{ lat: number; lng: number } | null> {
 
 async function doScan() {
   if (!token.value.trim()) {
-    errorMsg.value = 'Token manquant. Scannez le QR Code du site.'
+    errorMsg.value = t('qrcode.tokenMissing')
     step.value = 'error'
     return
   }
@@ -110,7 +116,7 @@ async function doScan() {
     step.value = 'result'
   } catch (e: unknown) {
     const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message
-    errorMsg.value = msg || 'Erreur lors du pointage'
+    errorMsg.value = msg || t('qrcode.attendanceError')
     step.value = 'error'
   }
 }
@@ -128,15 +134,15 @@ function reset() {
     <div class="w-full max-w-sm space-y-4">
       <!-- En-tête -->
       <div class="text-center">
-        <h1 class="text-2xl font-bold text-gray-900">Pointage QR Code</h1>
-        <p class="mt-1 text-sm text-gray-500">Systeme de presence en ligne</p>
+        <h1 class="text-2xl font-bold text-gray-900">{{ t('qrcode.scanTitle') }}</h1>
+        <p class="mt-1 text-sm text-gray-500">{{ t('qrcode.scanSystem') }}</p>
       </div>
 
       <!-- Étape : enrôlement en cours (soumission auto) -->
       <AppCard v-if="step === 'enrolling'" class="text-center">
         <div class="flex flex-col items-center gap-3 py-6">
           <div class="h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-gray-700" />
-          <p class="text-sm font-medium text-gray-700">Enrolement en cours...</p>
+          <p class="text-sm font-medium text-gray-700">{{ t('qrcode.enrolling') }}</p>
         </div>
       </AppCard>
 
@@ -149,9 +155,9 @@ function reset() {
             </svg>
           </div>
           <div>
-            <h2 class="text-lg font-bold text-green-900">Telephone enrole</h2>
+            <h2 class="text-lg font-bold text-green-900">{{ t('qrcode.phoneEnrolled') }}</h2>
             <p class="mt-1 text-sm text-green-700">
-              Votre telephone est maintenant associe a votre compte. Vous pouvez pointer via QR Code.
+              {{ t('qrcode.phoneEnrolledDesc') }}
             </p>
           </div>
         </div>
@@ -166,7 +172,7 @@ function reset() {
             </svg>
           </div>
           <div>
-            <h2 class="text-lg font-bold text-red-900">Enrolement impossible</h2>
+            <h2 class="text-lg font-bold text-red-900">{{ t('qrcode.enrollFailed') }}</h2>
             <p class="mt-1 text-sm text-red-700">{{ errorMsg }}</p>
           </div>
         </div>
@@ -174,17 +180,17 @@ function reset() {
 
       <!-- Étape : appareil non enrôlé -->
       <AppCard v-else-if="step === 'identify'" class="border-yellow-200 bg-yellow-50">
-        <h2 class="mb-2 font-semibold text-yellow-900">Telephone non reconnu</h2>
+        <h2 class="mb-2 font-semibold text-yellow-900">{{ t('qrcode.unknownPhone') }}</h2>
         <p class="mb-4 text-sm text-yellow-800">
-          Cet appareil n'est pas encore enrole. Donnez l'identifiant ci-dessous a votre responsable pour qu'il enrole votre telephone.
+          {{ t('qrcode.notEnrolledMsg') }}
         </p>
         <div class="rounded-lg bg-white p-3">
-          <p class="mb-1 text-xs text-gray-500">Votre identifiant appareil :</p>
+          <p class="mb-1 text-xs text-gray-500">{{ t('qrcode.deviceId') }}</p>
           <p class="font-mono text-sm font-bold text-gray-900 break-all">{{ fingerprint }}</p>
           <p class="mt-1 text-xs text-gray-400">{{ deviceInfo }}</p>
         </div>
         <AppButton variant="ghost" size="sm" class="mt-3 w-full" @click="step = 'ready'">
-          Continuer quand meme
+          {{ t('qrcode.continueAnyway') }}
         </AppButton>
       </AppCard>
 
@@ -192,33 +198,32 @@ function reset() {
       <AppCard v-else-if="step === 'ready'">
         <div v-if="identity?.enrolled" class="mb-4 rounded-lg bg-green-50 p-3">
           <p class="text-sm font-medium text-green-800">
-            Bonjour, <strong>{{ identity.employeeName }}</strong>
+            {{ t('qrcode.hello') }} <strong>{{ identity.employeeName }}</strong>
           </p>
-          <p class="text-xs text-green-600">Appareil reconnu</p>
+          <p class="text-xs text-green-600">{{ t('qrcode.deviceRecognized') }}</p>
         </div>
 
         <div class="space-y-3">
           <div v-if="token" class="rounded-lg bg-gray-50 p-3">
-            <p class="text-xs text-gray-500">Site detecte depuis le QR :</p>
+            <p class="text-xs text-gray-500">{{ t('qrcode.siteDetected') }}</p>
             <p class="font-mono text-xs text-gray-700 break-all">{{ token }}</p>
           </div>
           <div v-else class="space-y-2">
-            <label class="block text-sm font-medium text-gray-700">Token QR Code</label>
+            <label class="block text-sm font-medium text-gray-700">{{ t('qrcode.scanToken') }}</label>
             <input
               v-model="token"
               type="text"
-              placeholder="Entrez le token manuellement..."
+              :placeholder="t('qrcode.enterTokenManually')"
               class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
           <p class="text-xs text-gray-500">
-            Votre position GPS sera verifiee au moment du pointage.
-            Autorisez la localisation quand le navigateur vous le demande.
+            {{ t('qrcode.gpsNote') }}
           </p>
 
           <AppButton variant="primary" class="w-full" @click="doScan">
-            Pointer ma presence
+            {{ t('qrcode.checkIn') }}
           </AppButton>
         </div>
       </AppCard>
@@ -228,8 +233,8 @@ function reset() {
         <div class="flex flex-col items-center gap-3 py-4">
           <div class="h-10 w-10 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600" />
           <p class="text-sm font-medium text-gray-700">
-            <template v-if="gpsStatus === 'loading'">Verification de votre position GPS...</template>
-            <template v-else>Enregistrement du pointage...</template>
+            <template v-if="gpsStatus === 'loading'">{{ t('qrcode.checkingGps') }}</template>
+            <template v-else>{{ t('qrcode.savingAttendance') }}</template>
           </p>
         </div>
       </AppCard>
@@ -242,39 +247,39 @@ function reset() {
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h2 class="text-lg font-bold text-green-900">Pointage enregistre</h2>
+          <h2 class="text-lg font-bold text-green-900">{{ t('qrcode.attendanceRecorded') }}</h2>
           <p v-if="result.employeeName" class="mt-1 text-sm text-green-700">{{ result.employeeName }}</p>
         </div>
 
         <div class="mt-4 space-y-2 rounded-lg bg-white p-3">
           <div class="flex justify-between text-sm">
-            <span class="text-gray-500">Date</span>
+            <span class="text-gray-500">{{ t('common.date') }}</span>
             <span class="font-medium">{{ result.date }}</span>
           </div>
           <div class="flex justify-between text-sm">
-            <span class="text-gray-500">Entree</span>
+            <span class="text-gray-500">{{ t('qrcode.entryLabel') }}</span>
             <span class="font-medium">{{ result.entryTime ?? '-' }}</span>
           </div>
           <div v-if="result.exitTime" class="flex justify-between text-sm">
-            <span class="text-gray-500">Sortie</span>
+            <span class="text-gray-500">{{ t('qrcode.exitLabel') }}</span>
             <span class="font-medium">{{ result.exitTime }}</span>
           </div>
           <div class="flex justify-between text-sm">
-            <span class="text-gray-500">Statut</span>
+            <span class="text-gray-500">{{ t('common.status') }}</span>
             <AppBadge :variant="statusVariant[result.status] ?? 'neutral'">
-              {{ statusLabel[result.status] ?? result.status }}
+              {{ getStatusLabel(result.status) }}
             </AppBadge>
           </div>
           <div class="flex justify-between text-sm">
-            <span class="text-gray-500">GPS verifie</span>
+            <span class="text-gray-500">{{ t('qrcode.gpsVerified') }}</span>
             <AppBadge :variant="result.gpsVerified ? 'success' : 'warning'">
-              {{ result.gpsVerified ? `Oui (${result.distanceMeters}m)` : 'Non verifie' }}
+              {{ result.gpsVerified ? `${t('common.yes')} (${result.distanceMeters}m)` : t('qrcode.gpsNotVerified') }}
             </AppBadge>
           </div>
         </div>
 
         <AppButton variant="ghost" class="mt-4 w-full" @click="reset">
-          Nouveau pointage
+          {{ t('qrcode.newCheckIn') }}
         </AppButton>
       </AppCard>
 
@@ -286,11 +291,11 @@ function reset() {
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </div>
-          <h2 class="text-lg font-bold text-red-900">Pointage refuse</h2>
+          <h2 class="text-lg font-bold text-red-900">{{ t('qrcode.attendanceRefused') }}</h2>
           <p class="mt-2 text-sm text-red-700">{{ errorMsg }}</p>
         </div>
         <AppButton variant="ghost" class="mt-4 w-full" @click="reset">
-          Reessayer
+          {{ t('qrcode.retry') }}
         </AppButton>
       </AppCard>
 

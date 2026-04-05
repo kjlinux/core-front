@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { publicReviewApi } from '@/services/api/public-review.api'
 import StarRating from '@/components/review/StarRating.vue'
 import type { PublicReviewConfig, ReviewAnswer } from '@/types/review'
 
+const { t } = useI18n()
 const route = useRoute()
 const token = route.params.token as string
 
@@ -37,7 +39,7 @@ async function submit() {
 
   const unanswered = config.value.questions.filter((q) => !answers.value[q.id])
   if (unanswered.length > 0) {
-    error.value = 'Veuillez noter toutes les questions avant de soumettre.'
+    error.value = t('publicReview.rateAll')
     return
   }
 
@@ -58,7 +60,7 @@ async function submit() {
 
     submitted.value = true
   } catch {
-    error.value = 'Une erreur est survenue. Veuillez réessayer.'
+    error.value = t('publicReview.submitError')
   } finally {
     isSubmitting.value = false
   }
@@ -83,7 +85,7 @@ async function submit() {
             </svg>
           </div>
           <h1 class="text-2xl font-bold text-white tracking-tight">{{ config.companyName }}</h1>
-          <p class="mt-2 text-slate-300 text-sm font-medium">Partagez votre expérience avec nous</p>
+          <p class="mt-2 text-slate-300 text-sm font-medium">{{ t('publicReview.title') }}</p>
         </div>
         <div v-else class="py-2">
           <div class="h-14 w-14 bg-white/10 rounded-2xl mx-auto mb-4 animate-pulse" />
@@ -113,8 +115,8 @@ async function submit() {
               d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
-        <h2 class="text-base font-semibold text-gray-800 mb-1">Lien invalide</h2>
-        <p class="text-sm text-gray-400">Ce lien d'avis n'est plus valide ou a expiré.</p>
+        <h2 class="text-base font-semibold text-gray-800 mb-1">{{ t('publicReview.invalidLink') }}</h2>
+        <p class="text-sm text-gray-400">{{ t('publicReview.invalidLinkMsg') }}</p>
       </div>
 
       <!-- Success -->
@@ -124,9 +126,9 @@ async function submit() {
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
           </svg>
         </div>
-        <h2 class="text-xl font-bold text-gray-900 mb-2">Merci beaucoup !</h2>
+        <h2 class="text-xl font-bold text-gray-900 mb-2">{{ t('publicReview.thankYou') }}</h2>
         <p class="text-sm text-gray-500 leading-relaxed">
-          Votre avis a bien été enregistré.<br/>Il nous aide à améliorer nos services chaque jour.
+          {{ t('publicReview.thankYouMsg') }}
         </p>
       </div>
 
@@ -135,7 +137,7 @@ async function submit() {
 
         <!-- Intro text -->
         <p class="text-xs text-center text-slate-500 font-medium uppercase tracking-wider px-2">
-          Quelques questions — moins d'une minute
+          {{ t('publicReview.subtitle') }}
         </p>
 
         <!-- Questions -->
@@ -163,14 +165,14 @@ async function submit() {
                 d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
             </svg>
             <label class="text-sm font-medium text-gray-800">
-              Suggestions &amp; recommandations
-              <span class="font-normal text-gray-400 ml-1">· optionnel</span>
+              {{ t('publicReview.suggestions') }}
+              <span class="font-normal text-gray-400 ml-1">{{ t('publicReview.optional') }}</span>
             </label>
           </div>
           <textarea
             v-model="recommendations"
             rows="3"
-            placeholder="Dites-nous ce qu'on pourrait améliorer..."
+            :placeholder="t('publicReview.suggestionsPlaceholder')"
             class="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:border-transparent transition-all"
             style="--tw-ring-color: #1e293b;"
           />
@@ -184,8 +186,8 @@ async function submit() {
                 d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
             </svg>
             <label class="text-sm font-medium text-gray-800">
-              Comment nous avez-vous connus ?
-              <span class="font-normal text-gray-400 ml-1">· optionnel</span>
+              {{ t('publicReview.discoveryChannel') }}
+              <span class="font-normal text-gray-400 ml-1">{{ t('publicReview.optional') }}</span>
             </label>
           </div>
           <div class="relative">
@@ -194,7 +196,7 @@ async function submit() {
               class="w-full appearance-none rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 pr-10 text-sm focus:outline-none focus:ring-2 focus:border-transparent transition-all text-gray-700"
               style="--tw-ring-color: #1e293b;"
             >
-              <option value="">Sélectionner...</option>
+              <option value="">{{ t('publicReview.discoveryPlaceholder') }}</option>
               <option v-for="channel in config.channels" :key="channel.id" :value="channel.name">
                 {{ channel.name }}
               </option>
@@ -225,13 +227,13 @@ async function submit() {
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
             </svg>
-            Envoi en cours...
+            {{ t('common.loading') }}
           </span>
-          <span v-else>Envoyer mon avis</span>
+          <span v-else>{{ t('publicReview.submit') }}</span>
         </button>
 
         <p class="text-center text-xs text-slate-400 pb-2">
-          Vos réponses sont anonymes et sécurisées.
+          {{ t('publicReview.anonymous') }}
         </p>
       </form>
     </main>

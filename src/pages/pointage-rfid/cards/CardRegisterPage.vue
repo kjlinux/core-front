@@ -3,14 +3,14 @@
     <div class="mb-6">
       <AppButton variant="outline" size="sm" @click="handleCancel">
         <ArrowLeftIcon class="h-4 w-4 mr-2 inline" />
-        Retour
+        {{ t('common.back') }}
       </AppButton>
     </div>
 
     <AppCard>
       <div class="mb-6">
-        <h1 class="text-2xl font-bold text-gray-900">Enregistrer une carte RFID</h1>
-        <p class="mt-1 text-sm text-gray-500">Enregistrer une nouvelle carte dans le systeme</p>
+        <h1 class="text-2xl font-bold text-gray-900">{{ t('cards.registerTitle') }}</h1>
+        <p class="mt-1 text-sm text-gray-500">{{ t('cards.registerSubtitle') }}</p>
       </div>
 
       <CardForm
@@ -30,6 +30,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import CardForm from '@/components/forms/CardForm.vue'
@@ -42,6 +43,7 @@ import { getEcho } from '@/services/echo'
 import { ArrowLeftIcon } from '@heroicons/vue/24/outline'
 import type { RfidCard } from '@/types'
 
+const { t } = useI18n()
 const router = useRouter()
 const cardStore = useCardStore()
 const companyStore = useCompanyStore()
@@ -61,9 +63,9 @@ async function handleToggleDeviceOnline(deviceId: string) {
   togglingDeviceId.value = deviceId
   try {
     await deviceStore.updateDevice(deviceId, { isOnline: true })
-    toast.showSuccess(`${device.name} mis en ligne`)
+    toast.showSuccess(t('cards.onlineSuccess', { name: device.name }))
   } catch {
-    toast.showError('Erreur lors de la mise en ligne du capteur')
+    toast.showError(t('cards.onlineError'))
   } finally {
     togglingDeviceId.value = null
   }
@@ -98,7 +100,7 @@ async function handleScanRequest(deviceId: string) {
   try {
     await mqttApi.sendCommand(deviceId, 'rfid', 'SCAN')
   } catch {
-    toast.showError("Erreur lors de l'envoi de la commande au capteur")
+    toast.showError(t('cards.scanError'))
     scanStatus.value = 'idle'
     return
   }
@@ -111,7 +113,7 @@ async function handleScanRequest(deviceId: string) {
         formData.value = { ...formData.value, uid: data.uid }
         scanStatus.value = 'received'
         stopScanListener()
-        // Remettre à idle après 2s pour permettre une correction manuelle
+        // Remettre a idle apres 2s pour permettre une correction manuelle
         setTimeout(() => { scanStatus.value = 'idle' }, 2000)
       })
   }
@@ -120,7 +122,7 @@ async function handleScanRequest(deviceId: string) {
   scanTimeoutId = setTimeout(() => {
     if (scanStatus.value === 'waiting') {
       stopScanListener()
-      toast.showWarning('Aucun scan recu. Veuillez reessayer ou saisir le UID manuellement.')
+      toast.showWarning(t('cards.noScanReceived'))
     }
   }, 30000)
 }
@@ -129,10 +131,10 @@ const handleSubmit = async () => {
   loading.value = true
   try {
     await cardStore.registerCard(formData.value)
-    toast.success('Succes', 'Carte enregistree avec succes')
+    toast.success(t('common.success'), t('cards.registeredSuccess'))
     router.push('/pointage-rfid/cards')
   } catch (error: any) {
-    toast.error('Erreur', error.message || "Erreur lors de l'enregistrement de la carte")
+    toast.error(t('common.error'), error.message || t('cards.registerError'))
   } finally {
     loading.value = false
   }

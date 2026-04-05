@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useFeelbackStore } from '@/stores/feelback.store'
 import { useCompanyStore } from '@/stores/company.store'
 import { useSiteStore } from '@/stores/site.store'
@@ -12,6 +13,7 @@ import PieChart from '@/components/charts/PieChart.vue'
 import BarChart from '@/components/charts/BarChart.vue'
 import LineChart from '@/components/charts/LineChart.vue'
 
+const { t } = useI18n()
 const store = useFeelbackStore()
 const companyStore = useCompanyStore()
 const siteStore = useSiteStore()
@@ -22,15 +24,15 @@ const selectedSite = ref('')
 const customStart = ref('')
 const customEnd = ref('')
 
-const periodOptions = [
-  { label: "Aujourd'hui", value: 'today' },
-  { label: 'Cette semaine', value: 'week' },
-  { label: 'Ce mois', value: 'month' },
-  { label: 'Personnalise', value: 'custom' },
-]
+const periodOptions = computed(() => [
+  { label: t('feelback.today'), value: 'today' },
+  { label: t('feelback.thisWeek'), value: 'week' },
+  { label: t('feelback.thisMonth'), value: 'month' },
+  { label: t('feelback.custom'), value: 'custom' },
+])
 
 const companyOptions = computed(() => [
-  { label: 'Toutes les entreprises', value: '' },
+  { label: t('feelback.allCompanies'), value: '' },
   ...companyStore.companies.map((c) => ({ label: c.name, value: c.id })),
 ])
 
@@ -39,7 +41,7 @@ const siteOptions = computed(() => {
     ? siteStore.sites.filter((s) => s.companyId === selectedCompany.value)
     : siteStore.sites
   return [
-    { label: 'Tous les sites', value: '' },
+    { label: t('feelback.allSites'), value: '' },
     ...sites.map((s) => ({ label: s.name, value: s.id })),
   ]
 })
@@ -89,9 +91,9 @@ const stats = computed(() => store.stats)
 const pieData = computed(() => {
   if (!stats.value) return []
   return [
-    { name: 'Bon', value: stats.value.bon },
-    { name: 'Neutre', value: stats.value.neutre },
-    { name: 'Mauvais', value: stats.value.mauvais },
+    { name: t('feelback.good'), value: stats.value.bon },
+    { name: t('feelback.neutral'), value: stats.value.neutre },
+    { name: t('feelback.bad'), value: stats.value.mauvais },
   ]
 })
 
@@ -105,9 +107,9 @@ const siteBarData = computed(() =>
 const lineData = computed(() => {
   if (!stats.value) return []
   return [
-    { name: 'Bon', value: stats.value.bon },
-    { name: 'Neutre', value: stats.value.neutre },
-    { name: 'Mauvais', value: stats.value.mauvais },
+    { name: t('feelback.good'), value: stats.value.bon },
+    { name: t('feelback.neutral'), value: stats.value.neutre },
+    { name: t('feelback.bad'), value: stats.value.mauvais },
   ]
 })
 
@@ -127,7 +129,7 @@ onMounted(async () => {
 <template>
   <div class="space-y-6">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-      <h1 class="text-2xl font-bold text-gray-900">Analyse de satisfaction</h1>
+      <h1 class="text-2xl font-bold text-gray-900">{{ t('feelback.analyticsTitle') }}</h1>
       <div class="flex flex-wrap gap-3">
         <AppSelect v-model="selectedPeriod" :options="periodOptions" class="w-40" />
         <AppSelect v-model="selectedCompany" :options="companyOptions" class="w-48" />
@@ -140,44 +142,44 @@ onMounted(async () => {
     </div>
 
     <div class="grid grid-cols-2 lg:grid-cols-3 gap-4">
-      <StatCard title="Total reponses" :value="stats?.totalResponses ?? 0" />
-      <StatCard title="Bon" :value="stats?.bon ?? 0" />
-      <StatCard title="Neutre" :value="stats?.neutre ?? 0" />
-      <StatCard title="Mauvais" :value="stats?.mauvais ?? 0" />
-      <StatCard title="Taux de satisfaction" :value="`${stats?.satisfactionRate ?? 0}%`" />
-      <StatCard title="vs periode precedente" value="+3.2%" />
+      <StatCard :title="t('feelback.totalResponses')" :value="stats?.totalResponses ?? 0" />
+      <StatCard :title="t('feelback.good')" :value="stats?.bon ?? 0" />
+      <StatCard :title="t('feelback.neutral')" :value="stats?.neutre ?? 0" />
+      <StatCard :title="t('feelback.bad')" :value="stats?.mauvais ?? 0" />
+      <StatCard :title="t('feelback.satisfactionRate')" :value="`${stats?.satisfactionRate ?? 0}%`" />
+      <StatCard :title="t('feelback.vsLastPeriod')" value="+3.2%" />
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <AppCard title="Repartition globale">
-        <PieChart :data="pieData" title="Bon / Neutre / Mauvais" />
+      <AppCard :title="t('feelback.globalDistrib')">
+        <PieChart :data="pieData" :title="t('feelback.goodNeutralBad')" />
       </AppCard>
-      <AppCard v-if="hasSiteData" title="Par site">
-        <BarChart :data="siteBarData" title="Taux de satisfaction par site (%)" />
+      <AppCard v-if="hasSiteData" :title="t('feelback.bySite')">
+        <BarChart :data="siteBarData" :title="t('feelback.satisfactionBySite')" />
       </AppCard>
     </div>
 
-    <AppCard v-if="hasLineData" title="Repartition par niveau">
-      <LineChart :data="lineData" title="Bon / Neutre / Mauvais" />
+    <AppCard v-if="hasLineData" :title="t('feelback.byLevel')">
+      <LineChart :data="lineData" :title="t('feelback.goodNeutralBad')" />
     </AppCard>
 
-    <AppCard title="Repartition">
+    <AppCard :title="t('feelback.distribution')">
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 py-2">
         <div class="text-center">
           <p class="text-2xl font-bold text-gray-900">{{ stats?.totalResponses ?? 0 }}</p>
-          <p class="text-xs text-gray-500 mt-0.5">Total reponses</p>
+          <p class="text-xs text-gray-500 mt-0.5">{{ t('feelback.totalResponses') }}</p>
         </div>
         <div class="text-center">
           <p class="text-2xl font-bold text-green-600">{{ stats?.bon ?? 0 }}</p>
-          <p class="text-xs text-gray-500 mt-0.5">Bon</p>
+          <p class="text-xs text-gray-500 mt-0.5">{{ t('feelback.good') }}</p>
         </div>
         <div class="text-center">
           <p class="text-2xl font-bold text-amber-500">{{ stats?.neutre ?? 0 }}</p>
-          <p class="text-xs text-gray-500 mt-0.5">Neutre</p>
+          <p class="text-xs text-gray-500 mt-0.5">{{ t('feelback.neutral') }}</p>
         </div>
         <div class="text-center">
           <p class="text-2xl font-bold text-red-600">{{ stats?.mauvais ?? 0 }}</p>
-          <p class="text-xs text-gray-500 mt-0.5">Mauvais</p>
+          <p class="text-xs text-gray-500 mt-0.5">{{ t('feelback.bad') }}</p>
         </div>
       </div>
     </AppCard>

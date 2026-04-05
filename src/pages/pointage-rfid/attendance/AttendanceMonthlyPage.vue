@@ -1,20 +1,20 @@
 <template>
   <div class="attendance-monthly-page">
     <div class="page-header">
-      <h1>Pointage mensuel</h1>
+      <h1>{{ t('attendance.monthlyTitle') }}</h1>
       <div class="header-actions">
         <AppSelect
           v-model="selectedMonth"
           :options="monthOptions"
-          placeholder="Sélectionner le mois"
+          :placeholder="t('attendance.selectMonth')"
         />
         <AppSelect
           v-model="selectedYear"
           :options="yearOptions"
-          placeholder="Sélectionner l'année"
+          :placeholder="t('attendance.selectYear')"
         />
         <AppButton @click="handleExport">
-          Exporter
+          {{ t('attendance.exportBtn') }}
         </AppButton>
       </div>
     </div>
@@ -23,15 +23,15 @@
       <AppCard>
         <div class="summary-grid">
           <div class="summary-item">
-            <span class="summary-label">Taux de présence moyen</span>
+            <span class="summary-label">{{ t('attendance.avgRate') }}</span>
             <span class="summary-value text-blue">{{ summary.averageAttendanceRate }}%</span>
           </div>
           <div class="summary-item">
-            <span class="summary-label">Total absences</span>
+            <span class="summary-label">{{ t('attendance.totalAbsencesStat') }}</span>
             <span class="summary-value text-red">{{ summary.totalAbsences }}</span>
           </div>
           <div class="summary-item">
-            <span class="summary-label">Total minutes de retard</span>
+            <span class="summary-label">{{ t('attendance.totalLateMinutes') }}</span>
             <span class="summary-value text-orange">{{ summary.totalLateMinutes }}</span>
           </div>
         </div>
@@ -43,12 +43,12 @@
         <AppSelect
           v-model="filters.departmentId"
           :options="departmentOptions"
-          placeholder="Tous les départements"
+          :placeholder="t('attendance.allDepts')"
         />
         <AppInput
           v-model="filters.employeeName"
           type="text"
-          placeholder="Rechercher un employé"
+          :placeholder="t('attendance.searchEmployee')"
           @input="handleSearchDebounce"
         />
       </div>
@@ -82,6 +82,7 @@
 <script setup lang="ts">
 // @ts-nocheck
 import { ref, onMounted, computed, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useAttendanceStore } from '@/stores/attendance.store';
 import DataTable from '@/components/data-display/DataTable.vue';
 import AppButton from '@/components/ui/AppButton.vue';
@@ -91,6 +92,7 @@ import AppInput from '@/components/ui/AppInput.vue';
 import { useToast } from '@/composables/useToast';
 import { departmentApi } from '@/services/api/department.api';
 
+const { t } = useI18n();
 const attendanceStore = useAttendanceStore();
 const { info } = useToast();
 
@@ -108,20 +110,20 @@ const filters = ref({
 
 let searchTimeout: number | null = null;
 
-const monthOptions = [
-  { label: 'Janvier', value: '1' },
-  { label: 'Février', value: '2' },
-  { label: 'Mars', value: '3' },
-  { label: 'Avril', value: '4' },
-  { label: 'Mai', value: '5' },
-  { label: 'Juin', value: '6' },
-  { label: 'Juillet', value: '7' },
-  { label: 'Août', value: '8' },
-  { label: 'Septembre', value: '9' },
-  { label: 'Octobre', value: '10' },
-  { label: 'Novembre', value: '11' },
-  { label: 'Décembre', value: '12' },
-];
+const monthOptions = computed(() => [
+  { label: t('attendance.months.jan'), value: '1' },
+  { label: t('attendance.months.feb'), value: '2' },
+  { label: t('attendance.months.mar'), value: '3' },
+  { label: t('attendance.months.apr'), value: '4' },
+  { label: t('attendance.months.may'), value: '5' },
+  { label: t('attendance.months.jun'), value: '6' },
+  { label: t('attendance.months.jul'), value: '7' },
+  { label: t('attendance.months.aug'), value: '8' },
+  { label: t('attendance.months.sep'), value: '9' },
+  { label: t('attendance.months.oct'), value: '10' },
+  { label: t('attendance.months.nov'), value: '11' },
+  { label: t('attendance.months.dec'), value: '12' },
+]);
 
 const yearOptions = computed(() => {
   const years = [];
@@ -132,7 +134,11 @@ const yearOptions = computed(() => {
   return years;
 });
 
-const departmentOptions = ref([{ label: 'Tous les départements', value: '' }]);
+const rawDepartments = ref<{ label: string; value: string }[]>([]);
+const departmentOptions = computed(() => [
+  { label: t('attendance.allDepts'), value: '' },
+  ...rawDepartments.value,
+]);
 
 const monthlyRecords = computed(() => {
   let data = attendanceStore.monthlyAttendance || [];
@@ -151,16 +157,16 @@ const summary = computed(() => ({
   totalLateMinutes: attendanceStore.monthlyStats?.totalLateMinutes || 0,
 }));
 
-const columns = [
-  { key: 'employeeName', label: 'Employé', sortable: true },
-  { key: 'totalDays', label: 'Jours totaux', sortable: true },
-  { key: 'presentDays', label: 'Jours présents', sortable: true },
-  { key: 'absentDays', label: 'Jours absents', sortable: true },
-  { key: 'lateDays', label: 'Jours en retard', sortable: true },
-  { key: 'totalLateMinutes', label: 'Total retard', sortable: true },
-  { key: 'averageEntryTime', label: 'Heure moyenne', sortable: true },
-  { key: 'attendanceRate', label: 'Taux de présence', sortable: true },
-];
+const columns = computed(() => [
+  { key: 'employeeName', label: t('attendance.employee'), sortable: true },
+  { key: 'totalDays', label: t('attendance.totalDays'), sortable: true },
+  { key: 'presentDays', label: t('attendance.presentDays'), sortable: true },
+  { key: 'absentDays', label: t('attendance.absentCount'), sortable: true },
+  { key: 'lateDays', label: t('attendance.lateCount'), sortable: true },
+  { key: 'totalLateMinutes', label: t('attendance.totalLateTime'), sortable: true },
+  { key: 'averageEntryTime', label: t('attendance.avgTime'), sortable: true },
+  { key: 'attendanceRate', label: t('attendance.attendanceRate'), sortable: true },
+]);
 
 const getAttendanceRateClass = (rate: number): string => {
   if (rate > 95) return 'rate-high';
@@ -191,10 +197,7 @@ const fetchData = async () => {
 const loadFilters = async () => {
   try {
     const depts = await departmentApi.getAll({ perPage: 200 });
-    departmentOptions.value = [
-      { label: 'Tous les départements', value: '' },
-      ...(depts.data || []).map((d) => ({ label: d.name, value: d.id })),
-    ];
+    rawDepartments.value = (depts.data || []).map((d) => ({ label: d.name, value: d.id }));
   } catch {
     // silently fail
   }
@@ -213,7 +216,7 @@ const handleSearchDebounce = () => {
 };
 
 const handleExport = () => {
-  info('Export en cours...');
+  info(t('attendance.exporting'));
 };
 
 watch([selectedMonth, selectedYear], () => {
