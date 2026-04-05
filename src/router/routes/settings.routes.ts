@@ -48,6 +48,15 @@ const settingsRoutes: RouteRecordRaw[] = [
           roles: [UserRole.SUPER_ADMIN, UserRole.TECHNICIEN],
         },
       },
+      {
+        path: 'activites-techniciens',
+        name: 'technicien-activities',
+        component: () => import('@/pages/parametres/TechnicienActivitiesPage.vue'),
+        meta: {
+          title: 'Activites techniciens',
+          roles: [UserRole.SUPER_ADMIN],
+        },
+      },
     ],
   },
 ]

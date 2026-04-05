@@ -543,6 +543,15 @@ const sidebarClasses = computed(() => [
           :active="route.path === '/parametres/rapport-technicien'"
           :nested="true"
         />
+        <TheSidebarItem
+          v-if="isSuperAdmin"
+          label="Activites techniciens"
+          to="/parametres/activites-techniciens"
+          :icon="DocumentChartBarIcon"
+          :collapsed="false"
+          :active="route.path === '/parametres/activites-techniciens'"
+          :nested="true"
+        />
       </TheSidebarGroup>
     </nav>
   </aside>

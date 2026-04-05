@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useUiStore } from '@/stores/ui.store'
 import { useAuthStore } from '@/stores/auth.store'
+import { useActiveCompanyStore } from '@/stores/active-company.store'
 import { useFirmwareStore } from '@/stores/firmware.store'
 import { UserRole } from '@/types/enums'
 import TheHeaderUserMenu from './TheHeaderUserMenu.vue'
@@ -14,6 +15,7 @@ import { Bars3Icon, ChevronLeftIcon } from '@heroicons/vue/24/outline'
 
 const ui = useUiStore()
 const auth = useAuthStore()
+const activeCompanyStore = useActiveCompanyStore()
 const firmwareStore = useFirmwareStore()
 const route = useRoute()
 
@@ -25,6 +27,10 @@ const pageTitle = computed(() => {
 
 const companyName = computed(() => {
   if (auth.user?.role === 'super_admin') return null
+  // Pour le technicien, afficher l'entreprise active selectionnee
+  if (auth.user?.role === 'technicien') {
+    return activeCompanyStore.activeCompanyName ?? null
+  }
   return auth.user?.companyName ?? null
 })
 

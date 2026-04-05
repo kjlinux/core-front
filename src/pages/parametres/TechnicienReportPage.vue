@@ -1,13 +1,47 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useTechnicienReport } from '@/composables/useTechnicienReport'
+import { useAuthStore } from '@/stores/auth.store'
+import { useActiveCompanyStore } from '@/stores/active-company.store'
+import { useCompanyStore } from '@/stores/company.store'
+import { UserRole } from '@/types/enums'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
+import AppSelect from '@/components/ui/AppSelect.vue'
 
 const { t } = useI18n()
+const auth = useAuthStore()
+const activeCompanyStore = useActiveCompanyStore()
+const companyStore = useCompanyStore()
 const { isLoading, reportData, buildReport, generatePdf } = useTechnicienReport()
+
+const isSuperAdmin = computed(() => auth.user?.role === UserRole.SUPER_ADMIN)
+const selectedCompanyId = ref<string>(activeCompanyStore.activeCompanyId ?? '')
+const isSelectingCompany = ref(false)
+
+const companyOptions = computed(() =>
+  companyStore.companies.map((c) => ({ label: c.name, value: c.id })),
+)
+
+const canGenerate = computed(() => {
+  if (isSuperAdmin.value) return !!selectedCompanyId.value
+  return activeCompanyStore.hasActiveCompany
+})
+
+async function selectAndGenerate() {
+  if (isSuperAdmin.value && selectedCompanyId.value) {
+    isSelectingCompany.value = true
+    try {
+      const company = companyStore.companies.find((c) => c.id === selectedCompanyId.value)
+      await activeCompanyStore.selectCompany(selectedCompanyId.value, company?.name)
+    } finally {
+      isSelectingCompany.value = false
+    }
+  }
+  await buildReport()
+}
 
 const statusVariant: Record<string, 'success' | 'warning' | 'danger'> = {
   ok: 'success',
@@ -21,7 +55,18 @@ const statusLabel = computed<Record<string, string>>(() => ({
   error: t('parametres.statusProblem'),
 }))
 
-onMounted(() => buildReport())
+onMounted(async () => {
+  if (isSuperAdmin.value) {
+    await companyStore.fetchCompanies({ perPage: 200 })
+    // Si le super admin a deja une entreprise active, generer automatiquement
+    if (activeCompanyStore.hasActiveCompany) {
+      selectedCompanyId.value = activeCompanyStore.activeCompanyId ?? ''
+      await buildReport()
+    }
+  } else {
+    await buildReport()
+  }
+})
 </script>
 
 <template>
@@ -34,7 +79,7 @@ onMounted(() => buildReport())
         </p>
       </div>
       <div class="flex gap-3">
-        <AppButton variant="ghost" :disabled="isLoading" @click="buildReport">
+        <AppButton variant="ghost" :disabled="isLoading || isSelectingCompany" @click="selectAndGenerate">
           {{ t('common.refresh') }}
         </AppButton>
         <AppButton
@@ -48,9 +93,40 @@ onMounted(() => buildReport())
       </div>
     </div>
 
-    <div v-if="isLoading" class="flex flex-col items-center justify-center py-20 text-gray-500">
+    <!-- Selecteur d'entreprise pour le super admin -->
+    <AppCard v-if="isSuperAdmin">
+      <div class="flex items-end gap-4">
+        <div class="flex-1">
+          <label class="mb-1 block text-sm font-medium text-gray-700">
+            Entreprise a auditer
+          </label>
+          <AppSelect
+            v-model="selectedCompanyId"
+            :options="[{ label: 'Selectionner une entreprise...', value: '' }, ...companyOptions]"
+            placeholder="Selectionner une entreprise"
+          />
+        </div>
+        <AppButton
+          variant="primary"
+          :disabled="!selectedCompanyId || isLoading || isSelectingCompany"
+          @click="selectAndGenerate"
+        >
+          Generer le rapport
+        </AppButton>
+      </div>
+    </AppCard>
+
+    <div v-if="isLoading || isSelectingCompany" class="flex flex-col items-center justify-center py-20 text-gray-500">
       <div class="mb-3 h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-gray-600" />
       <p class="text-sm">{{ t('parametres.collecting') }}</p>
+    </div>
+
+    <!-- Message si super admin n'a pas encore choisi d'entreprise -->
+    <div
+      v-else-if="isSuperAdmin && !canGenerate && !reportData"
+      class="rounded-lg border border-dashed border-gray-300 p-16 text-center text-gray-400"
+    >
+      Selectionnez une entreprise pour generer le rapport de mise en service
     </div>
 
     <template v-else-if="reportData">
@@ -113,7 +189,7 @@ onMounted(() => buildReport())
             >
               • {{ issue }}
             </li>
-            <li v-if="section.issues.length > 5" class="text-xs text-gray-400 italic">
+            <li v-if="section.issues.length > 5" class="text-xs italic text-gray-400">
               ... et {{ section.issues.length - 5 }} autre(s) point(s)
             </li>
           </ul>
