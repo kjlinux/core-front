@@ -62,6 +62,14 @@ const departmentOptions = computed(() =>
   filteredDepartments.value.map((d) => ({ label: d.name, value: d.id }))
 )
 
+const paymentModeOptions = [
+  { label: 'Mensuel', value: 'monthly' },
+  { label: 'Horaire', value: 'hourly' },
+  { label: 'Journalier', value: 'daily' },
+  { label: 'Hebdomadaire', value: 'weekly' },
+  { label: 'Forfait', value: 'forfait' },
+]
+
 const validate = (): boolean => {
   errors.value = {}
 
@@ -222,6 +230,28 @@ const handleSubmit = () => {
           :model-value="localValue.isActive ?? true"
           @update:model-value="updateField('isActive', $event)"
           label="L'employé est actif"
+          :disabled="loading"
+        />
+      </FormRow>
+    </FormSection>
+
+    <FormSection title="Rémunération">
+      <FormRow label="Mode de rémunération">
+        <AppSelect
+          :model-value="localValue.paymentMode || ''"
+          @update:model-value="updateField('paymentMode', $event || undefined)"
+          :options="paymentModeOptions"
+          placeholder="Sélectionner un mode"
+          :disabled="loading"
+        />
+      </FormRow>
+
+      <FormRow label="Salaire de base (FCFA)">
+        <AppInput
+          :model-value="localValue.baseSalary?.toString() || ''"
+          @update:model-value="updateField('baseSalary', $event ? Number($event) : undefined)"
+          type="number"
+          placeholder="Ex : 150 000"
           :disabled="loading"
         />
       </FormRow>

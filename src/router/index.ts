@@ -9,6 +9,7 @@ import firmwareRoutes from './routes/firmware.routes'
 import feelbackRoutes from './routes/feelback.routes'
 import marketplaceRoutes from './routes/marketplace.routes'
 import settingsRoutes from './routes/settings.routes'
+import paieRoutes from './routes/paie.routes'
 import publicRoutes from './routes/public.routes'
 
 const router = createRouter({
@@ -24,6 +25,7 @@ const router = createRouter({
     ...feelbackRoutes,
     ...marketplaceRoutes,
     ...settingsRoutes,
+    ...paieRoutes,
     {
       path: '/choisir-entreprise',
       name: 'technicien-select-company',

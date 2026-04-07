@@ -44,7 +44,6 @@ export function useTechnicienReport() {
   const firmwareStore = useFirmwareStore()
 
   async function collectData(): Promise<ReportData> {
-    // Charger toutes les données en parallèle (pas de fetchCompanies — le technicien travaille sur l'entreprise active)
     await Promise.all([
       siteStore.fetchSites({ perPage: 200 }),
       departmentStore.fetchDepartments({ perPage: 200 }),
@@ -60,7 +59,7 @@ export function useTechnicienReport() {
 
     const sections: ReportSection[] = []
 
-    // --- Entreprise active ---
+    // ─── Entreprise active ───────────────────────────────────────────────────
     sections.push({
       title: 'Entreprise',
       status: activeCompanyStore.hasActiveCompany ? 'ok' : 'error',
@@ -69,139 +68,248 @@ export function useTechnicienReport() {
       issues: activeCompanyStore.hasActiveCompany ? [] : ['Aucune entreprise active selectionnee'],
     })
 
-    // --- Sites ---
-    const sitesWithDepts = siteStore.sites.filter((s) => s.departments && s.departments.length > 0)
-    const sitesWithoutDepts = siteStore.sites.filter((s) => !s.departments || s.departments.length === 0)
+    // ─── Sites ───────────────────────────────────────────────────────────────
+    // On utilise les departements charges separement pour verifier la couverture
+    const siteIds = siteStore.sites.map((s) => s.id)
+    const siteIdsWithDept = new Set(departmentStore.departments.map((d) => d.siteId))
+    const sitesWithDepts = siteStore.sites.filter((s) => siteIdsWithDept.has(s.id))
+    const sitesWithoutDepts = siteStore.sites.filter((s) => !siteIdsWithDept.has(s.id))
+
+    const siteIssues: string[] = sitesWithoutDepts.map((s) => `Site sans departement : ${s.name}`)
     sections.push({
       title: 'Sites',
-      status: siteStore.sites.length === 0 ? 'error' : sitesWithoutDepts.length > 0 ? 'warning' : 'ok',
+      status: siteStore.sites.length === 0
+        ? 'error'
+        : sitesWithoutDepts.length > 0
+          ? 'warning'
+          : 'ok',
       total: siteStore.sites.length,
       done: sitesWithDepts.length,
-      issues: sitesWithoutDepts.map((s) => `Site sans departement : ${s.name}`),
+      issues: siteIssues,
     })
 
-    // --- Départements ---
-    const deptsWithManager = departmentStore.departments.filter((d) => d.managerId)
+    // ─── Départements ────────────────────────────────────────────────────────
+    const deptsWithManager = departmentStore.departments.filter((d) => !!d.managerId)
     const deptsWithoutManager = departmentStore.departments.filter((d) => !d.managerId)
+    const deptIssues: string[] = deptsWithoutManager.map((d) => `Departement sans responsable : ${d.name}`)
     sections.push({
       title: 'Departements',
-      status: departmentStore.departments.length === 0 ? 'error' : deptsWithoutManager.length > 0 ? 'warning' : 'ok',
+      status: departmentStore.departments.length === 0
+        ? 'error'
+        : deptsWithoutManager.length > 0
+          ? 'warning'
+          : 'ok',
       total: departmentStore.departments.length,
       done: deptsWithManager.length,
-      issues: deptsWithoutManager.map((d) => `Departement sans responsable : ${d.name}`),
+      issues: deptIssues,
     })
 
-    // --- Employés ---
+    // ─── Employés ────────────────────────────────────────────────────────────
     const activeEmployees = employeeStore.employees.filter((e) => e.isActive)
     const inactiveEmployees = employeeStore.employees.filter((e) => !e.isActive)
+    // Statut : error si aucun, warning si des inactifs, ok si tous actifs
+    const empStatus =
+      employeeStore.employees.length === 0
+        ? 'error'
+        : inactiveEmployees.length > 0
+          ? 'warning'
+          : 'ok'
+    const empIssues: string[] = inactiveEmployees.map(
+      (e) => `Employe inactif : ${e.firstName} ${e.lastName} (${e.employeeNumber})`,
+    )
     sections.push({
       title: 'Employes',
-      status: employeeStore.employees.length === 0 ? 'error' : 'ok',
+      status: empStatus,
       total: employeeStore.employees.length,
       done: activeEmployees.length,
-      issues: inactiveEmployees.map((e) => `Employe inactif : ${e.firstName} ${e.lastName} (${e.employeeNumber})`),
+      issues: empIssues,
     })
 
-    // --- Cartes RFID ---
+    // ─── Cartes RFID ─────────────────────────────────────────────────────────
     const assignedCards = cardStore.cards.filter((c) => c.employeeId && c.status === 'active')
     const unassignedCards = cardStore.cards.filter((c) => !c.employeeId)
     const blockedCards = cardStore.cards.filter((c) => c.status === 'blocked')
-    const employeesWithoutCard = employeeStore.employees.filter((e) => e.isActive && !e.rfidCardId)
+    // Employes actifs sans carte assignee
+    const assignedEmployeeIds = new Set(assignedCards.map((c) => c.employeeId))
+    const activeEmployeesWithoutCard = activeEmployees.filter(
+      (e) => !assignedEmployeeIds.has(e.id),
+    )
     const cardIssues: string[] = [
       ...unassignedCards.map((c) => `Carte non assignee : ${c.uid}`),
-      ...blockedCards.map((c) => `Carte bloquee : ${c.uid}${c.blockReason ? ` (${c.blockReason})` : ''}`),
-      ...employeesWithoutCard.map((e) => `Employe sans carte RFID : ${e.firstName} ${e.lastName}`),
+      ...blockedCards.map(
+        (c) => `Carte bloquee : ${c.uid}${c.blockReason ? ` (${c.blockReason})` : ''}`,
+      ),
+      ...activeEmployeesWithoutCard.map(
+        (e) => `Employe actif sans carte RFID : ${e.firstName} ${e.lastName}`,
+      ),
     ]
+    const cardStatus =
+      cardStore.cards.length === 0
+        ? 'error'
+        : cardIssues.length > 0
+          ? 'warning'
+          : 'ok'
     sections.push({
       title: 'Cartes RFID',
-      status: cardStore.cards.length === 0 ? 'error' : cardIssues.length > 0 ? 'warning' : 'ok',
-      total: employeeStore.employees.filter((e) => e.isActive).length,
+      status: cardStatus,
+      total: activeEmployees.length,
       done: assignedCards.length,
       issues: cardIssues,
     })
 
-    // --- Terminaux RFID ---
+    // ─── Terminaux RFID ──────────────────────────────────────────────────────
     const rfidOnline = rfidStore.devices.filter((d) => d.isOnline)
     const rfidOffline = rfidStore.devices.filter((d) => !d.isOnline)
+    const rfidIssues: string[] = rfidOffline.map(
+      (d) => `Terminal RFID hors ligne : ${d.name} (${d.serialNumber})`,
+    )
     sections.push({
       title: 'Terminaux RFID',
-      status: rfidStore.devices.length === 0 ? 'error' : rfidOffline.length > 0 ? 'warning' : 'ok',
+      status: rfidStore.devices.length === 0
+        ? 'error'
+        : rfidOffline.length > 0
+          ? 'warning'
+          : 'ok',
       total: rfidStore.devices.length,
       done: rfidOnline.length,
-      issues: rfidOffline.map((d) => `Terminal RFID hors ligne : ${d.name} (${d.serialNumber})`),
+      issues: rfidIssues,
     })
 
-    // --- Terminaux biométriques ---
+    // ─── Terminaux biométriques ───────────────────────────────────────────────
     const bioOnline = biometricStore.devices.filter((d) => d.isOnline)
     const bioOffline = biometricStore.devices.filter((d) => !d.isOnline)
+    const bioDeviceIssues: string[] = [
+      ...(biometricStore.devices.length === 0
+        ? ['Aucun terminal biometrique configure']
+        : []),
+      ...bioOffline.map(
+        (d) => `Terminal biometrique hors ligne : ${d.name} (${d.serialNumber})`,
+      ),
+    ]
     sections.push({
       title: 'Terminaux biometriques',
-      status: biometricStore.devices.length === 0 ? 'warning' : bioOffline.length > 0 ? 'warning' : 'ok',
+      status: biometricStore.devices.length === 0
+        ? 'warning'
+        : bioOffline.length > 0
+          ? 'warning'
+          : 'ok',
       total: biometricStore.devices.length,
       done: bioOnline.length,
-      issues: bioOffline.map((d) => `Terminal biometrique hors ligne : ${d.name} (${d.serialNumber})`),
+      issues: bioDeviceIssues,
     })
 
-    // --- Enrollements biométriques ---
+    // ─── Enrôlements biométriques ─────────────────────────────────────────────
     const enrolledOk = biometricStore.enrollments.filter((e) => e.status === 'enrolled')
     const enrolledFailed = biometricStore.enrollments.filter((e) => e.status === 'failed')
     const enrolledPending = biometricStore.enrollments.filter((e) => e.status === 'pending')
-    const employeesNotEnrolled = employeeStore.employees.filter((e) => e.isActive && !e.biometricEnrolled)
-    const enrollmentIssues: string[] = [
-      ...enrolledFailed.map((e) => `Enrolement echoue : ${e.employeeName}`),
-      ...enrolledPending.map((e) => `Enrolement en attente : ${e.employeeName}`),
-      ...employeesNotEnrolled.map((e) => `Employe non enrole : ${e.firstName} ${e.lastName}`),
-    ]
+    // Employes actifs non enroles (biometricEnrolled = false ou absent)
+    const employeesNotEnrolled = activeEmployees.filter((e) => !e.biometricEnrolled)
+
+    const enrollmentIssues: string[] = []
+
+    // Cas critique : aucun enrolement du tout
+    if (biometricStore.enrollments.length === 0) {
+      enrollmentIssues.push('Aucun enrolement biometrique configure')
+    } else {
+      enrollmentIssues.push(
+        ...enrolledFailed.map((e) => `Enrolement echoue : ${e.employeeName}`),
+        ...enrolledPending.map((e) => `Enrolement en attente : ${e.employeeName}`),
+        ...employeesNotEnrolled.map((e) => `Employe non enrole : ${e.firstName} ${e.lastName}`),
+      )
+    }
+
+    // Deduplique
+    const uniqueEnrollmentIssues = [...new Set(enrollmentIssues)]
+
+    const enrollStatus =
+      biometricStore.enrollments.length === 0
+        ? 'warning'
+        : enrolledFailed.length > 0
+          ? 'error'
+          : employeesNotEnrolled.length > 0 || enrolledPending.length > 0
+            ? 'warning'
+            : 'ok'
+
     sections.push({
       title: 'Enrolements biometriques',
-      status: enrolledFailed.length > 0 ? 'error' : enrolledPending.length > 0 || employeesNotEnrolled.length > 0 ? 'warning' : 'ok',
-      total: employeeStore.employees.filter((e) => e.isActive).length,
+      status: enrollStatus,
+      total: activeEmployees.length,
       done: enrolledOk.length,
-      issues: enrollmentIssues,
+      issues: uniqueEnrollmentIssues,
     })
 
-    // --- QR Codes ---
-    const activeQr = qrcodeStore.qrCodes.filter((q) => q.isActive)
-    const inactiveQr = qrcodeStore.qrCodes.filter((q) => !q.isActive)
-    const employeesWithoutQr = employeeStore.employees.filter(
-      (e) => e.isActive && !activeQr.some((q) => q.siteId && q.isActive),
+    // ─── QR Codes ────────────────────────────────────────────────────────────
+    // Un QR code est lié à un site. On verifie que chaque site a au moins 1 QR actif.
+    const activeQrSiteIds = new Set(
+      qrcodeStore.qrCodes.filter((q) => q.isActive && q.siteId).map((q) => q.siteId!),
     )
+    const sitesWithoutActiveQr = siteStore.sites.filter((s) => !activeQrSiteIds.has(s.id))
+    const revokedQr = qrcodeStore.qrCodes.filter((q) => !q.isActive)
     const qrIssues: string[] = [
-      ...inactiveQr.map((q) => `QR code revoque : ${q.label ?? q.siteName ?? q.id}`),
-      ...employeesWithoutQr.map((e) => `Employe sans QR code actif : ${e.firstName} ${e.lastName}`),
+      ...sitesWithoutActiveQr.map((s) => `Site sans QR code actif : ${s.name}`),
+      ...revokedQr.map((q) => `QR code revoque : ${q.label ?? q.siteName ?? q.id}`),
     ]
+    // Statut : error si aucun QR du tout, warning si des sites non couverts ou QR revoques, ok sinon
+    const qrStatus =
+      qrcodeStore.qrCodes.length === 0
+        ? 'error'
+        : sitesWithoutActiveQr.length > 0 || revokedQr.length > 0
+          ? 'warning'
+          : 'ok'
     sections.push({
       title: 'QR Codes pointage',
-      status: qrIssues.length === 0 ? 'ok' : employeesWithoutQr.length > 0 ? 'warning' : 'ok',
-      total: employeeStore.employees.filter((e) => e.isActive).length,
-      done: activeQr.length,
+      status: qrStatus,
+      total: siteStore.sites.length,
+      done: activeQrSiteIds.size,
       issues: qrIssues,
     })
 
-    // --- Firmware ---
-    const devicesOutdated = firmwareStore.deviceStatuses.filter(
-      (d) => d.targetVersion && d.currentVersion !== d.targetVersion && d.updateStatus !== 'success',
+    // ─── Firmware ─────────────────────────────────────────────────────────────
+    // Un appareil est "a jour" uniquement si son update_status = 'success' ET sa version courante
+    // correspond a la version cible, OU s'il n'a pas de version cible assignee.
+    const devicesWithTarget = firmwareStore.deviceStatuses.filter((d) => !!d.targetVersion)
+    const devicesUpToDate = devicesWithTarget.filter(
+      (d) => d.updateStatus === 'success' && d.currentVersion === d.targetVersion,
     )
-    const devicesFailed = firmwareStore.deviceStatuses.filter((d) => d.updateStatus === 'failed')
+    const devicesFailed = devicesWithTarget.filter((d) => d.updateStatus === 'failed')
+    const devicesOutdated = devicesWithTarget.filter(
+      (d) => d.updateStatus !== 'success' || d.currentVersion !== d.targetVersion,
+    )
     const firmwareIssues: string[] = [
-      ...devicesFailed.map((d) => `Mise a jour echouee : ${d.deviceName}`),
+      ...devicesFailed.map(
+        (d) =>
+          `Mise a jour echouee : ${d.deviceName} (actuel: ${d.currentVersion || '?'}, cible: ${d.targetVersion})`,
+      ),
       ...devicesOutdated
         .filter((d) => d.updateStatus !== 'failed')
-        .map((d) => `Firmware non a jour : ${d.deviceName} (actuel: ${d.currentVersion || '?'}, cible: ${d.targetVersion})`),
+        .map(
+          (d) =>
+            `Firmware non a jour : ${d.deviceName} (actuel: ${d.currentVersion || '?'}, cible: ${d.targetVersion})`,
+        ),
     ]
+    const firmwareStatus =
+      firmwareStore.deviceStatuses.length === 0
+        ? 'warning'
+        : devicesFailed.length > 0
+          ? 'error'
+          : devicesOutdated.length > 0
+            ? 'warning'
+            : 'ok'
     sections.push({
       title: 'Mises a jour firmware',
-      status: devicesFailed.length > 0 ? 'error' : devicesOutdated.length > 0 ? 'warning' : 'ok',
-      total: firmwareStore.deviceStatuses.length,
-      done: firmwareStore.deviceStatuses.filter((d) => d.updateStatus === 'success' || (!d.targetVersion)).length,
+      status: firmwareStatus,
+      total: devicesWithTarget.length,
+      done: devicesUpToDate.length,
       issues: firmwareIssues,
     })
 
-    // Score global (% de sections OK)
+    // Score global : % de sections OK (on exclut les sections warning qui sont optionnelles)
     const okSections = sections.filter((s) => s.status === 'ok').length
-    const globalScore = sections.length > 0 ? Math.round((okSections / sections.length) * 100) : 0
+    const globalScore =
+      sections.length > 0 ? Math.round((okSections / sections.length) * 100) : 0
 
-    const companyName = activeCompanyStore.activeCompanyName || auth.user?.companyName || 'Entreprise'
+    const companyName =
+      activeCompanyStore.activeCompanyName || auth.user?.companyName || 'Entreprise'
 
     return {
       generatedAt: new Date().toLocaleString('fr-FR'),
@@ -226,27 +334,26 @@ export function useTechnicienReport() {
     const pageWidth = doc.internal.pageSize.getWidth()
     const marginX = 15
 
-    // Palette couleurs de l'app (slate)
     const C = {
-      primary:   [30, 41, 59]   as [number, number, number], // slate-800 #1e293b
-      primary600: [71, 85, 105] as [number, number, number], // slate-600 #475569
-      primary400: [148, 163, 184] as [number, number, number], // slate-400 #94a3b8
-      primary100: [241, 245, 249] as [number, number, number], // slate-100 #f1f5f9
-      white:     [255, 255, 255] as [number, number, number],
-      text:      [30, 41, 59]   as [number, number, number],
-      textMuted: [100, 116, 139] as [number, number, number], // slate-500
-      ok:        [22, 163, 74]  as [number, number, number],  // green-600
-      warning:   [202, 138, 4]  as [number, number, number],  // yellow-600
-      error:     [220, 38, 38]  as [number, number, number],  // red-600
-      okBg:      [240, 253, 244] as [number, number, number], // green-50
-      warnBg:    [254, 249, 195] as [number, number, number], // yellow-100
-      errorBg:   [254, 242, 242] as [number, number, number], // red-50
-      border:    [226, 232, 240] as [number, number, number], // slate-200
+      primary:    [30, 41, 59]    as [number, number, number],
+      primary600: [71, 85, 105]   as [number, number, number],
+      primary400: [148, 163, 184] as [number, number, number],
+      primary100: [241, 245, 249] as [number, number, number],
+      white:      [255, 255, 255] as [number, number, number],
+      text:       [30, 41, 59]    as [number, number, number],
+      textMuted:  [100, 116, 139] as [number, number, number],
+      ok:         [22, 163, 74]   as [number, number, number],
+      warning:    [202, 138, 4]   as [number, number, number],
+      error:      [220, 38, 38]   as [number, number, number],
+      okBg:       [240, 253, 244] as [number, number, number],
+      warnBg:     [254, 249, 195] as [number, number, number],
+      errorBg:    [254, 242, 242] as [number, number, number],
+      border:     [226, 232, 240] as [number, number, number],
     }
 
     let y = 20
 
-    // ---- En-tête ----
+    // ── En-tête ──────────────────────────────────────────────────────────────
     doc.setFillColor(...C.primary)
     doc.rect(0, 0, pageWidth, 36, 'F')
 
@@ -264,7 +371,7 @@ export function useTechnicienReport() {
 
     y = 46
 
-    // ---- Score global ----
+    // ── Score global ──────────────────────────────────────────────────────────
     const scoreColor: [number, number, number] =
       data.globalScore >= 80 ? C.ok : data.globalScore >= 50 ? C.warning : C.error
 
@@ -284,7 +391,7 @@ export function useTechnicienReport() {
 
     y += 22
 
-    // ---- Récapitulatif ----
+    // ── Récapitulatif ─────────────────────────────────────────────────────────
     doc.setTextColor(...C.text)
     doc.setFontSize(11)
     doc.setFont('helvetica', 'bold')
@@ -293,7 +400,7 @@ export function useTechnicienReport() {
 
     const summaryRows = data.sections.map((s) => [
       s.title,
-      `${s.done} / ${s.total}`,
+      s.total > 0 ? `${s.done} / ${s.total}` : '-',
       s.status === 'ok' ? 'OK' : s.status === 'warning' ? 'Incomplet' : 'Probleme',
       s.issues.length === 0 ? '-' : `${s.issues.length} point(s)`,
     ])
@@ -326,7 +433,7 @@ export function useTechnicienReport() {
 
     y = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 10
 
-    // ---- Détail par section ----
+    // ── Détail par section ────────────────────────────────────────────────────
     doc.setFontSize(11)
     doc.setFont('helvetica', 'bold')
     doc.setTextColor(...C.text)
@@ -339,16 +446,19 @@ export function useTechnicienReport() {
         y = 20
       }
 
-      const bgColor = section.status === 'ok' ? C.okBg : section.status === 'warning' ? C.warnBg : C.errorBg
-      const accentColor = section.status === 'ok' ? C.ok : section.status === 'warning' ? C.warning : C.error
-      const statusLabel = section.status === 'ok' ? 'OK' : section.status === 'warning' ? 'Incomplet' : 'Probleme'
+      const bgColor =
+        section.status === 'ok' ? C.okBg : section.status === 'warning' ? C.warnBg : C.errorBg
+      const accentColor =
+        section.status === 'ok' ? C.ok : section.status === 'warning' ? C.warning : C.error
+      const statusLabel =
+        section.status === 'ok' ? 'OK' : section.status === 'warning' ? 'Incomplet' : 'Probleme'
 
-      // Bande de titre section
+      // Bande titre section
       doc.setFillColor(...bgColor)
       doc.setDrawColor(...C.border)
       doc.rect(marginX, y, pageWidth - marginX * 2, 9, 'FD')
 
-      // Trait coloré à gauche
+      // Trait coloré gauche
       doc.setFillColor(...accentColor)
       doc.rect(marginX, y, 2, 9, 'F')
 
@@ -369,11 +479,25 @@ export function useTechnicienReport() {
       y += 12
 
       if (section.issues.length === 0) {
-        doc.setTextColor(...C.ok)
-        doc.setFontSize(8.5)
-        doc.setFont('helvetica', 'italic')
-        doc.text("Configuration complete — aucun point d'attention.", marginX + 5, y)
-        y += 7
+        // N'afficher "Configuration complete" QUE si le statut est réellement OK
+        if (section.status === 'ok') {
+          doc.setTextColor(...C.ok)
+          doc.setFontSize(8.5)
+          doc.setFont('helvetica', 'italic')
+          doc.text("Configuration complete — aucun point d'attention.", marginX + 5, y)
+          y += 7
+        } else {
+          // Statut warning/error sans issues explicites (ex: 0 appareils)
+          const fallbackMsg =
+            section.status === 'warning'
+              ? 'Configuration incomplète — verifiez cette section.'
+              : 'Probleme detecte — action requise.'
+          doc.setTextColor(...accentColor)
+          doc.setFontSize(8.5)
+          doc.setFont('helvetica', 'italic')
+          doc.text(fallbackMsg, marginX + 5, y)
+          y += 7
+        }
       } else {
         for (const issue of section.issues) {
           if (y > 272) {
@@ -391,7 +515,7 @@ export function useTechnicienReport() {
       }
     }
 
-    // ---- Pied de page ----
+    // ── Pied de page ──────────────────────────────────────────────────────────
     const pageCount = doc.getNumberOfPages()
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i)

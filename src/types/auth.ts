@@ -9,6 +9,7 @@ export interface User {
   role: UserRole
   companyId: string | null
   companyName?: string
+  employeeId?: string | null
   avatar?: string
   isActive: boolean
   createdAt: string

@@ -27,7 +27,7 @@ const settingsRoutes: RouteRecordRaw[] = [
         component: () => import('@/pages/parametres/UserManagementPage.vue'),
         meta: {
           title: 'Gestion utilisateurs',
-          roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE],
+          roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE, UserRole.TECHNICIEN],
         },
       },
       {
@@ -56,6 +56,12 @@ const settingsRoutes: RouteRecordRaw[] = [
           title: 'Activites techniciens',
           roles: [UserRole.SUPER_ADMIN],
         },
+      },
+      {
+        path: 'aide',
+        name: 'settings-help',
+        component: () => import('@/pages/parametres/HelpPage.vue'),
+        meta: { title: "Centre d'aide" },
       },
     ],
   },

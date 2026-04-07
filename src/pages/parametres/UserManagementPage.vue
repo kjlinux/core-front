@@ -93,7 +93,11 @@ function formatDate(date: string) {
 async function fetchUsers() {
   isLoading.value = true
   try {
-    users.value = await userApi.getAll()
+    const all = await userApi.getAll()
+    // Le technicien ne doit jamais voir les comptes super_admin (filtre defensif)
+    users.value = permissions.isTechnicien.value
+      ? all.filter((u) => u.role !== 'super_admin')
+      : all
   } catch {
     toast.showError(t('parametres.userCreateError'))
   } finally {

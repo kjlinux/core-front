@@ -18,6 +18,9 @@ export interface Employee {
   deviceInfo?: string
   deviceEnrolledAt?: string
   createdAt: string
+  // Remuneration
+  paymentMode?: 'monthly' | 'hourly' | 'daily' | 'weekly' | 'forfait'
+  baseSalary?: number
 }
 
 export interface EmployeeFilters {

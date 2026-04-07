@@ -33,7 +33,19 @@ export function authGuard(to: RouteLocationNormalized, _from: RouteLocationNorma
     }
   }
 
+  // Employe: can only access /mon-espace and /parametres/profile
+  if (auth.isAuthenticated && auth.user?.role === 'employe') {
+    const allowed = ['/mon-espace', '/parametres/profile']
+    const isAllowed = allowed.some((prefix) => to.path === prefix || to.path.startsWith(prefix + '/'))
+    if (!isAllowed && to.name !== 'login') {
+      return { path: '/mon-espace' }
+    }
+  }
+
   if (to.name === 'login' && auth.isAuthenticated) {
+    if (auth.user?.role === 'employe') {
+      return { path: '/mon-espace' }
+    }
     return { name: 'dashboard' }
   }
 }

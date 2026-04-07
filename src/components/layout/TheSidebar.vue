@@ -34,6 +34,10 @@ import {
   ServerStackIcon,
   QrCodeIcon,
   CpuChipIcon,
+  QuestionMarkCircleIcon,
+  BanknotesIcon,
+  Cog8ToothIcon,
+  UserCircleIcon,
 } from '@heroicons/vue/24/outline'
 
 const { t } = useI18n()
@@ -43,6 +47,7 @@ const route = useRoute()
 
 const isSuperAdmin = computed(() => auth.user?.role === UserRole.SUPER_ADMIN)
 const isTechnicien = computed(() => auth.user?.role === UserRole.TECHNICIEN)
+const isEmploye = computed(() => auth.user?.role === UserRole.EMPLOYE)
 const isAdminOrSuper = computed(
   () => auth.user?.role === UserRole.SUPER_ADMIN || auth.user?.role === UserRole.ADMIN_ENTERPRISE,
 )
@@ -71,6 +76,7 @@ function getActiveGroupId(): string | null {
   if (path.startsWith('/firmware')) return 'firmware'
   if (path.startsWith('/feelback')) return 'feelback'
   if (path.startsWith('/marketplace')) return 'marketplace'
+  if (path.startsWith('/paie')) return 'paie'
   if (path.startsWith('/parametres')) return 'parametres'
   return null
 }
@@ -101,6 +107,7 @@ const sidebarClasses = computed(() => [
     <nav class="flex-1 overflow-y-auto py-4">
       <!-- Dashboard -->
       <TheSidebarItem
+        v-if="!isEmploye"
         :label="t('nav.dashboard')"
         to="/"
         :icon="HomeIcon"
@@ -110,6 +117,7 @@ const sidebarClasses = computed(() => [
 
       <!-- Pointage RFID -->
       <TheSidebarGroup
+        v-if="!isEmploye"
         group-id="pointage-rfid"
         :label="t('nav.pointageRfid')"
         :icon="CreditCardIcon"
@@ -197,6 +205,7 @@ const sidebarClasses = computed(() => [
 
       <!-- Pointage QR Code -->
       <TheSidebarGroup
+        v-if="!isEmploye"
         group-id="pointage-qrcode"
         :label="t('nav.pointageQrcode')"
         :icon="QrCodeIcon"
@@ -257,6 +266,7 @@ const sidebarClasses = computed(() => [
 
       <!-- Biometrique -->
       <TheSidebarGroup
+        v-if="!isEmploye"
         group-id="biometrique"
         :label="t('nav.biometrique')"
         :icon="FingerPrintIcon"
@@ -345,7 +355,7 @@ const sidebarClasses = computed(() => [
 
       <!-- Feelback -->
       <TheSidebarGroup
-        v-if="isClientRole && !isTechnicien"
+        v-if="isClientRole && !isTechnicien && !isEmploye"
         group-id="feelback"
         :label="t('nav.feelback')"
         :icon="FaceSmileIcon"
@@ -422,7 +432,7 @@ const sidebarClasses = computed(() => [
 
       <!-- Marketplace (masque pour technicien) -->
       <TheSidebarGroup
-        v-if="isClientRole && !isTechnicien"
+        v-if="isClientRole && !isTechnicien && !isEmploye"
         group-id="marketplace"
         :label="t('nav.marketplace')"
         :icon="ShoppingCartIcon"
@@ -491,6 +501,42 @@ const sidebarClasses = computed(() => [
         />
       </TheSidebarGroup>
 
+      <!-- Paie -->
+      <TheSidebarGroup
+        v-if="isAdminOrSuper && !isEmploye"
+        group-id="paie"
+        label="Paie"
+        :icon="BanknotesIcon"
+        :collapsed="ui.sidebarCollapsed"
+        :active="route.path.startsWith('/paie')"
+      >
+        <TheSidebarItem
+          label="Configuration"
+          to="/paie/configuration"
+          :icon="Cog8ToothIcon"
+          :collapsed="false"
+          :active="route.path === '/paie/configuration'"
+          :nested="true"
+        />
+        <TheSidebarItem
+          label="Fiches de paie"
+          to="/paie/generer"
+          :icon="DocumentChartBarIcon"
+          :collapsed="false"
+          :active="route.path === '/paie/generer'"
+          :nested="true"
+        />
+      </TheSidebarGroup>
+
+      <!-- Mon espace (portail employe) -->
+      <TheSidebarItem
+        label="Mon espace"
+        to="/mon-espace"
+        :icon="UserCircleIcon"
+        :collapsed="ui.sidebarCollapsed"
+        :active="route.path.startsWith('/mon-espace')"
+      />
+
       <!-- Parametres -->
       <TheSidebarGroup
         group-id="parametres"
@@ -508,7 +554,7 @@ const sidebarClasses = computed(() => [
           :nested="true"
         />
         <TheSidebarItem
-          v-if="isAdminOrSuper"
+          v-if="isAdminOrSuper && !isEmploye"
           :label="t('nav.company')"
           to="/parametres/entreprise"
           :icon="BuildingOffice2Icon"
@@ -517,7 +563,7 @@ const sidebarClasses = computed(() => [
           :nested="true"
         />
         <TheSidebarItem
-          v-if="isAdminOrSuper"
+          v-if="(isAdminOrSuper || isTechnicien) && !isEmploye"
           :label="t('nav.users')"
           to="/parametres/utilisateurs"
           :icon="UsersIcon"
@@ -526,7 +572,7 @@ const sidebarClasses = computed(() => [
           :nested="true"
         />
         <TheSidebarItem
-          v-if="isAdminOrSuper"
+          v-if="isAdminOrSuper && !isEmploye"
           :label="t('nav.roles')"
           to="/parametres/roles"
           :icon="ShieldCheckIcon"
@@ -535,7 +581,7 @@ const sidebarClasses = computed(() => [
           :nested="true"
         />
         <TheSidebarItem
-          v-if="isSetupRole"
+          v-if="isSetupRole && !isEmploye"
           label="Rapport technicien"
           to="/parametres/rapport-technicien"
           :icon="ClipboardDocumentListIcon"
@@ -544,12 +590,21 @@ const sidebarClasses = computed(() => [
           :nested="true"
         />
         <TheSidebarItem
-          v-if="isSuperAdmin"
+          v-if="isSuperAdmin && !isEmploye"
           label="Activites techniciens"
           to="/parametres/activites-techniciens"
           :icon="DocumentChartBarIcon"
           :collapsed="false"
           :active="route.path === '/parametres/activites-techniciens'"
+          :nested="true"
+        />
+        <TheSidebarItem
+          v-if="!isEmploye"
+          label="Centre d'aide"
+          to="/parametres/aide"
+          :icon="QuestionMarkCircleIcon"
+          :collapsed="false"
+          :active="route.path === '/parametres/aide'"
           :nested="true"
         />
       </TheSidebarGroup>
