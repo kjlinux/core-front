@@ -70,7 +70,7 @@ const actionLabel: Record<string, string> = {
   deactivate: 'Desactivation',
 }
 
-const actionVariant: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'default'> = {
+const actionVariant: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'neutral'> = {
   create: 'success',
   update: 'info',
   delete: 'danger',
@@ -223,7 +223,7 @@ onMounted(async () => {
                 {{ activity.company?.name ?? '-' }}
               </td>
               <td class="px-4 py-3">
-                <AppBadge :variant="actionVariant[activity.action] ?? 'default'" size="sm">
+                <AppBadge :variant="actionVariant[activity.action] ?? 'neutral'" size="sm">
                   {{ actionLabel[activity.action] ?? activity.action }}
                 </AppBadge>
               </td>

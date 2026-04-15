@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { payrollApi } from '@/services/api/payroll.api'
-import type { PayrollConfig, Payslip, LatenessRule } from '@/types/payroll'
+import type { PayrollConfig, Payslip, LatenessRule, PayrollGenerateParams } from '@/types/payroll'
 
 export const usePayrollStore = defineStore('payroll', () => {
   const config = ref<PayrollConfig | null>(null)
