@@ -1,6 +1,7 @@
 export default {
   nav: {
     dashboard: 'Dashboard',
+    organisation: 'Organisation',
     pointageRfid: 'RFID Attendance',
     pointageQrcode: 'QR Code Attendance',
     biometrique: 'Biometric',

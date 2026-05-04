@@ -1,6 +1,7 @@
 export default {
   nav: {
     dashboard: 'Tableau de bord',
+    organisation: 'Organisation',
     pointageRfid: 'Pointage RFID',
     pointageQrcode: 'Pointage QR Code',
     biometrique: 'Biométrique',

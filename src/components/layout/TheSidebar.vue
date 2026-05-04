@@ -70,6 +70,13 @@ const isClientRole = computed(
 
 function getActiveGroupId(): string | null {
   const path = route.path
+  if (
+    path.startsWith('/pointage-rfid/companies') ||
+    path.startsWith('/pointage-rfid/sites') ||
+    path.startsWith('/pointage-rfid/departments') ||
+    path.startsWith('/pointage-rfid/employees')
+  )
+    return 'organisation'
   if (path.startsWith('/pointage-rfid')) return 'pointage-rfid'
   if (path.startsWith('/pointage-qrcode')) return 'pointage-qrcode'
   if (path.startsWith('/biometrique')) return 'biometrique'
@@ -115,14 +122,14 @@ const sidebarClasses = computed(() => [
         :active="route.path === '/'"
       />
 
-      <!-- Pointage RFID -->
+      <!-- Organisation -->
       <TheSidebarGroup
         v-if="!isEmploye"
-        group-id="pointage-rfid"
-        :label="t('nav.pointageRfid')"
-        :icon="CreditCardIcon"
+        group-id="organisation"
+        :label="t('nav.organisation')"
+        :icon="BuildingOffice2Icon"
         :collapsed="ui.sidebarCollapsed"
-        :active="route.path.startsWith('/pointage-rfid')"
+        :active="route.path.startsWith('/pointage-rfid/companies') || route.path.startsWith('/pointage-rfid/sites') || route.path.startsWith('/pointage-rfid/departments') || route.path.startsWith('/pointage-rfid/employees')"
       >
         <TheSidebarItem
           v-if="isSetupRole"
@@ -157,6 +164,17 @@ const sidebarClasses = computed(() => [
           :active="route.path.startsWith('/pointage-rfid/employees')"
           :nested="true"
         />
+      </TheSidebarGroup>
+
+      <!-- Pointage RFID -->
+      <TheSidebarGroup
+        v-if="!isEmploye"
+        group-id="pointage-rfid"
+        :label="t('nav.pointageRfid')"
+        :icon="CreditCardIcon"
+        :collapsed="ui.sidebarCollapsed"
+        :active="route.path.startsWith('/pointage-rfid') && !route.path.startsWith('/pointage-rfid/companies') && !route.path.startsWith('/pointage-rfid/sites') && !route.path.startsWith('/pointage-rfid/departments') && !route.path.startsWith('/pointage-rfid/employees')"
+      >
         <TheSidebarItem
           v-if="isAdminOrSuperOrTech"
           :label="t('nav.rfidDevices')"
@@ -305,50 +323,6 @@ const sidebarClasses = computed(() => [
           :icon="ClockIcon"
           :collapsed="false"
           :active="route.path === '/biometrique/attendance'"
-          :nested="true"
-        />
-      </TheSidebarGroup>
-
-      <!-- Firmware OTA -->
-      <TheSidebarGroup
-        v-if="isAdminOrSuperOrTech"
-        group-id="firmware"
-        :label="t('nav.firmware')"
-        :icon="CpuChipIcon"
-        :collapsed="ui.sidebarCollapsed"
-        :active="route.path.startsWith('/firmware')"
-      >
-        <TheSidebarItem
-          :label="t('nav.firmwareVersions')"
-          to="/firmware"
-          :icon="ServerStackIcon"
-          :collapsed="false"
-          :active="route.path === '/firmware'"
-          :nested="true"
-        />
-        <TheSidebarItem
-          v-if="isSetupRole"
-          :label="t('nav.firmwareUpload')"
-          to="/firmware/upload"
-          :icon="CubeIcon"
-          :collapsed="false"
-          :active="route.path.startsWith('/firmware/upload')"
-          :nested="true"
-        />
-        <TheSidebarItem
-          :label="t('nav.firmwareDevices')"
-          to="/firmware/devices"
-          :icon="DevicePhoneMobileIcon"
-          :collapsed="false"
-          :active="route.path.startsWith('/firmware/devices')"
-          :nested="true"
-        />
-        <TheSidebarItem
-          :label="t('nav.firmwareLogs')"
-          to="/firmware/logs"
-          :icon="ClipboardDocumentListIcon"
-          :collapsed="false"
-          :active="route.path.startsWith('/firmware/logs')"
           :nested="true"
         />
       </TheSidebarGroup>
@@ -536,6 +510,50 @@ const sidebarClasses = computed(() => [
         :collapsed="ui.sidebarCollapsed"
         :active="route.path.startsWith('/mon-espace')"
       />
+
+      <!-- Firmware OTA -->
+      <TheSidebarGroup
+        v-if="isAdminOrSuperOrTech"
+        group-id="firmware"
+        :label="t('nav.firmware')"
+        :icon="CpuChipIcon"
+        :collapsed="ui.sidebarCollapsed"
+        :active="route.path.startsWith('/firmware')"
+      >
+        <TheSidebarItem
+          :label="t('nav.firmwareVersions')"
+          to="/firmware"
+          :icon="ServerStackIcon"
+          :collapsed="false"
+          :active="route.path === '/firmware'"
+          :nested="true"
+        />
+        <TheSidebarItem
+          v-if="isSetupRole"
+          :label="t('nav.firmwareUpload')"
+          to="/firmware/upload"
+          :icon="CubeIcon"
+          :collapsed="false"
+          :active="route.path.startsWith('/firmware/upload')"
+          :nested="true"
+        />
+        <TheSidebarItem
+          :label="t('nav.firmwareDevices')"
+          to="/firmware/devices"
+          :icon="DevicePhoneMobileIcon"
+          :collapsed="false"
+          :active="route.path.startsWith('/firmware/devices')"
+          :nested="true"
+        />
+        <TheSidebarItem
+          :label="t('nav.firmwareLogs')"
+          to="/firmware/logs"
+          :icon="ClipboardDocumentListIcon"
+          :collapsed="false"
+          :active="route.path.startsWith('/firmware/logs')"
+          :nested="true"
+        />
+      </TheSidebarGroup>
 
       <!-- Parametres -->
       <TheSidebarGroup

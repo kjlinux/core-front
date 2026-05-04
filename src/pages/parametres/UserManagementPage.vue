@@ -118,7 +118,7 @@ function formatDate(date: string) {
 async function fetchUsers() {
   isLoading.value = true
   try {
-    const all = await userApi.getAll()
+    const all = await userApi.getAll({ perPage: 1000 })
     // Le technicien ne doit jamais voir les comptes super_admin (filtre defensif)
     users.value = permissions.isTechnicien.value
       ? all.filter((u) => u.role !== 'super_admin')
