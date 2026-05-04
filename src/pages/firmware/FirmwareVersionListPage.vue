@@ -58,7 +58,7 @@ watch(deviceKindFilter, () => { currentPage.value = 1 })
 onMounted(() => loadData())
 
 async function loadData() {
-  await store.fetchVersions(deviceKindFilter.value ? { deviceKind: deviceKindFilter.value } : {})
+  await store.fetchVersions(deviceKindFilter.value ? { deviceKind: deviceKindFilter.value, perPage: 1000 } : { perPage: 1000 })
 }
 
 function formatSize(bytes?: number) {

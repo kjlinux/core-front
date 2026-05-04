@@ -23,7 +23,7 @@ export const useScheduleStore = defineStore('schedule', () => {
   async function fetchSchedules() {
     isLoading.value = true
     try {
-      const response = await scheduleApi.getAll()
+      const response = await scheduleApi.getAll({ perPage: 1000 })
       schedules.value = response.data
     } finally {
       isLoading.value = false
@@ -74,7 +74,7 @@ export const useScheduleStore = defineStore('schedule', () => {
   async function fetchHolidays() {
     isLoading.value = true
     try {
-      const response = await scheduleApi.getHolidays()
+      const response = await scheduleApi.getHolidays({ perPage: 1000 })
       holidays.value = response.data
     } finally {
       isLoading.value = false

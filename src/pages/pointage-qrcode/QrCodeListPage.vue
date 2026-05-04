@@ -48,7 +48,7 @@ const paginationObj = computed(() => {
 
 const handlePageChange = (page: number) => { currentPage.value = page }
 
-onMounted(() => store.fetchQrCodes())
+onMounted(() => store.fetchQrCodes({ perPage: 1000 }))
 
 function formatDate(d: string) {
   return new Date(d).toLocaleDateString('fr-FR')

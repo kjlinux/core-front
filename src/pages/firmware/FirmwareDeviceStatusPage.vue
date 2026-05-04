@@ -73,7 +73,7 @@ const compatibleVersions = computed(() => {
 })
 
 onMounted(async () => {
-  await Promise.all([store.fetchDeviceStatuses(), store.fetchVersions({})])
+  await Promise.all([store.fetchDeviceStatuses({ perPage: 1000 }), store.fetchVersions({ perPage: 1000 })])
 })
 
 function openUpdateModal(device: DeviceFirmwareStatus) {
@@ -87,7 +87,7 @@ async function confirmUpdate() {
     await store.triggerUpdate(selectedDevice.value.deviceId, selectedFirmwareVersionId.value)
     toast.success(t('firmware.triggeredSuccess'))
     selectedDevice.value = null
-    await store.fetchDeviceStatuses()
+    await store.fetchDeviceStatuses({ perPage: 1000 })
   } catch {
     toast.error(t('firmware.triggerError'))
   }
