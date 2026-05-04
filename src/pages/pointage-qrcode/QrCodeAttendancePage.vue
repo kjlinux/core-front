@@ -75,7 +75,13 @@ function getStatusLabel(status: string) {
         </AppButton>
       </div>
 
-      <DataTable :columns="columns" :data="store.attendanceRecords" :loading="store.isLoading">
+      <DataTable
+        :columns="columns"
+        :data="store.attendanceRecords"
+        :loading="store.isLoading"
+        :pagination="store.pagination.totalPages > 0 ? { currentPage: currentPage, totalPages: store.pagination.totalPages, perPage: perPage, total: store.pagination.total } : undefined"
+        @page-change="goToPage"
+      >
         <template #entryTime="{ row }">{{ row.entryTime ?? '-' }}</template>
         <template #exitTime="{ row }">{{ row.exitTime ?? '-' }}</template>
         <template #status="{ row }">
@@ -88,36 +94,6 @@ function getStatusLabel(status: string) {
         </template>
         <template #scannedAt="{ row }">{{ formatDateTime(row.scannedAt) }}</template>
       </DataTable>
-
-      <!-- Pagineur -->
-      <div
-        v-if="store.pagination.totalPages > 1"
-        class="mt-4 flex items-center justify-between border-t border-gray-100 pt-4"
-      >
-        <p class="text-sm text-gray-500">
-          {{ store.pagination.total }}
-          {{ store.pagination.total > 1 ? t('qrcode.attendancePl') : t('qrcode.attendanceList') }} —
-          {{ t('common.page') }} {{ currentPage }} / {{ store.pagination.totalPages }}
-        </p>
-        <div class="flex gap-2">
-          <AppButton
-            variant="outline"
-            size="sm"
-            :disabled="currentPage <= 1 || store.isLoading"
-            @click="goToPage(currentPage - 1)"
-          >
-            {{ t('common.previous') }}
-          </AppButton>
-          <AppButton
-            variant="outline"
-            size="sm"
-            :disabled="currentPage >= store.pagination.totalPages || store.isLoading"
-            @click="goToPage(currentPage + 1)"
-          >
-            {{ t('common.next') }}
-          </AppButton>
-        </div>
-      </div>
     </AppCard>
   </div>
 </template>

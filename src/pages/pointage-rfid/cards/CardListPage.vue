@@ -43,8 +43,10 @@
 
       <DataTable
         :columns="columns"
-        :data="filteredCards"
+        :data="pagedCards"
         :loading="loading"
+        :pagination="paginationObj"
+        @page-change="handlePageChange"
         @row-click="handleRowClick"
       >
         <template #employee="{ row }">
@@ -197,7 +199,7 @@
 
 <script setup lang="ts">
 // @ts-nocheck
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import DataTable from '@/components/data-display/DataTable.vue';
@@ -265,6 +267,23 @@ const filteredCards = computed(() => {
 
   return cards;
 });
+
+const currentPage = ref(1);
+const perPage = ref(15);
+
+const pagedCards = computed(() => {
+  const start = (currentPage.value - 1) * perPage.value;
+  return filteredCards.value.slice(start, start + perPage.value);
+});
+
+const paginationObj = computed(() => {
+  const total = filteredCards.value.length;
+  return { currentPage: currentPage.value, totalPages: Math.ceil(total / perPage.value) || 1, perPage: perPage.value, total };
+});
+
+const handlePageChange = (page: number) => { currentPage.value = page; };
+
+watch([() => filters.value.status, () => filters.value.search], () => { currentPage.value = 1; });
 
 const assignCompanyOptions = computed(() => [
   { label: t('cards.allCompanies'), value: '' },

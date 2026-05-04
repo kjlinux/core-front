@@ -64,8 +64,10 @@
 
         <DataTable
           :columns="departmentColumns"
-          :data="departmentTableData"
+          :data="pagedDepartments"
           :loading="false"
+          :pagination="paginationObj"
+          @page-change="handlePageChange"
           @row-click="handleDepartmentClick"
         />
       </AppCard>
@@ -201,6 +203,21 @@ const departmentTableData = computed(() => {
     manager: getManagerName(dept.managerId),
   }))
 })
+
+const currentPage = ref(1)
+const perPage = ref(15)
+
+const pagedDepartments = computed(() => {
+  const start = (currentPage.value - 1) * perPage.value
+  return departmentTableData.value.slice(start, start + perPage.value)
+})
+
+const paginationObj = computed(() => {
+  const total = departmentTableData.value.length
+  return { currentPage: currentPage.value, totalPages: Math.ceil(total / perPage.value) || 1, perPage: perPage.value, total }
+})
+
+const handlePageChange = (page: number) => { currentPage.value = page }
 
 async function openCreateDepartmentModal() {
   // Charger les employes du site pour alimenter le select manager

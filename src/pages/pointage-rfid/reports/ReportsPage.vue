@@ -177,7 +177,24 @@ watch(selectedSite, async (siteId) => {
 watch(reportType, () => {
   reportGenerated.value = false
   report.value = null
+  currentPage.value = 1
 })
+
+const currentPage = ref(1)
+const perPage = ref(20)
+
+const pagedRows = computed(() => {
+  if (!report.value) return []
+  const start = (currentPage.value - 1) * perPage.value
+  return report.value.rows.slice(start, start + perPage.value)
+})
+
+const paginationObj = computed(() => {
+  const total = report.value?.rows.length ?? 0
+  return { currentPage: currentPage.value, totalPages: Math.ceil(total / perPage.value) || 1, perPage: perPage.value, total }
+})
+
+const handlePageChange = (page: number) => { currentPage.value = page }
 
 // ---------- Generate report ----------
 const generateReport = async () => {
@@ -345,7 +362,7 @@ const handleExport = async () => {
             </AppButton>
           </div>
         </template>
-        <DataTable :columns="currentColumns" :data="report.rows" :loading="loading" />
+        <DataTable :columns="currentColumns" :data="pagedRows" :loading="loading" :pagination="paginationObj" @page-change="handlePageChange" />
       </AppCard>
     </template>
   </div>

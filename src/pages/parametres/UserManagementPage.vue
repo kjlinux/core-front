@@ -13,6 +13,7 @@ import AppModal from '@/components/ui/AppModal.vue'
 import AppInput from '@/components/ui/AppInput.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
+import DataTable from '@/components/data-display/DataTable.vue'
 import { PencilIcon, EyeIcon, EyeSlashIcon, KeyIcon, UserPlusIcon } from '@heroicons/vue/24/outline'
 
 const { t } = useI18n()
@@ -38,6 +39,30 @@ const createForm = ref({
 })
 
 const users = ref<UserData[]>([])
+const currentPage = ref(1)
+const perPage = ref(15)
+
+const pagedUsers = computed(() => {
+  const start = (currentPage.value - 1) * perPage.value
+  return users.value.slice(start, start + perPage.value)
+})
+
+const paginationObj = computed(() => {
+  const total = users.value.length
+  return { currentPage: currentPage.value, totalPages: Math.ceil(total / perPage.value) || 1, perPage: perPage.value, total }
+})
+
+const handlePageChange = (page: number) => { currentPage.value = page }
+
+const columns = computed(() => [
+  { key: 'fullName', label: t('common.name') },
+  { key: 'email', label: t('common.email') },
+  { key: 'role', label: t('parametres.role') },
+  { key: 'companyName', label: t('companies.title') },
+  { key: 'status', label: t('common.status') },
+  { key: 'createdAt', label: t('common.date') },
+  { key: 'actions', label: t('common.actions'), sortable: false },
+])
 
 const roleLabels = computed<Record<string, string>>(() => ({
   super_admin: t('parametres.superAdmin'),
@@ -222,61 +247,53 @@ onMounted(async () => {
     </div>
 
     <AppCard v-else>
-      <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-          <thead class="bg-gray-50">
-            <tr>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('common.name') }}</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('common.email') }}</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('parametres.role') }}</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('companies.title') }}</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('common.status') }}</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('common.date') }}</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('common.actions') }}</th>
-            </tr>
-          </thead>
-          <tbody class="bg-white divide-y divide-gray-100">
-            <tr v-for="u in users" :key="u.id" class="hover:bg-gray-50">
-              <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ u.firstName }} {{ u.lastName }}</td>
-              <td class="px-4 py-3 text-sm text-gray-600">{{ u.email }}</td>
-              <td class="px-4 py-3">
-                <AppBadge :variant="(roleBadgeVariant[u.role] as any) ?? 'info'">{{ roleLabels[u.role] ?? u.role }}</AppBadge>
-              </td>
-              <td class="px-4 py-3 text-sm text-gray-600">{{ u.companyName ?? '-' }}</td>
-              <td class="px-4 py-3">
-                <AppBadge :variant="u.isActive ? 'success' : 'neutral'">
-                  {{ u.isActive ? t('common.active') : t('common.inactive') }}
-                </AppBadge>
-              </td>
-              <td class="px-4 py-3 text-sm text-gray-600">{{ formatDate(u.createdAt) }}</td>
-              <td class="px-4 py-3">
-                <div class="flex gap-1">
-                  <AppButton size="sm" variant="ghost" @click="openEditModal(u)" :title="t('parametres.edit')">
-                    <PencilIcon class="w-4 h-4" />
-                  </AppButton>
-                  <AppButton
-                    size="sm"
-                    variant="ghost"
-                    :class="u.isActive ? 'text-red-600 hover:text-red-700' : 'text-green-600 hover:text-green-700'"
-                    @click="toggleActive(u)"
-                    :title="u.isActive ? t('parametres.deactivate') : t('parametres.activate')"
-                    :disabled="u.id === authStore.user?.id"
-                  >
-                    <EyeSlashIcon v-if="u.isActive" class="w-4 h-4" />
-                    <EyeIcon v-else class="w-4 h-4" />
-                  </AppButton>
-                  <AppButton size="sm" variant="ghost" @click="resetPassword(u)" :title="t('parametres.resetPassword')">
-                    <KeyIcon class="w-4 h-4" />
-                  </AppButton>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <div v-if="!isLoading && users.length === 0" class="text-center py-8 text-gray-500">
-        {{ t('parametres.noUser') }}
-      </div>
+      <DataTable
+        :columns="columns"
+        :data="pagedUsers"
+        :loading="isLoading"
+        :pagination="paginationObj"
+        :empty-message="t('parametres.noUser')"
+        @page-change="handlePageChange"
+      >
+        <template #fullName="{ row }">
+          <span class="font-medium text-gray-900">{{ row.firstName }} {{ row.lastName }}</span>
+        </template>
+        <template #role="{ row }">
+          <AppBadge :variant="(roleBadgeVariant[row.role] as any) ?? 'info'">{{ roleLabels[row.role] ?? row.role }}</AppBadge>
+        </template>
+        <template #companyName="{ row }">
+          {{ row.companyName ?? '-' }}
+        </template>
+        <template #status="{ row }">
+          <AppBadge :variant="row.isActive ? 'success' : 'neutral'">
+            {{ row.isActive ? t('common.active') : t('common.inactive') }}
+          </AppBadge>
+        </template>
+        <template #createdAt="{ row }">
+          {{ formatDate(row.createdAt) }}
+        </template>
+        <template #actions="{ row }">
+          <div class="flex gap-1">
+            <AppButton size="sm" variant="ghost" @click.stop="openEditModal(row)" :title="t('parametres.edit')">
+              <PencilIcon class="w-4 h-4" />
+            </AppButton>
+            <AppButton
+              size="sm"
+              variant="ghost"
+              :class="row.isActive ? 'text-red-600 hover:text-red-700' : 'text-green-600 hover:text-green-700'"
+              @click.stop="toggleActive(row)"
+              :title="row.isActive ? t('parametres.deactivate') : t('parametres.activate')"
+              :disabled="row.id === authStore.user?.id"
+            >
+              <EyeSlashIcon v-if="row.isActive" class="w-4 h-4" />
+              <EyeIcon v-else class="w-4 h-4" />
+            </AppButton>
+            <AppButton size="sm" variant="ghost" @click.stop="resetPassword(row)" :title="t('parametres.resetPassword')">
+              <KeyIcon class="w-4 h-4" />
+            </AppButton>
+          </div>
+        </template>
+      </DataTable>
     </AppCard>
 
     <!-- Create User Modal -->

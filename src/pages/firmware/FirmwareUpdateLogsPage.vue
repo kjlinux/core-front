@@ -88,7 +88,13 @@ function formatDatetime(d?: string) {
         <AppButton variant="ghost" size="sm" @click="loadData">{{ t('common.refresh') }}</AppButton>
       </div>
 
-      <DataTable :columns="columns" :data="store.updateLogs" :loading="store.isLoading">
+      <DataTable
+        :columns="columns"
+        :data="store.updateLogs"
+        :loading="store.isLoading"
+        :pagination="store.pagination.totalPages > 0 ? { currentPage: store.pagination.currentPage, totalPages: store.pagination.totalPages, perPage: store.pagination.perPage ?? 20, total: store.pagination.total } : undefined"
+        @page-change="(p) => store.fetchLogs({ page: p })"
+      >
         <template #deviceKind="{ row }">
           <AppBadge variant="info">{{ row.deviceKind === 'rfid' ? t('firmware.deviceKinds.rfid') : t('firmware.deviceKinds.biometric') }}</AppBadge>
         </template>
@@ -112,28 +118,6 @@ function formatDatetime(d?: string) {
           <span v-else class="text-gray-400">-</span>
         </template>
       </DataTable>
-
-      <div v-if="store.pagination.totalPages > 1" class="mt-4 flex items-center justify-between text-sm text-gray-600">
-        <span>{{ t('common.page') }} {{ store.pagination.currentPage }} / {{ store.pagination.totalPages }} — {{ store.pagination.total }} {{ t('firmware.entries') }}</span>
-        <div class="flex gap-2">
-          <AppButton
-            variant="ghost"
-            size="sm"
-            :disabled="store.pagination.currentPage <= 1"
-            @click="store.fetchLogs({ page: store.pagination.currentPage - 1 })"
-          >
-            {{ t('common.previous') }}
-          </AppButton>
-          <AppButton
-            variant="ghost"
-            size="sm"
-            :disabled="store.pagination.currentPage >= store.pagination.totalPages"
-            @click="store.fetchLogs({ page: store.pagination.currentPage + 1 })"
-          >
-            {{ t('common.next') }}
-          </AppButton>
-        </div>
-      </div>
     </AppCard>
   </div>
 </template>

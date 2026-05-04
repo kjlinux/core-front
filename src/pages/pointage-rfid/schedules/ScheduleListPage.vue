@@ -23,9 +23,11 @@
 
     <AppCard>
       <DataTable
-        :data="filteredSchedules"
+        :data="pagedSchedules"
         :columns="columns"
         :loading="loading"
+        :pagination="paginationObj"
+        @page-change="handlePageChange"
         @row-click="handleRowClick"
       >
         <template #companyName="{ row }">
@@ -102,7 +104,7 @@
 
 <script setup lang="ts">
 // @ts-nocheck
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import DataTable from '@/components/data-display/DataTable.vue'
@@ -148,6 +150,23 @@ const filteredSchedules = computed(() => {
   if (!filterCompanyId.value) return list
   return list.filter(s => s.companyId === filterCompanyId.value)
 })
+
+const currentPage = ref(1)
+const perPage = ref(15)
+
+const pagedSchedules = computed(() => {
+  const start = (currentPage.value - 1) * perPage.value
+  return filteredSchedules.value.slice(start, start + perPage.value)
+})
+
+const paginationObj = computed(() => {
+  const total = filteredSchedules.value.length
+  return { currentPage: currentPage.value, totalPages: Math.ceil(total / perPage.value) || 1, perPage: perPage.value, total }
+})
+
+const handlePageChange = (page: number) => { currentPage.value = page }
+
+watch(filterCompanyId, () => { currentPage.value = 1 })
 
 const columns = computed(() => [
   { key: 'name', label: t('common.name'), sortable: true },

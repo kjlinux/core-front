@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, computed } from 'vue'
+import { onMounted, ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import QRCode from 'qrcode'
@@ -32,6 +32,21 @@ const columns = computed(() => [
   { key: 'generatedAt', label: t('qrcode.generatedAt') },
   { key: 'actions', label: t('common.actions') },
 ])
+
+const currentPage = ref(1)
+const perPage = ref(15)
+
+const pagedQrCodes = computed(() => {
+  const start = (currentPage.value - 1) * perPage.value
+  return store.qrCodes.slice(start, start + perPage.value)
+})
+
+const paginationObj = computed(() => {
+  const total = store.qrCodes.length
+  return { currentPage: currentPage.value, totalPages: Math.ceil(total / perPage.value) || 1, perPage: perPage.value, total }
+})
+
+const handlePageChange = (page: number) => { currentPage.value = page }
 
 onMounted(() => store.fetchQrCodes())
 
@@ -107,7 +122,7 @@ async function handleRevoke(id: string) {
     </div>
 
     <AppCard>
-      <DataTable :columns="columns" :data="store.qrCodes" :loading="store.isLoading" @row-click="handleRowClick">
+      <DataTable :columns="columns" :data="pagedQrCodes" :loading="store.isLoading" :pagination="paginationObj" @page-change="handlePageChange" @row-click="handleRowClick">
         <template #siteName="{ row }">
           <span class="font-medium text-gray-900">{{ row.siteName ?? '-' }}</span>
         </template>

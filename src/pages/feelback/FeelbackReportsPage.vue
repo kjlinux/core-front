@@ -134,7 +134,23 @@ watch(reportType, () => {
   }
   reportGenerated.value = false
   report.value = null
+  currentPage.value = 1
 })
+
+const currentPage = ref(1)
+const perPage = ref(20)
+
+const pagedTableData = computed(() => {
+  const start = (currentPage.value - 1) * perPage.value
+  return tableData.value.slice(start, start + perPage.value)
+})
+
+const paginationObj = computed(() => {
+  const total = tableData.value.length
+  return { currentPage: currentPage.value, totalPages: Math.ceil(total / perPage.value) || 1, perPage: perPage.value, total }
+})
+
+const handlePageChange = (page: number) => { currentPage.value = page }
 
 onMounted(() => {
   if (isSuperAdmin.value) {
@@ -357,7 +373,7 @@ async function handleExportExcel() {
             </AppButton>
           </div>
         </template>
-        <DataTable :columns="activeColumns" :data="tableData" :loading="loading" />
+        <DataTable :columns="activeColumns" :data="pagedTableData" :loading="loading" :pagination="paginationObj" @page-change="handlePageChange" />
       </AppCard>
     </template>
   </div>

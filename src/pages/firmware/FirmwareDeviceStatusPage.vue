@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useFirmwareStore } from '@/stores/firmware.store'
 import { usePermissions } from '@/composables/usePermissions'
@@ -50,6 +50,23 @@ const filteredStatuses = computed(() => {
   return store.deviceStatuses.filter((d) => d.deviceKind === deviceKindFilter.value)
 })
 
+const currentPage = ref(1)
+const perPage = ref(15)
+
+const pagedStatuses = computed(() => {
+  const start = (currentPage.value - 1) * perPage.value
+  return filteredStatuses.value.slice(start, start + perPage.value)
+})
+
+const paginationObj = computed(() => {
+  const total = filteredStatuses.value.length
+  return { currentPage: currentPage.value, totalPages: Math.ceil(total / perPage.value) || 1, perPage: perPage.value, total }
+})
+
+const handlePageChange = (page: number) => { currentPage.value = page }
+
+watch(deviceKindFilter, () => { currentPage.value = 1 })
+
 const compatibleVersions = computed(() => {
   if (!selectedDevice.value) return []
   return store.versions.filter((v) => v.deviceKind === selectedDevice.value!.deviceKind)
@@ -98,7 +115,7 @@ function formatDate(d?: string) {
         </select>
       </div>
 
-      <DataTable :columns="columns" :data="filteredStatuses" :loading="store.isLoading">
+      <DataTable :columns="columns" :data="pagedStatuses" :loading="store.isLoading" :pagination="paginationObj" @page-change="handlePageChange">
         <template #deviceKind="{ row }">
           <AppBadge variant="info">{{ row.deviceKind === 'rfid' ? t('firmware.deviceKinds.rfid') : t('firmware.deviceKinds.biometric') }}</AppBadge>
         </template>

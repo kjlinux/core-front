@@ -27,9 +27,11 @@
       </template>
 
       <DataTable
-        :data="filteredHolidays"
+        :data="pagedHolidays"
         :columns="columns"
         :loading="loading"
+        :pagination="paginationObj"
+        @page-change="handlePageChange"
       >
         <template #date="{ row }">
           {{ formatDate(row.date) }}
@@ -118,7 +120,7 @@
 
 <script setup lang="ts">
 // @ts-nocheck
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import DataTable from '@/components/data-display/DataTable.vue'
 import AppButton from '@/components/ui/AppButton.vue'
@@ -190,6 +192,23 @@ const columns = computed(() => [
   { key: 'isRecurring', label: t('holidays.recurring'), sortable: true },
   { key: 'actions', label: t('common.actions'), sortable: false }
 ])
+
+const currentPage = ref(1)
+const perPage = ref(15)
+
+const pagedHolidays = computed(() => {
+  const start = (currentPage.value - 1) * perPage.value
+  return filteredHolidays.value.slice(start, start + perPage.value)
+})
+
+const paginationObj = computed(() => {
+  const total = filteredHolidays.value.length
+  return { currentPage: currentPage.value, totalPages: Math.ceil(total / perPage.value) || 1, perPage: perPage.value, total }
+})
+
+const handlePageChange = (page: number) => { currentPage.value = page }
+
+watch(selectedYear, () => { currentPage.value = 1 })
 
 const openCreateModal = () => {
   editingHoliday.value = null

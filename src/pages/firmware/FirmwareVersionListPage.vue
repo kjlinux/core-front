@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useFirmwareStore } from '@/stores/firmware.store'
@@ -32,6 +32,28 @@ const columns = computed(() => [
   { key: 'uploadedAt', label: t('firmware.uploadedAt') },
   { key: 'actions', label: t('common.actions') },
 ])
+
+const currentPage = ref(1)
+const perPage = ref(15)
+
+const filteredVersions = computed(() => {
+  if (!deviceKindFilter.value) return store.versions
+  return store.versions.filter((v) => v.deviceKind === deviceKindFilter.value)
+})
+
+const pagedVersions = computed(() => {
+  const start = (currentPage.value - 1) * perPage.value
+  return filteredVersions.value.slice(start, start + perPage.value)
+})
+
+const paginationObj = computed(() => {
+  const total = filteredVersions.value.length
+  return { currentPage: currentPage.value, totalPages: Math.ceil(total / perPage.value) || 1, perPage: perPage.value, total }
+})
+
+const handlePageChange = (page: number) => { currentPage.value = page }
+
+watch(deviceKindFilter, () => { currentPage.value = 1 })
 
 onMounted(() => loadData())
 
@@ -108,7 +130,7 @@ async function handleDelete(id: string) {
         </select>
       </div>
 
-      <DataTable :columns="columns" :data="store.versions" :loading="store.isLoading">
+      <DataTable :columns="columns" :data="pagedVersions" :loading="store.isLoading" :pagination="paginationObj" @page-change="handlePageChange">
         <template #deviceKind="{ row }">
           <AppBadge variant="info">{{ row.deviceKind === 'rfid' ? t('firmware.deviceKinds.rfid') : t('firmware.deviceKinds.biometric') }}</AppBadge>
         </template>
