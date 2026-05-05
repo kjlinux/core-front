@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import type { Schedule, Company, Department } from '@/types'
 import FormSection from './FormSection.vue'
 import FormRow from './FormRow.vue'
@@ -21,6 +21,7 @@ const emit = defineEmits<{
 }>()
 
 const errors = ref<Record<string, string>>({})
+const isPrefilling = ref(false)
 
 const form = ref<Partial<Schedule>>({
   name: '',
@@ -38,8 +39,9 @@ const form = ref<Partial<Schedule>>({
 // Pré-remplissage quand initialData arrive (chargement async en édition)
 watch(
   () => props.initialData,
-  (data) => {
+  async (data) => {
     if (data && Object.keys(data).length > 0) {
+      isPrefilling.value = true
       form.value = {
         name: data.name ?? '',
         companyId: data.companyId ?? '',
@@ -52,6 +54,8 @@ watch(
         lateTolerance: data.lateTolerance ?? 0,
         assignedDepartments: data.assignedDepartments ? [...data.assignedDepartments] : [],
       }
+      await nextTick()
+      isPrefilling.value = false
     }
   },
   { immediate: true },
@@ -103,9 +107,11 @@ const toggleDepartment = (deptId: string) => {
   form.value = { ...form.value, assignedDepartments: depts }
 }
 
-// Reset departments when company changes
+// Reset departments when company changes (pas lors du pré-remplissage)
 watch(() => form.value.companyId, () => {
-  form.value = { ...form.value, assignedDepartments: [] }
+  if (!isPrefilling.value) {
+    form.value = { ...form.value, assignedDepartments: [] }
+  }
 })
 
 const validate = (): boolean => {
@@ -126,8 +132,9 @@ const validate = (): boolean => {
   if (!form.value.endTime?.trim()) {
     errors.value.endTime = "L'heure de fin est requise"
   }
-  if (form.value.startTime && form.value.endTime && form.value.startTime >= form.value.endTime) {
-    errors.value.endTime = "L'heure de fin doit être après l'heure de début"
+  // Les horaires identiques sont invalides ; les horaires de nuit (fin < début) sont autorisés
+  if (form.value.startTime && form.value.endTime && form.value.startTime === form.value.endTime) {
+    errors.value.endTime = "L'heure de fin ne peut pas être identique à l'heure de début"
   }
   if (!form.value.workDays?.length) {
     errors.value.workDays = 'Sélectionner au moins un jour de travail'
@@ -185,6 +192,12 @@ const handleSubmit = () => {
           type="time"
           :disabled="loading"
         />
+        <p
+          v-if="form.startTime && form.endTime && form.endTime < form.startTime"
+          class="mt-1 text-xs text-blue-500"
+        >
+          Horaire de nuit : la fin est le lendemain matin
+        </p>
       </FormRow>
 
       <FormRow label="Début de pause" :error="errors.breakStart">
