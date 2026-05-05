@@ -90,7 +90,8 @@ onMounted(async () => {
             <dd><AppBadge :variant="device.is_online ? 'success' : 'danger'" size="sm">{{ device.is_online ? 'En ligne' : 'Hors ligne' }}</AppBadge></dd>
           </div>
           <div class="flex justify-between"><dt class="text-gray-500">Serie</dt><dd>{{ device.serial_number ?? '—' }}</dd></div>
-          <div class="flex justify-between"><dt class="text-gray-500">Site</dt><dd>{{ device.site_id ?? '—' }}</dd></div>
+          <div class="flex justify-between"><dt class="text-gray-500">Entreprise</dt><dd>{{ device.company_name ?? device.company_id ?? '—' }}</dd></div>
+          <div class="flex justify-between"><dt class="text-gray-500">Site</dt><dd>{{ device.site_name ?? device.site_id ?? '—' }}</dd></div>
           <div class="flex justify-between"><dt class="text-gray-500">Firmware</dt><dd>{{ device.firmware_version ?? '—' }}</dd></div>
           <div class="flex justify-between"><dt class="text-gray-500">Dernier signal</dt><dd>{{ fmtDate(device.last_ping_at ?? device.last_sync_at) }}</dd></div>
           <div class="flex justify-between"><dt class="text-gray-500">Témoin</dt><dd>{{ device.is_witness ? 'Oui' : 'Non' }}</dd></div>
