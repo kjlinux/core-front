@@ -1,11 +1,11 @@
-export type DeviceKind = 'rfid' | 'biometric'
+export type FirmwareDeviceKind = 'rfid' | 'biometric'
 
 export type OtaUpdateStatus = 'pending' | 'in_progress' | 'success' | 'failed' | 'skipped'
 
 export interface FirmwareVersion {
   id: string
   version: string
-  deviceKind: DeviceKind
+  deviceKind: FirmwareDeviceKind
   description?: string
   fileUrl?: string
   fileSize?: number
@@ -19,7 +19,7 @@ export interface FirmwareVersion {
 export interface DeviceUpdateProgress {
   deviceId: string
   deviceName: string
-  deviceKind: DeviceKind
+  deviceKind: FirmwareDeviceKind
   status: OtaUpdateStatus
   errorMessage?: string
   completedAt?: string
@@ -37,7 +37,7 @@ export interface CompanyUpdateProgress {
 export interface DeviceFirmwareStatus {
   deviceId: string
   deviceName: string
-  deviceKind: DeviceKind
+  deviceKind: FirmwareDeviceKind
   currentVersion: string
   targetVersion: string | null
   updateStatus: OtaUpdateStatus
@@ -49,7 +49,7 @@ export interface OtaUpdateLog {
   id: string
   deviceId: string
   deviceName?: string
-  deviceKind: DeviceKind
+  deviceKind: FirmwareDeviceKind
   firmwareVersionId: string
   firmwareVersion: string
   status: OtaUpdateStatus
@@ -60,14 +60,14 @@ export interface OtaUpdateLog {
 }
 
 export interface FirmwareFilters {
-  deviceKind?: DeviceKind
+  deviceKind?: FirmwareDeviceKind
   page?: number
   perPage?: number
 }
 
 export interface OtaLogFilters {
   deviceId?: string
-  deviceKind?: DeviceKind
+  deviceKind?: FirmwareDeviceKind
   status?: OtaUpdateStatus
   page?: number
   perPage?: number

@@ -78,7 +78,7 @@ onMounted(() => store.fetchHealth())
 
     <AppCard title="Capteurs en ligne par type">
       <div class="grid grid-cols-3 gap-4">
-        <div v-for="(d, kind) in store.health?.devices ?? {}" :key="kind" class="text-center p-4 bg-gray-50 rounded">
+        <div v-for="(d, kind) in (store.health?.devices as Record<string, { total: number; online: number }> | undefined) ?? {}" :key="kind" class="text-center p-4 bg-gray-50 rounded">
           <p class="text-xs text-gray-500 uppercase">{{ kind }}</p>
           <p class="text-2xl font-bold text-gray-900 mt-1">{{ d.online }} / {{ d.total }}</p>
         </div>

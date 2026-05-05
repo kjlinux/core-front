@@ -8,14 +8,14 @@ import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import DataTable from '@/components/data-display/DataTable.vue'
-import type { DeviceFirmwareStatus, DeviceKind } from '@/types'
+import type { DeviceFirmwareStatus, FirmwareDeviceKind } from '@/types'
 
 const { t } = useI18n()
 const store = useFirmwareStore()
 const permissions = usePermissions()
 const toast = useToast()
 
-const deviceKindFilter = ref<DeviceKind | ''>('')
+const deviceKindFilter = ref<FirmwareDeviceKind | ''>('')
 const selectedDevice = ref<DeviceFirmwareStatus | null>(null)
 const selectedFirmwareVersionId = ref('')
 

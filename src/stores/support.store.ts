@@ -97,6 +97,7 @@ export const useSupportStore = defineStore('support', () => {
         if (idx !== -1) {
           alerts.value[idx] = {
             ...alerts.value[idx],
+            id: alerts.value[idx].id,
             status: payload.status as DeviceAlert['status'],
             resolved_at: payload.resolvedAt,
           }

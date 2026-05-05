@@ -7,7 +7,7 @@ import { useToast } from '@/composables/useToast'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppToggle from '@/components/ui/AppToggle.vue'
-import type { DeviceKind } from '@/types'
+import type { FirmwareDeviceKind } from '@/types'
 
 const { t } = useI18n()
 const store = useFirmwareStore()
@@ -15,7 +15,7 @@ const router = useRouter()
 const toast = useToast()
 
 const version = ref('')
-const deviceKind = ref<DeviceKind>('rfid')
+const deviceKind = ref<FirmwareDeviceKind>('rfid')
 const description = ref('')
 const isAutoUpdate = ref(false)
 const file = ref<File | null>(null)
