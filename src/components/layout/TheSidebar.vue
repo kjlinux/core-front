@@ -67,6 +67,8 @@ const isClientRole = computed(
     auth.user?.role === UserRole.MANAGER ||
     auth.user?.role === UserRole.TECHNICIEN,
 )
+const isSupportIt = computed(() => auth.user?.role === UserRole.SUPPORT_IT)
+const showSupportIt = computed(() => isSupportIt.value || isSuperAdmin.value)
 
 function getActiveGroupId(): string | null {
   const path = route.path
@@ -84,6 +86,7 @@ function getActiveGroupId(): string | null {
   if (path.startsWith('/feelback')) return 'feelback'
   if (path.startsWith('/marketplace')) return 'marketplace'
   if (path.startsWith('/paie')) return 'paie'
+  if (path.startsWith('/support-it')) return 'support-it'
   if (path.startsWith('/parametres')) return 'parametres'
   return null
 }
@@ -551,6 +554,57 @@ const sidebarClasses = computed(() => [
           :icon="ClipboardDocumentListIcon"
           :collapsed="false"
           :active="route.path.startsWith('/firmware/logs')"
+          :nested="true"
+        />
+      </TheSidebarGroup>
+
+      <!-- Support IT -->
+      <TheSidebarGroup
+        v-if="showSupportIt"
+        group-id="support-it"
+        label="Support IT"
+        :icon="WrenchScrewdriverIcon"
+        :collapsed="ui.sidebarCollapsed"
+        :active="route.path.startsWith('/support-it')"
+      >
+        <TheSidebarItem
+          label="Dashboard"
+          to="/support-it"
+          :icon="HomeIcon"
+          :collapsed="false"
+          :active="route.path === '/support-it'"
+          :nested="true"
+        />
+        <TheSidebarItem
+          label="Sante systeme"
+          to="/support-it/health"
+          :icon="ServerStackIcon"
+          :collapsed="false"
+          :active="route.path.startsWith('/support-it/health')"
+          :nested="true"
+        />
+        <TheSidebarItem
+          label="Capteurs"
+          to="/support-it/devices"
+          :icon="CpuChipIcon"
+          :collapsed="false"
+          :active="route.path.startsWith('/support-it/devices')"
+          :nested="true"
+        />
+        <TheSidebarItem
+          label="Capteurs temoins"
+          to="/support-it/witnesses"
+          :icon="ShieldCheckIcon"
+          :collapsed="false"
+          :active="route.path.startsWith('/support-it/witnesses')"
+          :nested="true"
+        />
+        <TheSidebarItem
+          label="Alertes"
+          to="/support-it/alerts"
+          :icon="BellAlertIcon"
+          :collapsed="false"
+          :active="route.path.startsWith('/support-it/alerts')"
           :nested="true"
         />
       </TheSidebarGroup>

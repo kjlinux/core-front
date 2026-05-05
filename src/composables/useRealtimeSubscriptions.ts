@@ -5,6 +5,7 @@ import { useAttendanceStore } from '@/stores/attendance.store'
 import { useFeelbackStore } from '@/stores/feelback.store'
 import { useBiometricStore } from '@/stores/biometric.store'
 import { useFeelbackDeviceStore } from '@/stores/feelback-device.store'
+import { useSupportStore } from '@/stores/support.store'
 import { useUiStore } from '@/stores/ui.store'
 
 /**
@@ -24,6 +25,7 @@ export function useRealtimeSubscriptions() {
   const feelbackStore = useFeelbackStore()
   const biometricStore = useBiometricStore()
   const feelbackDeviceStore = useFeelbackDeviceStore()
+  const supportStore = useSupportStore()
   const ui = useUiStore()
 
   function subscribeAll() {
@@ -96,6 +98,11 @@ export function useRealtimeSubscriptions() {
           feelbackDeviceStore.handleRealtimeDevice(payload)
         }
       })
+
+    // Canal support — alertes systeme + sante (support_it / super_admin uniquement)
+    if (authStore.isSupportIt || authStore.isSuperAdmin) {
+      supportStore.subscribeRealtime()
+    }
   }
 
   function unsubscribeAll() {
@@ -106,6 +113,9 @@ export function useRealtimeSubscriptions() {
     echo.leave('attendance')
     echo.leave('feelback')
     echo.leave('devices')
+    if (authStore.isSupportIt || authStore.isSuperAdmin) {
+      supportStore.unsubscribeRealtime()
+    }
   }
 
   return { subscribeAll, unsubscribeAll }

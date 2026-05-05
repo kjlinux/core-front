@@ -11,6 +11,7 @@ import marketplaceRoutes from './routes/marketplace.routes'
 import settingsRoutes from './routes/settings.routes'
 import paieRoutes from './routes/paie.routes'
 import publicRoutes from './routes/public.routes'
+import supportItRoutes from './routes/support-it.routes'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -26,6 +27,7 @@ const router = createRouter({
     ...marketplaceRoutes,
     ...settingsRoutes,
     ...paieRoutes,
+    ...supportItRoutes,
     {
       path: '/choisir-entreprise',
       name: 'technicien-select-company',
