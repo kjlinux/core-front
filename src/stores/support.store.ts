@@ -95,12 +95,8 @@ export const useSupportStore = defineStore('support', () => {
       .listen('.alert.resolved', (payload: { alertId: string; status: string; resolvedAt: string }) => {
         const idx = alerts.value.findIndex((a) => a.id === payload.alertId)
         if (idx !== -1) {
-          alerts.value[idx] = {
-            ...alerts.value[idx],
-            id: alerts.value[idx].id,
-            status: payload.status as DeviceAlert['status'],
-            resolved_at: payload.resolvedAt,
-          }
+          const existing = alerts.value[idx] as DeviceAlert
+          alerts.value[idx] = { ...existing, status: payload.status as DeviceAlert['status'], resolved_at: payload.resolvedAt }
         }
       })
       .listen('.health.changed', (payload: SystemHealth) => {
