@@ -117,7 +117,7 @@ const sidebarClasses = computed(() => [
     <nav class="flex-1 overflow-y-auto py-4">
       <!-- Dashboard -->
       <TheSidebarItem
-        v-if="!isEmploye"
+        v-if="!isEmploye && !isSupportIt"
         :label="t('nav.dashboard')"
         to="/"
         :icon="HomeIcon"
@@ -127,7 +127,7 @@ const sidebarClasses = computed(() => [
 
       <!-- Organisation -->
       <TheSidebarGroup
-        v-if="!isEmploye"
+        v-if="!isEmploye && !isSupportIt"
         group-id="organisation"
         :label="t('nav.organisation')"
         :icon="BuildingOffice2Icon"
@@ -171,7 +171,7 @@ const sidebarClasses = computed(() => [
 
       <!-- Pointage RFID -->
       <TheSidebarGroup
-        v-if="!isEmploye"
+        v-if="!isEmploye && !isSupportIt"
         group-id="pointage-rfid"
         :label="t('nav.pointageRfid')"
         :icon="CreditCardIcon"
@@ -226,7 +226,7 @@ const sidebarClasses = computed(() => [
 
       <!-- Pointage QR Code -->
       <TheSidebarGroup
-        v-if="!isEmploye"
+        v-if="!isEmploye && !isSupportIt"
         group-id="pointage-qrcode"
         :label="t('nav.pointageQrcode')"
         :icon="QrCodeIcon"
@@ -287,7 +287,7 @@ const sidebarClasses = computed(() => [
 
       <!-- Biometrique -->
       <TheSidebarGroup
-        v-if="!isEmploye"
+        v-if="!isEmploye && !isSupportIt"
         group-id="biometrique"
         :label="t('nav.biometrique')"
         :icon="FingerPrintIcon"
@@ -332,7 +332,7 @@ const sidebarClasses = computed(() => [
 
       <!-- Feelback -->
       <TheSidebarGroup
-        v-if="isClientRole && !isTechnicien && !isEmploye"
+        v-if="isClientRole && !isTechnicien && !isEmploye && !isSupportIt"
         group-id="feelback"
         :label="t('nav.feelback')"
         :icon="FaceSmileIcon"
@@ -409,7 +409,7 @@ const sidebarClasses = computed(() => [
 
       <!-- Marketplace (masque pour technicien) -->
       <TheSidebarGroup
-        v-if="isClientRole && !isTechnicien && !isEmploye"
+        v-if="isClientRole && !isTechnicien && !isEmploye && !isSupportIt"
         group-id="marketplace"
         :label="t('nav.marketplace')"
         :icon="ShoppingCartIcon"
@@ -480,7 +480,7 @@ const sidebarClasses = computed(() => [
 
       <!-- Paie -->
       <TheSidebarGroup
-        v-if="isAdminOrSuper && !isEmploye"
+        v-if="isAdminOrSuper && !isEmploye && !isSupportIt"
         group-id="paie"
         label="Paie"
         :icon="BanknotesIcon"
@@ -507,6 +507,7 @@ const sidebarClasses = computed(() => [
 
       <!-- Mon espace (portail employe) -->
       <TheSidebarItem
+        v-if="!isSupportIt"
         label="Mon espace"
         to="/mon-espace"
         :icon="UserCircleIcon"
@@ -516,7 +517,7 @@ const sidebarClasses = computed(() => [
 
       <!-- Firmware OTA -->
       <TheSidebarGroup
-        v-if="isAdminOrSuperOrTech"
+        v-if="isAdminOrSuperOrTech && !isSupportIt"
         group-id="firmware"
         :label="t('nav.firmware')"
         :icon="CpuChipIcon"
@@ -576,7 +577,7 @@ const sidebarClasses = computed(() => [
           :nested="true"
         />
         <TheSidebarItem
-          label="Sante systeme"
+          label="Santé système"
           to="/support-it/health"
           :icon="ServerStackIcon"
           :collapsed="false"
@@ -592,7 +593,7 @@ const sidebarClasses = computed(() => [
           :nested="true"
         />
         <TheSidebarItem
-          label="Capteurs temoins"
+          label="Capteurs témoins"
           to="/support-it/witnesses"
           :icon="ShieldCheckIcon"
           :collapsed="false"
@@ -626,7 +627,7 @@ const sidebarClasses = computed(() => [
           :nested="true"
         />
         <TheSidebarItem
-          v-if="isAdminOrSuper && !isEmploye"
+          v-if="isAdminOrSuper && !isEmploye && !isSupportIt"
           :label="t('nav.company')"
           to="/parametres/entreprise"
           :icon="BuildingOffice2Icon"
@@ -635,7 +636,7 @@ const sidebarClasses = computed(() => [
           :nested="true"
         />
         <TheSidebarItem
-          v-if="(isAdminOrSuper || isTechnicien) && !isEmploye"
+          v-if="(isAdminOrSuper || isTechnicien) && !isEmploye && !isSupportIt"
           :label="t('nav.users')"
           to="/parametres/utilisateurs"
           :icon="UsersIcon"
@@ -644,7 +645,7 @@ const sidebarClasses = computed(() => [
           :nested="true"
         />
         <TheSidebarItem
-          v-if="isAdminOrSuper && !isEmploye"
+          v-if="isAdminOrSuper && !isEmploye && !isSupportIt"
           :label="t('nav.roles')"
           to="/parametres/roles"
           :icon="ShieldCheckIcon"
@@ -653,7 +654,7 @@ const sidebarClasses = computed(() => [
           :nested="true"
         />
         <TheSidebarItem
-          v-if="isSetupRole && !isEmploye"
+          v-if="isSetupRole && !isEmploye && !isSupportIt"
           label="Rapport technicien"
           to="/parametres/rapport-technicien"
           :icon="ClipboardDocumentListIcon"
@@ -662,7 +663,7 @@ const sidebarClasses = computed(() => [
           :nested="true"
         />
         <TheSidebarItem
-          v-if="isSuperAdmin && !isEmploye"
+          v-if="isSuperAdmin && !isEmploye && !isSupportIt"
           label="Activites techniciens"
           to="/parametres/activites-techniciens"
           :icon="DocumentChartBarIcon"
@@ -671,7 +672,7 @@ const sidebarClasses = computed(() => [
           :nested="true"
         />
         <TheSidebarItem
-          v-if="!isEmploye"
+          v-if="!isEmploye && !isSupportIt"
           label="Centre d'aide"
           to="/parametres/aide"
           :icon="QuestionMarkCircleIcon"

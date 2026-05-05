@@ -25,7 +25,7 @@ const loading = ref(false)
 const witnessId = ref<string>('')
 
 const witnessOptions = computed(() => [
-  { value: '', label: 'Comparer avec un temoin...' },
+  { value: '', label: 'Comparer avec un témoin...' },
   ...store.witnesses
     .filter((w) => w.kind === kind.value)
     .map((w) => ({ value: w.id, label: w.name })),
@@ -50,7 +50,7 @@ async function ping() {
     await store.pingDevice(kind.value, id.value)
     toast.success('Commande STATUS envoyee')
   } catch (e) {
-    toast.error('Echec', String((e as Error).message))
+    toast.error('Échec', String((e as Error).message))
   }
 }
 
@@ -93,25 +93,26 @@ onMounted(async () => {
           <div class="flex justify-between"><dt class="text-gray-500">Site</dt><dd>{{ device.site_id ?? '—' }}</dd></div>
           <div class="flex justify-between"><dt class="text-gray-500">Firmware</dt><dd>{{ device.firmware_version ?? '—' }}</dd></div>
           <div class="flex justify-between"><dt class="text-gray-500">Dernier signal</dt><dd>{{ fmtDate(device.last_ping_at ?? device.last_sync_at) }}</dd></div>
-          <div class="flex justify-between"><dt class="text-gray-500">Temoin</dt><dd>{{ device.is_witness ? 'Oui' : 'Non' }}</dd></div>
+          <div class="flex justify-between"><dt class="text-gray-500">Témoin</dt><dd>{{ device.is_witness ? 'Oui' : 'Non' }}</dd></div>
         </dl>
         <p v-else class="text-sm text-gray-500">Chargement...</p>
       </AppCard>
 
-      <AppCard title="Comparaison capteur temoin" subtitle="Diagnostic visuel">
+      <AppCard title="Comparaison capteur témoin" subtitle="Diagnostic visuel">
         <AppSelect v-model="witnessId" :options="witnessOptions" />
         <div v-if="selectedWitness" class="mt-4 p-3 bg-gray-50 rounded text-sm space-y-1">
           <div class="flex justify-between"><span class="text-gray-500">Nom</span><span>{{ selectedWitness.name }}</span></div>
           <div class="flex justify-between"><span class="text-gray-500">Statut</span>
+
             <AppBadge :variant="selectedWitness.isOnline ? 'success' : 'danger'" size="sm">{{ selectedWitness.isOnline ? 'En ligne' : 'Hors ligne' }}</AppBadge>
           </div>
           <div class="flex justify-between"><span class="text-gray-500">Dernier signal</span><span>{{ fmtDate(selectedWitness.lastSeenAt) }}</span></div>
         </div>
-        <p v-else-if="witnessOptions.length <= 1" class="mt-4 text-xs text-gray-500">Aucun capteur temoin de ce type. Marquez-en un depuis la page Capteurs temoins.</p>
+        <p v-else-if="witnessOptions.length <= 1" class="mt-4 text-xs text-gray-500">Aucun capteur témoin de ce type. Marquez-en un depuis la page Capteurs témoins.</p>
       </AppCard>
     </div>
 
-    <AppCard title="Alertes recentes">
+    <AppCard title="Alertes récentes">
       <div v-if="alerts.length === 0" class="text-sm text-gray-500 py-3">Aucune alerte pour ce capteur.</div>
       <div v-else class="divide-y divide-gray-100">
         <div v-for="a in alerts" :key="a.id" class="py-3 flex items-start justify-between">

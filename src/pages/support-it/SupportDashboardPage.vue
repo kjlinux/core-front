@@ -54,7 +54,7 @@ onMounted(async () => {
     <div class="flex items-center justify-between">
       <div>
         <h1 class="text-2xl font-semibold text-gray-900">Support IT</h1>
-        <p class="text-sm text-gray-500">Vue d'ensemble du systeme et des capteurs</p>
+        <p class="text-sm text-gray-500">Vue d'ensemble du système et des capteurs</p>
       </div>
       <AppBadge :variant="overallVariant" size="md">{{ overallLabel }}</AppBadge>
     </div>
@@ -85,13 +85,13 @@ onMounted(async () => {
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <AppCard title="Sante systeme" subtitle="Composants critiques">
+      <AppCard title="Santé système" subtitle="Composants critiques">
         <template #actions>
           <RouterLink to="/support-it/health" class="text-sm text-blue-600 hover:underline">Detail</RouterLink>
         </template>
         <div v-if="store.health" class="space-y-2">
           <div v-for="(c, name) in {
-            'Base de donnees': store.health.components.db,
+            'Base de données': store.health.components.db,
             'Cache': store.health.components.cache,
             'File de jobs': store.health.components.queue,
             'Broker MQTT': store.health.components.mqtt,
@@ -106,11 +106,11 @@ onMounted(async () => {
         <div v-else class="text-sm text-gray-500">Chargement...</div>
       </AppCard>
 
-      <AppCard title="Alertes recentes">
+      <AppCard title="Alertes récentes">
         <template #actions>
           <RouterLink to="/support-it/alerts" class="text-sm text-blue-600 hover:underline">Voir tout</RouterLink>
         </template>
-        <div v-if="recentAlerts.length === 0" class="text-sm text-gray-500 py-4">Aucune alerte recente.</div>
+        <div v-if="recentAlerts.length === 0" class="text-sm text-gray-500 py-4">Aucune alerte récente.</div>
         <div v-else class="space-y-3">
           <div v-for="a in recentAlerts" :key="a.id" class="flex items-start gap-3 py-2 border-b border-gray-100 last:border-0">
             <AppBadge

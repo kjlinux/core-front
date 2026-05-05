@@ -21,10 +21,10 @@ const statusOptions = [
   { value: '', label: 'Tous statuts' },
   { value: 'open', label: 'Ouvertes' },
   { value: 'acknowledged', label: 'Reconnues' },
-  { value: 'resolved', label: 'Resolues' },
+  { value: 'resolved', label: 'Résolues' },
 ]
 const severityOptions = [
-  { value: '', label: 'Toutes severites' },
+  { value: '', label: 'Toutes sévérités' },
   { value: 'critical', label: 'Critique' },
   { value: 'high', label: 'Haute' },
   { value: 'medium', label: 'Moyenne' },
@@ -46,15 +46,15 @@ async function ack(id: string) {
     await store.acknowledgeAlert(id)
     toast.success('Alerte reconnue')
   } catch (e) {
-    toast.error('Echec', String((e as Error).message))
+    toast.error('Échec', String((e as Error).message))
   }
 }
 async function resolve(id: string) {
   try {
     await store.resolveAlert(id)
-    toast.success('Alerte resolue')
+    toast.success('Alerte résolue')
   } catch (e) {
-    toast.error('Echec', String((e as Error).message))
+    toast.error('Échec', String((e as Error).message))
   }
 }
 
@@ -80,13 +80,13 @@ onMounted(load)
   <div class="space-y-6">
     <div>
       <h1 class="text-2xl font-semibold text-gray-900">Alertes</h1>
-      <p class="text-sm text-gray-500">Detectees automatiquement par le systeme</p>
+      <p class="text-sm text-gray-500">Détectées automatiquement par le système</p>
     </div>
 
     <AppCard padding="sm">
       <div class="flex flex-wrap gap-3 items-end">
         <AppSelect v-model="filter.status" :options="statusOptions" label="Statut" />
-        <AppSelect v-model="filter.severity" :options="severityOptions" label="Severite" />
+        <AppSelect v-model="filter.severity" :options="severityOptions" label="Sévérité" />
         <div class="ml-auto text-sm text-gray-500">{{ store.alertsTotal }} resultat(s)</div>
       </div>
     </AppCard>
@@ -97,10 +97,10 @@ onMounted(load)
           <thead class="bg-gray-50">
             <tr>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Alerte</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Severite</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sévérité</th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Statut</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Detecte</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Détecté</th>
               <th class="px-4 py-3"></th>
             </tr>
           </thead>
@@ -116,10 +116,10 @@ onMounted(load)
               <td class="px-4 py-3 text-sm text-gray-700">{{ fmtDate(a.created_at) }}</td>
               <td class="px-4 py-3 text-right space-x-2 whitespace-nowrap">
                 <AppButton v-if="a.status === 'open'" size="sm" variant="outline" @click="ack(a.id)">
-                  <EyeIcon class="w-4 h-4" /> Reconnaitre
+                  <EyeIcon class="w-4 h-4" /> Reconnaître
                 </AppButton>
                 <AppButton v-if="a.status !== 'resolved'" size="sm" variant="success" @click="resolve(a.id)">
-                  <CheckIcon class="w-4 h-4" /> Resoudre
+                  <CheckIcon class="w-4 h-4" /> Résoudre
                 </AppButton>
               </td>
             </tr>

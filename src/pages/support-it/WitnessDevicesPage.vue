@@ -35,20 +35,20 @@ async function openAdd() {
 async function add(kind: DeviceKind, id: string) {
   try {
     await store.markWitness(kind, id)
-    toast.success('Capteur marque comme temoin')
+    toast.success('Capteur marqué comme témoin')
     showAdd.value = false
   } catch (e) {
-    toast.error('Echec', String((e as Error).message))
+    toast.error('Échec', String((e as Error).message))
   }
 }
 
 async function remove(kind: DeviceKind, id: string) {
-  if (!confirm('Retirer ce capteur de la liste des temoins ?')) return
+  if (!confirm('Retirer ce capteur de la liste des témoins ?')) return
   try {
     await store.unmarkWitness(kind, id)
-    toast.success('Retire')
+    toast.success('Retiré')
   } catch (e) {
-    toast.error('Echec', String((e as Error).message))
+    toast.error('Échec', String((e as Error).message))
   }
 }
 
@@ -64,8 +64,8 @@ onMounted(() => store.fetchWitnesses())
   <div class="space-y-6">
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-semibold text-gray-900">Capteurs temoins</h1>
-        <p class="text-sm text-gray-500">Capteurs de reference dans les locaux du support, pour diagnostic</p>
+        <h1 class="text-2xl font-semibold text-gray-900">Capteurs témoins</h1>
+        <p class="text-sm text-gray-500">Capteurs de référence dans les locaux du support, pour diagnostic</p>
       </div>
       <AppButton @click="openAdd">
         <PlusIcon class="w-4 h-4" /> Ajouter
@@ -82,6 +82,7 @@ onMounted(() => store.fetchWitnesses())
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Site</th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Statut</th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Dernier signal</th>
+
               <th class="px-4 py-3"></th>
             </tr>
           </thead>
@@ -106,14 +107,14 @@ onMounted(() => store.fetchWitnesses())
               </td>
             </tr>
             <tr v-if="store.witnesses.length === 0">
-              <td colspan="6" class="px-4 py-8 text-center text-sm text-gray-500">Aucun capteur temoin enregistre.</td>
+              <td colspan="6" class="px-4 py-8 text-center text-sm text-gray-500">Aucun capteur témoin enregistré.</td>
             </tr>
           </tbody>
         </table>
       </div>
     </AppCard>
 
-    <AppModal v-model="showAdd" title="Ajouter un capteur temoin" size="lg">
+    <AppModal v-model="showAdd" title="Ajouter un capteur témoin" size="lg">
       <div class="space-y-3">
         <AppSearchInput v-model="search" placeholder="Rechercher un capteur..." />
         <div class="max-h-96 overflow-y-auto divide-y divide-gray-100">
@@ -125,6 +126,7 @@ onMounted(() => store.fetchWitnesses())
             <div>
               <div class="text-sm font-medium text-gray-900">{{ d.name }}</div>
               <div class="text-xs text-gray-500">{{ d.kind }} · {{ d.siteName ?? 'sans site' }}</div>
+
             </div>
             <AppButton size="sm" @click="add(d.kind, d.id)">Marquer</AppButton>
           </div>

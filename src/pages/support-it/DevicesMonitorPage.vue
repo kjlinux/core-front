@@ -21,7 +21,7 @@ const search = ref('')
 const typeOptions = [
   { value: '', label: 'Tous les types' },
   { value: 'rfid', label: 'RFID' },
-  { value: 'biometric', label: 'Biometrique' },
+  { value: 'biometric', label: 'Biométrique' },
   { value: 'feelback', label: 'Feelback' },
 ]
 const statusOptions = [
@@ -52,7 +52,7 @@ async function ping(kind: DeviceKind, id: string) {
     await store.pingDevice(kind, id)
     toast.success('Commande STATUS envoyee')
   } catch (e) {
-    toast.error('Echec ping', String((e as Error).message))
+    toast.error('Échec ping', String((e as Error).message))
   }
 }
 
@@ -69,6 +69,7 @@ onMounted(load)
     <div>
       <h1 class="text-2xl font-semibold text-gray-900">Capteurs</h1>
       <p class="text-sm text-gray-500">Tous les capteurs, toutes entreprises confondues</p>
+
     </div>
 
     <AppCard padding="sm">
@@ -90,7 +91,7 @@ onMounted(load)
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Site</th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Statut</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Derniere activite</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Dernière activité</th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Firmware</th>
               <th class="px-4 py-3"></th>
             </tr>

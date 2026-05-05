@@ -20,13 +20,13 @@ const rows = computed<Row[]>(() => {
   const h = store.health
   if (!h) return []
   return [
-    { name: 'Base de donnees', component: h.components.db },
+    { name: 'Base de données', component: h.components.db },
     { name: 'Cache', component: h.components.cache },
     { name: 'File de jobs', component: h.components.queue },
     { name: 'Broker MQTT (HiveMQ)', component: h.components.mqtt },
     { name: 'WebSocket (Reverb)', component: h.components.reverb },
     { name: 'Listener RFID', component: h.components.listeners.rfid },
-    { name: 'Listener Biometrique', component: h.components.listeners.biometric },
+    { name: 'Listener Biométrique', component: h.components.listeners.biometric },
     { name: 'Listener Feelback', component: h.components.listeners.feelback },
   ]
 })
@@ -40,9 +40,9 @@ function variantFor(s: string) {
 async function refresh() {
   try {
     await store.fetchHealth()
-    toast.success('Sante systeme actualisee')
+    toast.success('Santé système actualisée')
   } catch (e) {
-    toast.error('Echec de la verification', String((e as Error).message))
+    toast.error('Échec de la vérification', String((e as Error).message))
   }
 }
 
@@ -53,11 +53,11 @@ onMounted(() => store.fetchHealth())
   <div class="space-y-6">
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-semibold text-gray-900">Sante systeme</h1>
+        <h1 class="text-2xl font-semibold text-gray-900">Santé système</h1>
         <p class="text-sm text-gray-500">Dernier check : {{ store.health?.timestamp ? new Date(store.health.timestamp).toLocaleTimeString('fr-FR') : '—' }}</p>
       </div>
       <AppButton variant="outline" @click="refresh" :loading="store.isLoading">
-        <ArrowPathIcon class="w-4 h-4" /> Verifier
+        <ArrowPathIcon class="w-4 h-4" /> Vérifier
       </AppButton>
     </div>
 
@@ -76,7 +76,7 @@ onMounted(() => store.fetchHealth())
       </div>
     </AppCard>
 
-    <AppCard title="Capteurs en ligne par type">
+    <AppCard title="Capteurs en ligne par type" >
       <div class="grid grid-cols-3 gap-4">
         <div v-for="(d, kind) in (store.health?.devices as Record<string, { total: number; online: number }> | undefined) ?? {}" :key="kind" class="text-center p-4 bg-gray-50 rounded">
           <p class="text-xs text-gray-500 uppercase">{{ kind }}</p>
