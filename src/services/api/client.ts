@@ -80,8 +80,9 @@ apiClient.interceptors.response.use(
     const currentPath = window.location.pathname
     const isOnLoginPage = currentPath.includes('/login')
     const isOnPublicQrPage = currentPath.includes('/qr-scan')
+    const isOnPublicReviewPage = currentPath.startsWith('/avis/')
 
-    if (error.response?.status === 401 && !isAuthEndpoint && !isOnLoginPage && !isOnPublicQrPage) {
+    if (error.response?.status === 401 && !isAuthEndpoint && !isOnLoginPage && !isOnPublicQrPage && !isOnPublicReviewPage) {
       // Nettoyer les tokens directement sans passer par le store
       // pour éviter tout problème d'initialisation de Pinia
       localStorage.removeItem('access_token')

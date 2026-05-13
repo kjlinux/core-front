@@ -7,8 +7,16 @@ export function authGuard(to: RouteLocationNormalized, _from: RouteLocationNorma
   const auth = useAuthStore()
 
   const publicRoutes = ['login', 'forgot-password', 'qr-scan-public']
-  if (!publicRoutes.includes(to.name as string) && to.meta.requiresAuth !== false && !auth.isAuthenticated) {
+  const isPublicRoute = publicRoutes.includes(to.name as string) || to.meta.requiresAuth === false
+
+  if (!isPublicRoute && !auth.isAuthenticated) {
     return { name: 'login', query: { redirect: to.fullPath } }
+  }
+
+  // Pour les routes publiques, on ne fait AUCUN check de rôle / entreprise active.
+  // Un utilisateur même authentifié doit pouvoir accéder librement à /avis/:token, etc.
+  if (isPublicRoute) {
+    return
   }
 
   // Technicien sans entreprise active → forcer la sélection sauf sur la page dédiée
