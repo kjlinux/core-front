@@ -54,6 +54,11 @@
           :options="statusOptions"
           :placeholder="t('attendance.allStatuses')"
         />
+        <AppSelect
+          v-model="filters.source"
+          :options="sourceOptions"
+          :placeholder="t('attendance.allSources')"
+        />
       </div>
 
       <div v-if="loading" class="loading-spinner">
@@ -124,6 +129,7 @@ const filters = ref({
   departmentId: '',
   siteId: '',
   status: '',
+  source: '',
 });
 
 const departmentOptions = computed(() => [{ label: t('attendance.allDepts'), value: '' }, ...rawDepartments.value]);
@@ -138,6 +144,12 @@ const statusOptions = computed(() => [
   { label: t('attendance.status.absent'), value: 'absent' },
   { label: t('attendance.status.late'), value: 'late' },
   { label: t('attendance.status.left_early'), value: 'left_early' },
+]);
+
+const sourceOptions = computed(() => [
+  { label: t('attendance.allSources'), value: '' },
+  { label: 'RFID', value: 'rfid' },
+  { label: t('attendance.biometric'), value: 'biometric' },
 ]);
 
 const attendanceRecords = computed(() => {
@@ -204,7 +216,7 @@ const fetchData = async () => {
   try {
     await attendanceStore.fetchDailyAttendance({
       date: selectedDate.value,
-      source: 'rfid' as const,
+      source: (filters.value.source || undefined) as 'rfid' | 'biometric' | undefined,
       departmentId: filters.value.departmentId || undefined,
       siteId: filters.value.siteId || undefined,
       status: filters.value.status || undefined,
@@ -249,7 +261,7 @@ watch(selectedDate, () => {
   fetchData();
 });
 
-watch([() => filters.value.departmentId, () => filters.value.siteId, () => filters.value.status], () => {
+watch([() => filters.value.departmentId, () => filters.value.siteId, () => filters.value.status, () => filters.value.source], () => {
   currentPage.value = 1;
   fetchData();
 });

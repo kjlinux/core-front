@@ -88,7 +88,12 @@ export const useBiometricStore = defineStore('biometric', () => {
           onUpdate(enrollment)
 
           if (enrollment.status === 'enrolled') {
-            enrollments.value.push(enrollment)
+            const idx = enrollments.value.findIndex((e) => e.id === enrollment.id)
+            if (idx >= 0) {
+              enrollments.value[idx] = enrollment
+            } else {
+              enrollments.value.push(enrollment)
+            }
             resolve(enrollment)
             return
           }
@@ -104,7 +109,7 @@ export const useBiometricStore = defineStore('biometric', () => {
         }
       }
 
-      setTimeout(poll, interval)
+      poll()
     })
   }
 

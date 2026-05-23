@@ -408,6 +408,8 @@ export default {
     allDepts: 'All departments',
     allSites: 'All sites',
     allStatuses: 'All statuses',
+    allSources: 'All sources',
+    biometric: 'Biometric',
     dept: 'Department',
     lateTime: 'Late',
     earlyLeave: 'Early departure',
