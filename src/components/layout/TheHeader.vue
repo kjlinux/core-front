@@ -21,7 +21,7 @@ const route = useRoute()
 
 const showUpdateModal = ref(false)
 
-const APP_VERSION = '2.9.7'
+const APP_VERSION = '2.9.8'
 const APP_UPDATE_BANNER_KEY = 'app_update_banner_dismissed_version'
 const showAppUpdateBanner = ref(
   typeof window !== 'undefined' &&
