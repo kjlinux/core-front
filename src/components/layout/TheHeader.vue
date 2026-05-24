@@ -20,6 +20,7 @@ const firmwareStore = useFirmwareStore()
 const route = useRoute()
 
 const showUpdateModal = ref(false)
+const showAppUpdateBanner = ref(false)
 
 const pageTitle = computed(() => {
   return (route.meta.title as string) || 'Tableau de bord'
@@ -53,21 +54,20 @@ onMounted(() => {
 
 <template>
   <div>
-    <!-- Bandeau mise à jour firmware -->
+    <!-- Bandeau mise à jour application -->
     <div
-      v-if="showFirmwareBanner"
-      class="flex items-center justify-between bg-amber-500 px-6 py-2 text-sm text-white"
+      v-if="showAppUpdateBanner"
+      class="flex items-center justify-between bg-green-600 px-6 py-2 text-sm text-white"
     >
       <span class="font-medium">
-        Mise a jour firmware v{{ firmwareStore.latestPublishedVersion!.version }} disponible
-        pour vos capteurs {{ firmwareStore.latestPublishedVersion!.deviceKind === 'rfid' ? 'RFID' : 'Biometrique' }}
+        Bonne nouvelle ! Votre application vient d'être mise à jour en version 2.9.7. Profitez des dernières améliorations.
       </span>
       <button
         type="button"
         class="ml-4 rounded-md bg-white/20 px-3 py-1 text-xs font-semibold hover:bg-white/30 transition-colors"
-        @click="showUpdateModal = true"
+        @click="showAppUpdateBanner = false"
       >
-        Mettre a jour maintenant
+        Fermer
       </button>
     </div>
 

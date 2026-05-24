@@ -67,17 +67,32 @@ export const useBiometricStore = defineStore('biometric', () => {
     return await biometricApi.enrollViaDevice(employeeId, deviceId)
   }
 
-  async function pollEnrollmentStatus(
+  function pollEnrollmentStatus(
     enrollmentId: string,
     onUpdate: (enrollment: FingerprintEnrollment) => void,
     options: { interval?: number; timeout?: number } = {},
-  ) {
+  ): { promise: Promise<FingerprintEnrollment>; stop: () => void } {
     const interval = options.interval ?? 2000
     const timeout = options.timeout ?? 60000
     const startTime = Date.now()
 
-    return new Promise<FingerprintEnrollment>((resolve, reject) => {
+    let cancelled = false
+    let timerHandle: ReturnType<typeof setTimeout> | null = null
+
+    const stop = () => {
+      cancelled = true
+      if (timerHandle !== null) {
+        clearTimeout(timerHandle)
+        timerHandle = null
+      }
+    }
+
+    const promise = new Promise<FingerprintEnrollment>((resolve, reject) => {
       const poll = async () => {
+        if (cancelled) {
+          reject(new Error('Enrolement annule'))
+          return
+        }
         if (Date.now() - startTime > timeout) {
           reject(new Error('Delai d\'attente depasse pour l\'enrolement'))
           return
@@ -85,6 +100,10 @@ export const useBiometricStore = defineStore('biometric', () => {
 
         try {
           const enrollment = await biometricApi.getEnrollment(enrollmentId)
+          if (cancelled) {
+            reject(new Error('Enrolement annule'))
+            return
+          }
           onUpdate(enrollment)
 
           if (enrollment.status === 'enrolled') {
@@ -103,7 +122,7 @@ export const useBiometricStore = defineStore('biometric', () => {
             return
           }
 
-          setTimeout(poll, interval)
+          timerHandle = setTimeout(poll, interval)
         } catch (error) {
           reject(error)
         }
@@ -111,6 +130,8 @@ export const useBiometricStore = defineStore('biometric', () => {
 
       poll()
     })
+
+    return { promise, stop }
   }
 
   async function deleteEnrollment(id: string) {

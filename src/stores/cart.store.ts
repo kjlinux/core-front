@@ -3,19 +3,22 @@ import { defineStore } from 'pinia'
 import type { CartItem, Product } from '@/types'
 
 function loadCartFromStorage(): CartItem[] {
-  const stored = localStorage.getItem('cart_items')
-  if (stored) {
-    try {
-      return JSON.parse(stored)
-    } catch {
-      return []
-    }
+  try {
+    const stored = localStorage.getItem('cart_items')
+    if (!stored) return []
+    return JSON.parse(stored) as CartItem[]
+  } catch {
+    // Mode prive, storage corrompu ou indisponible
+    return []
   }
-  return []
 }
 
 function persistCart(items: CartItem[]) {
-  localStorage.setItem('cart_items', JSON.stringify(items))
+  try {
+    localStorage.setItem('cart_items', JSON.stringify(items))
+  } catch {
+    // Quota depasse / mode prive : on garde l'etat en memoire
+  }
 }
 
 export const useCartStore = defineStore('cart', () => {

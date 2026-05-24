@@ -84,7 +84,7 @@ async function changePassword() {
     await authStore.changePassword({
       currentPassword: passwordForm.value.currentPassword,
       newPassword: passwordForm.value.newPassword,
-      newPassword_confirmation: passwordForm.value.confirmPassword,
+      newPasswordConfirmation: passwordForm.value.confirmPassword,
     })
     toast.showSuccess(t('parametres.passwordUpdated'))
     passwordForm.value = { currentPassword: '', newPassword: '', confirmPassword: '' }

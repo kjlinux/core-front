@@ -83,17 +83,19 @@ apiClient.interceptors.response.use(
     const isOnPublicReviewPage = currentPath.startsWith('/avis/')
 
     if (error.response?.status === 401 && !isAuthEndpoint && !isOnLoginPage && !isOnPublicQrPage && !isOnPublicReviewPage) {
-      // Nettoyer les tokens directement sans passer par le store
-      // pour éviter tout problème d'initialisation de Pinia
-      localStorage.removeItem('access_token')
-      localStorage.removeItem('auth_user')
+      // Vider le header Authorization par defaut pour eviter de renvoyer
+      // l'ancien token sur les prochaines requetes.
+      delete apiClient.defaults.headers.common.Authorization
       try {
         const auth = useAuthStore()
-        auth.user = null
-        auth.accessToken = null
-        disconnectEcho()
+        auth.logout()
       } catch {
-        // Pinia pas encore prêt — les tokens localStorage sont déjà supprimés
+        // Pinia pas encore pret — nettoyage manuel
+        localStorage.removeItem('access_token')
+        localStorage.removeItem('auth_user')
+        localStorage.removeItem('active_company_id')
+        localStorage.removeItem('active_company_name')
+        disconnectEcho()
       }
       router.push({ name: 'login' })
     }

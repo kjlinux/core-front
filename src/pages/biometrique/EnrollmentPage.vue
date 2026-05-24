@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useBiometricStore } from '@/stores/biometric.store'
@@ -97,6 +97,15 @@ const captureStatusLabel = computed(() => {
   }
 })
 
+let activePoll: { stop: () => void } | null = null
+
+onBeforeUnmount(() => {
+  if (activePoll) {
+    activePoll.stop()
+    activePoll = null
+  }
+})
+
 function goToStep2() {
   if (!selectedEmployeeId.value || !selectedDeviceId.value) {
     toast.showError(t('biometric.selectBoth'))
@@ -118,7 +127,7 @@ async function launchCapture() {
 
     captureStatus.value = 'capturing'
 
-    await store.pollEnrollmentStatus(
+    const poll = store.pollEnrollmentStatus(
       enrollment.id,
       (updated) => {
         if (updated.status === 'enrolled') {
@@ -130,6 +139,9 @@ async function launchCapture() {
       },
       { interval: 2000, timeout: 60000 },
     )
+    activePoll = poll
+    await poll.promise
+    activePoll = null
 
     captureStatus.value = 'success'
     toast.showSuccess(t('biometric.savedSuccess'))

@@ -1,4 +1,6 @@
 import apiClient from './client'
+import { useAuthStore } from '@/stores/auth.store'
+import { useActiveCompanyStore } from '@/stores/active-company.store'
 import type {
   QrCode,
   QrAttendanceRecord,
@@ -20,7 +22,19 @@ export const qrcodeApi = {
 
   /** Génère un QR Code pour un site (remplace l'ancien) */
   generate(siteId: string, label?: string): Promise<QrCode> {
-    return apiClient.post('/qr-codes/generate', { siteId, label }).then((r) => r.data)
+    // Pour un super_admin, le back exige company_id ; on l'envoie depuis
+    // l'entreprise active. Pour les autres roles, le back l'infere depuis l'auth.
+    const payload: Record<string, unknown> = { siteId, label }
+    try {
+      const auth = useAuthStore()
+      if (auth.isSuperAdmin) {
+        const activeCompanyId = useActiveCompanyStore().activeCompanyId
+        if (activeCompanyId) {
+          payload.companyId = activeCompanyId
+        }
+      }
+    } catch { /* stores hors contexte Pinia (ex: tests) */ }
+    return apiClient.post('/qr-codes/generate', payload).then((r) => r.data)
   },
 
   revoke(id: string): Promise<void> {

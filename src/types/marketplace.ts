@@ -60,3 +60,21 @@ export interface DeliveryAddress {
   city: string
   country: string
 }
+
+export interface CreateOrderItemPayload {
+  productId: string
+  quantity: number
+  customization?: Record<string, unknown>
+}
+
+export interface CreateOrderPayload {
+  companyId?: string
+  items: CreateOrderItemPayload[]
+  deliveryAddress: DeliveryAddress
+  paymentMethod: 'mobile_money' | 'bank_card' | 'manual'
+}
+
+export type InitiatePaymentResponse =
+  | { payment_url: string; token: string; pending?: false; message?: string }
+  | { payment_url: null; token: null; pending: true; message?: string }
+  | { payment_url: null; token: null; pending?: false; message: string }

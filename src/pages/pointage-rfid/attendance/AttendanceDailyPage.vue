@@ -125,6 +125,10 @@ const selectedDate = ref(new Date().toISOString().split('T')[0]);
 const currentPage = ref(1);
 const perPage = ref(20);
 
+// Sequence pour ignorer les reponses obsoletes (race conditions sur changement
+// rapide de filtre/date : la 2eme requete peut arriver avant la 1ere, ou inversement).
+let fetchSeq = 0;
+
 const filters = ref({
   departmentId: '',
   siteId: '',
@@ -212,6 +216,7 @@ const formatTime = (iso: string | null | undefined): string => {
 };
 
 const fetchData = async () => {
+  const seq = ++fetchSeq;
   loading.value = true;
   try {
     await attendanceStore.fetchDailyAttendance({
@@ -223,8 +228,15 @@ const fetchData = async () => {
       page: currentPage.value,
       perPage: perPage.value,
     });
+  } catch (err) {
+    if (seq === fetchSeq) {
+      console.error('[AttendanceDaily] fetch failed', err);
+    }
   } finally {
-    loading.value = false;
+    // Ne baisse le spinner que si on est la derniere requete en vol
+    if (seq === fetchSeq) {
+      loading.value = false;
+    }
   }
 };
 

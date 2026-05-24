@@ -1,8 +1,14 @@
 import apiClient from './client'
-import type { Order, PaginatedResponse, PaginationParams } from '@/types'
+import type {
+  Order,
+  PaginatedResponse,
+  PaginationParams,
+  CreateOrderPayload,
+  InitiatePaymentResponse,
+} from '@/types'
 
 export const orderApi = {
-  create(data: Record<string, unknown>): Promise<Order> {
+  create(data: CreateOrderPayload): Promise<Order> {
     return apiClient.post('/orders', data).then((r) => r.data)
   },
 
@@ -18,7 +24,7 @@ export const orderApi = {
     return apiClient.patch(`/orders/${id}/cancel`).then((r) => r.data)
   },
 
-  initiatePayment(orderId: string, method: string, phoneNumber?: string): Promise<{ payment_url: string | null; token: string | null; pending?: boolean; message?: string }> {
+  initiatePayment(orderId: string, method: string, phoneNumber?: string): Promise<InitiatePaymentResponse> {
     return apiClient.post(`/orders/${orderId}/payment`, { method, phoneNumber }).then((r) => r.data)
   },
 

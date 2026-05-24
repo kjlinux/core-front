@@ -92,18 +92,12 @@ async function confirmOrder() {
   try {
     const items = cartStore.items.map((item) => ({
       productId: item.productId,
-      productName: item.product.name,
       quantity: item.quantity,
-      unitPrice: item.product.price,
-      totalPrice: item.product.price * item.quantity,
+      customization: item.customization,
     }))
     const order = await orderStore.createOrder({
       items,
-      subtotal: cartStore.subtotal,
-      deliveryFee: DELIVERY_FEE,
-      total: cartStore.subtotal + DELIVERY_FEE,
-      currency: 'FCFA',
-      paymentMethod: selectedPaymentMethod.value as any,
+      paymentMethod: selectedPaymentMethod.value as 'mobile_money' | 'bank_card' | 'manual',
       deliveryAddress: deliveryAddress.value,
       ...(isSuperAdmin.value && selectedCompanyId.value ? { companyId: selectedCompanyId.value } : {}),
     })

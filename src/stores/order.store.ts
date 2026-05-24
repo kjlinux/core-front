@@ -2,7 +2,7 @@ import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { orderApi } from '@/services/api/order.api'
 import { useAuthStore } from '@/stores/auth.store'
-import type { Order } from '@/types'
+import type { Order, CreateOrderPayload } from '@/types'
 import type { PaymentMethod } from '@/types/enums'
 
 export const useOrderStore = defineStore('order', () => {
@@ -10,7 +10,7 @@ export const useOrderStore = defineStore('order', () => {
   const currentOrder = ref<Order | null>(null)
   const isLoading = ref(false)
 
-  async function createOrder(data: Partial<Order>) {
+  async function createOrder(data: CreateOrderPayload) {
     isLoading.value = true
     try {
       const created = await orderApi.create(data)

@@ -98,7 +98,10 @@ async function submitAbsence() {
 }
 
 onMounted(async () => {
-  if (!employeeId.value) return
+  if (!employeeId.value) {
+    toast.showError('Votre compte utilisateur n\'est pas lie a un employe. Contactez votre administrateur.')
+    return
+  }
   await payrollStore.fetchMyPayslips(employeeId.value)
 })
 </script>
@@ -109,6 +112,14 @@ onMounted(async () => {
       <h1 class="text-2xl font-bold text-gray-900">Mon espace personnel</h1>
       <p class="text-sm text-gray-500 mt-1">Bienvenue, {{ employeeName }}</p>
     </div>
+
+    <AppCard v-if="!employeeId" title="Compte non lie">
+      <p class="text-sm text-gray-600">
+        Votre compte utilisateur n'est pas associe a une fiche employe.
+        Contactez votre administrateur pour que le rattachement soit effectue.
+      </p>
+    </AppCard>
+    <template v-else>
 
     <!-- Tabs -->
     <div class="border-b border-gray-200">
@@ -227,6 +238,8 @@ onMounted(async () => {
         </div>
       </AppCard>
     </div>
+
+    </template>
 
     <!-- Modal justificatif -->
     <AppModal v-model="showAbsenceModal" title="Soumettre un justificatif d'absence" size="md">

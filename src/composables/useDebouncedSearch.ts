@@ -1,4 +1,4 @@
-import { ref, watch } from 'vue'
+import { ref, watch, onScopeDispose, getCurrentScope } from 'vue'
 import { useDebounceFn } from '@vueuse/core'
 
 export function useDebouncedSearch(callback: (value: string) => void, delay = 300) {
@@ -8,14 +8,19 @@ export function useDebouncedSearch(callback: (value: string) => void, delay = 30
     callback(value)
   }, delay)
 
-  watch(searchQuery, (value) => {
+  const stop = watch(searchQuery, (value) => {
     debouncedCallback(value)
   })
+
+  // Si appele dans un setup() / composable, on stoppe le watch au demontage.
+  if (getCurrentScope()) {
+    onScopeDispose(stop)
+  }
 
   function clear() {
     searchQuery.value = ''
     callback('')
   }
 
-  return { searchQuery, clear }
+  return { searchQuery, clear, stop }
 }

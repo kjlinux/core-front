@@ -1,9 +1,11 @@
 import { ref, computed } from 'vue'
-import { defineStore } from 'pinia'
+import { defineStore, getActivePinia, type Store } from 'pinia'
 import { authApi } from '@/services/api/auth.api'
 import { initEcho, disconnectEcho } from '@/services/echo'
 import type { User, LoginPayload } from '@/types'
 import type { UserRole } from '@/types/enums'
+
+const APP_STORAGE_KEYS = ['access_token', 'auth_user', 'active_company_id', 'active_company_name'] as const
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
@@ -35,22 +37,45 @@ export const useAuthStore = defineStore('auth', () => {
     disconnectEcho()
     user.value = null
     accessToken.value = null
-    localStorage.removeItem('access_token')
-    localStorage.removeItem('auth_user')
-    localStorage.removeItem('active_company_id')
-    localStorage.removeItem('active_company_name')
+    for (const key of APP_STORAGE_KEYS) {
+      try { localStorage.removeItem(key) } catch { /* ignore */ }
+    }
+    // Reset tous les autres stores Pinia pour eviter les fuites entre utilisateurs.
+    try {
+      const pinia = getActivePinia()
+      if (pinia) {
+        const stores = (pinia as unknown as { _s: Map<string, Store> })._s
+        stores?.forEach((store, id) => {
+          if (id === 'auth') return
+          if (typeof (store as Store & { $reset?: () => void }).$reset === 'function') {
+            try { (store as Store & { $reset: () => void }).$reset() } catch { /* ignore */ }
+          }
+        })
+      }
+    } catch { /* ignore */ }
     authApi.logout().catch(() => {})
   }
 
   function loadFromStorage() {
-    const token = localStorage.getItem('access_token')
-    if (token) {
+    try {
+      const token = localStorage.getItem('access_token')
+      if (!token) return
       accessToken.value = token
-      // Restore user from localStorage until getCurrentUser API call
       const storedUser = localStorage.getItem('auth_user')
       if (storedUser) {
-        user.value = JSON.parse(storedUser)
+        try {
+          user.value = JSON.parse(storedUser) as User
+        } catch (err) {
+          console.warn('[auth] localStorage auth_user invalide, nettoyage', err)
+          user.value = null
+          accessToken.value = null
+          for (const key of APP_STORAGE_KEYS) {
+            try { localStorage.removeItem(key) } catch { /* ignore */ }
+          }
+        }
       }
+    } catch (err) {
+      console.warn('[auth] acces localStorage indisponible', err)
     }
   }
 
@@ -63,7 +88,7 @@ export const useAuthStore = defineStore('auth', () => {
     persistUser()
   }
 
-  async function changePassword(data: { currentPassword: string; newPassword: string; newPassword_confirmation: string }) {
+  async function changePassword(data: { currentPassword: string; newPassword: string; newPasswordConfirmation: string }) {
     await authApi.changePassword(data)
   }
 

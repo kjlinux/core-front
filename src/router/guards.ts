@@ -13,6 +13,13 @@ export function authGuard(to: RouteLocationNormalized, _from: RouteLocationNorma
     return { name: 'login', query: { redirect: to.fullPath } }
   }
 
+  // Etat incoherent : un token est present mais pas de user (storage corrompu,
+  // ou reponse partielle). On force la deconnexion pour eviter les acces NPE en aval.
+  if (!isPublicRoute && auth.isAuthenticated && !auth.user) {
+    auth.logout()
+    return { name: 'login', query: { redirect: to.fullPath } }
+  }
+
   // Pour les routes publiques, on ne fait AUCUN check de rôle / entreprise active.
   // Un utilisateur même authentifié doit pouvoir accéder librement à /avis/:token, etc.
   if (isPublicRoute) {

@@ -10,8 +10,10 @@ export const authApi = {
     return apiClient.post('/auth/logout').then((r) => r.data)
   },
 
-  refreshToken(token: string): Promise<AuthResponse> {
-    return apiClient.post('/auth/refresh', { token }).then((r) => r.data)
+  // Le back utilise le Bearer token de la requete (header Authorization
+  // ajoute par l'intercepteur) pour rafraichir. Pas de body necessaire.
+  refreshToken(): Promise<AuthResponse> {
+    return apiClient.post('/auth/refresh').then((r) => r.data)
   },
 
   getCurrentUser(): Promise<User> {
@@ -29,11 +31,11 @@ export const authApi = {
     }).then((r) => r.data)
   },
 
-  changePassword(data: { currentPassword: string; newPassword: string; newPassword_confirmation: string }): Promise<void> {
+  changePassword(data: { currentPassword: string; newPassword: string; newPasswordConfirmation: string }): Promise<void> {
     return apiClient.put('/auth/password', {
       current_password: data.currentPassword,
       new_password: data.newPassword,
-      new_password_confirmation: data.newPassword_confirmation,
+      new_password_confirmation: data.newPasswordConfirmation,
     }).then((r) => r.data)
   },
 
