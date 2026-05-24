@@ -21,7 +21,7 @@ export const useEmployeeStore = defineStore('employee', () => {
 
   async function fetchEmployees(newFilters?: Partial<EmployeeFilters>) {
     if (newFilters) {
-      filters.value = { ...filters.value, ...newFilters }
+      filters.value = { page: 1, perPage: filters.value.perPage, ...newFilters }
     }
     isLoading.value = true
     try {

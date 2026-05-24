@@ -132,7 +132,7 @@ const sidebarClasses = computed(() => [
         :label="t('nav.organisation')"
         :icon="BuildingOffice2Icon"
         :collapsed="ui.sidebarCollapsed"
-        :active="route.path.startsWith('/pointage-rfid/companies') || route.path.startsWith('/pointage-rfid/sites') || route.path.startsWith('/pointage-rfid/departments') || route.path.startsWith('/pointage-rfid/employees')"
+        :active="route.path.startsWith('/pointage-rfid/companies') || route.path.startsWith('/pointage-rfid/sites') || route.path.startsWith('/pointage-rfid/departments') || route.path.startsWith('/pointage-rfid/employees') || route.path.startsWith('/pointage-rfid/schedules') || route.path.startsWith('/pointage-rfid/holidays')"
       >
         <TheSidebarItem
           v-if="isSetupRole"
@@ -167,6 +167,17 @@ const sidebarClasses = computed(() => [
           :active="route.path.startsWith('/pointage-rfid/employees')"
           :nested="true"
         />
+        <TheSidebarItem
+          :label="t('nav.schedules')"
+          to="/pointage-rfid/schedules"
+          :icon="ClockIcon"
+          :collapsed="false"
+          :active="
+            route.path.startsWith('/pointage-rfid/schedules') ||
+            route.path.startsWith('/pointage-rfid/holidays')
+          "
+          :nested="true"
+        />
       </TheSidebarGroup>
 
       <!-- Pointage RFID -->
@@ -176,7 +187,7 @@ const sidebarClasses = computed(() => [
         :label="t('nav.pointageRfid')"
         :icon="CreditCardIcon"
         :collapsed="ui.sidebarCollapsed"
-        :active="route.path.startsWith('/pointage-rfid') && !route.path.startsWith('/pointage-rfid/companies') && !route.path.startsWith('/pointage-rfid/sites') && !route.path.startsWith('/pointage-rfid/departments') && !route.path.startsWith('/pointage-rfid/employees')"
+        :active="route.path.startsWith('/pointage-rfid') && !route.path.startsWith('/pointage-rfid/companies') && !route.path.startsWith('/pointage-rfid/sites') && !route.path.startsWith('/pointage-rfid/departments') && !route.path.startsWith('/pointage-rfid/employees') && !route.path.startsWith('/pointage-rfid/schedules') && !route.path.startsWith('/pointage-rfid/holidays')"
       >
         <TheSidebarItem
           v-if="isAdminOrSuperOrTech"
@@ -193,17 +204,6 @@ const sidebarClasses = computed(() => [
           :icon="CreditCardIcon"
           :collapsed="false"
           :active="route.path.startsWith('/pointage-rfid/cards')"
-          :nested="true"
-        />
-        <TheSidebarItem
-          :label="t('nav.schedules')"
-          to="/pointage-rfid/schedules"
-          :icon="ClockIcon"
-          :collapsed="false"
-          :active="
-            route.path.startsWith('/pointage-rfid/schedules') ||
-            route.path.startsWith('/pointage-rfid/holidays')
-          "
           :nested="true"
         />
         <TheSidebarItem
