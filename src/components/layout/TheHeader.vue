@@ -20,7 +20,22 @@ const firmwareStore = useFirmwareStore()
 const route = useRoute()
 
 const showUpdateModal = ref(false)
-const showAppUpdateBanner = ref(false)
+
+const APP_VERSION = '2.9.7'
+const APP_UPDATE_BANNER_KEY = 'app_update_banner_dismissed_version'
+const showAppUpdateBanner = ref(
+  typeof window !== 'undefined' &&
+  window.localStorage?.getItem(APP_UPDATE_BANNER_KEY) !== APP_VERSION
+)
+
+function dismissAppUpdateBanner() {
+  showAppUpdateBanner.value = false
+  try {
+    window.localStorage?.setItem(APP_UPDATE_BANNER_KEY, APP_VERSION)
+  } catch {
+    // ignore localStorage indisponible
+  }
+}
 
 const pageTitle = computed(() => {
   return (route.meta.title as string) || 'Tableau de bord'
@@ -60,12 +75,12 @@ onMounted(() => {
       class="flex items-center justify-between bg-green-600 px-6 py-2 text-sm text-white"
     >
       <span class="font-medium">
-        Bonne nouvelle ! Votre application vient d'être mise à jour en version 2.9.7. Profitez des dernières améliorations.
+        Bonne nouvelle ! Votre application vient d'être mise à jour en version {{ APP_VERSION }}. Profitez des dernières améliorations.
       </span>
       <button
         type="button"
         class="ml-4 rounded-md bg-white/20 px-3 py-1 text-xs font-semibold hover:bg-white/30 transition-colors"
-        @click="showAppUpdateBanner = false"
+        @click="dismissAppUpdateBanner"
       >
         Fermer
       </button>
