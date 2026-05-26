@@ -71,7 +71,7 @@ export interface CreateOrderPayload {
   companyId?: string
   items: CreateOrderItemPayload[]
   deliveryAddress: DeliveryAddress
-  paymentMethod: 'mobile_money' | 'bank_card' | 'manual'
+  paymentMethod: 'intouch_mobile_money' | 'intouch_card' | 'manual'
 }
 
 export type InitiatePaymentResponse =

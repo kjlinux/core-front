@@ -7,6 +7,7 @@ import { useCompanyStore } from '@/stores/company.store'
 import { useSiteStore } from '@/stores/site.store'
 import { useDepartmentStore } from '@/stores/department.store'
 import { useToast } from '@/composables/useToast'
+import { useAuthStore } from '@/stores/auth.store'
 import type { Employee } from '@/types'
 import EmployeeForm from '@/components/forms/EmployeeForm.vue'
 import AppCard from '@/components/ui/AppCard.vue'
@@ -19,9 +20,11 @@ const companyStore = useCompanyStore()
 const siteStore = useSiteStore()
 const departmentStore = useDepartmentStore()
 const toast = useToast()
+const auth = useAuthStore()
 
 const formData = ref<Partial<Employee>>({
   isActive: true,
+  companyId: auth.user?.companyId ?? undefined,
 })
 
 const isLoadingData = ref(false)
@@ -35,6 +38,10 @@ onMounted(async () => {
       departmentStore.fetchDepartments({ perPage: 200 }),
       employeeStore.fetchEmployees({ perPage: 1000 }),
     ])
+    // Pour admin_enterprise/manager : si une seule entreprise disponible, la pre-selectionner
+    if (!formData.value.companyId && companyStore.companies.length === 1) {
+      formData.value.companyId = companyStore.companies[0].id
+    }
   } finally {
     isLoadingData.value = false
   }

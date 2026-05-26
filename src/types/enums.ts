@@ -42,11 +42,18 @@ export const OrderStatus = {
 export type OrderStatus = (typeof OrderStatus)[keyof typeof OrderStatus]
 
 export const PaymentMethod = {
-  MOBILE_MONEY: 'mobile_money',
-  BANK_CARD: 'bank_card',
+  INTOUCH_MOBILE_MONEY: 'intouch_mobile_money',
+  INTOUCH_CARD: 'intouch_card',
   MANUAL: 'manual',
 } as const
 export type PaymentMethod = (typeof PaymentMethod)[keyof typeof PaymentMethod]
+
+export const SubscriptionPlan = {
+  FREEMIUM: 'freemium',
+  GARANTIE: 'garantie',
+  PREMIUM: 'premium',
+} as const
+export type SubscriptionPlan = (typeof SubscriptionPlan)[keyof typeof SubscriptionPlan]
 
 export const PaymentStatus = {
   PENDING: 'pending',

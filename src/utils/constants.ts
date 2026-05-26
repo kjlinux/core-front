@@ -50,9 +50,12 @@ export const ORDER_STATUS_LABELS: Record<string, string> = {
 }
 
 export const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  intouch_mobile_money: 'InTouch / Mobile Money',
+  intouch_card: 'InTouch / Carte bancaire',
+  manual: 'Paiement manuel',
+  // Compat historique
   mobile_money: 'Mobile Money',
   bank_card: 'Carte bancaire',
-  manual: 'Paiement manuel',
 }
 
 export const CURRENCY = 'XOF'

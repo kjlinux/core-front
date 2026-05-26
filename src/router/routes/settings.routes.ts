@@ -58,6 +58,15 @@ const settingsRoutes: RouteRecordRaw[] = [
         },
       },
       {
+        path: 'admin/abonnements',
+        name: 'admin-subscriptions',
+        component: () => import('@/pages/parametres/admin/SubscriptionsAdminPage.vue'),
+        meta: {
+          title: 'Gestion des abonnements',
+          roles: [UserRole.SUPER_ADMIN],
+        },
+      },
+      {
         path: 'aide',
         name: 'settings-help',
         component: () => import('@/pages/parametres/HelpPage.vue'),

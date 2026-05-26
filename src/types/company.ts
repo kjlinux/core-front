@@ -7,7 +7,13 @@ export interface Company {
   address: string
   matriculePrefix?: string
   isActive: boolean
-  subscription: 'basic' | 'premium' | 'enterprise'
+  subscription: 'freemium' | 'garantie' | 'premium'
+  subscriptionStartsAt?: string | null
+  subscriptionExpiresAt?: string | null
+  subscriptionNextPeriodPaid?: boolean
+  subscriptionNextExpiresAt?: string | null
+  warrantyStartsAt?: string | null
+  warrantyEndsAt?: string | null
   sites: Site[]
   employeeCount: number
   createdAt: string

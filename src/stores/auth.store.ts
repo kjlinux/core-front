@@ -2,6 +2,7 @@ import { ref, computed } from 'vue'
 import { defineStore, getActivePinia, type Store } from 'pinia'
 import { authApi } from '@/services/api/auth.api'
 import { initEcho, disconnectEcho } from '@/services/echo'
+import { subscriptionApi } from '@/services/api/subscription.api'
 import type { User, LoginPayload } from '@/types'
 import type { UserRole } from '@/types/enums'
 
@@ -31,9 +32,24 @@ export const useAuthStore = defineStore('auth', () => {
       if (response.refreshToken) localStorage.setItem('refresh_token', response.refreshToken)
       localStorage.setItem('auth_user', JSON.stringify(response.user))
       initEcho()
+      // Hydrate l'abonnement de la compagnie pour activer le feature-gating sans
+      // attendre la 1re visite de /abonnement. Best-effort (ignore les erreurs).
+      hydrateSubscription()
     } finally {
       isLoading.value = false
     }
+  }
+
+  /**
+   * Best-effort fetch du SubscriptionState courant. Importe dynamiquement le store
+   * pour eviter une dependance cyclique au boot.
+   */
+  async function hydrateSubscription() {
+    try {
+      const state = await subscriptionApi.me()
+      const mod = await import('@/stores/subscription.store')
+      mod.useSubscriptionStore().state = state
+    } catch { /* utilisateur sans compagnie / route 404, on ignore */ }
   }
 
   function logout() {
@@ -82,6 +98,9 @@ export const useAuthStore = defineStore('auth', () => {
       }
     } catch (err) {
       console.warn('[auth] acces localStorage indisponible', err)
+    }
+    if (accessToken.value && user.value) {
+      hydrateSubscription()
     }
   }
 

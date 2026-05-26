@@ -1,21 +1,36 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import AppButton from '@/components/ui/AppButton.vue'
+import { orderApi } from '@/services/api/order.api'
 
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 
-const status = computed(() => route.query.status as string)
+const verifiedStatus = ref<string | null>(null)
+const orderId = computed(() => route.query.orderId as string | undefined)
 const orderNumber = computed(() => route.query.orderNumber as string)
+// On privilegie le statut verifie par re-fetch serveur ; on retombe sur le
+// query param uniquement si pas d'orderId pour interroger l'API.
+const status = computed(() => verifiedStatus.value ?? (route.query.status as string))
 
-onMounted(() => {
+onMounted(async () => {
+  if (orderId.value) {
+    try {
+      const order = await orderApi.getById(orderId.value)
+      const ps = (order as any).paymentStatus ?? (order as any).payment_status
+      if (ps === 'paid') verifiedStatus.value = 'success'
+      else if (ps === 'failed') verifiedStatus.value = 'failed'
+      else if (route.query.status === 'cancelled') verifiedStatus.value = 'cancelled'
+      else verifiedStatus.value = (route.query.status as string) || 'pending'
+    } catch {
+      verifiedStatus.value = (route.query.status as string) || null
+    }
+  }
   if (status.value === 'success') {
-    setTimeout(() => {
-      router.push('/marketplace/orders')
-    }, 5000)
+    setTimeout(() => router.push('/marketplace/orders'), 5000)
   }
 })
 </script>
@@ -46,6 +61,21 @@ onMounted(() => {
         <AppButton variant="primary" @click="router.push('/marketplace/orders')">
           {{ t('marketplace.viewMyOrders') }}
         </AppButton>
+      </div>
+
+      <!-- Cancelled -->
+      <div v-else-if="status === 'cancelled'" class="space-y-4">
+        <div class="w-20 h-20 rounded-full bg-amber-100 flex items-center justify-center mx-auto">
+          <svg class="w-10 h-10 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+          </svg>
+        </div>
+        <h2 class="text-2xl font-bold text-gray-900">Paiement annulé</h2>
+        <p class="text-gray-600">Vous avez annulé le paiement. Votre commande reste en attente.</p>
+        <div class="flex flex-col gap-3">
+          <AppButton variant="primary" @click="router.push('/marketplace/checkout')">Reprendre</AppButton>
+          <AppButton variant="secondary" @click="router.push('/marketplace/orders')">Voir mes commandes</AppButton>
+        </div>
       </div>
 
       <!-- Failed -->

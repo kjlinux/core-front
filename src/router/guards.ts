@@ -1,7 +1,10 @@
 import type { RouteLocationNormalized } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
 import { useActiveCompanyStore } from '@/stores/active-company.store'
+import { useSubscriptionStore } from '@/stores/subscription.store'
+import { PLAN_FEATURES } from '@/config/plan-features'
 import type { UserRole } from '@/types/enums'
+import type { PlanCode, PlanFeature } from '@/types/subscription'
 
 export function authGuard(to: RouteLocationNormalized, _from: RouteLocationNormalized) {
   const auth = useAuthStore()
@@ -45,6 +48,27 @@ export function authGuard(to: RouteLocationNormalized, _from: RouteLocationNorma
     const allowedRoles = matchedWithRoles.meta.roles as UserRole[]
     if (auth.user && !allowedRoles.includes(auth.user.role)) {
       return { name: 'dashboard' }
+    }
+  }
+
+  // Plan gating : une route peut declarer meta.requiredFeature; super_admin bypasse.
+  const matchedWithFeature = to.matched
+    .slice()
+    .reverse()
+    .find((r) => (r.meta as any)?.requiredFeature)
+  if (matchedWithFeature && auth.user?.role !== 'super_admin') {
+    const required = (matchedWithFeature.meta as any).requiredFeature as PlanFeature
+    const subs = useSubscriptionStore()
+    const plan = (subs.state?.subscription as PlanCode) ?? 'freemium'
+    const allowed = PLAN_FEATURES[plan] ?? []
+    if (!allowed.includes(required)) {
+      // Seuls admin_enterprise et super_admin peuvent gerer l'abonnement
+      // (cf. abonnement.routes.ts). Les autres roles vont au dashboard pour eviter
+      // une boucle role-guard <-> plan-guard.
+      const canManage = auth.user?.role === 'admin_enterprise'
+      return canManage
+        ? { name: 'abonnement-plans', query: { feature: required } }
+        : { name: 'dashboard' }
     }
   }
 

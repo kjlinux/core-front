@@ -38,7 +38,7 @@ onMounted(async () => {
 const step = ref(1)
 const selectedOrderId = ref('')
 const isSubmitting = ref(false)
-const selectedPaymentMethod = ref<string>('mobile_money')
+const selectedPaymentMethod = ref<string>('intouch_mobile_money')
 const mobileNumber = ref('')
 const DELIVERY_FEE = 2000
 
@@ -84,7 +84,7 @@ async function confirmOrder() {
     toast.showError(t('marketplace.selectCompanyRequired'))
     return
   }
-  if (selectedPaymentMethod.value === 'mobile_money' && !mobileNumber.value.trim()) {
+  if (selectedPaymentMethod.value === 'intouch_mobile_money' && !mobileNumber.value.trim()) {
     toast.showError(t('marketplace.mobileMoneyRequired'))
     return
   }
@@ -97,7 +97,7 @@ async function confirmOrder() {
     }))
     const order = await orderStore.createOrder({
       items,
-      paymentMethod: selectedPaymentMethod.value as 'mobile_money' | 'bank_card' | 'manual',
+      paymentMethod: selectedPaymentMethod.value as 'intouch_mobile_money' | 'intouch_card' | 'manual',
       deliveryAddress: deliveryAddress.value,
       ...(isSuperAdmin.value && selectedCompanyId.value ? { companyId: selectedCompanyId.value } : {}),
     })
@@ -183,26 +183,43 @@ async function confirmOrder() {
       <div class="lg:col-span-2 space-y-4">
         <AppCard :title="t('marketplace.paymentMethod')">
           <div class="space-y-3">
-            <!-- LigdiCash -->
+            <!-- InTouch Mobile Money -->
             <label
               class="flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-colors"
-              :class="selectedPaymentMethod === 'mobile_money' ? 'border-primary-600 bg-primary-50' : 'border-gray-200 hover:border-gray-300'"
+              :class="selectedPaymentMethod === 'intouch_mobile_money' ? 'border-primary-600 bg-primary-50' : 'border-gray-200 hover:border-gray-300'"
             >
-              <input v-model="selectedPaymentMethod" type="radio" value="mobile_money" class="sr-only" />
+              <input v-model="selectedPaymentMethod" type="radio" value="intouch_mobile_money" class="sr-only" />
               <div class="w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center"
-                :class="selectedPaymentMethod === 'mobile_money' ? 'border-primary-600' : 'border-gray-300'">
-                <div v-if="selectedPaymentMethod === 'mobile_money'" class="w-2 h-2 rounded-full bg-primary-600"></div>
+                :class="selectedPaymentMethod === 'intouch_mobile_money' ? 'border-primary-600' : 'border-gray-300'">
+                <div v-if="selectedPaymentMethod === 'intouch_mobile_money'" class="w-2 h-2 rounded-full bg-primary-600"></div>
               </div>
-              <img src="/ligdicash.png" alt="LigdiCash" class="h-8 object-contain" onerror="this.style.display='none'" />
+              <img src="/intouch.png" alt="InTouch" class="h-8 object-contain" onerror="this.style.display='none'" />
               <div>
-                <p class="font-semibold text-gray-900">{{ t('marketplace.ligdicash') }}</p>
-                <p class="text-sm text-gray-500">{{ t('marketplace.ligdicashHint') }}</p>
+                <p class="font-semibold text-gray-900">{{ t('marketplace.intouchMobile') }}</p>
+                <p class="text-sm text-gray-500">{{ t('marketplace.intouchMobileHint') }}</p>
               </div>
             </label>
 
-            <div v-if="selectedPaymentMethod === 'mobile_money'" class="px-4 pb-2">
+            <div v-if="selectedPaymentMethod === 'intouch_mobile_money'" class="px-4 pb-2">
               <AppInput v-model="mobileNumber" :label="t('marketplace.mobileMoneyPhone')" type="tel" :placeholder="t('marketplace.mobileMoneyPlaceholder')" />
             </div>
+
+            <!-- InTouch Carte bancaire -->
+            <label
+              class="flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-colors"
+              :class="selectedPaymentMethod === 'intouch_card' ? 'border-primary-600 bg-primary-50' : 'border-gray-200 hover:border-gray-300'"
+            >
+              <input v-model="selectedPaymentMethod" type="radio" value="intouch_card" class="sr-only" />
+              <div class="w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center"
+                :class="selectedPaymentMethod === 'intouch_card' ? 'border-primary-600' : 'border-gray-300'">
+                <div v-if="selectedPaymentMethod === 'intouch_card'" class="w-2 h-2 rounded-full bg-primary-600"></div>
+              </div>
+              <img src="/intouch.png" alt="InTouch" class="h-8 object-contain" onerror="this.style.display='none'" />
+              <div>
+                <p class="font-semibold text-gray-900">{{ t('marketplace.intouchCard') }}</p>
+                <p class="text-sm text-gray-500">{{ t('marketplace.intouchCardHint') }}</p>
+              </div>
+            </label>
 
             <!-- Paiement manuel -->
             <label

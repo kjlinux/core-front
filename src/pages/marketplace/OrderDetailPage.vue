@@ -28,6 +28,9 @@ const stepLabels = computed<Record<string, string>>(() => ({
 }))
 
 const paymentMethodLabels: Record<string, string> = {
+  intouch_mobile_money: 'InTouch / Mobile Money',
+  intouch_card: 'InTouch / Carte bancaire',
+  // Anciennes valeurs LigdiCash conservées pour l'historique des commandes existantes
   mobile_money: 'LigdiCash / Mobile Money',
   bank_card: 'Carte bancaire',
   manual: 'Paiement manuel',
