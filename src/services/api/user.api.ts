@@ -45,13 +45,7 @@ export interface UpdateUserPayload {
 
 export const userApi = {
   getAll(params?: UserFilters): Promise<UserData[]> {
-    return apiClient.get('/users', { params }).then((r) => {
-      // Paginated response: { data: [...], meta: {...} }
-      // After interceptor unwrap, r.data can be the array directly or { data, meta }
-      if (Array.isArray(r.data)) return r.data
-      if (r.data?.data) return r.data.data
-      return r.data
-    })
+    return apiClient.get('/users', { params }).then((r) => r.data?.data ?? r.data)
   },
 
   getById(id: string): Promise<UserData> {

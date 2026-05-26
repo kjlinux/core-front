@@ -35,11 +35,7 @@ const C = {
 /**
  * Genere le PDF d'une seule fiche de paie et declenche le telechargement.
  */
-export function generatePayslipPdf(slip: Payslip): void {
-  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
-  const pageWidth = doc.internal.pageSize.getWidth()
-  const marginX = 15
-
+function renderPayslipPage(doc: jsPDF, slip: Payslip, pageWidth: number, marginX: number): void {
   // ── En-tete ────────────────────────────────────────────────────────────────
   doc.setFillColor(...C.primary)
   doc.rect(0, 0, pageWidth, 40, 'F')
@@ -235,21 +231,33 @@ export function generatePayslipPdf(slip: Payslip): void {
     { align: 'center' },
   )
 
-  const filename = `fiche-paie-${slip.employeeNumber}-${slip.period}.pdf`
-  doc.save(filename)
+}
+
+export function generatePayslipPdf(slip: Payslip): void {
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+  const pageWidth = doc.internal.pageSize.getWidth()
+  const marginX = 15
+  renderPayslipPage(doc, slip, pageWidth, marginX)
+  doc.save(`fiche-paie-${slip.employeeNumber}-${slip.period}.pdf`)
 }
 
 /**
- * Genere un PDF multi-pages pour un lot de fiches (une fiche = une page).
+ * Genere un seul PDF multi-pages pour un lot de fiches (une fiche = une page).
  */
 export function generateBatchPayslipPdf(payslips: Payslip[]): void {
   if (!payslips.length) return
 
-  // Generer chaque PDF individuellement pour la simplicite
-  // (jsPDF ne facilite pas la concatenation native)
-  for (const slip of payslips) {
-    generatePayslipPdf(slip)
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+  const pageWidth = doc.internal.pageSize.getWidth()
+  const marginX = 15
+
+  for (let i = 0; i < payslips.length; i++) {
+    if (i > 0) doc.addPage()
+    renderPayslipPage(doc, payslips[i]!, pageWidth, marginX)
   }
+
+  const period = payslips[0]!.period
+  doc.save(`fiches-paie-${period}.pdf`)
 }
 
 export function usePayrollPdf() {

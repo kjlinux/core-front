@@ -61,6 +61,7 @@ function removeRule(index: number) {
 }
 
 async function saveConfig() {
+  if (!companyId.value) return
   try {
     await payrollStore.saveConfig(companyId.value, {
       defaultPaymentMode: form.value.defaultPaymentMode as any,
@@ -78,7 +79,11 @@ async function saveConfig() {
 }
 
 async function saveRules() {
+  if (!companyId.value) return
   try {
+    await payrollStore.saveConfig(companyId.value, {
+      latenessDeductionEnabled: form.value.latenessDeductionEnabled,
+    })
     await payrollStore.saveLatenessRules(companyId.value, latenessRules.value)
     toast.showSuccess('Règles de pénalité enregistrées')
   } catch {
@@ -173,7 +178,7 @@ onMounted(async () => {
             </div>
           </div>
 
-          <AppButton variant="primary" :loading="payrollStore.isLoading" @click="saveConfig">
+          <AppButton variant="primary" :loading="payrollStore.isSaving" @click="saveConfig">
             Enregistrer la configuration
           </AppButton>
         </div>
@@ -277,7 +282,7 @@ onMounted(async () => {
               <AppButton
                 variant="primary"
                 size="sm"
-                :loading="payrollStore.isLoading"
+                :loading="payrollStore.isSaving"
                 @click="saveRules"
               >
                 Enregistrer les règles

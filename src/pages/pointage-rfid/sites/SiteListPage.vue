@@ -61,54 +61,30 @@
     >
       <form id="site-form" @submit.prevent="handleCreateSite">
         <div class="space-y-4">
-          <AppInput
-            v-model="formData.name"
-            :label="t('common.name')"
-            :placeholder="t('common.name')"
-            required
-          />
+          <FormRow :label="t('common.name')" :required="true" :error="siteErrors.name">
+            <AppInput v-model="formData.name" :placeholder="t('common.name')" />
+          </FormRow>
 
-          <AppInput
-            v-model="formData.address"
-            :label="t('sites.address')"
-            :placeholder="t('sites.address')"
-            required
-          />
+          <FormRow :label="t('sites.address')" :required="true" :error="siteErrors.address">
+            <AppInput v-model="formData.address" :placeholder="t('sites.address')" />
+          </FormRow>
 
-          <AppSelect
-            v-model="formData.companyId"
-            :options="companyOptions"
-            :label="t('sites.company')"
-            :placeholder="t('sites.selectCompany')"
-            required
-          />
+          <FormRow :label="t('sites.company')" :required="true" :error="siteErrors.companyId">
+            <AppSelect v-model="formData.companyId" :options="companyOptions" :placeholder="t('sites.selectCompany')" />
+          </FormRow>
 
           <div class="grid grid-cols-2 gap-4">
-            <AppInput
-              v-model="formData.latitude"
-              :label="t('sites.lat')"
-              type="number"
-              :placeholder="t('sites.latPlaceholder')"
-              step="any"
-              required
-            />
-            <AppInput
-              v-model="formData.longitude"
-              :label="t('sites.lng')"
-              type="number"
-              :placeholder="t('sites.lngPlaceholder')"
-              step="any"
-              required
-            />
+            <FormRow :label="t('sites.lat')" :required="true" :error="siteErrors.latitude">
+              <AppInput v-model="formData.latitude" type="number" :placeholder="t('sites.latPlaceholder')" step="any" />
+            </FormRow>
+            <FormRow :label="t('sites.lng')" :required="true" :error="siteErrors.longitude">
+              <AppInput v-model="formData.longitude" type="number" :placeholder="t('sites.lngPlaceholder')" step="any" />
+            </FormRow>
           </div>
 
-          <AppInput
-            v-model="formData.geofenceRadius"
-            :label="t('sites.geofence')"
-            type="number"
-            placeholder="100"
-            required
-          />
+          <FormRow :label="t('sites.geofence')" :required="true" :error="siteErrors.geofenceRadius">
+            <AppInput v-model="formData.geofenceRadius" type="number" placeholder="100" />
+          </FormRow>
         </div>
       </form>
 
@@ -154,54 +130,30 @@
     >
       <form id="site-edit-form" @submit.prevent="handleEditSite">
         <div class="space-y-4">
-          <AppInput
-            v-model="formData.name"
-            :label="t('common.name')"
-            :placeholder="t('common.name')"
-            required
-          />
+          <FormRow :label="t('common.name')" :required="true" :error="siteErrors.name">
+            <AppInput v-model="formData.name" :placeholder="t('common.name')" />
+          </FormRow>
 
-          <AppInput
-            v-model="formData.address"
-            :label="t('sites.address')"
-            :placeholder="t('sites.address')"
-            required
-          />
+          <FormRow :label="t('sites.address')" :required="true" :error="siteErrors.address">
+            <AppInput v-model="formData.address" :placeholder="t('sites.address')" />
+          </FormRow>
 
-          <AppSelect
-            v-model="formData.companyId"
-            :options="companyOptions"
-            :label="t('sites.company')"
-            :placeholder="t('sites.selectCompany')"
-            required
-          />
+          <FormRow :label="t('sites.company')" :required="true" :error="siteErrors.companyId">
+            <AppSelect v-model="formData.companyId" :options="companyOptions" :placeholder="t('sites.selectCompany')" />
+          </FormRow>
 
           <div class="grid grid-cols-2 gap-4">
-            <AppInput
-              v-model="formData.latitude"
-              :label="t('sites.lat')"
-              type="number"
-              :placeholder="t('sites.latPlaceholder')"
-              step="any"
-              required
-            />
-            <AppInput
-              v-model="formData.longitude"
-              :label="t('sites.lng')"
-              type="number"
-              :placeholder="t('sites.lngPlaceholder')"
-              step="any"
-              required
-            />
+            <FormRow :label="t('sites.lat')" :required="true" :error="siteErrors.latitude">
+              <AppInput v-model="formData.latitude" type="number" :placeholder="t('sites.latPlaceholder')" step="any" />
+            </FormRow>
+            <FormRow :label="t('sites.lng')" :required="true" :error="siteErrors.longitude">
+              <AppInput v-model="formData.longitude" type="number" :placeholder="t('sites.lngPlaceholder')" step="any" />
+            </FormRow>
           </div>
 
-          <AppInput
-            v-model="formData.geofenceRadius"
-            :label="t('sites.geofence')"
-            type="number"
-            placeholder="100"
-            required
-          />
+          <FormRow :label="t('sites.geofence')" :required="true" :error="siteErrors.geofenceRadius">
+            <AppInput v-model="formData.geofenceRadius" type="number" placeholder="100" />
+          </FormRow>
         </div>
       </form>
 
@@ -238,6 +190,7 @@ import AppCard from '@/components/ui/AppCard.vue'
 import AppModal from '@/components/ui/AppModal.vue'
 import AppInput from '@/components/ui/AppInput.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
+import FormRow from '@/components/forms/FormRow.vue'
 import type { TableColumn } from '@/types/common'
 import type { Site } from '@/types'
 import { useToast } from '@/composables/useToast'
@@ -256,6 +209,7 @@ const showDeleteModal = ref(false)
 const editingSite = ref<Site | null>(null)
 const deletingSite = ref<Site | null>(null)
 const isSubmitting = ref(false)
+const siteErrors = ref<Record<string, string>>({})
 
 const filters = ref({
   companyId: '',
@@ -320,6 +274,17 @@ onMounted(async () => {
   ])
 })
 
+function validateSiteForm(): boolean {
+  siteErrors.value = {}
+  if (!formData.value.name?.toString().trim()) siteErrors.value.name = 'Le nom est requis'
+  if (!formData.value.address?.toString().trim()) siteErrors.value.address = "L'adresse est requise"
+  if (!formData.value.companyId) siteErrors.value.companyId = "L'entreprise est requise"
+  if (formData.value.latitude === '' || formData.value.latitude === null || formData.value.latitude === undefined) siteErrors.value.latitude = 'La latitude est requise'
+  if (formData.value.longitude === '' || formData.value.longitude === null || formData.value.longitude === undefined) siteErrors.value.longitude = 'La longitude est requise'
+  if (!formData.value.geofenceRadius) siteErrors.value.geofenceRadius = 'Le rayon de géofencing est requis'
+  return Object.keys(siteErrors.value).length === 0
+}
+
 function handleFilterChange() {
   filters.value.page = 1
   siteStore.fetchSites(filters.value)
@@ -335,6 +300,7 @@ function handleRowClick(row: any) {
 }
 
 async function handleCreateSite() {
+  if (!validateSiteForm()) return
   isSubmitting.value = true
   try {
     await siteStore.createSite({
@@ -370,6 +336,7 @@ function openEditModal(site: Site) {
 
 async function handleEditSite() {
   if (!editingSite.value) return
+  if (!validateSiteForm()) return
   isSubmitting.value = true
   try {
     await siteStore.updateSite(editingSite.value.id, {
@@ -417,12 +384,14 @@ function closeDeleteModal() {
 
 function closeCreateModal() {
   showCreateModal.value = false
+  siteErrors.value = {}
   formData.value = { name: '', address: '', companyId: '', latitude: '', longitude: '', geofenceRadius: 100 }
 }
 
 function closeEditModal() {
   showEditModal.value = false
   editingSite.value = null
+  siteErrors.value = {}
   formData.value = { name: '', address: '', companyId: '', latitude: '', longitude: '', geofenceRadius: 100 }
 }
 </script>

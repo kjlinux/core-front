@@ -11,6 +11,20 @@ import AppSelect from '@/components/ui/AppSelect.vue'
 import { ArrowLeftIcon, SignalIcon } from '@heroicons/vue/24/outline'
 import type { DeviceAlert, DeviceKind, SupportDevice } from '@/types'
 
+interface RawDevice {
+  name?: string
+  serial_number?: string
+  company_name?: string
+  company_id?: string
+  site_name?: string
+  site_id?: string
+  firmware_version?: string
+  last_ping_at?: string | null
+  last_sync_at?: string | null
+  is_online?: boolean
+  is_witness?: boolean
+}
+
 const route = useRoute()
 const router = useRouter()
 const store = useSupportStore()
@@ -19,7 +33,7 @@ const toast = useToast()
 const kind = computed(() => route.params.kind as DeviceKind)
 const id = computed(() => route.params.id as string)
 
-const device = ref<any>(null)
+const device = ref<RawDevice | null>(null)
 const alerts = ref<DeviceAlert[]>([])
 const loading = ref(false)
 const witnessId = ref<string>('')
@@ -48,7 +62,7 @@ async function load() {
 async function ping() {
   try {
     await store.pingDevice(kind.value, id.value)
-    toast.success('Commande STATUS envoyee')
+    toast.success('Commande STATUS envoyée')
   } catch (e) {
     toast.error('Échec', String((e as Error).message))
   }
@@ -60,7 +74,11 @@ function fmtDate(s: string | null | undefined) {
 }
 
 onMounted(async () => {
-  await Promise.all([load(), store.fetchWitnesses()])
+  try {
+    await Promise.all([load(), store.fetchWitnesses()])
+  } catch (e) {
+    toast.error('Erreur de chargement', String((e as Error).message))
+  }
 })
 </script>
 
@@ -89,7 +107,7 @@ onMounted(async () => {
           <div class="flex justify-between"><dt class="text-gray-500">Statut</dt>
             <dd><AppBadge :variant="device.is_online ? 'success' : 'danger'" size="sm">{{ device.is_online ? 'En ligne' : 'Hors ligne' }}</AppBadge></dd>
           </div>
-          <div class="flex justify-between"><dt class="text-gray-500">Serie</dt><dd>{{ device.serial_number ?? '—' }}</dd></div>
+          <div class="flex justify-between"><dt class="text-gray-500">Série</dt><dd>{{ device.serial_number ?? '—' }}</dd></div>
           <div class="flex justify-between"><dt class="text-gray-500">Entreprise</dt><dd>{{ device.company_name ?? device.company_id ?? '—' }}</dd></div>
           <div class="flex justify-between"><dt class="text-gray-500">Site</dt><dd>{{ device.site_name ?? device.site_id ?? '—' }}</dd></div>
           <div class="flex justify-between"><dt class="text-gray-500">Firmware</dt><dd>{{ device.firmware_version ?? '—' }}</dd></div>
@@ -122,7 +140,7 @@ onMounted(async () => {
             <p class="text-xs text-gray-500">{{ fmtDate(a.created_at) }}</p>
           </div>
           <div class="flex gap-2">
-            <AppBadge :variant="a.severity === 'critical' || a.severity === 'high' ? 'danger' : 'warning'" size="sm">{{ a.severity }}</AppBadge>
+            <AppBadge :variant="a.severity === 'critical' || a.severity === 'high' ? 'danger' : a.severity === 'medium' ? 'warning' : 'info'" size="sm">{{ a.severity }}</AppBadge>
             <AppBadge :variant="a.status === 'resolved' ? 'success' : 'neutral'" size="sm">{{ a.status }}</AppBadge>
           </div>
         </div>

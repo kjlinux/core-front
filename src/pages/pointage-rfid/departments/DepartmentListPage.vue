@@ -69,36 +69,21 @@
     >
       <form id="dept-list-form" @submit.prevent="handleCreateDepartment">
         <div class="space-y-4">
-          <AppInput
-            v-model="formData.name"
-            :label="t('common.name')"
-            :placeholder="t('common.name')"
-            required
-          />
+          <FormRow :label="t('common.name')" :required="true" :error="deptErrors.name">
+            <AppInput v-model="formData.name" :placeholder="t('common.name')" />
+          </FormRow>
 
-          <AppSelect
-            v-model="formData.companyId"
-            :options="companyOptions"
-            :label="t('departments.company')"
-            :placeholder="t('departments.selectCompany')"
-            required
-            @update:model-value="handleFormCompanyChange"
-          />
+          <FormRow :label="t('departments.company')" :required="true" :error="deptErrors.companyId">
+            <AppSelect v-model="formData.companyId" :options="companyOptions" :placeholder="t('departments.selectCompany')" @update:model-value="handleFormCompanyChange" />
+          </FormRow>
 
-          <AppSelect
-            v-model="formData.siteId"
-            :options="formSiteOptions"
-            :label="t('departments.site')"
-            :placeholder="t('departments.selectSite')"
-            required
-          />
+          <FormRow :label="t('departments.site')" :required="true" :error="deptErrors.siteId">
+            <AppSelect v-model="formData.siteId" :options="formSiteOptions" :placeholder="t('departments.selectSite')" />
+          </FormRow>
 
-          <AppSelect
-            v-model="formData.managerId"
-            :options="managerOptions"
-            :label="t('departments.manager')"
-            :placeholder="t('departments.selectManager')"
-          />
+          <FormRow :label="t('departments.manager')" :optional="true">
+            <AppSelect v-model="formData.managerId" :options="managerOptions" :placeholder="t('departments.selectManager')" />
+          </FormRow>
         </div>
       </form>
 
@@ -128,36 +113,21 @@
     >
       <form id="dept-edit-form" @submit.prevent="handleEditDepartment">
         <div class="space-y-4">
-          <AppInput
-            v-model="formData.name"
-            :label="t('common.name')"
-            :placeholder="t('common.name')"
-            required
-          />
+          <FormRow :label="t('common.name')" :required="true" :error="deptErrors.name">
+            <AppInput v-model="formData.name" :placeholder="t('common.name')" />
+          </FormRow>
 
-          <AppSelect
-            v-model="formData.companyId"
-            :options="companyOptions"
-            :label="t('departments.company')"
-            :placeholder="t('departments.selectCompany')"
-            required
-            @update:model-value="handleFormCompanyChange"
-          />
+          <FormRow :label="t('departments.company')" :required="true" :error="deptErrors.companyId">
+            <AppSelect v-model="formData.companyId" :options="companyOptions" :placeholder="t('departments.selectCompany')" @update:model-value="handleFormCompanyChange" />
+          </FormRow>
 
-          <AppSelect
-            v-model="formData.siteId"
-            :options="formSiteOptions"
-            :label="t('departments.site')"
-            :placeholder="t('departments.selectSite')"
-            required
-          />
+          <FormRow :label="t('departments.site')" :required="true" :error="deptErrors.siteId">
+            <AppSelect v-model="formData.siteId" :options="formSiteOptions" :placeholder="t('departments.selectSite')" />
+          </FormRow>
 
-          <AppSelect
-            v-model="formData.managerId"
-            :options="managerOptions"
-            :label="t('departments.manager')"
-            :placeholder="t('departments.selectManager')"
-          />
+          <FormRow :label="t('departments.manager')" :optional="true">
+            <AppSelect v-model="formData.managerId" :options="managerOptions" :placeholder="t('departments.selectManager')" />
+          </FormRow>
         </div>
       </form>
 
@@ -195,6 +165,7 @@ import AppCard from '@/components/ui/AppCard.vue'
 import AppModal from '@/components/ui/AppModal.vue'
 import AppInput from '@/components/ui/AppInput.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
+import FormRow from '@/components/forms/FormRow.vue'
 import type { TableColumn } from '@/types/common'
 import type { Department } from '@/types'
 import { useToast } from '@/composables/useToast'
@@ -213,6 +184,7 @@ const showCreateModal = ref(false)
 const showEditModal = ref(false)
 const editingDept = ref<Department | null>(null)
 const isSubmitting = ref(false)
+const deptErrors = ref<Record<string, string>>({})
 const managers = ref<UserData[]>([])
 
 const filters = ref({
@@ -321,6 +293,14 @@ onMounted(async () => {
   managers.value = users
 })
 
+function validateDeptForm(): boolean {
+  deptErrors.value = {}
+  if (!formData.value.name?.trim()) deptErrors.value.name = 'Le nom est requis'
+  if (!formData.value.companyId) deptErrors.value.companyId = "L'entreprise est requise"
+  if (!formData.value.siteId) deptErrors.value.siteId = 'Le site est requis'
+  return Object.keys(deptErrors.value).length === 0
+}
+
 function handleCompanyFilterChange() {
   filters.value.siteId = ''
   filters.value.page = 1
@@ -346,6 +326,7 @@ function handleFormCompanyChange() {
 }
 
 async function handleCreateDepartment() {
+  if (!validateDeptForm()) return
   isSubmitting.value = true
   try {
     await departmentStore.createDepartment({
@@ -377,6 +358,7 @@ function openEditModal(dept: Department) {
 
 async function handleEditDepartment() {
   if (!editingDept.value) return
+  if (!validateDeptForm()) return
   isSubmitting.value = true
   try {
     await departmentStore.updateDepartment(editingDept.value.id, {
@@ -408,12 +390,14 @@ async function handleDeleteDepartment(dept: Department) {
 
 function closeCreateModal() {
   showCreateModal.value = false
+  deptErrors.value = {}
   formData.value = { name: '', companyId: '', siteId: '', managerId: '' }
 }
 
 function closeEditModal() {
   showEditModal.value = false
   editingDept.value = null
+  deptErrors.value = {}
   formData.value = { name: '', companyId: '', siteId: '', managerId: '' }
 }
 </script>

@@ -146,7 +146,7 @@ async function confirmOrder() {
           <AppSelect
             v-if="isSuperAdmin"
             v-model="selectedCompanyId"
-            :label="`${t('marketplace.fullName')} *`"
+            :label="t('marketplace.companyName')"
             :options="companyOptions"
           />
           <AppInput v-model="deliveryAddress.fullName" :label="t('marketplace.fullName')" />

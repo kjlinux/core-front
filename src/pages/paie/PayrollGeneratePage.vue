@@ -81,6 +81,10 @@ async function generatePayslips() {
     toast.showError('Veuillez renseigner la période')
     return
   }
+  if (filters.value.periodEnd < filters.value.periodStart) {
+    toast.showError('La date de fin doit être postérieure à la date de début')
+    return
+  }
   try {
     await payrollStore.generatePayslips({
       companyId: companyId.value,
@@ -92,6 +96,18 @@ async function generatePayslips() {
     toast.showSuccess(`${payrollStore.payslips.length} fiche(s) de paie générée(s)`)
   } catch {
     toast.showError('Erreur lors de la génération')
+  }
+}
+
+async function loadExistingPayslips() {
+  try {
+    await payrollStore.fetchPayslips({
+      companyId: companyId.value,
+      siteId: filters.value.siteId || undefined,
+      departmentId: filters.value.departmentId || undefined,
+    })
+  } catch {
+    toast.showError('Erreur lors du chargement des fiches')
   }
 }
 
@@ -118,6 +134,9 @@ onMounted(async () => {
   await Promise.all([
     siteStore.fetchSites({ companyId: companyId.value }),
     departmentStore.fetchDepartments({ companyId: companyId.value }),
+    payrollStore.fetchPayslips({
+      companyId: companyId.value,
+    }),
   ])
 })
 </script>
@@ -165,9 +184,15 @@ onMounted(async () => {
           Générer les fiches
         </AppButton>
         <AppButton
-          v-if="payrollStore.payslips.length > 0"
           variant="secondary"
           :loading="payrollStore.isLoading"
+          @click="loadExistingPayslips"
+        >
+          Charger les fiches existantes
+        </AppButton>
+        <AppButton
+          v-if="payrollStore.payslips.length > 0"
+          variant="secondary"
           @click="downloadAll"
         >
           <DocumentArrowDownIcon class="w-4 h-4 mr-2" />

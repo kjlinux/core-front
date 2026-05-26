@@ -6,8 +6,10 @@ import type { PayrollConfig, Payslip, LatenessRule, PayrollGenerateParams } from
 export const usePayrollStore = defineStore('payroll', () => {
   const config = ref<PayrollConfig | null>(null)
   const payslips = ref<Payslip[]>([])
+  const myPayslips = ref<Payslip[]>([])
   const currentPayslip = ref<Payslip | null>(null)
   const isLoading = ref(false)
+  const isSaving = ref(false)
   const isGenerating = ref(false)
 
   async function fetchConfig(companyId: string) {
@@ -20,12 +22,12 @@ export const usePayrollStore = defineStore('payroll', () => {
   }
 
   async function saveConfig(companyId: string, data: Partial<PayrollConfig>) {
-    isLoading.value = true
+    isSaving.value = true
     try {
       config.value = await payrollApi.saveConfig(companyId, data)
       return config.value
     } finally {
-      isLoading.value = false
+      isSaving.value = false
     }
   }
 
@@ -33,7 +35,7 @@ export const usePayrollStore = defineStore('payroll', () => {
     companyId: string,
     rules: Omit<LatenessRule, 'id' | 'companyId' | 'createdAt' | 'updatedAt'>[],
   ) {
-    isLoading.value = true
+    isSaving.value = true
     try {
       const saved = await payrollApi.saveLatenessRules(companyId, rules)
       if (config.value) {
@@ -41,7 +43,7 @@ export const usePayrollStore = defineStore('payroll', () => {
       }
       return saved
     } finally {
-      isLoading.value = false
+      isSaving.value = false
     }
   }
 
@@ -73,7 +75,7 @@ export const usePayrollStore = defineStore('payroll', () => {
   }
 
   async function validatePayslip(id: string) {
-    isLoading.value = true
+    isSaving.value = true
     try {
       const updated = await payrollApi.validatePayslip(id)
       const idx = payslips.value.findIndex((p) => p.id === id)
@@ -81,14 +83,14 @@ export const usePayrollStore = defineStore('payroll', () => {
       if (currentPayslip.value?.id === id) currentPayslip.value = updated
       return updated
     } finally {
-      isLoading.value = false
+      isSaving.value = false
     }
   }
 
   async function fetchMyPayslips(employeeId: string) {
     isLoading.value = true
     try {
-      payslips.value = await payrollApi.getMyPayslips(employeeId)
+      myPayslips.value = await payrollApi.getMyPayslips(employeeId)
     } finally {
       isLoading.value = false
     }
@@ -97,8 +99,10 @@ export const usePayrollStore = defineStore('payroll', () => {
   return {
     config,
     payslips,
+    myPayslips,
     currentPayslip,
     isLoading,
+    isSaving,
     isGenerating,
     fetchConfig,
     saveConfig,

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import type { Employee, Company, Site, Department } from '@/types'
 import FormSection from './FormSection.vue'
 import FormRow from './FormRow.vue'
@@ -13,7 +13,9 @@ const props = defineProps<{
   companies: Company[]
   sites: Site[]
   departments: Department[]
+  employees: Employee[]
   loading: boolean
+  isEdit?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -27,6 +29,29 @@ const localValue = computed({
   get: () => props.modelValue,
   set: (value) => emit('update:modelValue', value)
 })
+
+const selectedCompany = computed(() =>
+  props.companies.find((c) => c.id === localValue.value.companyId)
+)
+
+const generateMatricule = (companyId: string): string => {
+  const company = props.companies.find((c) => c.id === companyId)
+  if (!company?.matriculePrefix) return ''
+  const count = props.employees.filter((e) => e.companyId === companyId).length
+  return `${company.matriculePrefix}${String(count + 1).padStart(3, '0')}`
+}
+
+watch(
+  () => localValue.value.companyId,
+  (newCompanyId) => {
+    if (!props.isEdit && newCompanyId) {
+      const matricule = generateMatricule(newCompanyId)
+      if (matricule) {
+        localValue.value = { ...localValue.value, employeeNumber: matricule }
+      }
+    }
+  }
+)
 
 const updateField = (field: keyof Employee, value: any) => {
   const updated = { ...localValue.value, [field]: value }
@@ -166,12 +191,17 @@ const handleSubmit = () => {
         />
       </FormRow>
 
-      <FormRow label="Matricule" :required="true" :error="errors.employeeNumber">
+      <FormRow
+        label="Matricule"
+        :required="true"
+        :error="errors.employeeNumber"
+        :help="!isEdit && localValue.companyId && !selectedCompany?.matriculePrefix ? 'Cette entreprise n\'a pas de préfixe matricule configuré' : (!isEdit ? 'Généré automatiquement selon le préfixe de l\'entreprise' : undefined)"
+      >
         <AppInput
           :model-value="localValue.employeeNumber || ''"
           @update:model-value="updateField('employeeNumber', $event)"
-          placeholder="EMP001"
-          :disabled="loading"
+          placeholder="Sélectionner d'abord une entreprise"
+          :disabled="loading || (!isEdit && !!localValue.companyId && !!selectedCompany?.matriculePrefix)"
         />
       </FormRow>
 
@@ -236,7 +266,7 @@ const handleSubmit = () => {
     </FormSection>
 
     <FormSection title="Rémunération">
-      <FormRow label="Mode de rémunération">
+      <FormRow label="Mode de rémunération" :optional="true">
         <AppSelect
           :model-value="localValue.paymentMode || ''"
           @update:model-value="updateField('paymentMode', $event || undefined)"
@@ -246,7 +276,7 @@ const handleSubmit = () => {
         />
       </FormRow>
 
-      <FormRow label="Salaire de base (FCFA)">
+      <FormRow label="Salaire de base (FCFA)" :optional="true">
         <AppInput
           :model-value="localValue.baseSalary?.toString() || ''"
           @update:model-value="updateField('baseSalary', $event ? Number($event) : undefined)"

@@ -87,6 +87,8 @@ const handleCancel = () => {
           :companies="companyStore.companies"
           :sites="siteStore.sites"
           :departments="departmentStore.departments"
+          :employees="employeeStore.employees"
+          :is-edit="true"
           :loading="employeeStore.isLoading"
           @submit="handleSubmit"
         />

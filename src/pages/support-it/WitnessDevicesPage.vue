@@ -57,7 +57,13 @@ function fmtDate(s: string | null) {
   return new Date(s).toLocaleString('fr-FR')
 }
 
-onMounted(() => store.fetchWitnesses())
+onMounted(async () => {
+  try {
+    await store.fetchWitnesses()
+  } catch (e) {
+    toast.error('Impossible de charger les capteurs témoins', String((e as Error).message))
+  }
+})
 </script>
 
 <template>

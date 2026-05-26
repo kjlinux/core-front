@@ -1,7 +1,8 @@
 <template>
   <div class="bg-white rounded-lg border border-gray-200 shadow-sm">
-    <div v-if="title || subtitle || $slots.actions" :class="headerPaddingClasses" class="border-b border-gray-200">
-      <div class="flex items-start justify-between">
+    <div v-if="$slots.header || title || subtitle || $slots.actions" :class="headerPaddingClasses" class="border-b border-gray-200">
+      <slot v-if="$slots.header" name="header" />
+      <div v-else class="flex items-start justify-between">
         <div>
           <h3 v-if="title" class="text-lg font-semibold text-gray-900">
             {{ title }}

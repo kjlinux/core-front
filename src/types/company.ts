@@ -5,6 +5,7 @@ export interface Company {
   email: string
   phone: string
   address: string
+  matriculePrefix?: string
   isActive: boolean
   subscription: 'basic' | 'premium' | 'enterprise'
   sites: Site[]

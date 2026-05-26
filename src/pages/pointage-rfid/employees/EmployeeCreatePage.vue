@@ -33,6 +33,7 @@ onMounted(async () => {
       companyStore.fetchCompanies({ perPage: 100 }),
       siteStore.fetchSites({ perPage: 200 }),
       departmentStore.fetchDepartments({ perPage: 200 }),
+      employeeStore.fetchEmployees({ perPage: 1000 }),
     ])
   } finally {
     isLoadingData.value = false
@@ -75,6 +76,7 @@ const handleCancel = () => {
           :companies="companyStore.companies"
           :sites="siteStore.sites"
           :departments="departmentStore.departments"
+          :employees="employeeStore.employees"
           :loading="employeeStore.isLoading"
           @submit="handleSubmit"
         />

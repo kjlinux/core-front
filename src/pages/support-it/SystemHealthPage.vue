@@ -46,7 +46,13 @@ async function refresh() {
   }
 }
 
-onMounted(() => store.fetchHealth())
+onMounted(async () => {
+  try {
+    await store.fetchHealth()
+  } catch (e) {
+    toast.error('Impossible de charger la santé système', String((e as Error).message))
+  }
+})
 </script>
 
 <template>

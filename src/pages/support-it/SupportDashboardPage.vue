@@ -2,6 +2,7 @@
 import { computed, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useSupportStore } from '@/stores/support.store'
+import { useToast } from '@/composables/useToast'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import StatCard from '@/components/data-display/StatCard.vue'
@@ -13,6 +14,7 @@ import {
 } from '@heroicons/vue/24/outline'
 
 const store = useSupportStore()
+const toast = useToast()
 
 const totalDevices = computed(() => {
   const o = store.overview
@@ -37,7 +39,7 @@ const overallVariant = computed(() => {
 const overallLabel = computed(() => {
   const s = store.health?.status
   if (s === 'healthy') return 'Tout va bien'
-  if (s === 'degraded') return 'Degrade'
+  if (s === 'degraded') return 'Dégradé'
   if (s === 'unhealthy') return 'Hors ligne'
   return 'Inconnu'
 })
@@ -45,7 +47,11 @@ const overallLabel = computed(() => {
 const recentAlerts = computed(() => store.alerts.slice(0, 5))
 
 onMounted(async () => {
-  await Promise.all([store.fetchHealth(), store.fetchOverview(), store.fetchAlerts({ per_page: 10 })])
+  try {
+    await Promise.all([store.fetchHealth(), store.fetchOverview(), store.fetchAlerts({ per_page: 10 })])
+  } catch (e) {
+    toast.error('Erreur de chargement', String((e as Error).message))
+  }
 })
 </script>
 
@@ -87,7 +93,7 @@ onMounted(async () => {
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <AppCard title="Santé système" subtitle="Composants critiques">
         <template #actions>
-          <RouterLink to="/support-it/health" class="text-sm text-blue-600 hover:underline">Detail</RouterLink>
+          <RouterLink to="/support-it/health" class="text-sm text-blue-600 hover:underline">Détail</RouterLink>
         </template>
         <div v-if="store.health" class="space-y-2">
           <div v-for="(c, name) in {

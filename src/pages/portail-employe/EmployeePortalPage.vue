@@ -157,13 +157,13 @@ onMounted(async () => {
         <div class="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
       </div>
 
-      <div v-else-if="payrollStore.payslips.length === 0" class="text-center py-12 text-gray-400">
+      <div v-else-if="payrollStore.myPayslips.length === 0" class="text-center py-12 text-gray-400">
         Aucune fiche de paie disponible
       </div>
 
       <div v-else class="space-y-3">
         <AppCard
-          v-for="slip in payrollStore.payslips"
+          v-for="slip in payrollStore.myPayslips"
           :key="slip.id"
         >
           <div class="flex items-center justify-between gap-4 flex-wrap">
@@ -210,8 +210,8 @@ onMounted(async () => {
           <!-- Détail des lignes -->
           <div v-if="slip.lines.length > 0" class="mt-4 pt-4 border-t border-gray-100">
             <div
-              v-for="line in slip.lines"
-              :key="line.label"
+              v-for="(line, index) in slip.lines"
+              :key="`line-${index}`"
               class="flex justify-between text-sm py-1"
             >
               <span class="text-gray-600">{{ line.label }}</span>

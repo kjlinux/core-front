@@ -69,7 +69,8 @@ function statusVariant(s: string) {
   return 'danger'
 }
 
-function fmtDate(s: string) {
+function fmtDate(s: string | null | undefined) {
+  if (!s) return '—'
   return new Date(s).toLocaleString('fr-FR')
 }
 
@@ -87,7 +88,7 @@ onMounted(load)
       <div class="flex flex-wrap gap-3 items-end">
         <AppSelect v-model="filter.status" :options="statusOptions" label="Statut" />
         <AppSelect v-model="filter.severity" :options="severityOptions" label="Sévérité" />
-        <div class="ml-auto text-sm text-gray-500">{{ store.alertsTotal }} resultat(s)</div>
+        <div class="ml-auto text-sm text-gray-500">{{ store.alertsTotal }} résultat(s)</div>
       </div>
     </AppCard>
 

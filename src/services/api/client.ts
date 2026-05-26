@@ -74,7 +74,7 @@ apiClient.interceptors.response.use(
     }
     return response
   },
-  (error) => {
+  async (error) => {
     const url = error.config?.url || ''
     const isAuthEndpoint = url.includes('/auth/login') || url.includes('/auth/logout')
     const currentPath = window.location.pathname
@@ -88,7 +88,7 @@ apiClient.interceptors.response.use(
       delete apiClient.defaults.headers.common.Authorization
       try {
         const auth = useAuthStore()
-        auth.logout()
+        await auth.logout()
       } catch {
         // Pinia pas encore pret — nettoyage manuel
         localStorage.removeItem('access_token')

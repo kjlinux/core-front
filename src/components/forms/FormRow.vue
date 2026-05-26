@@ -2,6 +2,7 @@
 defineProps<{
   label: string
   required?: boolean
+  optional?: boolean
   error?: string
   help?: string
 }>()
@@ -12,6 +13,7 @@ defineProps<{
     <label class="flex items-center text-sm font-medium text-gray-700">
       {{ label }}
       <span v-if="required" class="text-red-500 ml-1">*</span>
+      <span v-if="optional" class="text-gray-400 ml-1 text-xs font-normal">(optionnel)</span>
     </label>
     <div class="flex-1">
       <slot />

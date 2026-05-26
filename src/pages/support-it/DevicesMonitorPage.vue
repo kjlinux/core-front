@@ -50,7 +50,7 @@ watch(filter, load, { deep: true })
 async function ping(kind: DeviceKind, id: string) {
   try {
     await store.pingDevice(kind, id)
-    toast.success('Commande STATUS envoyee')
+    toast.success('Commande STATUS envoyée')
   } catch (e) {
     toast.error('Échec ping', String((e as Error).message))
   }
@@ -104,7 +104,7 @@ onMounted(load)
               </td>
               <td class="px-4 py-3">
                 <AppBadge variant="info" size="sm">{{ d.kind }}</AppBadge>
-                <AppBadge v-if="d.isWitness" variant="warning" size="sm" class="ml-1">temoin</AppBadge>
+                <AppBadge v-if="d.isWitness" variant="warning" size="sm" class="ml-1">Témoin</AppBadge>
               </td>
               <td class="px-4 py-3 text-sm text-gray-700">{{ d.siteName ?? '—' }}</td>
               <td class="px-4 py-3">
