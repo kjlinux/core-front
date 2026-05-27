@@ -9,7 +9,7 @@ import type { PlanCode, PlanFeature } from '@/types/subscription'
 export function authGuard(to: RouteLocationNormalized, _from: RouteLocationNormalized) {
   const auth = useAuthStore()
 
-  const publicRoutes = ['login', 'forgot-password', 'qr-scan-public']
+  const publicRoutes = ['login', 'forgot-password', 'reset-password', 'qr-scan-public']
   const isPublicRoute = publicRoutes.includes(to.name as string) || to.meta.requiresAuth === false
 
   if (!isPublicRoute && !auth.isAuthenticated) {

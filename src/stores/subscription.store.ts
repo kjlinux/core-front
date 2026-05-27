@@ -17,7 +17,11 @@ export const useSubscriptionStore = defineStore('subscription', () => {
   const isLoading = ref(false)
 
   async function fetchPlans() {
-    plans.value = await subscriptionApi.plans()
+    try {
+      plans.value = await subscriptionApi.plans()
+    } catch {
+      // plans non disponibles — on garde le tableau vide
+    }
   }
 
   async function fetchMe() {

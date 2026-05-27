@@ -195,6 +195,15 @@ const pointageRfidRoutes: RouteRecordRaw[] = [
         component: () => import('@/pages/pointage-rfid/reports/ReportsPage.vue'),
         meta: { title: 'Rapports' },
       },
+      {
+        path: 'absences',
+        name: 'rfid-absence-requests',
+        component: () => import('@/pages/pointage-rfid/absences/AbsenceRequestsPage.vue'),
+        meta: {
+          title: 'Justificatifs d\'absence',
+          roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE, UserRole.MANAGER],
+        },
+      },
     ],
   },
 ]

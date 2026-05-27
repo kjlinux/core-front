@@ -6,13 +6,21 @@ import { PLAN_LABELS, PLAN_PRICES_XOF, PLAN_FEATURES, FEATURE_LABELS } from '@/c
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import { formatCurrency } from '@/utils/format'
+import { useToast } from '@/composables/useToast'
 import type { PlanCode, PlanFeature } from '@/types/subscription'
 
 const route = useRoute()
 const store = useSubscriptionStore()
+const toast = useToast()
 
 const highlightedFeature = computed(() => route.query.feature as PlanFeature | undefined)
 const plans: PlanCode[] = ['freemium', 'garantie', 'premium']
+
+const REQUIRES_WARRANTY: Record<PlanCode, boolean> = {
+  freemium: false,
+  garantie: true,
+  premium: true,
+}
 
 onMounted(async () => {
   await Promise.all([store.fetchPlans(), store.fetchMe()])
@@ -20,16 +28,19 @@ onMounted(async () => {
 
 function isCurrent(code: PlanCode) { return store.state?.subscription === code }
 function prorata(code: PlanCode) { return store.computeProrata(code) }
+function isBlocked(code: PlanCode): boolean {
+  return REQUIRES_WARRANTY[code] && !!store.state && !store.state.is_warranty_active
+}
 
 async function selectPlan(code: PlanCode) {
-  if (isCurrent(code)) return
+  if (isCurrent(code) || isBlocked(code)) return
   try {
     const isActive = store.state?.is_active
     const r = isActive ? await store.upgrade(code) : await store.subscribe(code)
     if (r.payment_url) window.location.href = r.payment_url
-    else if (r.scheduled_at) alert('Changement planifié pour le ' + new Date(r.scheduled_at).toLocaleDateString('fr-FR'))
+    else if (r.scheduled_at) toast.success('Changement planifié pour le ' + new Date(r.scheduled_at).toLocaleDateString('fr-FR'))
   } catch (e: any) {
-    alert(e.response?.data?.message ?? e.message)
+    toast.error(e.response?.data?.message ?? e.message)
   }
 }
 </script>
@@ -63,9 +74,13 @@ async function selectPlan(code: PlanCode) {
           ({{ prorata(code).daysRemaining }} jours restants)
         </div>
 
+        <div v-if="isBlocked(code)" class="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1.5 mb-2">
+          Ce plan nécessite une garantie matérielle active. Contactez votre technicien.
+        </div>
+
         <AppButton
           :variant="isCurrent(code) ? 'tertiary' : 'primary'"
-          :disabled="isCurrent(code)"
+          :disabled="isCurrent(code) || isBlocked(code)"
           @click="selectPlan(code)"
         >
           {{ isCurrent(code) ? 'Plan actuel' : (code === 'freemium' ? 'Rétrograder' : 'Choisir ce plan') }}

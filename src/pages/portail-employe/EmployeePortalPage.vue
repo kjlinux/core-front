@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth.store'
 import { usePayrollStore } from '@/stores/payroll.store'
+import { useAbsenceStore } from '@/stores/absence.store'
 import { useToast } from '@/composables/useToast'
 import { usePayrollPdf } from '@/composables/usePayrollPdf'
 import AppCard from '@/components/ui/AppCard.vue'
@@ -14,6 +15,7 @@ import type { Payslip } from '@/types/payroll'
 
 const authStore = useAuthStore()
 const payrollStore = usePayrollStore()
+const absenceStore = useAbsenceStore()
 const toast = useToast()
 const { generatePayslipPdf } = usePayrollPdf()
 
@@ -91,10 +93,20 @@ async function submitAbsence() {
     toast.showError('Veuillez remplir tous les champs obligatoires')
     return
   }
-  // TODO: appeler l'API absence quand elle sera disponible
-  toast.showSuccess('Demande d\'absence envoyée')
-  showAbsenceModal.value = false
-  absenceForm.value = { dateStart: '', dateEnd: '', reason: '', justificatif: null }
+  try {
+    await absenceStore.submitRequest({
+      employeeId: employeeId.value,
+      dateStart: absenceForm.value.dateStart,
+      dateEnd: absenceForm.value.dateEnd,
+      reason: absenceForm.value.reason,
+      justificatif: absenceForm.value.justificatif,
+    })
+    toast.showSuccess('Demande d\'absence envoyée')
+    showAbsenceModal.value = false
+    absenceForm.value = { dateStart: '', dateEnd: '', reason: '', justificatif: null }
+  } catch {
+    toast.showError('Une erreur est survenue lors de l\'envoi')
+  }
 }
 
 onMounted(async () => {
@@ -102,7 +114,10 @@ onMounted(async () => {
     toast.showError('Votre compte utilisateur n\'est pas lie a un employe. Contactez votre administrateur.')
     return
   }
-  await payrollStore.fetchMyPayslips(employeeId.value)
+  await Promise.all([
+    payrollStore.fetchMyPayslips(employeeId.value),
+    absenceStore.fetchMyRequests(employeeId.value),
+  ])
 })
 </script>
 
@@ -113,10 +128,10 @@ onMounted(async () => {
       <p class="text-sm text-gray-500 mt-1">Bienvenue, {{ employeeName }}</p>
     </div>
 
-    <AppCard v-if="!employeeId" title="Compte non lie">
+    <AppCard v-if="!employeeId" title="Compte non lié">
       <p class="text-sm text-gray-600">
-        Votre compte utilisateur n'est pas associe a une fiche employe.
-        Contactez votre administrateur pour que le rattachement soit effectue.
+        Votre compte utilisateur n'est pas associé à une fiche employé.
+        Contactez votre administrateur pour que le rattachement soit effectué.
       </p>
     </AppCard>
     <template v-else>
@@ -168,7 +183,7 @@ onMounted(async () => {
         >
           <div class="flex items-center justify-between gap-4 flex-wrap">
             <div class="flex items-center gap-4">
-              <BanknotesIcon class="w-8 h-8 text-gray-300 flex-shrink-0" />
+              <BanknotesIcon class="w-8 h-8 text-gray-300 shrink-0" />
               <div>
                 <p class="font-semibold text-gray-900 capitalize">{{ formatPeriod(slip.period) }}</p>
                 <p class="text-xs text-gray-400">
@@ -233,8 +248,34 @@ onMounted(async () => {
       </div>
 
       <AppCard title="Mes demandes d'absence">
-        <div class="text-sm text-gray-500 py-6 text-center">
+        <div v-if="absenceStore.isLoading" class="flex justify-center py-8">
+          <div class="h-6 w-6 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+        </div>
+
+        <div v-else-if="absenceStore.myRequests.length === 0" class="text-sm text-gray-500 py-6 text-center">
           Aucune demande d'absence soumise pour le moment
+        </div>
+
+        <div v-else class="divide-y divide-gray-100">
+          <div
+            v-for="req in absenceStore.myRequests"
+            :key="req.id"
+            class="py-3 flex items-start justify-between gap-4"
+          >
+            <div class="min-w-0">
+              <p class="text-sm font-medium text-gray-900">
+                {{ formatDate(req.dateStart) }} — {{ formatDate(req.dateEnd) }}
+              </p>
+              <p class="text-sm text-gray-500 truncate">{{ req.reason }}</p>
+              <p v-if="req.reviewNote" class="text-xs text-gray-400 italic mt-0.5">Note : {{ req.reviewNote }}</p>
+            </div>
+            <AppBadge
+              :variant="({ pending: 'warning', approved: 'success', rejected: 'error' }[req.status] ?? 'neutral') as any"
+              class="shrink-0"
+            >
+              {{ { pending: 'En attente', approved: 'Approuvé', rejected: 'Rejeté' }[req.status] }}
+            </AppBadge>
+          </div>
         </div>
       </AppCard>
     </div>

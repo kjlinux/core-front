@@ -21,7 +21,7 @@ const formData = ref<Partial<Company>>({
   phone: '',
   address: '',
   isActive: true,
-  subscription: 'basic',
+  subscription: 'freemium',
 })
 
 async function handleSubmit() {

@@ -86,6 +86,8 @@ function getActiveGroupId(): string | null {
   if (path.startsWith('/feelback')) return 'feelback'
   if (path.startsWith('/marketplace')) return 'marketplace'
   if (path.startsWith('/paie')) return 'paie'
+  if (path.startsWith('/abonnement')) return 'abonnement'
+  if (path.startsWith('/crm')) return 'crm'
   if (path.startsWith('/support-it')) return 'support-it'
   if (path.startsWith('/parametres')) return 'parametres'
   return null
@@ -220,6 +222,15 @@ const sidebarClasses = computed(() => [
           :icon="DocumentChartBarIcon"
           :collapsed="false"
           :active="route.path.startsWith('/pointage-rfid/reports')"
+          :nested="true"
+        />
+        <TheSidebarItem
+          v-if="isClientRole && !isTechnicien"
+          :label="t('nav.absenceRequests')"
+          to="/pointage-rfid/absences"
+          :icon="ClipboardDocumentListIcon"
+          :collapsed="false"
+          :active="route.path.startsWith('/pointage-rfid/absences')"
           :nested="true"
         />
       </TheSidebarGroup>
@@ -515,6 +526,68 @@ const sidebarClasses = computed(() => [
         :active="route.path.startsWith('/mon-espace')"
       />
 
+      <!-- CRM Suivi clients (usage interne TANGA GROUP) -->
+      <TheSidebarGroup
+        v-if="isSetupRole && !isSupportIt"
+        group-id="crm"
+        :label="t('nav.crm')"
+        :icon="UsersIcon"
+        :collapsed="ui.sidebarCollapsed"
+        :active="route.path.startsWith('/crm')"
+      >
+        <TheSidebarItem
+          :label="t('nav.crmDashboard')"
+          to="/crm/followups/dashboard"
+          :icon="ChartBarIcon"
+          :collapsed="false"
+          :active="route.path === '/crm/followups/dashboard'"
+          :nested="true"
+        />
+        <TheSidebarItem
+          :label="t('nav.crmFollowups')"
+          to="/crm/followups"
+          :icon="ClipboardDocumentListIcon"
+          :collapsed="false"
+          :active="route.path === '/crm/followups'"
+          :nested="true"
+        />
+      </TheSidebarGroup>
+
+      <!-- Abonnement -->
+      <TheSidebarGroup
+        v-if="isAdminOrSuper"
+        group-id="abonnement"
+        :label="t('nav.abonnement')"
+        :icon="CreditCardIcon"
+        :collapsed="ui.sidebarCollapsed"
+        :active="route.path.startsWith('/abonnement')"
+      >
+        <TheSidebarItem
+          :label="t('nav.abonnementCurrent')"
+          to="/abonnement"
+          :icon="ShieldCheckIcon"
+          :collapsed="false"
+          :active="route.path === '/abonnement'"
+          :nested="true"
+        />
+        <TheSidebarItem
+          :label="t('nav.abonnementPlans')"
+          to="/abonnement/plans"
+          :icon="TagIcon"
+          :collapsed="false"
+          :active="route.path === '/abonnement/plans'"
+          :nested="true"
+        />
+        <TheSidebarItem
+          :label="t('nav.abonnementHistory')"
+          to="/abonnement/history"
+          :icon="ClipboardDocumentListIcon"
+          :collapsed="false"
+          :active="route.path === '/abonnement/history'"
+          :nested="true"
+        />
+      </TheSidebarGroup>
+
       <!-- Firmware OTA -->
       <TheSidebarGroup
         v-if="isAdminOrSuperOrTech && !isSupportIt"
@@ -645,7 +718,7 @@ const sidebarClasses = computed(() => [
           :nested="true"
         />
         <TheSidebarItem
-          v-if="isAdminOrSuper && !isEmploye && !isSupportIt"
+          v-if="isSuperAdmin && !isEmploye && !isSupportIt"
           :label="t('nav.roles')"
           to="/parametres/roles"
           :icon="ShieldCheckIcon"
@@ -660,6 +733,15 @@ const sidebarClasses = computed(() => [
           :icon="ClipboardDocumentListIcon"
           :collapsed="false"
           :active="route.path === '/parametres/rapport-technicien'"
+          :nested="true"
+        />
+        <TheSidebarItem
+          v-if="isSuperAdmin"
+          :label="t('nav.adminAbonnements')"
+          to="/parametres/admin/abonnements"
+          :icon="BanknotesIcon"
+          :collapsed="false"
+          :active="route.path === '/parametres/admin/abonnements'"
           :nested="true"
         />
         <TheSidebarItem

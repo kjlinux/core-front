@@ -92,10 +92,10 @@ async function handleSubmit() {
 
   try {
     await authApi.forgotPassword(email.value)
-    successMessage.value = t('auth.resetLinkSent', { email: email.value })
   } catch {
-    emailError.value = t('auth.resetError')
+    // Toujours afficher le succès pour ne pas révéler si l'adresse existe
   } finally {
+    successMessage.value = t('auth.resetLinkSent', { email: email.value })
     isLoading.value = false
   }
 }

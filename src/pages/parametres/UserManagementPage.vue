@@ -186,8 +186,9 @@ async function handleCreate() {
       company_id: permissions.isSuperAdmin.value ? createForm.value.companyId || undefined : undefined,
       password: createForm.value.password,
       password_confirmation: createForm.value.confirmPassword,
+      is_active: true,
     })
-    users.value.push(created)
+    users.value.unshift({ ...created, isActive: true })
     toast.showSuccess(t('parametres.userCreated'))
     showCreateModal.value = false
     createForm.value = { firstName: '', lastName: '', email: '', role: '', companyId: '', password: '', confirmPassword: '' }

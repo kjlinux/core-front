@@ -16,6 +16,7 @@ const isLoading = ref(false)
 const editing = ref<any | null>(null)
 const editPlan = ref<PlanCode>('freemium')
 const editExpiresAt = ref<string>('')
+const editWarrantyEndsAt = ref<string>('')
 
 const planOptions = (Object.keys(PLAN_LABELS) as PlanCode[]).map((c) => ({ value: c, label: PLAN_LABELS[c] }))
 
@@ -34,12 +35,14 @@ function openEdit(c: any) {
   editing.value = c
   editPlan.value = c.subscription
   editExpiresAt.value = c.subscription_expires_at?.slice(0, 10) ?? ''
+  editWarrantyEndsAt.value = c.warranty_ends_at?.slice(0, 10) ?? ''
 }
 async function save() {
   if (!editing.value) return
   await subscriptionApi.adminUpdate(editing.value.id, {
     plan_code: editPlan.value,
     expires_at: editExpiresAt.value || null,
+    warranty_ends_at: editWarrantyEndsAt.value || null,
   })
   editing.value = null
   await load()
@@ -105,7 +108,8 @@ onMounted(load)
     <AppModal v-if="editing" :model-value="!!editing" :title="`Changer le plan : ${editing.name}`" @update:model-value="editing = null">
       <div class="space-y-3">
         <AppSelect v-model="editPlan" :options="planOptions" label="Plan" />
-        <AppInput v-model="editExpiresAt" type="date" label="Nouvelle date d'échéance (optionnelle)" />
+        <AppInput v-model="editExpiresAt" type="date" label="Date d'échéance (optionnelle)" />
+        <AppInput v-model="editWarrantyEndsAt" type="date" label="Fin de garantie matérielle (optionnelle)" />
         <p class="text-xs text-gray-500">Aucun paiement n'est déclenché. La modification est immédiate et enregistrée dans l'audit.</p>
       </div>
       <template #footer>

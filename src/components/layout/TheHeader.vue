@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useUiStore } from '@/stores/ui.store'
 import { useAuthStore } from '@/stores/auth.store'
@@ -20,6 +20,26 @@ const firmwareStore = useFirmwareStore()
 const route = useRoute()
 
 const showUpdateModal = ref(false)
+
+const now = ref(new Date())
+let clockInterval: ReturnType<typeof setInterval>
+
+const formattedDate = computed(() => {
+  return now.value.toLocaleDateString('fr-FR', {
+    weekday: 'long',
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  })
+})
+
+const formattedTime = computed(() => {
+  return now.value.toLocaleTimeString('fr-FR', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  })
+})
 
 const APP_VERSION = '2.9.8'
 const APP_UPDATE_BANNER_KEY = 'app_update_banner_dismissed_version'
@@ -57,6 +77,7 @@ const showFirmwareBanner = computed(() => {
 })
 
 onMounted(() => {
+  clockInterval = setInterval(() => { now.value = new Date() }, 1000)
   if (
     auth.user?.role === UserRole.SUPER_ADMIN ||
     auth.user?.role === UserRole.ADMIN_ENTERPRISE ||
@@ -64,6 +85,10 @@ onMounted(() => {
   ) {
     firmwareStore.fetchLatestPublished()
   }
+})
+
+onUnmounted(() => {
+  clearInterval(clockInterval)
 })
 </script>
 
@@ -120,6 +145,12 @@ onMounted(() => {
       </div>
 
       <div class="flex items-center gap-4">
+        <!-- Date et heure en temps réel -->
+        <div class="hidden md:flex flex-col items-end leading-tight">
+          <span class="text-xs font-medium text-gray-700 capitalize">{{ formattedDate }}</span>
+          <span class="text-sm font-semibold text-gray-900 tabular-nums">{{ formattedTime }}</span>
+        </div>
+
         <TheCompanySwitcher
           v-if="auth.user?.role === UserRole.TECHNICIEN"
         />

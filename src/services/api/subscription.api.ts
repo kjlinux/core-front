@@ -35,7 +35,7 @@ export const subscriptionApi = {
   adminAnalytics(): Promise<any> {
     return apiClient.get('/admin/subscriptions/analytics').then((r) => r.data)
   },
-  adminUpdate(companyId: string, payload: { plan_code: PlanCode; expires_at?: string | null }): Promise<any> {
+  adminUpdate(companyId: string, payload: { plan_code: PlanCode; expires_at?: string | null; warranty_ends_at?: string | null }): Promise<any> {
     return apiClient.patch(`/admin/companies/${companyId}/subscription`, payload).then((r) => r.data)
   },
 }

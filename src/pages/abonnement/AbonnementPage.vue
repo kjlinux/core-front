@@ -2,6 +2,7 @@
 import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useSubscriptionStore } from '@/stores/subscription.store'
+import { useToast } from '@/composables/useToast'
 import { PLAN_LABELS, PLAN_PRICES_XOF } from '@/config/plan-features'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
@@ -11,6 +12,7 @@ import type { PlanCode } from '@/types/subscription'
 
 const router = useRouter()
 const store = useSubscriptionStore()
+const toast = useToast()
 
 onMounted(() => store.fetchMe())
 
@@ -19,7 +21,7 @@ async function handlePayNext() {
     const r = await store.payNextPeriod()
     if (r.payment_url) window.location.href = r.payment_url
   } catch (e: any) {
-    alert(e.response?.data?.message ?? e.message)
+    toast.error(e.response?.data?.message ?? e.message)
   }
 }
 </script>
@@ -37,8 +39,8 @@ async function handlePayNext() {
             <span class="text-gray-400 text-base ml-2">{{ formatCurrency(PLAN_PRICES_XOF[store.state.subscription as PlanCode]) }} / mois</span>
           </div>
         </div>
-        <AppBadge :variant="store.state.is_active ? 'success' : 'neutral'">
-          {{ store.state.is_active ? 'Actif' : 'Inactif' }}
+        <AppBadge :variant="(store.state.is_active || store.state.subscription === 'freemium') ? 'success' : 'neutral'">
+          {{ (store.state.is_active || store.state.subscription === 'freemium') ? 'Actif' : 'Inactif' }}
         </AppBadge>
       </div>
 

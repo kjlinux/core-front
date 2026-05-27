@@ -32,6 +32,7 @@ export interface CreateUserPayload {
   company_id?: string
   password: string
   password_confirmation: string
+  is_active?: boolean
 }
 
 export interface UpdateUserPayload {

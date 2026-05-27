@@ -36,6 +36,7 @@ const paieRoutes: RouteRecordRaw[] = [
         component: () => import('@/pages/portail-employe/EmployeePortalPage.vue'),
         meta: {
           title: 'Mon espace',
+          roles: [UserRole.EMPLOYE],
         },
       },
     ],
