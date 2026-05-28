@@ -484,14 +484,14 @@ export function useTechnicienReport() {
           doc.setTextColor(...C.ok)
           doc.setFontSize(8.5)
           doc.setFont('helvetica', 'italic')
-          doc.text("Configuration complete — aucun point d'attention.", marginX + 5, y)
+          doc.text("Configuration complete - aucun point d'attention.", marginX + 5, y)
           y += 7
         } else {
           // Statut warning/error sans issues explicites (ex: 0 appareils)
           const fallbackMsg =
             section.status === 'warning'
-              ? 'Configuration incomplète — verifiez cette section.'
-              : 'Probleme detecte — action requise.'
+              ? 'Configuration incomplète - verifiez cette section.'
+              : 'Probleme detecte - action requise.'
           doc.setTextColor(...accentColor)
           doc.setFontSize(8.5)
           doc.setFont('helvetica', 'italic')
@@ -523,7 +523,7 @@ export function useTechnicienReport() {
       doc.setTextColor(...C.primary400)
       doc.setFont('helvetica', 'normal')
       doc.text(
-        `Page ${i} / ${pageCount} — Rapport genere automatiquement par le systeme`,
+        `Page ${i} / ${pageCount} - Rapport genere automatiquement par le systeme`,
         pageWidth / 2,
         doc.internal.pageSize.getHeight() - 7,
         { align: 'center' },

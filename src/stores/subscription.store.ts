@@ -20,7 +20,7 @@ export const useSubscriptionStore = defineStore('subscription', () => {
     try {
       plans.value = await subscriptionApi.plans()
     } catch {
-      // plans non disponibles — on garde le tableau vide
+      // plans non disponibles - on garde le tableau vide
     }
   }
 

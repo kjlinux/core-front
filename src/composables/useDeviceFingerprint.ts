@@ -1,6 +1,6 @@
 /**
  * Génère et persiste un identifiant unique et stable pour ce navigateur/appareil.
- * Stocké en localStorage — stable jusqu'à effacement du navigateur.
+ * Stocké en localStorage - stable jusqu'à effacement du navigateur.
  * Combine plusieurs signaux pour maximiser la stabilité.
  */
 export function useDeviceFingerprint() {

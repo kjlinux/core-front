@@ -57,7 +57,7 @@ async function ping(kind: DeviceKind, id: string) {
 }
 
 function fmtDate(s: string | null) {
-  if (!s) return '—'
+  if (!s) return '-'
   return new Date(s).toLocaleString('fr-FR')
 }
 
@@ -106,14 +106,14 @@ onMounted(load)
                 <AppBadge variant="info" size="sm">{{ d.kind }}</AppBadge>
                 <AppBadge v-if="d.isWitness" variant="warning" size="sm" class="ml-1">Témoin</AppBadge>
               </td>
-              <td class="px-4 py-3 text-sm text-gray-700">{{ d.siteName ?? '—' }}</td>
+              <td class="px-4 py-3 text-sm text-gray-700">{{ d.siteName ?? '-' }}</td>
               <td class="px-4 py-3">
                 <AppBadge :variant="d.isOnline ? 'success' : 'danger'" size="sm">
                   {{ d.isOnline ? 'En ligne' : 'Hors ligne' }}
                 </AppBadge>
               </td>
               <td class="px-4 py-3 text-sm text-gray-700">{{ fmtDate(d.lastSeenAt) }}</td>
-              <td class="px-4 py-3 text-sm text-gray-700">{{ d.firmwareVersion ?? '—' }}</td>
+              <td class="px-4 py-3 text-sm text-gray-700">{{ d.firmwareVersion ?? '-' }}</td>
               <td class="px-4 py-3 text-right space-x-2 whitespace-nowrap">
                 <AppButton
                   v-if="d.kind === 'rfid' || d.kind === 'biometric'"

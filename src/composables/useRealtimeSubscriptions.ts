@@ -81,7 +81,7 @@ export function useRealtimeSubscriptions() {
         ui.addToast({ type: toastType, title, message })
       })
 
-    // Canal devices — dispatch selon deviceType
+    // Canal devices - dispatch selon deviceType
     echo.channel('devices')
       .stopListening('.device.status.updated')
       .listen('.device.status.updated', (data: {
@@ -99,7 +99,7 @@ export function useRealtimeSubscriptions() {
         }
       })
 
-    // Canal support — alertes systeme + sante (support_it / super_admin uniquement)
+    // Canal support - alertes systeme + sante (support_it / super_admin uniquement)
     if (authStore.isSupportIt || authStore.isSuperAdmin) {
       supportStore.subscribeRealtime()
     }

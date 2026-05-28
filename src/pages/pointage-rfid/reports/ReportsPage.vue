@@ -13,6 +13,7 @@ import { attendanceReportApi, type AttendanceReportData, type AttendanceReportPa
 import { exportToPdf, exportToExcel } from '@/utils/export-helpers'
 import { companyApi } from '@/services/api/company.api'
 import type { TableColumn } from '@/types/common'
+import { formatPercent } from '@/utils/format'
 import type { Company, Site, Department } from '@/types'
 
 const { t } = useI18n()
@@ -42,7 +43,6 @@ const isSuperAdmin = computed(() => authStore.userRole === 'super_admin')
 // ---------- Report type options ----------
 const reportTypeOptions = computed(() => [
   { label: t('reports.daily'), value: 'daily' },
-  { label: t('reports.weekly'), value: 'weekly' },
   { label: t('reports.monthly'), value: 'monthly' },
   { label: t('reports.lates'), value: 'late' },
   { label: t('reports.absences'), value: 'absence' },
@@ -63,17 +63,7 @@ const columnsByType = computed<Record<string, TableColumn[]>>(() => ({
     { key: 'absent', label: t('reports.absentCount'), align: 'center' },
     { key: 'late', label: t('reports.lateCount'), align: 'center' },
     { key: 'overtime', label: t('reports.overtime'), align: 'center' },
-    { key: 'rate', label: t('reports.attendanceRate'), align: 'center' },
-  ],
-  weekly: [
-    { key: 'employee', label: t('reports.employee') },
-    { key: 'department', label: t('reports.dept') },
-    { key: 'site', label: t('reports.site') },
-    { key: 'present', label: t('reports.presentDays'), align: 'center' },
-    { key: 'absent', label: t('reports.absencesCount'), align: 'center' },
-    { key: 'late', label: t('reports.lateCount'), align: 'center' },
-    { key: 'overtime', label: t('reports.overtime'), align: 'center' },
-    { key: 'rate', label: t('reports.attendanceRate'), align: 'center' },
+    { key: 'rate', label: t('reports.attendanceRate'), align: 'center', render: (v: unknown) => formatPercent(typeof v === 'number' ? v : 0) },
   ],
   monthly: [
     { key: 'employee', label: t('reports.employee') },
@@ -83,7 +73,7 @@ const columnsByType = computed<Record<string, TableColumn[]>>(() => ({
     { key: 'absent', label: t('reports.absencesCount'), align: 'center' },
     { key: 'late', label: t('reports.lateCount'), align: 'center' },
     { key: 'overtime', label: t('reports.overtime'), align: 'center' },
-    { key: 'rate', label: t('reports.attendanceRate'), align: 'center' },
+    { key: 'rate', label: t('reports.attendanceRate'), align: 'center', render: (v: unknown) => formatPercent(typeof v === 'number' ? v : 0) },
   ],
   late: [
     { key: 'employee', label: t('reports.employee') },
@@ -91,14 +81,14 @@ const columnsByType = computed<Record<string, TableColumn[]>>(() => ({
     { key: 'site', label: t('reports.site') },
     { key: 'late', label: t('reports.lateNumber'), align: 'center' },
     { key: 'overtime', label: t('reports.overtime'), align: 'center' },
-    { key: 'rate', label: t('reports.attendanceRate'), align: 'center' },
+    { key: 'rate', label: t('reports.attendanceRate'), align: 'center', render: (v: unknown) => formatPercent(typeof v === 'number' ? v : 0) },
   ],
   absence: [
     { key: 'employee', label: t('reports.employee') },
     { key: 'department', label: t('reports.dept') },
     { key: 'site', label: t('reports.site') },
     { key: 'absent', label: t('reports.absencesCount'), align: 'center' },
-    { key: 'rate', label: t('reports.attendanceRate'), align: 'center' },
+    { key: 'rate', label: t('reports.attendanceRate'), align: 'center', render: (v: unknown) => formatPercent(typeof v === 'number' ? v : 0) },
   ],
 }))
 
@@ -251,6 +241,11 @@ const handleExport = async () => {
     const baseFilename = `pointage-${reportType.value}-${startDate.value}`
     const title = `${t('reports.title')} - ${currentReportLabel.value}`
 
+    const exportRows = report.value.rows.map((r) => ({
+      ...r,
+      rate: formatPercent(typeof r.rate === 'number' ? r.rate : 0),
+    })) as Record<string, unknown>[]
+
     if (exportFormat.value === 'pdf') {
       await exportToPdf({
         filename: baseFilename,
@@ -258,7 +253,7 @@ const handleExport = async () => {
         subtitle: periodLabel.value,
         summaryRows: buildSummaryRows(),
         columns: buildExportColumns(),
-        data: report.value.rows as Record<string, unknown>[],
+        data: exportRows,
       })
       success(t('reports.pdfTitle'), t('reports.pdfExported'))
     } else {
@@ -268,7 +263,7 @@ const handleExport = async () => {
         subtitle: periodLabel.value,
         summaryRows: buildSummaryRows(),
         columns: buildExportColumns(),
-        data: report.value.rows as Record<string, unknown>[],
+        data: exportRows,
       })
       success(t('reports.excelTitle'), t('reports.excelExported'))
     }

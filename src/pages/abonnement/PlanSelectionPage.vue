@@ -79,7 +79,7 @@ async function selectPlan(code: PlanCode) {
         </div>
 
         <AppButton
-          :variant="isCurrent(code) ? 'tertiary' : 'primary'"
+          :variant="isCurrent(code) ? 'secondary' : 'primary'"
           :disabled="isCurrent(code) || isBlocked(code)"
           @click="selectPlan(code)"
         >

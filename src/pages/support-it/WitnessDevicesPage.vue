@@ -53,7 +53,7 @@ async function remove(kind: DeviceKind, id: string) {
 }
 
 function fmtDate(s: string | null) {
-  if (!s) return '—'
+  if (!s) return '-'
   return new Date(s).toLocaleString('fr-FR')
 }
 
@@ -99,7 +99,7 @@ onMounted(async () => {
                 <div class="text-xs text-gray-500">{{ w.serialNumber ?? w.id }}</div>
               </td>
               <td class="px-4 py-3"><AppBadge variant="info" size="sm">{{ w.kind }}</AppBadge></td>
-              <td class="px-4 py-3 text-sm text-gray-700">{{ w.siteName ?? '—' }}</td>
+              <td class="px-4 py-3 text-sm text-gray-700">{{ w.siteName ?? '-' }}</td>
               <td class="px-4 py-3">
                 <AppBadge :variant="w.isOnline ? 'success' : 'danger'" size="sm">
                   {{ w.isOnline ? 'En ligne' : 'Hors ligne' }}

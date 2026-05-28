@@ -12,13 +12,13 @@ const router = useRouter()
 const call = ref<ClientFollowupCall | null>(null)
 
 const statusOpts = ['pending','done','skipped','escalated'].map((v) => ({ value: v, label: v }))
-const resultOpts = [{ value: '', label: '—' }, { value: 'ok', label: 'OK' }, { value: 'partial', label: 'Partiel' }, { value: 'problem', label: 'Problème' }]
+const resultOpts = [{ value: '', label: '-' }, { value: 'ok', label: 'OK' }, { value: 'partial', label: 'Partiel' }, { value: 'problem', label: 'Problème' }]
 
 const waLink = computed(() => {
   if (!call.value?.company?.phone) return null
   const text = call.value.call_type === 'j30'
     ? `Bonjour, suite à notre appel de bilan, voici votre rapport du premier mois...`
-    : `Bonjour, suivi de votre installation TANGA GROUP — type ${call.value.call_type.toUpperCase()}.`
+    : `Bonjour, suivi de votre installation TANGA GROUP - type ${call.value.call_type.toUpperCase()}.`
   const phone = call.value.company.phone.replace(/[^\d+]/g, '')
   return `https://wa.me/${phone}?text=${encodeURIComponent(text)}`
 })
@@ -45,7 +45,7 @@ async function escalate() {
 
 <template>
   <div v-if="call" class="space-y-6 max-w-3xl">
-    <h1 class="text-2xl font-bold text-gray-900">Appel {{ call.call_type.toUpperCase() }} — {{ call.company?.name }}</h1>
+    <h1 class="text-2xl font-bold text-gray-900">Appel {{ call.call_type.toUpperCase() }} - {{ call.company?.name }}</h1>
 
     <AppCard>
       <div class="grid grid-cols-2 gap-4">

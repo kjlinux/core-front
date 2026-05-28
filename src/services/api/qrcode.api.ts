@@ -47,6 +47,8 @@ export const qrcodeApi = {
 
   getAttendance(params?: {
     date?: string
+    startDate?: string
+    endDate?: string
     employeeId?: string
     status?: string
     gpsVerified?: boolean
@@ -56,7 +58,7 @@ export const qrcodeApi = {
     return apiClient.get('/qr-attendance', { params }).then((r) => r.data)
   },
 
-  /** Scan depuis le téléphone de l'employé — token du site + fingerprint + GPS */
+  /** Scan depuis le téléphone de l'employé - token du site + fingerprint + GPS */
   scan(payload: QrScanPayload): Promise<QrAttendanceRecord> {
     return apiClient.post('/qr-attendance/scan', payload).then((r) => r.data)
   },

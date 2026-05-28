@@ -70,7 +70,7 @@ function statusVariant(s: string) {
 }
 
 function fmtDate(s: string | null | undefined) {
-  if (!s) return '—'
+  if (!s) return '-'
   return new Date(s).toLocaleString('fr-FR')
 }
 

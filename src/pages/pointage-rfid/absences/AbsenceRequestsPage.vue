@@ -141,7 +141,7 @@ onMounted(loadRequests)
             <div class="min-w-0">
               <p class="font-semibold text-gray-900">{{ req.employeeName }}</p>
               <p class="text-sm text-gray-500">
-                {{ formatDate(req.dateStart) }} — {{ formatDate(req.dateEnd) }}
+                {{ formatDate(req.dateStart) }} - {{ formatDate(req.dateEnd) }}
                 <span class="text-gray-400">({{ daysDiff(req.dateStart, req.dateEnd) }})</span>
               </p>
               <p class="text-sm text-gray-600 mt-1 truncate max-w-md">{{ req.reason }}</p>

@@ -14,7 +14,7 @@ export interface QrCode {
   createdAt: string
 }
 
-/** Enregistrement de pointage QR — lié à un employé via son device_fingerprint */
+/** Enregistrement de pointage QR - lié à un employé via son device_fingerprint */
 export interface QrAttendanceRecord {
   id: string
   employeeId: string

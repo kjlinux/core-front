@@ -187,7 +187,7 @@ onMounted(async () => {
               <div>
                 <p class="font-semibold text-gray-900 capitalize">{{ formatPeriod(slip.period) }}</p>
                 <p class="text-xs text-gray-400">
-                  {{ formatDate(slip.periodStart) }} — {{ formatDate(slip.periodEnd) }}
+                  {{ formatDate(slip.periodStart) }} - {{ formatDate(slip.periodEnd) }}
                   · {{ paymentModeLabels[slip.paymentMode] ?? slip.paymentMode }}
                 </p>
               </div>
@@ -264,7 +264,7 @@ onMounted(async () => {
           >
             <div class="min-w-0">
               <p class="text-sm font-medium text-gray-900">
-                {{ formatDate(req.dateStart) }} — {{ formatDate(req.dateEnd) }}
+                {{ formatDate(req.dateStart) }} - {{ formatDate(req.dateEnd) }}
               </p>
               <p class="text-sm text-gray-500 truncate">{{ req.reason }}</p>
               <p v-if="req.reviewNote" class="text-xs text-gray-400 italic mt-0.5">Note : {{ req.reviewNote }}</p>

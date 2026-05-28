@@ -211,7 +211,7 @@ const getStatusLabel = (status: string): string => {
 };
 
 const formatTime = (iso: string | null | undefined): string => {
-  if (!iso) return '—';
+  if (!iso) return '-';
   return new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 };
 

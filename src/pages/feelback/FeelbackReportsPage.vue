@@ -217,11 +217,15 @@ function validate(): boolean {
     toast.showError(t('feelback.selectPeriod'))
     return false
   }
+  if (startDate.value > endDate.value) {
+    toast.showError(t('feelback.invalidDateRange'))
+    return false
+  }
   if (isSuperAdmin.value && !selectedCompany.value) {
     toast.showError(t('feelback.companyRequired'))
     return false
   }
-  if (showSiteFilter.value && siteOptions.value.length <= 1) {
+  if (showSiteFilter.value && siteOptions.value.length === 0) {
     toast.showError(t('feelback.noSiteAvailable'))
     return false
   }

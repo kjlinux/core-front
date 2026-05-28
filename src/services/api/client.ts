@@ -91,7 +91,7 @@ apiClient.interceptors.response.use(
         const auth = useAuthStore()
         await auth.logout()
       } catch {
-        // Pinia pas encore pret — nettoyage manuel
+        // Pinia pas encore pret - nettoyage manuel
         localStorage.removeItem('access_token')
         localStorage.removeItem('auth_user')
         localStorage.removeItem('active_company_id')

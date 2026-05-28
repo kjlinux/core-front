@@ -39,7 +39,7 @@ export const useNotificationStore = defineStore('notification', () => {
       const response = await notificationApi.getAll()
       notifications.value = response.data
     } catch {
-      // Silently ignore — backend may be unavailable
+      // Silently ignore - backend may be unavailable
     } finally {
       isLoading.value = false
     }

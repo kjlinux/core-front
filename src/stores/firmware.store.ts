@@ -65,7 +65,7 @@ export const useFirmwareStore = defineStore('firmware', () => {
       if (published) {
         latestPublishedVersion.value = published
       } else {
-        // Pas de version publiée dans la page courante — on essaye sans filtre
+        // Pas de version publiée dans la page courante - on essaye sans filtre
         latestPublishedVersion.value = null
       }
     } catch {

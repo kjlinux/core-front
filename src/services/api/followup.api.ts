@@ -9,10 +9,10 @@ export interface ClientFollowupCall {
   scheduled_at: string
   called_at: string | null
   status: 'pending' | 'done' | 'skipped' | 'escalated'
-  result: 'ok' | 'partial' | 'problem' | null
-  usage_rate: number | null
-  satisfaction_score: number | null
-  notes: string | null
+  result: 'ok' | 'partial' | 'problem' | undefined
+  usage_rate: number | undefined
+  satisfaction_score: number | undefined
+  notes: string | undefined
   actions: any[] | null
   assigned_to_user_id: number | null
   company?: { id: string; name: string; phone?: string }

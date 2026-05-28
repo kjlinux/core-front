@@ -177,7 +177,7 @@ const totalEmployees = computed(() => {
 const managerOptions = computed(() => {
   const opts = employeeStore.employees
     .filter(e => e.isActive)
-    .map(e => ({ value: e.id, label: `${e.firstName} ${e.lastName} — ${e.position}` }))
+    .map(e => ({ value: e.id, label: `${e.firstName} ${e.lastName} - ${e.position}` }))
   return [{ value: '', label: t('sites.selectManager') }, ...opts]
 })
 

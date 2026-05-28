@@ -122,16 +122,16 @@
                 <span v-if="record.lateMinutes > 0" class="font-medium text-orange-600">
                   {{ record.lateMinutes }} {{ t('biometric.min') }}
                 </span>
-                <span v-else class="text-gray-400">—</span>
+                <span v-else class="text-gray-400">-</span>
               </td>
               <td class="whitespace-nowrap px-4 py-4 text-sm">
                 <AppBadge v-if="record.isDoubleBadge" variant="danger" size="sm">
                   {{ t('common.yes') }} ({{ record.ignoredBadges }} {{ record.ignoredBadges > 1 ? t('biometric.ignoredPl') : t('biometric.ignored') }})
                 </AppBadge>
-                <span v-else class="text-gray-400">—</span>
+                <span v-else class="text-gray-400">-</span>
               </td>
               <td class="px-4 py-4 text-sm text-gray-500">
-                {{ record.notes || '—' }}
+                {{ record.notes || '-' }}
               </td>
             </tr>
           </tbody>
@@ -241,7 +241,7 @@ const stats = computed(() => {
 })
 
 function formatTime(iso: string | null | undefined): string {
-  if (!iso) return '—'
+  if (!iso) return '-'
   return new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
 }
 

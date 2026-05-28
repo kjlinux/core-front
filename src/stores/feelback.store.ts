@@ -70,7 +70,7 @@ export const useFeelbackStore = defineStore('feelback', () => {
   }
 
   /**
-   * Appelé par useRealtimeSubscriptions — met à jour le state sans s'abonner à Echo.
+   * Appelé par useRealtimeSubscriptions - met à jour le state sans s'abonner à Echo.
    */
   function handleRealtimeFeedback(_data: {
     id?: string

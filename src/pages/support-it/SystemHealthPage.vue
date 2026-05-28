@@ -60,7 +60,7 @@ onMounted(async () => {
     <div class="flex items-center justify-between">
       <div>
         <h1 class="text-2xl font-semibold text-gray-900">Santé système</h1>
-        <p class="text-sm text-gray-500">Dernier check : {{ store.health?.timestamp ? new Date(store.health.timestamp).toLocaleTimeString('fr-FR') : '—' }}</p>
+        <p class="text-sm text-gray-500">Dernier check : {{ store.health?.timestamp ? new Date(store.health.timestamp).toLocaleTimeString('fr-FR') : '-' }}</p>
       </div>
       <AppButton variant="outline" @click="refresh" :loading="store.isLoading">
         <ArrowPathIcon class="w-4 h-4" /> Vérifier

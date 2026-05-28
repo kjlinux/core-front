@@ -16,7 +16,7 @@ const supportItRoutes: RouteRecordRaw[] = [
         name: 'support-dashboard',
         component: () => import('@/pages/support-it/SupportDashboardPage.vue'),
         meta: {
-          title: 'Support IT — Dashboard',
+          title: 'Support IT - Dashboard',
           roles: [UserRole.SUPPORT_IT, UserRole.SUPER_ADMIN],
         },
       },

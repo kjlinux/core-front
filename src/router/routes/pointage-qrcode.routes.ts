@@ -2,7 +2,7 @@ import type { RouteRecordRaw } from 'vue-router'
 import { UserRole } from '@/types/enums'
 
 const pointageQrcodeRoutes: RouteRecordRaw[] = [
-  // Route publique — page de scan mobile, accessible sans auth (l'employé scanne depuis son téléphone)
+  // Route publique - page de scan mobile, accessible sans auth (l'employé scanne depuis son téléphone)
   {
     path: '/qr-scan',
     name: 'qr-scan-public',

@@ -31,7 +31,7 @@ export const useActiveCompanyStore = defineStore('activeCompany', () => {
         localStorage.setItem('active_company_id', id)
         localStorage.setItem('active_company_name', name)
       } catch {
-        // Backend not available — store locally using provided name
+        // Backend not available - store locally using provided name
         activeCompanyId.value = companyId
         activeCompanyName.value = companyName ?? ''
         localStorage.setItem('active_company_id', companyId)

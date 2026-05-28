@@ -20,7 +20,7 @@ onMounted(async () => {
     authStore.user = user
     authStore.persistUser()
   } catch {
-    // Silencieux — si l'appel échoue, on garde le user du localStorage
+    // Silencieux - si l'appel échoue, on garde le user du localStorage
   }
 })
 onUnmounted(() => unsubscribeAll())

@@ -97,7 +97,7 @@ const sections: HelpSection[] = [
           'Allez dans Pointage RFID > Sites',
           'Cliquez sur "Nouveau site"',
           'Renseignez le nom du site et son adresse',
-          'Enregistrez — le site apparaît immédiatement dans la liste',
+          'Enregistrez - le site apparaît immédiatement dans la liste',
         ],
         useCases: [
           "Votre entreprise a un siège à Ouagadougou et une agence à Bobo-Dioulasso : créez deux sites distincts.",
@@ -130,7 +130,7 @@ const sections: HelpSection[] = [
           'Cliquez sur "Nouvel employé"',
           'Renseignez les informations personnelles et professionnelles',
           'Affectez-le à un site et un département',
-          'Enregistrez — vous pourrez ensuite lui attribuer un badge',
+          'Enregistrez - vous pourrez ensuite lui attribuer un badge',
         ],
         useCases: [
           "Un nouveau collaborateur rejoint l'entreprise : créez sa fiche et attribuez-lui un badge.",
@@ -242,7 +242,7 @@ const sections: HelpSection[] = [
         steps: [
           'Allez dans Pointage QR Code > Générer QR Codes',
           'Sélectionnez le site concerné',
-          'Cliquez sur "Générer" — le QR Code apparaît à l\'écran',
+          'Cliquez sur "Générer" - le QR Code apparaît à l\'écran',
           'Imprimez-le ou affichez-le sur un écran à l\'entrée du site',
         ],
       },
@@ -274,7 +274,7 @@ const sections: HelpSection[] = [
           'Allez dans Biométrique > Enrôlement',
           'Sélectionnez l\'employé à enrôler',
           'Sur le terminal, demandez à l\'employé de poser son doigt plusieurs fois',
-          'Validez l\'enrôlement — l\'empreinte est stockée de façon sécurisée',
+          'Validez l\'enrôlement - l\'empreinte est stockée de façon sécurisée',
         ],
         useCases: [
           "Un nouveau collaborateur arrive : enrôlez ses empreintes dès son premier jour.",
@@ -359,7 +359,7 @@ const sections: HelpSection[] = [
           'Cliquez sur "Nouvelle alerte"',
           'Définissez le seuil de déclenchement (ex. taux de satisfaction < 60%)',
           'Choisissez la borne ou le site concerné',
-          'Enregistrez — l\'alerte se déclenche automatiquement si le seuil est atteint',
+          'Enregistrez - l\'alerte se déclenche automatiquement si le seuil est atteint',
         ],
         useCases: [
           "Vous êtes responsable de plusieurs sites et ne pouvez pas surveiller chaque tableau de bord en permanence : les alertes vous notifient des anomalies.",
@@ -478,7 +478,7 @@ const sections: HelpSection[] = [
           'Allez dans Paramètres > Utilisateurs',
           'Cliquez sur "Nouvel utilisateur"',
           'Renseignez le nom, prénom, email et choisissez un rôle',
-          'Enregistrez — l\'utilisateur reçoit ses identifiants par email',
+          'Enregistrez - l\'utilisateur reçoit ses identifiants par email',
         ],
         useCases: [
           "Un nouveau responsable RH rejoint votre équipe : créez-lui un compte avec le rôle Manager.",

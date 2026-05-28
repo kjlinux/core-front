@@ -225,7 +225,7 @@ function renderPayslipPage(doc: jsPDF, slip: Payslip, pageWidth: number, marginX
   doc.setFontSize(7)
   doc.setTextColor(...C.primary400)
   doc.text(
-    `Document genere automatiquement — ${slip.companyName} — ${new Date().toLocaleDateString('fr-FR')}`,
+    `Document genere automatiquement - ${slip.companyName} - ${new Date().toLocaleDateString('fr-FR')}`,
     pageWidth / 2,
     pageH - 6,
     { align: 'center' },

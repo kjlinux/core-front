@@ -94,9 +94,9 @@ onMounted(load)
                 {{ PLAN_LABELS[c.subscription as PlanCode] ?? c.subscription }}
               </AppBadge>
             </td>
-            <td class="px-3 py-2">{{ c.subscription_expires_at ? new Date(c.subscription_expires_at).toLocaleDateString('fr-FR') : '—' }}</td>
-            <td class="px-3 py-2">{{ c.subscription_next_period_paid ? '✓ payé' : '—' }}</td>
-            <td class="px-3 py-2">{{ c.warranty_ends_at ? new Date(c.warranty_ends_at).toLocaleDateString('fr-FR') : '—' }}</td>
+            <td class="px-3 py-2">{{ c.subscription_expires_at ? new Date(c.subscription_expires_at).toLocaleDateString('fr-FR') : '-' }}</td>
+            <td class="px-3 py-2">{{ c.subscription_next_period_paid ? '✓ payé' : '-' }}</td>
+            <td class="px-3 py-2">{{ c.warranty_ends_at ? new Date(c.warranty_ends_at).toLocaleDateString('fr-FR') : '-' }}</td>
             <td class="px-3 py-2 text-right">
               <AppButton variant="secondary" size="sm" @click="openEdit(c)">Changer le plan</AppButton>
             </td>

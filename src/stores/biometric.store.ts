@@ -162,7 +162,7 @@ export const useBiometricStore = defineStore('biometric', () => {
   }
 
   /**
-   * Appelé par useRealtimeSubscriptions — met à jour le statut d'un device biométrique.
+   * Appelé par useRealtimeSubscriptions - met à jour le statut d'un device biométrique.
    */
   function handleRealtimeDevice(data: {
     deviceId: string

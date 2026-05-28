@@ -33,7 +33,7 @@ function goUpgrade() {
   </div>
   <AppCard v-else class="text-center p-8 bg-amber-50 border border-amber-200">
     <div class="text-amber-800 font-semibold text-lg mb-2">
-      {{ featureLabel }} — disponible avec l'abonnement {{ requiredPlanLabel }}
+      {{ featureLabel }} - disponible avec l'abonnement {{ requiredPlanLabel }}
     </div>
     <p class="text-amber-700 text-sm mb-4">
       Cette fonctionnalité nécessite un abonnement supérieur pour être activée sur votre compte.

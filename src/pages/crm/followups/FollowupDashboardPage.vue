@@ -9,7 +9,7 @@ onMounted(async () => { data.value = await followupApi.dashboard() })
 
 <template>
   <div class="space-y-6">
-    <h1 class="text-2xl font-bold text-gray-900">Tableau de bord — Routine clients</h1>
+    <h1 class="text-2xl font-bold text-gray-900">Tableau de bord - Routine clients</h1>
 
     <div v-if="data" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       <AppCard>
@@ -18,11 +18,11 @@ onMounted(async () => { data.value = await followupApi.dashboard() })
       </AppCard>
       <AppCard>
         <div class="text-xs text-gray-500 uppercase">Taux d'utilisation moyen (J+7)</div>
-        <div class="text-3xl font-bold">{{ data.avg_usage_j7 ?? '—' }}{{ data.avg_usage_j7 ? '%' : '' }}</div>
+        <div class="text-3xl font-bold">{{ data.avg_usage_j7 ?? '-' }}{{ data.avg_usage_j7 ? '%' : '' }}</div>
       </AppCard>
       <AppCard>
         <div class="text-xs text-gray-500 uppercase">Note satisfaction moyenne (J+30)</div>
-        <div class="text-3xl font-bold">{{ data.avg_satisfaction_j30 ?? '—' }}{{ data.avg_satisfaction_j30 ? '/10' : '' }}</div>
+        <div class="text-3xl font-bold">{{ data.avg_satisfaction_j30 ?? '-' }}{{ data.avg_satisfaction_j30 ? '/10' : '' }}</div>
       </AppCard>
       <AppCard>
         <div class="text-xs text-gray-500 uppercase mb-1">Statuts</div>

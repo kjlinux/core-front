@@ -33,7 +33,7 @@ onMounted(load)
 function statusVariant(s: string) {
   return s === 'done' ? 'success' : (s === 'escalated' ? 'danger' : (s === 'skipped' ? 'neutral' : 'warning'))
 }
-function resultLabel(r: string | null) {
+function resultLabel(r: string | null | undefined) {
   if (!r) return ''
   return { ok: '✅ OK', partial: '⚠ Partiel', problem: '⬤ Problème' }[r] ?? r
 }
@@ -42,7 +42,7 @@ function resultLabel(r: string | null) {
 <template>
   <div class="space-y-6">
     <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold text-gray-900">Routine clients — Appels J+2 / J+7 / J+30</h1>
+      <h1 class="text-2xl font-bold text-gray-900">Routine clients - Appels J+2 / J+7 / J+30</h1>
       <button class="text-sm text-primary-600 underline" @click="router.push({ name: 'crm-followups-dashboard' })">Tableau de bord</button>
     </div>
 
@@ -71,7 +71,7 @@ function resultLabel(r: string | null) {
             <td class="px-3 py-2">{{ new Date(c.scheduled_at).toLocaleDateString('fr-FR') }}</td>
             <td class="px-3 py-2"><AppBadge :variant="statusVariant(c.status)">{{ c.status }}</AppBadge></td>
             <td class="px-3 py-2">{{ resultLabel(c.result) }}</td>
-            <td class="px-3 py-2">{{ c.satisfaction_score ? `${c.satisfaction_score}/10` : '—' }}</td>
+            <td class="px-3 py-2">{{ c.satisfaction_score ? `${c.satisfaction_score}/10` : '-' }}</td>
             <td class="px-3 py-2 text-right">
               <button class="text-primary-600 text-sm underline" @click="router.push({ name: 'crm-followup-detail', params: { id: c.id } })">Ouvrir</button>
             </td>

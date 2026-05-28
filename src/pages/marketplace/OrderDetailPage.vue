@@ -142,7 +142,7 @@ onMounted(async () => {
                   </p>
                   <p v-if="index === getCurrentStepIndex()" class="text-xs text-primary-600 mt-0.5">{{ t('marketplace.inProgress') }}</p>
                   <p v-else-if="index < getCurrentStepIndex()" class="text-xs text-green-600 mt-0.5">{{ t('marketplace.validated') }}</p>
-                  <p v-else class="text-xs text-gray-300 mt-0.5">—</p>
+                  <p v-else class="text-xs text-gray-300 mt-0.5">-</p>
                 </div>
               </div>
 

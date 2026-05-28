@@ -188,7 +188,7 @@ const statusLabel: Record<OtaUpdateStatus, string> = {
         <p class="mt-2 text-sm text-gray-600">
           <span class="text-green-600 font-medium">{{ progress?.success ?? 0 }} capteur(s)</span> mis a jour avec succes.
           <template v-if="(progress?.failed ?? 0) > 0">
-            <br><span class="text-red-500 font-medium">{{ progress?.failed }} echec(s)</span> — vous pouvez relancer depuis la page Firmware.
+            <br><span class="text-red-500 font-medium">{{ progress?.failed }} echec(s)</span> - vous pouvez relancer depuis la page Firmware.
           </template>
         </p>
         <div class="mt-6 flex justify-center gap-3">

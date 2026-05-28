@@ -76,7 +76,7 @@ export const useFeelbackDeviceStore = defineStore('feelback-device', () => {
   }
 
   /**
-   * Appelé par useRealtimeSubscriptions — met à jour le statut d'un device feelback.
+   * Appelé par useRealtimeSubscriptions - met à jour le statut d'un device feelback.
    */
   function handleRealtimeDevice(data: {
     deviceId: string

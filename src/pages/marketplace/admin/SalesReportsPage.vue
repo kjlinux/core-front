@@ -1,24 +1,45 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { salesReportApi, type SalesReportData } from '@/services/api/sales-report.api'
+import { salesReportApi, type SalesReportData, type SalesReportParams } from '@/services/api/sales-report.api'
+import { useAuthStore } from '@/stores/auth.store'
+import { companyApi } from '@/services/api/company.api'
 import { useToast } from '@/composables/useToast'
 import { formatCurrency } from '@/utils/format'
 import { exportToPdf, exportToExcel } from '@/utils/export-helpers'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppInput from '@/components/ui/AppInput.vue'
+import AppSelect from '@/components/ui/AppSelect.vue'
 import StatCard from '@/components/data-display/StatCard.vue'
 import BarChart from '@/components/charts/BarChart.vue'
 import PieChart from '@/components/charts/PieChart.vue'
 
 const { t } = useI18n()
 const toast = useToast()
+const auth = useAuthStore()
+
+const isSuperAdmin = computed(() => auth.userRole === 'super_admin')
+const selectedCompany = ref('')
+const companyOptions = ref<{ label: string; value: string }[]>([])
 
 const startDate = ref('')
 const endDate = ref('')
 const isLoading = ref(false)
 const report = ref<SalesReportData | null>(null)
+
+async function loadCompanies() {
+  if (!isSuperAdmin.value) return
+  try {
+    const companies = await companyApi.getAll()
+    companyOptions.value = [
+      { label: 'Toutes les entreprises', value: '' },
+      ...companies.map((c) => ({ label: c.name, value: c.id })),
+    ]
+  } catch {
+    // silencieux
+  }
+}
 
 const revenueChartData = computed(() => {
   if (!report.value) return []
@@ -35,9 +56,10 @@ const monthlyData = computed(() => report.value?.revenueByMonth ?? [])
 async function fetchReport() {
   isLoading.value = true
   try {
-    const params: Record<string, string> = {}
+    const params: SalesReportParams = {}
     if (startDate.value) params.start_date = startDate.value
     if (endDate.value) params.end_date = endDate.value
+    if (isSuperAdmin.value && selectedCompany.value) params.company_id = selectedCompany.value
     report.value = await salesReportApi.getReport(params)
   } catch {
     toast.showError('Erreur lors du chargement du rapport')
@@ -101,13 +123,14 @@ async function handleExportExcel() {
   toast.showSuccess(t('marketplace.excelDownloaded'))
 }
 
-watch([startDate, endDate], () => {
+watch([startDate, endDate, selectedCompany], () => {
   if (startDate.value && endDate.value) {
     fetchReport()
   }
 })
 
 onMounted(() => {
+  loadCompanies()
   fetchReport()
 })
 </script>
@@ -126,9 +149,16 @@ onMounted(() => {
       </div>
     </div>
 
-    <div class="flex gap-4">
-      <AppInput v-model="startDate" type="date" />
-      <AppInput v-model="endDate" type="date" />
+    <div class="flex flex-wrap gap-4">
+      <AppSelect
+        v-if="isSuperAdmin"
+        v-model="selectedCompany"
+        :options="companyOptions"
+        :label="t('marketplace.company')"
+        class="min-w-48"
+      />
+      <AppInput v-model="startDate" type="date" :label="t('marketplace.startDate')" />
+      <AppInput v-model="endDate" type="date" :label="t('marketplace.endDate')" />
     </div>
 
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -147,7 +177,7 @@ onMounted(() => {
         <PieChart :data="statusPieData" title="Repartition" />
       </AppCard>
       <AppCard :title="t('marketplace.topProducts')">
-        <BarChart :data="topProductsData" :title="t('marketplace.soldQty')" />
+        <BarChart :data="topProductsData" :title="t('marketplace.revenue')" />
       </AppCard>
     </div>
 

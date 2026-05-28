@@ -7,12 +7,13 @@ export interface SalesReportData {
   pendingOrders: number
   revenueByMonth: { month: string; revenue: number; orders: number }[]
   ordersByStatus: { name: string; value: number }[]
-  topProducts: { name: string; value: number }[]
+  topProducts: { name: string; value: number; quantity: number }[]
 }
 
 export interface SalesReportParams {
   start_date?: string
   end_date?: string
+  company_id?: string
 }
 
 export const salesReportApi = {

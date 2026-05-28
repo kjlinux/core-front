@@ -27,14 +27,12 @@ const totalDepartments = computed(() => {
 
 const subscriptionBadgeVariant = computed(() => {
   const subscription = company.value?.subscription
-  if (subscription === 'enterprise') return 'info'
   if (subscription === 'premium') return 'warning'
   return 'neutral'
 })
 
 const subscriptionLabel = computed(() => {
   const subscription = company.value?.subscription
-  if (subscription === 'enterprise') return t('companies.subscription.enterprise')
   if (subscription === 'premium') return t('companies.subscription.premium')
   return t('companies.subscription.basic')
 })

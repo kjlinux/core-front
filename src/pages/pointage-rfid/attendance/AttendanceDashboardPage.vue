@@ -81,7 +81,7 @@
             {{ formatTime(row.entryTime) }}
           </template>
           <template #exitTime="{ row }">
-            {{ row.exitTime ? formatTime(row.exitTime) : '—' }}
+            {{ row.exitTime ? formatTime(row.exitTime) : '-' }}
           </template>
           <template #pointageType="{ row }">
             <span :class="['status-badge', row.exitTime ? 'status-exit' : 'status-entry']">
@@ -127,7 +127,7 @@ const stats = computed(() => {
   const entryTimes = records
     .filter((r) => r.entryTime)
     .map((r) => new Date(r.entryTime!).getTime());
-  let averageEntryTime = '—';
+  let averageEntryTime = '-';
   if (entryTimes.length > 0) {
     const avg = entryTimes.reduce((a, b) => a + b, 0) / entryTimes.length;
     averageEntryTime = new Date(avg).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
@@ -191,7 +191,7 @@ const getStatusLabel = (status: string): string => {
 };
 
 const formatTime = (iso: string | null | undefined): string => {
-  if (!iso) return '—';
+  if (!iso) return '-';
   return new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 };
 

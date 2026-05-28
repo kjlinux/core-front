@@ -40,7 +40,7 @@ onMounted(async () => {
     ])
     // Pour admin_enterprise/manager : si une seule entreprise disponible, la pre-selectionner
     if (!formData.value.companyId && companyStore.companies.length === 1) {
-      formData.value.companyId = companyStore.companies[0].id
+      formData.value.companyId = companyStore.companies[0]!.id
     }
   } finally {
     isLoadingData.value = false

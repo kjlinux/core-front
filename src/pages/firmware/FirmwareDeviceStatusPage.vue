@@ -156,7 +156,7 @@ function formatDate(d?: string) {
         <h3 class="mb-1 text-lg font-semibold text-gray-900">{{ t('firmware.updateModal') }}</h3>
         <p class="mb-4 text-sm text-gray-600">
           {{ t('firmware.terminalLabel') }} <span class="font-medium">{{ selectedDevice.deviceName }}</span>
-          — {{ t('firmware.currentVersionLabel') }} <span class="font-mono text-sm">{{ selectedDevice.currentVersion || t('firmware.unknown') }}</span>
+          - {{ t('firmware.currentVersionLabel') }} <span class="font-mono text-sm">{{ selectedDevice.currentVersion || t('firmware.unknown') }}</span>
         </p>
 
         <div class="mb-6">

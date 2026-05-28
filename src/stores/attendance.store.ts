@@ -39,7 +39,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
       present: dailyReport.value.present,
       absent: dailyReport.value.absent,
       late: dailyReport.value.late,
-      averageEntryTime: (dailyReport.value as any).averageEntryTime ?? '—',
+      averageEntryTime: (dailyReport.value as any).averageEntryTime ?? '-',
       earlyDepartures: (dailyReport.value as any).earlyDepartures ?? 0,
       doubleBadgeCount: (dailyReport.value as any).doubleBadgeCount ?? 0,
     }
@@ -101,8 +101,8 @@ export const useAttendanceStore = defineStore('attendance', () => {
         absentDays: s.absentDays ?? 0,
         lateDays: s.lateDays ?? 0,
         totalLateMinutes: s.totalLateMinutes ?? 0,
-        averageEntryTime: s.averageEntryTime ?? '—',
-        averageExitTime: s.averageExitTime ?? '—',
+        averageEntryTime: s.averageEntryTime ?? '-',
+        averageExitTime: s.averageExitTime ?? '-',
         attendanceRate: (s.totalDays ?? 0) > 0 ? Math.round(((s.presentDays ?? 0) / s.totalDays) * 100) : 0,
       }))
     } finally {
@@ -185,7 +185,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
           dayNumber: d.getDate(),
           status,
           statusLabel: statusLabels[status] ?? status,
-          tooltip: `${r.date} — ${statusLabels[status] ?? status}`,
+          tooltip: `${r.date} - ${statusLabels[status] ?? status}`,
         }
       })
     } catch {
@@ -211,7 +211,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
         return {
           employeeId: empId,
           name: empRecs[0]?.employeeName ?? '',
-          position: (empRecs[0] as any)?.position ?? '—',
+          position: (empRecs[0] as any)?.position ?? '-',
           presentDays,
           absentDays,
           lateDays,
@@ -295,7 +295,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
 
   /**
    * Appelé par useRealtimeSubscriptions pour mettre à jour le state en temps réel.
-   * Ne s'abonne PAS au canal Echo — c'est useRealtimeSubscriptions qui gère ça.
+   * Ne s'abonne PAS au canal Echo - c'est useRealtimeSubscriptions qui gère ça.
    */
   function handleRealtimeAttendance(data: {
     id: string

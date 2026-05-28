@@ -48,7 +48,7 @@ async function handlePayNext() {
         Echéance : <strong>{{ new Date(store.state.expires_at).toLocaleDateString('fr-FR') }}</strong>
       </div>
       <div v-if="store.state.next_period_paid && store.state.next_expires_at" class="text-sm text-green-700 mb-2">
-        ✓ Mois suivant payé — couvert jusqu'au <strong>{{ new Date(store.state.next_expires_at).toLocaleDateString('fr-FR') }}</strong>
+        ✓ Mois suivant payé - couvert jusqu'au <strong>{{ new Date(store.state.next_expires_at).toLocaleDateString('fr-FR') }}</strong>
       </div>
       <div v-if="store.state.warranty_ends_at" class="text-sm text-gray-600">
         Garantie matériel jusqu'au {{ new Date(store.state.warranty_ends_at).toLocaleDateString('fr-FR') }}
@@ -65,7 +65,7 @@ async function handlePayNext() {
         >
           Payer le mois suivant
         </AppButton>
-        <AppButton variant="tertiary" @click="router.push({ name: 'abonnement-history' })">
+        <AppButton variant="outline" @click="router.push({ name: 'abonnement-history' })">
           Historique des paiements
         </AppButton>
       </div>

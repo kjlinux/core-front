@@ -21,7 +21,7 @@ export const crmRoutes: RouteRecordRaw[] = [
         path: 'followups/dashboard',
         name: 'crm-followups-dashboard',
         component: () => import('@/pages/crm/followups/FollowupDashboardPage.vue'),
-        meta: { title: 'Routine clients — Tableau de bord' },
+        meta: { title: 'Routine clients - Tableau de bord' },
       },
       {
         path: 'followups/:id',

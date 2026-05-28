@@ -42,7 +42,7 @@ const companyOptions = computed(() =>
 const deviceOptions = computed(() => [
   { label: 'Selectionner un capteur', value: '' },
   ...(props.devices || []).map((d) => ({
-    label: `${d.name} (${d.serialNumber})${d.isOnline ? '' : ' — Hors ligne'}`,
+    label: `${d.name} (${d.serialNumber})${d.isOnline ? '' : ' - Hors ligne'}`,
     value: d.id,
   })),
 ])

@@ -97,7 +97,7 @@ const handleSubmit = () => {
         />
       </FormRow>
 
-      <FormRow label="Préfixe matricule" :required="true" :error="errors.matriculePrefix" help="Ex: TG, CBF, ACME — utilisé pour générer les matricules employés">
+      <FormRow label="Préfixe matricule" :required="true" :error="errors.matriculePrefix" help="Ex: TG, CBF, ACME - utilisé pour générer les matricules employés">
         <AppInput
           :model-value="localValue.matriculePrefix || ''"
           @update:model-value="updateField('matriculePrefix', String($event).toUpperCase())"

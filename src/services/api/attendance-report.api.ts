@@ -9,7 +9,7 @@ export interface AttendanceReportRow {
   absent: number
   late: number
   overtime: number
-  rate: string
+  rate: number
   [key: string]: unknown
 }
 
@@ -24,7 +24,7 @@ export interface AttendanceReportData {
 export interface AttendanceReportParams {
   start_date: string
   end_date: string
-  type?: string
+  type?: 'daily' | 'monthly' | 'late' | 'absence'
   company_id?: string
   site_id?: string
   department_id?: string
