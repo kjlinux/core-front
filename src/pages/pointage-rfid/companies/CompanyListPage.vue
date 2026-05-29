@@ -1,15 +1,20 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useCompanyStore } from '@/stores/company.store'
 import { usePermissions } from '@/composables/usePermissions'
 import type { Company } from '@/types'
+import type { TableColumn } from '@/types/common'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
+import AppInput from '@/components/ui/AppInput.vue'
+import AppSelect from '@/components/ui/AppSelect.vue'
+import DataTable from '@/components/data-display/DataTable.vue'
 import { EyeIcon, PencilIcon, NoSymbolIcon, CheckCircleIcon } from '@heroicons/vue/24/outline'
 import { useToast } from '@/composables/useToast'
+import { sortByRecent } from '@/utils/sort'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -17,11 +22,53 @@ const companyStore = useCompanyStore()
 const { isSuperAdmin } = usePermissions()
 const toast = useToast()
 
+const searchQuery = ref('')
+const statusFilter = ref<'' | 'active' | 'inactive'>('')
+
+const statusOptions = computed(() => [
+  { value: '', label: t('companies.allStatuses') || 'Tous les statuts' },
+  { value: 'active', label: t('common.active') },
+  { value: 'inactive', label: t('common.inactive') },
+])
+
+const columns = computed<TableColumn[]>(() => [
+  { key: 'name', label: t('common.name'), sortable: true },
+  { key: 'email', label: t('common.email'), sortable: true },
+  { key: 'phone', label: t('common.phone'), sortable: false },
+  { key: 'status', label: t('common.status'), sortable: true },
+  { key: 'employeeCount', label: t('companies.employees'), align: 'center' as const, sortable: true },
+  { key: 'actions', label: t('common.actions'), align: 'right' as const, width: '160px' },
+])
+
+const tableData = computed(() => {
+  const q = searchQuery.value.trim().toLowerCase()
+  return sortByRecent(companyStore.companies)
+    .filter((c) => {
+      if (statusFilter.value === 'active' && !c.isActive) return false
+      if (statusFilter.value === 'inactive' && c.isActive) return false
+      if (!q) return true
+      return (
+        (c.name || '').toLowerCase().includes(q) ||
+        (c.email || '').toLowerCase().includes(q) ||
+        (c.phone || '').toLowerCase().includes(q)
+      )
+    })
+    .map((c) => ({
+      id: c.id,
+      name: c.name,
+      email: c.email,
+      phone: c.phone,
+      status: c.isActive ? 'active' : 'inactive',
+      employeeCount: c.employeeCount,
+      _raw: c,
+    }))
+})
+
 onMounted(() => {
   companyStore.fetchCompanies()
 })
 
-function handleRowClick(row: any) {
+function handleRowClick(row: { id: string }) {
   router.push({ name: 'rfid-company-detail', params: { id: row.id } })
 }
 
@@ -57,120 +104,75 @@ async function handleToggleActive(company: Company) {
 
 <template>
   <div>
+    <div class="mb-6 flex items-center justify-between">
+      <h1 class="text-2xl font-bold text-gray-900">{{ t('companies.title') }}</h1>
+      <AppButton v-if="isSuperAdmin" @click="handleCreateCompany">
+        {{ t('companies.create') }}
+      </AppButton>
+    </div>
+
+    <AppCard class="mb-6">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <AppInput
+          v-model="searchQuery"
+          :placeholder="t('common.search') || 'Rechercher...'"
+          :label="t('common.search') || 'Rechercher'"
+        />
+        <AppSelect
+          v-model="statusFilter"
+          :options="statusOptions"
+          :label="t('common.status')"
+        />
+      </div>
+    </AppCard>
+
     <AppCard>
-      <template #actions>
-        <AppButton v-if="isSuperAdmin" @click="handleCreateCompany">
-          {{ t('companies.create') }}
-        </AppButton>
-      </template>
+      <DataTable
+        :columns="columns"
+        :data="tableData"
+        :loading="companyStore.isLoading"
+        :pagination="companyStore.pagination"
+        default-sort-column="name"
+        default-sort-direction="desc"
+        @row-click="handleRowClick"
+        @page-change="handlePageChange"
+        @sort="handleSort"
+      >
+        <template #status="{ row }">
+          <AppBadge :variant="row.status === 'active' ? 'success' : 'neutral'">
+            {{ row.status === 'active' ? t('common.active') : t('common.inactive') }}
+          </AppBadge>
+        </template>
 
-      <div class="mb-6">
-        <h1 class="text-2xl font-bold text-gray-900">{{ t('companies.title') }}</h1>
-      </div>
-
-      <div v-if="companyStore.isLoading" class="flex justify-center py-12">
-        <div class="h-12 w-12 animate-spin rounded-full border-4 border-blue-600 border-r-transparent"></div>
-      </div>
-
-      <div v-else>
-        <div class="overflow-hidden rounded-lg border border-gray-200">
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-              <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  {{ t('common.name') }}
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  {{ t('common.email') }}
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  {{ t('common.phone') }}
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  {{ t('common.status') }}
-                </th>
-                <th class="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">
-                  {{ t('companies.employees') }}
-                </th>
-                <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
-                  {{ t('common.actions') }}
-                </th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-200 bg-white">
-              <tr
-                v-for="company in companyStore.companies"
-                :key="company.id"
-                class="cursor-pointer hover:bg-gray-50 transition-colors"
-                @click="handleRowClick({ id: company.id })"
-              >
-                <td class="whitespace-nowrap px-6 py-4">
-                  <div class="text-sm font-medium text-gray-900">{{ company.name }}</div>
-                </td>
-                <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                  {{ company.email }}
-                </td>
-                <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                  {{ company.phone }}
-                </td>
-                <td class="whitespace-nowrap px-6 py-4">
-                  <AppBadge :variant="company.isActive ? 'success' : 'neutral'">
-                    {{ company.isActive ? t('common.active') : t('common.inactive') }}
-                  </AppBadge>
-                </td>
-                <td class="whitespace-nowrap px-6 py-4 text-center text-sm text-gray-900">
-                  {{ company.employeeCount }}
-                </td>
-                <td class="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
-                  <button
-                    @click.stop="handleViewCompany(company.id)"
-                    class="text-blue-600 hover:text-blue-900 mr-3"
-                    :title="t('common.view')"
-                  >
-                    <EyeIcon class="h-5 w-5 inline" />
-                  </button>
-                  <button
-                    v-if="isSuperAdmin"
-                    @click.stop="handleEditCompany(company.id)"
-                    class="text-gray-600 hover:text-gray-900 mr-3"
-                    :title="t('common.edit')"
-                  >
-                    <PencilIcon class="h-5 w-5 inline" />
-                  </button>
-                  <button
-                    v-if="isSuperAdmin"
-                    @click.stop="handleToggleActive(company)"
-                    :class="company.isActive ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'"
-                    :title="company.isActive ? t('common.deactivate') : t('common.activate')"
-                  >
-                    <NoSymbolIcon v-if="company.isActive" class="h-5 w-5 inline" />
-                    <CheckCircleIcon v-else class="h-5 w-5 inline" />
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div v-if="companyStore.companies.length === 0" class="py-12 text-center">
-          <div class="text-gray-500">
-            <svg
-              class="mx-auto h-12 w-12 text-gray-400"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
+        <template #actions="{ row }">
+          <div class="flex items-center justify-end gap-2" @click.stop>
+            <button
+              @click="handleViewCompany(row.id)"
+              class="text-blue-600 hover:text-blue-900"
+              :title="t('common.view')"
             >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-              />
-            </svg>
-            <p class="mt-2 text-sm font-medium">{{ t('common.noData') }}</p>
+              <EyeIcon class="h-5 w-5" />
+            </button>
+            <button
+              v-if="isSuperAdmin"
+              @click="handleEditCompany(row.id)"
+              class="text-gray-600 hover:text-gray-900"
+              :title="t('common.edit')"
+            >
+              <PencilIcon class="h-5 w-5" />
+            </button>
+            <button
+              v-if="isSuperAdmin"
+              @click="handleToggleActive(row._raw)"
+              :class="row.status === 'active' ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'"
+              :title="row.status === 'active' ? t('common.deactivate') : t('common.activate')"
+            >
+              <NoSymbolIcon v-if="row.status === 'active'" class="h-5 w-5" />
+              <CheckCircleIcon v-else class="h-5 w-5" />
+            </button>
           </div>
-        </div>
-      </div>
+        </template>
+      </DataTable>
     </AppCard>
   </div>
 </template>

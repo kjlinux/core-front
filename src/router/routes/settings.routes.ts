@@ -36,7 +36,7 @@ const settingsRoutes: RouteRecordRaw[] = [
         component: () => import('@/pages/parametres/RoleManagementPage.vue'),
         meta: {
           title: 'Gestion des roles',
-          roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE],
+          roles: [UserRole.SUPER_ADMIN],
         },
       },
       {
@@ -67,10 +67,28 @@ const settingsRoutes: RouteRecordRaw[] = [
         },
       },
       {
+        path: 'rapports-planifies',
+        name: 'report-schedules',
+        component: () => import('@/pages/parametres/ReportSchedulesPage.vue'),
+        meta: {
+          title: 'Rapports planifies',
+          roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE],
+        },
+      },
+      {
         path: 'aide',
         name: 'settings-help',
         component: () => import('@/pages/parametres/HelpPage.vue'),
         meta: { title: "Centre d'aide" },
+      },
+      {
+        path: 'support',
+        name: 'settings-support-tickets',
+        component: () => import('@/pages/parametres/SupportTicketsPage.vue'),
+        meta: {
+          title: 'Support / Plaintes',
+          roles: [UserRole.ADMIN_ENTERPRISE, UserRole.MANAGER],
+        },
       },
     ],
   },

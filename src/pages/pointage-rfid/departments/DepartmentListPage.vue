@@ -13,6 +13,11 @@
 
     <AppCard class="mb-6">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <AppInput
+          v-model="searchQuery"
+          :placeholder="t('common.search') || 'Rechercher...'"
+          :label="t('common.search') || 'Rechercher'"
+        />
         <AppSelect
           v-model="filters.companyId"
           :options="companyOptions"
@@ -37,6 +42,8 @@
         :data="tableData"
         :loading="departmentStore.isLoading"
         :pagination="departmentStore.pagination"
+        default-sort-column="name"
+        default-sort-direction="desc"
         @row-click="handleRowClick"
         @page-change="handlePageChange"
       >
@@ -171,6 +178,7 @@ import type { Department } from '@/types'
 import { useToast } from '@/composables/useToast'
 import { userApi, type UserData } from '@/services/api/user.api'
 import { PencilIcon, TrashIcon } from '@heroicons/vue/24/outline'
+import { sortByRecent } from '@/utils/sort'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -200,6 +208,7 @@ const formData = ref({
   siteId: '',
   managerId: '',
 })
+const searchQuery = ref('')
 
 const canCreate = computed(() =>
   permissions.isAdminOrSuperOrTech.value
@@ -264,7 +273,7 @@ const columns = computed<TableColumn[]>(() => {
 })
 
 const tableData = computed(() => {
-  return departmentStore.departments.map(dept => {
+  const rows = sortByRecent(departmentStore.departments).map(dept => {
     const site = siteStore.sites.find(s => s.id === dept.siteId)
     const company = companyStore.companies.find(c => c.id === dept.companyId)
     return {
@@ -281,6 +290,14 @@ const tableData = computed(() => {
       _raw: dept,
     }
   })
+  const q = searchQuery.value.trim().toLowerCase()
+  if (!q) return rows
+  return rows.filter(r =>
+    r.name.toLowerCase().includes(q) ||
+    r.siteName.toLowerCase().includes(q) ||
+    r.companyName.toLowerCase().includes(q) ||
+    r.manager.toLowerCase().includes(q)
+  )
 })
 
 onMounted(async () => {

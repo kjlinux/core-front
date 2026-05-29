@@ -19,6 +19,7 @@ import type { TableColumn } from '@/types/common'
 import type { Employee } from '@/types'
 import { EyeIcon, PlusIcon, ArrowsRightLeftIcon } from '@heroicons/vue/24/outline'
 import type { EmployeeFilters } from '@/services/api/employee.api'
+import { sortByRecent } from '@/utils/sort'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -146,7 +147,7 @@ const columns = computed<TableColumn[]>(() => [
 ])
 
 const tableData = computed(() =>
-  employeeStore.employees.map(e => {
+  sortByRecent(employeeStore.employees).map(e => {
     const site = siteStore.sites.find(s => s.id === e.siteId)
     const dept = departmentStore.departments.find(d => d.id === e.departmentId)
     return {

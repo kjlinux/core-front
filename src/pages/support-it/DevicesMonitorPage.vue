@@ -8,8 +8,10 @@ import AppBadge from '@/components/ui/AppBadge.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
 import AppSearchInput from '@/components/ui/AppSearchInput.vue'
+import DataTable from '@/components/data-display/DataTable.vue'
 import { SignalIcon, EyeIcon } from '@heroicons/vue/24/outline'
 import type { DeviceKind } from '@/types'
+import type { TableColumn } from '@/types/common'
 
 const store = useSupportStore()
 const router = useRouter()
@@ -17,6 +19,8 @@ const toast = useToast()
 
 const filter = ref<{ type?: DeviceKind; status?: 'online' | 'offline' }>({})
 const search = ref('')
+const currentPage = ref(1)
+const perPage = 10
 
 const typeOptions = [
   { value: '', label: 'Tous les types' },
@@ -30,6 +34,16 @@ const statusOptions = [
   { value: 'offline', label: 'Hors ligne' },
 ]
 
+const columns: TableColumn[] = [
+  { key: 'name', label: 'Nom' },
+  { key: 'kind', label: 'Type' },
+  { key: 'siteName', label: 'Site' },
+  { key: 'status', label: 'Statut' },
+  { key: 'lastSeenAt', label: 'Dernière activité' },
+  { key: 'firmwareVersion', label: 'Firmware' },
+  { key: 'actions', label: '', sortable: false, align: 'right' },
+]
+
 const filtered = computed(() => {
   const q = search.value.trim().toLowerCase()
   if (!q) return store.devices
@@ -41,8 +55,33 @@ const filtered = computed(() => {
   )
 })
 
+const sorted = computed(() =>
+  [...filtered.value].sort(
+    (a, b) => new Date(b.lastSeenAt ?? 0).getTime() - new Date(a.lastSeenAt ?? 0).getTime(),
+  ),
+)
+
+const pagedDevices = computed(() =>
+  sorted.value.slice((currentPage.value - 1) * perPage, currentPage.value * perPage),
+)
+
+const paginationObj = computed(() => ({
+  currentPage: currentPage.value,
+  perPage,
+  total: sorted.value.length,
+  totalPages: Math.max(1, Math.ceil(sorted.value.length / perPage)),
+}))
+
+watch([filtered, filter], () => {
+  currentPage.value = 1
+}, { deep: true })
+
 async function load() {
-  await store.fetchDevices({ type: filter.value.type, status: filter.value.status })
+  try {
+    await store.fetchDevices({ type: filter.value.type, status: filter.value.status })
+  } catch (e) {
+    toast.error('Impossible de charger les capteurs', String((e as Error).message))
+  }
 }
 
 watch(filter, load, { deep: true })
@@ -69,7 +108,6 @@ onMounted(load)
     <div>
       <h1 class="text-2xl font-semibold text-gray-900">Capteurs</h1>
       <p class="text-sm text-gray-500">Tous les capteurs, toutes entreprises confondues</p>
-
     </div>
 
     <AppCard padding="sm">
@@ -83,57 +121,52 @@ onMounted(load)
     </AppCard>
 
     <AppCard padding="none">
-      <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-          <thead class="bg-gray-50">
-            <tr>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nom</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Site</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Statut</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Dernière activité</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Firmware</th>
-              <th class="px-4 py-3"></th>
-            </tr>
-          </thead>
-          <tbody class="bg-white divide-y divide-gray-100">
-            <tr v-for="d in filtered" :key="`${d.kind}:${d.id}`" class="hover:bg-gray-50">
-              <td class="px-4 py-3">
-                <div class="font-medium text-gray-900">{{ d.name }}</div>
-                <div class="text-xs text-gray-500">{{ d.serialNumber ?? d.id }}</div>
-              </td>
-              <td class="px-4 py-3">
-                <AppBadge variant="info" size="sm">{{ d.kind }}</AppBadge>
-                <AppBadge v-if="d.isWitness" variant="warning" size="sm" class="ml-1">Témoin</AppBadge>
-              </td>
-              <td class="px-4 py-3 text-sm text-gray-700">{{ d.siteName ?? '-' }}</td>
-              <td class="px-4 py-3">
-                <AppBadge :variant="d.isOnline ? 'success' : 'danger'" size="sm">
-                  {{ d.isOnline ? 'En ligne' : 'Hors ligne' }}
-                </AppBadge>
-              </td>
-              <td class="px-4 py-3 text-sm text-gray-700">{{ fmtDate(d.lastSeenAt) }}</td>
-              <td class="px-4 py-3 text-sm text-gray-700">{{ d.firmwareVersion ?? '-' }}</td>
-              <td class="px-4 py-3 text-right space-x-2 whitespace-nowrap">
-                <AppButton
-                  v-if="d.kind === 'rfid' || d.kind === 'biometric'"
-                  size="sm"
-                  variant="outline"
-                  @click="ping(d.kind, d.id)"
-                >
-                  <SignalIcon class="w-4 h-4" /> Ping
-                </AppButton>
-                <AppButton size="sm" variant="ghost" @click="router.push(`/support-it/devices/${d.kind}/${d.id}`)">
-                  <EyeIcon class="w-4 h-4" />
-                </AppButton>
-              </td>
-            </tr>
-            <tr v-if="filtered.length === 0">
-              <td colspan="7" class="px-4 py-8 text-center text-sm text-gray-500">Aucun capteur</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <DataTable
+        :columns="columns"
+        :data="pagedDevices"
+        :loading="store.isLoading"
+        :pagination="paginationObj"
+        default-sort-column="lastSeenAt"
+        default-sort-direction="desc"
+        empty-message="Aucun capteur"
+        @page-change="(p) => (currentPage = p)"
+      >
+        <template #name="{ row }">
+          <div class="font-medium text-gray-900">{{ row.name }}</div>
+          <div class="text-xs text-gray-500">{{ row.serialNumber ?? row.id }}</div>
+        </template>
+        <template #kind="{ row }">
+          <AppBadge variant="info" size="sm">{{ row.kind }}</AppBadge>
+          <AppBadge v-if="row.isWitness" variant="warning" size="sm" class="ml-1">Témoin</AppBadge>
+        </template>
+        <template #siteName="{ row }">{{ row.siteName ?? '-' }}</template>
+        <template #status="{ row }">
+          <AppBadge :variant="row.isOnline ? 'success' : 'danger'" size="sm">
+            <span
+              v-if="row.isOnline"
+              class="inline-block w-2 h-2 rounded-full bg-green-400 animate-pulse mr-1 align-middle"
+            ></span>
+            {{ row.isOnline ? 'En ligne' : 'Hors ligne' }}
+          </AppBadge>
+        </template>
+        <template #lastSeenAt="{ row }">{{ fmtDate(row.lastSeenAt) }}</template>
+        <template #firmwareVersion="{ row }">{{ row.firmwareVersion ?? '-' }}</template>
+        <template #actions="{ row }">
+          <div class="text-right space-x-2 whitespace-nowrap" @click.stop>
+            <AppButton
+              v-if="row.kind === 'rfid' || row.kind === 'biometric'"
+              size="sm"
+              variant="outline"
+              @click="ping(row.kind, row.id)"
+            >
+              <SignalIcon class="w-4 h-4" /> Ping
+            </AppButton>
+            <AppButton size="sm" variant="ghost" @click="router.push(`/support-it/devices/${row.kind}/${row.id}`)">
+              <EyeIcon class="w-4 h-4" />
+            </AppButton>
+          </div>
+        </template>
+      </DataTable>
     </AppCard>
   </div>
 </template>

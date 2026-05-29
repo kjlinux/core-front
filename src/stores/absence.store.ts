@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { absenceApi } from '@/services/api/absence.api'
-import type { AbsenceRequest, AbsenceRequestFilters, CreateAbsencePayload, ReviewAbsencePayload } from '@/types/absence'
+import type { AbsenceRequest, AbsenceRequestFilters, CreateAbsencePayload, ReviewAbsencePayload, UpdateAbsencePayload } from '@/types/absence'
 import type { PaginatedResponse } from '@/types/common'
 
 export const useAbsenceStore = defineStore('absence', () => {
@@ -52,6 +52,19 @@ export const useAbsenceStore = defineStore('absence', () => {
     }
   }
 
+  async function updateRequest(id: string, data: UpdateAbsencePayload) {
+    isSubmitting.value = true
+    try {
+      const updated = await absenceApi.update(id, data)
+      const idx = requests.value.findIndex((r) => r.id === id)
+      if (idx !== -1) requests.value[idx] = updated
+      if (currentRequest.value?.id === id) currentRequest.value = updated
+      return updated
+    } finally {
+      isSubmitting.value = false
+    }
+  }
+
   async function reviewRequest(id: string, data: ReviewAbsencePayload) {
     isSubmitting.value = true
     try {
@@ -92,6 +105,7 @@ export const useAbsenceStore = defineStore('absence', () => {
     fetchRequests,
     fetchMyRequests,
     submitRequest,
+    updateRequest,
     reviewRequest,
     deleteRequest,
     $reset,

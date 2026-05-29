@@ -25,6 +25,37 @@ export interface AlertsFilter {
   per_page?: number
 }
 
+export interface SupportCompanyRow {
+  id: string
+  name: string
+  email: string | null
+  phone: string | null
+  isActive: boolean
+  devicesTotal: number
+  devicesOnline: number
+  devicesOffline: number
+  oldestOfflineSince: string | null
+  openAlerts: number
+}
+
+export interface SupportCompanyUser {
+  id: string
+  name: string
+  email: string
+  phone: string | null
+  role: string
+  isActive: boolean
+}
+
+export interface SupportCompanyDetail {
+  company: { id: string; name: string; email: string | null; phone: string | null; address: string | null; isActive: boolean }
+  devices: { total: number; online: number; oldestOfflineSince: string | null }
+  users: SupportCompanyUser[]
+  alerts: DeviceAlert[]
+}
+
+export type SupportCommand = 'STATUS' | 'REBOOT' | 'RESET'
+
 export const supportApi = {
   getHealth(): Promise<SystemHealth> {
     return apiClient.get('/support/health').then((r) => r.data)
@@ -68,5 +99,21 @@ export const supportApi = {
 
   resolveAlert(id: string): Promise<DeviceAlert> {
     return apiClient.post(`/support/alerts/${id}/resolve`).then((r) => r.data)
+  },
+
+  getCompanies(): Promise<SupportCompanyRow[]> {
+    return apiClient.get('/support/companies').then((r) => r.data)
+  },
+
+  getCompanyDetail(id: string): Promise<SupportCompanyDetail> {
+    return apiClient.get(`/support/companies/${id}`).then((r) => r.data)
+  },
+
+  sendCommand(kind: DeviceKind, id: string, command: SupportCommand): Promise<{ topic: string; command: string }> {
+    return apiClient.post(`/support/devices/${kind}/${id}/command`, { command }).then((r) => r.data)
+  },
+
+  resetUserPassword(userId: string): Promise<{ userId: string; tempPassword: string }> {
+    return apiClient.post(`/support/users/${userId}/reset-password`).then((r) => r.data)
   },
 }

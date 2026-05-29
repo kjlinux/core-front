@@ -51,6 +51,8 @@ const reportTypeOptions = computed(() => [
 const exportFormatOptions = [
   { label: 'PDF', value: 'pdf' },
   { label: 'Excel', value: 'excel' },
+  { label: 'CSV (serveur)', value: 'csv' },
+  { label: 'PDF (serveur)', value: 'pdf-server' },
 ]
 
 // ---------- Dynamic columns per report type ----------
@@ -240,6 +242,22 @@ const handleExport = async () => {
   try {
     const baseFilename = `pointage-${reportType.value}-${startDate.value}`
     const title = `${t('reports.title')} - ${currentReportLabel.value}`
+
+    if (exportFormat.value === 'csv' || exportFormat.value === 'pdf-server') {
+      const params: AttendanceReportParams = {
+        start_date: startDate.value,
+        end_date: endDate.value,
+        type: reportType.value as AttendanceReportParams['type'],
+      }
+      if (selectedCompany.value) params.company_id = selectedCompany.value
+      if (exportFormat.value === 'csv') {
+        await attendanceReportApi.downloadCsv(params)
+      } else {
+        await attendanceReportApi.downloadPdf(params)
+      }
+      success(t('reports.excelTitle'), t('reports.excelExported'))
+      return
+    }
 
     const exportRows = report.value.rows.map((r) => ({
       ...r,

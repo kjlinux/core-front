@@ -6,6 +6,7 @@ import { useEmployeeStore } from '@/stores/employee.store'
 import { useCompanyStore } from '@/stores/company.store'
 import { useSiteStore } from '@/stores/site.store'
 import { useDepartmentStore } from '@/stores/department.store'
+import { useScheduleStore } from '@/stores/schedule.store'
 import { useToast } from '@/composables/useToast'
 import { useAuthStore } from '@/stores/auth.store'
 import type { Employee } from '@/types'
@@ -19,6 +20,7 @@ const employeeStore = useEmployeeStore()
 const companyStore = useCompanyStore()
 const siteStore = useSiteStore()
 const departmentStore = useDepartmentStore()
+const scheduleStore = useScheduleStore()
 const toast = useToast()
 const auth = useAuthStore()
 
@@ -37,6 +39,7 @@ onMounted(async () => {
       siteStore.fetchSites({ perPage: 200 }),
       departmentStore.fetchDepartments({ perPage: 200 }),
       employeeStore.fetchEmployees({ perPage: 1000 }),
+      scheduleStore.fetchSchedules(),
     ])
     // Pour admin_enterprise/manager : si une seule entreprise disponible, la pre-selectionner
     if (!formData.value.companyId && companyStore.companies.length === 1) {
@@ -84,6 +87,7 @@ const handleCancel = () => {
           :sites="siteStore.sites"
           :departments="departmentStore.departments"
           :employees="employeeStore.employees"
+          :schedules="scheduleStore.schedules"
           :loading="employeeStore.isLoading"
           @submit="handleSubmit"
         />

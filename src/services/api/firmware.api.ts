@@ -64,4 +64,10 @@ export const firmwareApi = {
       .post('/firmware/retry-failed', { firmware_version_id: firmwareVersionId })
       .then((r) => r.data)
   },
+
+  retryPending(firmwareVersionId: string): Promise<{ triggered: number }> {
+    return apiClient
+      .post('/firmware/retry-pending', { firmware_version_id: firmwareVersionId })
+      .then((r) => r.data)
+  },
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useSupportStore } from '@/stores/support.store'
 import { useToast } from '@/composables/useToast'
 import AppCard from '@/components/ui/AppCard.vue'
@@ -7,14 +7,57 @@ import AppBadge from '@/components/ui/AppBadge.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppModal from '@/components/ui/AppModal.vue'
 import AppSearchInput from '@/components/ui/AppSearchInput.vue'
+import DataTable from '@/components/data-display/DataTable.vue'
 import { PlusIcon, TrashIcon } from '@heroicons/vue/24/outline'
 import type { DeviceKind } from '@/types'
+import type { TableColumn } from '@/types/common'
 
 const store = useSupportStore()
 const toast = useToast()
 
 const showAdd = ref(false)
 const search = ref('')
+const searchWitness = ref('')
+const currentPage = ref(1)
+const perPage = 10
+
+const columns: TableColumn[] = [
+  { key: 'name', label: 'Nom' },
+  { key: 'kind', label: 'Type' },
+  { key: 'siteName', label: 'Site' },
+  { key: 'status', label: 'Statut' },
+  { key: 'lastSeenAt', label: 'Dernier signal' },
+  { key: 'actions', label: '', sortable: false, align: 'right' },
+]
+
+const filteredWitnesses = computed(() => {
+  const q = searchWitness.value.trim().toLowerCase()
+  if (!q) return store.witnesses
+  return store.witnesses.filter(
+    (w) => w.name.toLowerCase().includes(q) || (w.serialNumber ?? '').toLowerCase().includes(q),
+  )
+})
+
+const sorted = computed(() =>
+  [...filteredWitnesses.value].sort(
+    (a, b) => new Date(b.lastSeenAt ?? 0).getTime() - new Date(a.lastSeenAt ?? 0).getTime(),
+  ),
+)
+
+const pagedWitnesses = computed(() =>
+  sorted.value.slice((currentPage.value - 1) * perPage, currentPage.value * perPage),
+)
+
+const paginationObj = computed(() => ({
+  currentPage: currentPage.value,
+  perPage,
+  total: sorted.value.length,
+  totalPages: Math.max(1, Math.ceil(sorted.value.length / perPage)),
+}))
+
+watch(filteredWitnesses, () => {
+  currentPage.value = 1
+})
 
 const candidates = computed(() => {
   const q = search.value.trim().toLowerCase()
@@ -28,7 +71,11 @@ const candidates = computed(() => {
 async function openAdd() {
   showAdd.value = true
   if (store.devices.length === 0) {
-    await store.fetchDevices()
+    try {
+      await store.fetchDevices()
+    } catch (e) {
+      toast.error('Impossible de charger les capteurs', String((e as Error).message))
+    }
   }
 }
 
@@ -78,46 +125,51 @@ onMounted(async () => {
       </AppButton>
     </div>
 
-    <AppCard padding="none">
-      <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-          <thead class="bg-gray-50">
-            <tr>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nom</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Site</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Statut</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Dernier signal</th>
-
-              <th class="px-4 py-3"></th>
-            </tr>
-          </thead>
-          <tbody class="bg-white divide-y divide-gray-100">
-            <tr v-for="w in store.witnesses" :key="`${w.kind}:${w.id}`">
-              <td class="px-4 py-3">
-                <div class="font-medium text-gray-900">{{ w.name }}</div>
-                <div class="text-xs text-gray-500">{{ w.serialNumber ?? w.id }}</div>
-              </td>
-              <td class="px-4 py-3"><AppBadge variant="info" size="sm">{{ w.kind }}</AppBadge></td>
-              <td class="px-4 py-3 text-sm text-gray-700">{{ w.siteName ?? '-' }}</td>
-              <td class="px-4 py-3">
-                <AppBadge :variant="w.isOnline ? 'success' : 'danger'" size="sm">
-                  {{ w.isOnline ? 'En ligne' : 'Hors ligne' }}
-                </AppBadge>
-              </td>
-              <td class="px-4 py-3 text-sm text-gray-700">{{ fmtDate(w.lastSeenAt) }}</td>
-              <td class="px-4 py-3 text-right">
-                <AppButton size="sm" variant="ghost" @click="remove(w.kind, w.id)">
-                  <TrashIcon class="w-4 h-4 text-red-600" />
-                </AppButton>
-              </td>
-            </tr>
-            <tr v-if="store.witnesses.length === 0">
-              <td colspan="6" class="px-4 py-8 text-center text-sm text-gray-500">Aucun capteur témoin enregistré.</td>
-            </tr>
-          </tbody>
-        </table>
+    <AppCard padding="sm">
+      <div class="flex flex-wrap gap-3 items-end">
+        <div class="flex-1 min-w-55">
+          <AppSearchInput v-model="searchWitness" placeholder="Rechercher (nom, serie)..." />
+        </div>
       </div>
+    </AppCard>
+
+    <AppCard padding="none">
+      <DataTable
+        :columns="columns"
+        :data="pagedWitnesses"
+        :loading="store.isLoading"
+        :pagination="paginationObj"
+        default-sort-column="lastSeenAt"
+        default-sort-direction="desc"
+        empty-message="Aucun capteur témoin enregistré."
+        @page-change="(p) => (currentPage = p)"
+      >
+        <template #name="{ row }">
+          <div class="font-medium text-gray-900">{{ row.name }}</div>
+          <div class="text-xs text-gray-500">{{ row.serialNumber ?? row.id }}</div>
+        </template>
+        <template #kind="{ row }">
+          <AppBadge variant="info" size="sm">{{ row.kind }}</AppBadge>
+        </template>
+        <template #siteName="{ row }">{{ row.siteName ?? '-' }}</template>
+        <template #status="{ row }">
+          <AppBadge :variant="row.isOnline ? 'success' : 'danger'" size="sm">
+            <span
+              v-if="row.isOnline"
+              class="inline-block w-2 h-2 rounded-full bg-green-400 animate-pulse mr-1 align-middle"
+            ></span>
+            {{ row.isOnline ? 'En ligne' : 'Hors ligne' }}
+          </AppBadge>
+        </template>
+        <template #lastSeenAt="{ row }">{{ fmtDate(row.lastSeenAt) }}</template>
+        <template #actions="{ row }">
+          <div class="text-right" @click.stop>
+            <AppButton size="sm" variant="ghost" @click="remove(row.kind, row.id)">
+              <TrashIcon class="w-4 h-4 text-red-600" />
+            </AppButton>
+          </div>
+        </template>
+      </DataTable>
     </AppCard>
 
     <AppModal v-model="showAdd" title="Ajouter un capteur témoin" size="lg">
@@ -132,7 +184,6 @@ onMounted(async () => {
             <div>
               <div class="text-sm font-medium text-gray-900">{{ d.name }}</div>
               <div class="text-xs text-gray-500">{{ d.kind }} · {{ d.siteName ?? 'sans site' }}</div>
-
             </div>
             <AppButton size="sm" @click="add(d.kind, d.id)">Marquer</AppButton>
           </div>

@@ -13,13 +13,14 @@ export function formatTime(time: string): string {
   return dayjs(`1970-01-01T${time}`).format('HH:mm')
 }
 
-export function formatCurrency(amount: number, currency: string = CURRENCY): string {
+export function formatCurrency(amount: number | string | null | undefined, currency: string = CURRENCY): string {
+  const n = typeof amount === 'number' ? amount : Number(amount ?? 0)
   return new Intl.NumberFormat('fr-FR', {
     style: 'currency',
     currency,
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(amount)
+  }).format(Number.isFinite(n) ? n : 0)
 }
 
 export function formatDuration(minutes: number): string {

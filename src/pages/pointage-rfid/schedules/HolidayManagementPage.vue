@@ -5,15 +5,9 @@
         <div class="flex justify-between items-center">
           <h1 class="text-2xl font-bold">{{ t('holidays.title') }}</h1>
           <div class="flex gap-4 items-center">
-            <select
-              v-model="selectedYear"
-              class="border rounded-md px-3 py-2"
-              @change="filterHolidays"
-            >
-              <option value="all">{{ t('holidays.allYears') }}</option>
-              <option :value="currentYear">{{ currentYear }}</option>
-              <option :value="currentYear + 1">{{ currentYear + 1 }}</option>
-            </select>
+            <div class="w-48">
+              <AppSelect v-model="selectedYear" :options="yearOptions" @update:model-value="filterHolidays" />
+            </div>
             <AppButton
               v-if="canCreate"
               @click="openCreateModal"
@@ -127,6 +121,7 @@ import AppButton from '@/components/ui/AppButton.vue'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import AppModal from '@/components/ui/AppModal.vue'
+import AppSelect from '@/components/ui/AppSelect.vue'
 import AppConfirmDialog from '@/components/ui/AppConfirmDialog.vue'
 import { useScheduleStore } from '@/stores/schedule.store'
 import { usePermissions } from '@/composables/usePermissions'
@@ -149,6 +144,11 @@ const editingHoliday = ref<Holiday | null>(null)
 const holidayToDelete = ref<Holiday | null>(null)
 const selectedYear = ref<string | number>('all')
 const currentYear = new Date().getFullYear()
+const yearOptions = computed(() => [
+  { value: 'all', label: t('holidays.allYears') },
+  { value: currentYear, label: String(currentYear) },
+  { value: currentYear + 1, label: String(currentYear + 1) },
+])
 
 const formData = ref({
   name: '',

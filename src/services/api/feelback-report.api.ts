@@ -50,8 +50,27 @@ export interface FeelbackReportParams {
   period_granularity?: 'day' | 'week' | 'month'
 }
 
+import { downloadServerCsv, downloadServerFile } from './report-export'
+
 export const feelbackReportApi = {
   getReport(params?: FeelbackReportParams): Promise<FeelbackReportData> {
     return apiClient.get('/feelback/reports', { params }).then((r) => r.data)
+  },
+
+  downloadCsv(params: FeelbackReportParams): Promise<void> {
+    return downloadServerCsv(
+      '/feelback/reports/export.csv',
+      params as Record<string, unknown>,
+      `rapport-feelback_${params.type ?? 'global'}.csv`,
+    )
+  },
+
+  downloadPdf(params: FeelbackReportParams): Promise<void> {
+    return downloadServerFile(
+      '/feelback/reports/export.pdf',
+      params as Record<string, unknown>,
+      `rapport-feelback_${params.type ?? 'global'}.pdf`,
+      'application/pdf',
+    )
   },
 }

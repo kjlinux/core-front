@@ -9,8 +9,11 @@ import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import AppToggle from '@/components/ui/AppToggle.vue'
+import AppSelect from '@/components/ui/AppSelect.vue'
+import AppConfirmDialog from '@/components/ui/AppConfirmDialog.vue'
 import DataTable from '@/components/data-display/DataTable.vue'
 import { PlusIcon, TrashIcon, BellAlertIcon } from '@heroicons/vue/24/outline'
+import { sortByRecent } from '@/utils/sort'
 
 const { t } = useI18n()
 const store = useFirmwareStore()
@@ -19,7 +22,13 @@ const permissions = usePermissions()
 const toast = useToast()
 
 const deviceKindFilter = ref('')
+const deviceKindOptions = computed(() => [
+  { value: '', label: t('firmware.allTypes') },
+  { value: 'rfid', label: t('firmware.deviceKinds.rfid') },
+  { value: 'biometric', label: t('firmware.deviceKinds.biometric') },
+])
 const confirmDeleteId = ref<string | null>(null)
+const confirmPublishId = ref<string | null>(null)
 const publishingId = ref<string | null>(null)
 
 const columns = computed(() => [
@@ -43,7 +52,7 @@ const filteredVersions = computed(() => {
 
 const pagedVersions = computed(() => {
   const start = (currentPage.value - 1) * perPage.value
-  return filteredVersions.value.slice(start, start + perPage.value)
+  return sortByRecent(filteredVersions.value).slice(start, start + perPage.value)
 })
 
 const paginationObj = computed(() => {
@@ -80,7 +89,6 @@ async function toggleAutoUpdate(id: string, current: boolean) {
 }
 
 async function handlePublish(id: string) {
-  if (!confirm(t('firmware.notifyConfirm'))) return
   publishingId.value = id
   try {
     await store.publishVersion(id)
@@ -89,6 +97,7 @@ async function handlePublish(id: string) {
     toast.error(t('firmware.publishError'))
   } finally {
     publishingId.value = null
+    confirmPublishId.value = null
   }
 }
 
@@ -119,15 +128,13 @@ async function handleDelete(id: string) {
 
     <AppCard>
       <div class="mb-4 flex items-center gap-4">
-        <select
-          v-model="deviceKindFilter"
-          class="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          @change="loadData"
-        >
-          <option value="">{{ t('firmware.allTypes') }}</option>
-          <option value="rfid">{{ t('firmware.deviceKinds.rfid') }}</option>
-          <option value="biometric">{{ t('firmware.deviceKinds.biometric') }}</option>
-        </select>
+        <div class="w-64">
+          <AppSelect
+            v-model="deviceKindFilter"
+            :options="deviceKindOptions"
+            @update:model-value="loadData"
+          />
+        </div>
       </div>
 
       <DataTable :columns="columns" :data="pagedVersions" :loading="store.isLoading" :pagination="paginationObj" @page-change="handlePageChange">
@@ -158,7 +165,7 @@ async function handleDelete(id: string) {
               :disabled="row.isPublished || publishingId === row.id"
               :loading="publishingId === row.id"
               :title="t('firmware.published')"
-              @click="handlePublish(row.id)"
+              @click="confirmPublishId = row.id"
             >
               <BellAlertIcon class="h-4 w-4" />
             </AppButton>
@@ -176,6 +183,17 @@ async function handleDelete(id: string) {
         </template>
       </DataTable>
     </AppCard>
+
+    <AppConfirmDialog
+      :open="!!confirmPublishId"
+      :title="t('firmware.published')"
+      :message="t('firmware.notifyConfirm')"
+      variant="info"
+      :confirm-label="t('common.confirm')"
+      :cancel-label="t('common.cancel')"
+      @confirm="confirmPublishId && handlePublish(confirmPublishId)"
+      @cancel="confirmPublishId = null"
+    />
 
     <div
       v-if="confirmDeleteId"

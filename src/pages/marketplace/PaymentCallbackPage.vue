@@ -25,7 +25,8 @@ onMounted(async () => {
       else if (ps === 'failed') verifiedStatus.value = 'failed'
       else if (route.query.status === 'cancelled') verifiedStatus.value = 'cancelled'
       else verifiedStatus.value = (route.query.status as string) || 'pending'
-    } catch {
+    } catch (e) {
+      console.error('Order verification failed, falling back to query status', e)
       verifiedStatus.value = (route.query.status as string) || null
     }
   }

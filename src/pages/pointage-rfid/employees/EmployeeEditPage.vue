@@ -6,6 +6,7 @@ import { useEmployeeStore } from '@/stores/employee.store'
 import { useCompanyStore } from '@/stores/company.store'
 import { useSiteStore } from '@/stores/site.store'
 import { useDepartmentStore } from '@/stores/department.store'
+import { useScheduleStore } from '@/stores/schedule.store'
 import { useToast } from '@/composables/useToast'
 import type { Employee } from '@/types'
 import EmployeeForm from '@/components/forms/EmployeeForm.vue'
@@ -20,6 +21,7 @@ const employeeStore = useEmployeeStore()
 const companyStore = useCompanyStore()
 const siteStore = useSiteStore()
 const departmentStore = useDepartmentStore()
+const scheduleStore = useScheduleStore()
 const toast = useToast()
 
 const employeeId = route.params.id as string
@@ -35,6 +37,7 @@ onMounted(async () => {
       companyStore.fetchCompanies({ perPage: 100 }),
       siteStore.fetchSites({ perPage: 200 }),
       departmentStore.fetchDepartments({ perPage: 200 }),
+      scheduleStore.fetchSchedules(),
     ])
 
     if (employeeStore.currentEmployee) {
@@ -88,6 +91,7 @@ const handleCancel = () => {
           :sites="siteStore.sites"
           :departments="departmentStore.departments"
           :employees="employeeStore.employees"
+          :schedules="scheduleStore.schedules"
           :is-edit="true"
           :loading="employeeStore.isLoading"
           @submit="handleSubmit"

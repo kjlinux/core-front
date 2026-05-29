@@ -7,6 +7,7 @@ import { useToast } from '@/composables/useToast'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppToggle from '@/components/ui/AppToggle.vue'
+import AppSelect from '@/components/ui/AppSelect.vue'
 import type { FirmwareDeviceKind } from '@/types'
 
 const { t } = useI18n()
@@ -21,6 +22,11 @@ const isAutoUpdate = ref(false)
 const file = ref<File | null>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
 const errors = ref<Record<string, string>>({})
+
+const deviceKindOptions = computed(() => [
+  { value: 'rfid', label: t('firmware.deviceKinds.rfid') },
+  { value: 'biometric', label: t('firmware.deviceKinds.biometric') },
+])
 
 function handleFileChange(e: Event) {
   const target = e.target as HTMLInputElement
@@ -81,13 +87,7 @@ async function handleSubmit() {
 
         <div>
           <label class="mb-1 block text-sm font-medium text-gray-700">{{ t('firmware.deviceKindLabel') }}</label>
-          <select
-            v-model="deviceKind"
-            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="rfid">{{ t('firmware.deviceKinds.rfid') }}</option>
-            <option value="biometric">{{ t('firmware.deviceKinds.biometric') }}</option>
-          </select>
+          <AppSelect v-model="deviceKind" :options="deviceKindOptions" />
         </div>
 
         <div>

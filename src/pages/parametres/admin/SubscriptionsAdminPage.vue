@@ -1,14 +1,20 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { subscriptionApi } from '@/services/api/subscription.api'
 import { PLAN_LABELS } from '@/config/plan-features'
+import { useToast } from '@/composables/useToast'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import AppModal from '@/components/ui/AppModal.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
 import AppInput from '@/components/ui/AppInput.vue'
+import AppSearchInput from '@/components/ui/AppSearchInput.vue'
+import DataTable from '@/components/data-display/DataTable.vue'
 import type { PlanCode } from '@/types/subscription'
+import type { TableColumn } from '@/types/common'
+
+const toast = useToast()
 
 const companies = ref<any[]>([])
 const analytics = ref<any>(null)
@@ -18,7 +24,47 @@ const editPlan = ref<PlanCode>('freemium')
 const editExpiresAt = ref<string>('')
 const editWarrantyEndsAt = ref<string>('')
 
+const search = ref('')
+const currentPage = ref(1)
+const perPage = 10
+
 const planOptions = (Object.keys(PLAN_LABELS) as PlanCode[]).map((c) => ({ value: c, label: PLAN_LABELS[c] }))
+
+const columns: TableColumn[] = [
+  { key: 'name', label: 'Compagnie' },
+  { key: 'subscription', label: 'Plan' },
+  { key: 'expires', label: 'Echéance' },
+  { key: 'next', label: 'Mois suivant' },
+  { key: 'warranty', label: 'Garantie' },
+  { key: 'actions', label: '', sortable: false, align: 'right' },
+]
+
+const filtered = computed(() => {
+  const q = search.value.trim().toLowerCase()
+  if (!q) return companies.value
+  return companies.value.filter(
+    (c) => (c.name ?? '').toLowerCase().includes(q) || (c.email ?? '').toLowerCase().includes(q),
+  )
+})
+
+const sorted = computed(() =>
+  [...filtered.value].sort(
+    (a, b) =>
+      new Date(b.subscription_expires_at ?? 0).getTime() -
+      new Date(a.subscription_expires_at ?? 0).getTime(),
+  ),
+)
+
+const pagedCompanies = computed(() =>
+  sorted.value.slice((currentPage.value - 1) * perPage, currentPage.value * perPage),
+)
+
+const paginationObj = computed(() => ({
+  currentPage: currentPage.value,
+  perPage,
+  total: sorted.value.length,
+  totalPages: Math.max(1, Math.ceil(sorted.value.length / perPage)),
+}))
 
 async function load() {
   isLoading.value = true
@@ -26,6 +72,8 @@ async function load() {
     const [list, ana] = await Promise.all([subscriptionApi.adminList(), subscriptionApi.adminAnalytics()])
     companies.value = list.data
     analytics.value = ana
+  } catch (e) {
+    toast.error('Impossible de charger les abonnements', String((e as Error).message))
   } finally {
     isLoading.value = false
   }
@@ -39,13 +87,22 @@ function openEdit(c: any) {
 }
 async function save() {
   if (!editing.value) return
-  await subscriptionApi.adminUpdate(editing.value.id, {
-    plan_code: editPlan.value,
-    expires_at: editExpiresAt.value || null,
-    warranty_ends_at: editWarrantyEndsAt.value || null,
-  })
-  editing.value = null
-  await load()
+  try {
+    await subscriptionApi.adminUpdate(editing.value.id, {
+      plan_code: editPlan.value,
+      expires_at: editExpiresAt.value || null,
+      warranty_ends_at: editWarrantyEndsAt.value || null,
+    })
+    toast.success('Plan mis à jour')
+    editing.value = null
+    await load()
+  } catch (e) {
+    toast.error('Échec de la mise à jour', String((e as Error).message))
+  }
+}
+
+function fmtDate(s: string | null) {
+  return s ? new Date(s).toLocaleDateString('fr-FR') : '-'
 }
 
 onMounted(load)
@@ -74,35 +131,42 @@ onMounted(load)
       </AppCard>
     </div>
 
-    <AppCard>
-      <table class="min-w-full text-sm">
-        <thead class="bg-gray-50">
-          <tr>
-            <th class="px-3 py-2 text-left">Compagnie</th>
-            <th class="px-3 py-2 text-left">Plan</th>
-            <th class="px-3 py-2 text-left">Echéance</th>
-            <th class="px-3 py-2 text-left">Mois suivant</th>
-            <th class="px-3 py-2 text-left">Garantie</th>
-            <th class="px-3 py-2"></th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="c in companies" :key="c.id" class="border-t">
-            <td class="px-3 py-2">{{ c.name }}<div class="text-xs text-gray-500">{{ c.email }}</div></td>
-            <td class="px-3 py-2">
-              <AppBadge :variant="c.subscription === 'premium' ? 'success' : (c.subscription === 'garantie' ? 'info' : 'neutral')">
-                {{ PLAN_LABELS[c.subscription as PlanCode] ?? c.subscription }}
-              </AppBadge>
-            </td>
-            <td class="px-3 py-2">{{ c.subscription_expires_at ? new Date(c.subscription_expires_at).toLocaleDateString('fr-FR') : '-' }}</td>
-            <td class="px-3 py-2">{{ c.subscription_next_period_paid ? '✓ payé' : '-' }}</td>
-            <td class="px-3 py-2">{{ c.warranty_ends_at ? new Date(c.warranty_ends_at).toLocaleDateString('fr-FR') : '-' }}</td>
-            <td class="px-3 py-2 text-right">
-              <AppButton variant="secondary" size="sm" @click="openEdit(c)">Changer le plan</AppButton>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+    <AppCard padding="sm">
+      <div class="flex flex-wrap gap-3 items-end">
+        <div class="flex-1 min-w-55">
+          <AppSearchInput v-model="search" placeholder="Rechercher (compagnie, email)..." />
+        </div>
+      </div>
+    </AppCard>
+
+    <AppCard padding="none">
+      <DataTable
+        :columns="columns"
+        :data="pagedCompanies"
+        :loading="isLoading"
+        :pagination="paginationObj"
+        default-sort-column="expires"
+        default-sort-direction="desc"
+        empty-message="Aucune compagnie"
+        @page-change="(p) => (currentPage = p)"
+      >
+        <template #name="{ row }">
+          {{ row.name }}<div class="text-xs text-gray-500">{{ row.email }}</div>
+        </template>
+        <template #subscription="{ row }">
+          <AppBadge :variant="row.subscription === 'premium' ? 'success' : (row.subscription === 'garantie' ? 'info' : 'neutral')">
+            {{ PLAN_LABELS[row.subscription as PlanCode] ?? row.subscription }}
+          </AppBadge>
+        </template>
+        <template #expires="{ row }">{{ fmtDate(row.subscription_expires_at) }}</template>
+        <template #next="{ row }">{{ row.subscription_next_period_paid ? 'Payé' : '-' }}</template>
+        <template #warranty="{ row }">{{ fmtDate(row.warranty_ends_at) }}</template>
+        <template #actions="{ row }">
+          <div class="text-right" @click.stop>
+            <AppButton variant="secondary" size="sm" @click="openEdit(row)">Changer le plan</AppButton>
+          </div>
+        </template>
+      </DataTable>
     </AppCard>
 
     <AppModal v-if="editing" :model-value="!!editing" :title="`Changer le plan : ${editing.name}`" @update:model-value="editing = null">

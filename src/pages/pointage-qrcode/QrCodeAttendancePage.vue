@@ -7,6 +7,7 @@ import AppButton from '@/components/ui/AppButton.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import AppInput from '@/components/ui/AppInput.vue'
 import DataTable from '@/components/data-display/DataTable.vue'
+import AttendanceSegmentCell from '@/components/attendance/AttendanceSegmentCell.vue'
 
 const { t } = useI18n()
 const store = useQrcodeStore()
@@ -20,6 +21,7 @@ const columns = computed(() => [
   { key: 'entryTime', label: t('qrcode.entryLabel') },
   { key: 'exitTime', label: t('qrcode.exitLabel') },
   { key: 'status', label: t('common.status') },
+  { key: 'presence', label: t('attendance.presenceDetail') },
   { key: 'gpsVerified', label: t('qrcode.gpsLabel') },
   { key: 'scannedAt', label: t('qrcode.scannedAt') },
 ])
@@ -41,7 +43,7 @@ function formatDateTime(dt: string) {
 }
 
 function getStatusVariant(status: string): 'success' | 'danger' | 'warning' | 'info' | 'neutral' {
-  const map: Record<string, 'success' | 'danger' | 'warning' | 'info' | 'neutral'> = { present: 'success', absent: 'danger', late: 'warning', left_early: 'info' }
+  const map: Record<string, 'success' | 'danger' | 'warning' | 'info' | 'neutral'> = { present: 'success', absent: 'danger', late: 'warning', left_early: 'info', partial: 'warning', on_leave: 'info' }
   return map[status] ?? 'neutral'
 }
 
@@ -51,6 +53,8 @@ function getStatusLabel(status: string) {
     absent: t('attendance.status.absent'),
     late: t('attendance.status.late'),
     left_early: t('attendance.status.left_early'),
+    partial: t('attendance.status.partial'),
+    on_leave: t('attendance.status.on_leave'),
   }
   return map[status] || status
 }
@@ -86,6 +90,9 @@ function getStatusLabel(status: string) {
         <template #exitTime="{ row }">{{ row.exitTime ?? '-' }}</template>
         <template #status="{ row }">
           <AppBadge :variant="getStatusVariant(row.status)">{{ getStatusLabel(row.status) }}</AppBadge>
+        </template>
+        <template #presence="{ row }">
+          <AttendanceSegmentCell :record="row" />
         </template>
         <template #gpsVerified="{ row }">
           <AppBadge :variant="row.gpsVerified ? 'success' : 'warning'">

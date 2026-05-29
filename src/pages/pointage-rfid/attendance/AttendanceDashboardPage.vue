@@ -100,7 +100,6 @@
 </template>
 
 <script setup lang="ts">
-// @ts-nocheck
 import { ref, onMounted, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useAttendanceStore } from '@/stores/attendance.store';
@@ -124,13 +123,18 @@ const stats = computed(() => {
   const absent = records.filter((r) => r.status === 'absent').length;
   const late = records.filter((r) => r.status === 'late').length;
 
-  const entryTimes = records
+  const entryMinutes = records
     .filter((r) => r.entryTime)
-    .map((r) => new Date(r.entryTime!).getTime());
+    .map((r) => {
+      const d = new Date(r.entryTime!);
+      return d.getHours() * 60 + d.getMinutes();
+    });
   let averageEntryTime = '-';
-  if (entryTimes.length > 0) {
-    const avg = entryTimes.reduce((a, b) => a + b, 0) / entryTimes.length;
-    averageEntryTime = new Date(avg).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  if (entryMinutes.length > 0) {
+    const avgMin = Math.round(entryMinutes.reduce((a, b) => a + b, 0) / entryMinutes.length);
+    const hh = String(Math.floor(avgMin / 60)).padStart(2, '0');
+    const mm = String(avgMin % 60).padStart(2, '0');
+    averageEntryTime = `${hh}:${mm}`;
   }
 
   const earlyDepartures = records.filter((r) => (r.earlyDepartureMinutes ?? 0) > 0).length;

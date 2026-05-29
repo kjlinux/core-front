@@ -15,7 +15,7 @@ const { t } = useI18n()
 const auth = useAuthStore()
 const activeCompanyStore = useActiveCompanyStore()
 const companyStore = useCompanyStore()
-const { isLoading, reportData, buildReport, generatePdf } = useTechnicienReport()
+const { isLoading, reportData, buildReport, signAndGeneratePdf } = useTechnicienReport()
 
 const isSuperAdmin = computed(() => auth.user?.role === UserRole.SUPER_ADMIN)
 const selectedCompanyId = ref<string>(activeCompanyStore.activeCompanyId ?? '')
@@ -86,7 +86,7 @@ onMounted(async () => {
           v-if="reportData"
           variant="primary"
           :disabled="isLoading"
-          @click="generatePdf(reportData!)"
+          @click="signAndGeneratePdf(reportData!)"
         >
           {{ t('parametres.downloadPdf') }}
         </AppButton>

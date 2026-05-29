@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue'
-import type { Schedule, Company, Department } from '@/types'
+import type { Schedule, Company, Department, ScheduleDay, ScheduleSegment } from '@/types'
+import { normalizeSchedule } from '@/utils/schedule'
 import FormSection from './FormSection.vue'
 import FormRow from './FormRow.vue'
 import AppInput from '@/components/ui/AppInput.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppCheckbox from '@/components/ui/AppCheckbox.vue'
+import { PlusIcon, TrashIcon } from '@heroicons/vue/24/outline'
 
 const props = defineProps<{
   initialData?: Partial<Schedule>
@@ -23,58 +25,6 @@ const emit = defineEmits<{
 const errors = ref<Record<string, string>>({})
 const isPrefilling = ref(false)
 
-const form = ref<Partial<Schedule>>({
-  name: '',
-  companyId: '',
-  type: 'standard',
-  startTime: '',
-  endTime: '',
-  breakStart: '',
-  breakEnd: '',
-  workDays: [],
-  lateTolerance: 0,
-  assignedDepartments: [],
-})
-
-// Pré-remplissage quand initialData arrive (chargement async en édition)
-watch(
-  () => props.initialData,
-  async (data) => {
-    if (data && Object.keys(data).length > 0) {
-      isPrefilling.value = true
-      form.value = {
-        name: data.name ?? '',
-        companyId: data.companyId ?? '',
-        type: data.type ?? 'standard',
-        startTime: data.startTime ?? '',
-        endTime: data.endTime ?? '',
-        breakStart: data.breakStart ?? '',
-        breakEnd: data.breakEnd ?? '',
-        workDays: data.workDays ? [...data.workDays] : [],
-        lateTolerance: data.lateTolerance ?? 0,
-        assignedDepartments: data.assignedDepartments ? [...data.assignedDepartments] : [],
-      }
-      await nextTick()
-      isPrefilling.value = false
-    }
-  },
-  { immediate: true },
-)
-
-const companyOptions = computed(() =>
-  props.companies.map((c) => ({ label: c.name, value: c.id }))
-)
-
-const filteredDepartments = computed(() => {
-  if (!form.value.companyId) return []
-  return props.departments.filter(d => d.companyId === form.value.companyId)
-})
-
-const typeOptions = [
-  { label: 'Standard', value: 'standard' },
-  { label: 'Personnalisé', value: 'custom' },
-]
-
 const weekDays = [
   { label: 'Lundi', value: 1 },
   { label: 'Mardi', value: 2 },
@@ -85,61 +35,138 @@ const weekDays = [
   { label: 'Dimanche', value: 7 },
 ]
 
-const toggleDay = (day: number) => {
-  const days = [...(form.value.workDays ?? [])]
-  const idx = days.indexOf(day)
-  if (idx > -1) {
-    days.splice(idx, 1)
-  } else {
-    days.push(day)
-  }
-  form.value = { ...form.value, workDays: days }
+const typeOptions = [
+  { label: 'Standard', value: 'standard' },
+  { label: 'Personnalise', value: 'custom' },
+  { label: 'Jour', value: 'day' },
+  { label: 'Nuit', value: 'night' },
+]
+
+const shiftOptions = [
+  { label: 'Matin', value: 'morning' },
+  { label: 'Soir', value: 'evening' },
+  { label: 'Journee', value: 'full_day' },
+  { label: 'Nuit', value: 'night' },
+]
+
+function emptyDays(): ScheduleDay[] {
+  return [1, 2, 3, 4, 5, 6, 7].map((weekday) => ({ weekday, worked: false, segments: [] }))
 }
+
+const form = ref<Partial<Schedule>>({
+  name: '',
+  companyId: '',
+  type: 'standard',
+  defaultLateTolerance: 0,
+  days: emptyDays(),
+  assignedDepartments: [],
+})
+
+watch(
+  () => props.initialData,
+  async (data) => {
+    if (data && Object.keys(data).length > 0) {
+      isPrefilling.value = true
+      const normalized = normalizeSchedule(data)
+      form.value = {
+        name: normalized.name,
+        companyId: normalized.companyId,
+        type: normalized.type,
+        defaultLateTolerance: normalized.defaultLateTolerance,
+        days: normalized.days.length ? structuredClone(normalized.days) : emptyDays(),
+        assignedDepartments: [...normalized.assignedDepartments],
+      }
+      await nextTick()
+      isPrefilling.value = false
+    }
+  },
+  { immediate: true },
+)
+
+const companyOptions = computed(() =>
+  props.companies.map((c) => ({ label: c.name, value: c.id })),
+)
+
+const filteredDepartments = computed(() => {
+  if (!form.value.companyId) return []
+  return props.departments.filter((d) => d.companyId === form.value.companyId)
+})
 
 const toggleDepartment = (deptId: string) => {
   const depts = [...(form.value.assignedDepartments ?? [])]
   const idx = depts.indexOf(deptId)
-  if (idx > -1) {
-    depts.splice(idx, 1)
-  } else {
-    depts.push(deptId)
-  }
+  if (idx > -1) depts.splice(idx, 1)
+  else depts.push(deptId)
   form.value = { ...form.value, assignedDepartments: depts }
 }
 
-// Reset departments when company changes (pas lors du pré-remplissage)
-watch(() => form.value.companyId, () => {
-  if (!isPrefilling.value) {
-    form.value = { ...form.value, assignedDepartments: [] }
+watch(
+  () => form.value.companyId,
+  () => {
+    if (!isPrefilling.value) {
+      form.value = { ...form.value, assignedDepartments: [] }
+    }
+  },
+)
+
+const dayLabel = (weekday: number) =>
+  weekDays.find((d) => d.value === weekday)?.label ?? String(weekday)
+
+const toggleDayWorked = (day: ScheduleDay) => {
+  day.worked = !day.worked
+  if (day.worked && day.segments.length === 0) {
+    addSegment(day)
   }
-})
+}
+
+const addSegment = (day: ScheduleDay) => {
+  day.segments.push({
+    kind: 'morning',
+    startTime: '',
+    endTime: '',
+    expectedPunches: [{ time: '', label: '' }],
+    lateTolerance: form.value.defaultLateTolerance ?? 0,
+  })
+}
+
+const removeSegment = (day: ScheduleDay, index: number) => {
+  day.segments.splice(index, 1)
+}
+
+const addPunch = (segment: ScheduleSegment) => {
+  segment.expectedPunches.push({ time: '', label: '' })
+}
+
+const removePunch = (segment: ScheduleSegment, index: number) => {
+  segment.expectedPunches.splice(index, 1)
+}
 
 const validate = (): boolean => {
   errors.value = {}
+  if (!form.value.companyId) errors.value.companyId = "L'entreprise est requise"
+  if (!form.value.name?.trim()) errors.value.name = 'Le nom est requis'
+  if (!form.value.type) errors.value.type = 'Le type est requis'
 
-  if (!form.value.companyId) {
-    errors.value.companyId = "L'entreprise est requise"
+  const workedDays = (form.value.days ?? []).filter((d) => d.worked)
+  if (workedDays.length === 0) {
+    errors.value.days = 'Selectionner au moins un jour de travail'
   }
-  if (!form.value.name?.trim()) {
-    errors.value.name = 'Le nom est requis'
+  for (const day of workedDays) {
+    if (day.segments.length === 0) {
+      errors.value.days = `${dayLabel(day.weekday)}: ajouter au moins un segment`
+      break
+    }
+    for (const seg of day.segments) {
+      if (!seg.startTime || !seg.endTime) {
+        errors.value.days = `${dayLabel(day.weekday)}: heures de segment requises`
+        break
+      }
+      if (seg.expectedPunches.some((p) => !p.time)) {
+        errors.value.days = `${dayLabel(day.weekday)}: heure de pointage requise`
+        break
+      }
+    }
   }
-  if (!form.value.type) {
-    errors.value.type = 'Le type est requis'
-  }
-  if (!form.value.startTime?.trim()) {
-    errors.value.startTime = "L'heure de début est requise"
-  }
-  if (!form.value.endTime?.trim()) {
-    errors.value.endTime = "L'heure de fin est requise"
-  }
-  // Les horaires identiques sont invalides ; les horaires de nuit (fin < début) sont autorisés
-  if (form.value.startTime && form.value.endTime && form.value.startTime === form.value.endTime) {
-    errors.value.endTime = "L'heure de fin ne peut pas être identique à l'heure de début"
-  }
-  if (!form.value.workDays?.length) {
-    errors.value.workDays = 'Sélectionner au moins un jour de travail'
-  }
-
   return Object.keys(errors.value).length === 0
 }
 
@@ -165,91 +192,155 @@ const handleSubmit = () => {
       <FormRow label="Nom" :required="true" :error="errors.name">
         <AppInput
           v-model="form.name"
-          placeholder="Horaire standard, Horaire d'été, etc."
+          placeholder="Horaire Jour, Horaire Nuit, Mi-temps matin..."
           :disabled="loading"
         />
       </FormRow>
 
       <FormRow label="Type" :required="true" :error="errors.type">
-        <AppSelect
-          v-model="form.type"
-          :options="typeOptions"
-          :disabled="loading"
-        />
-      </FormRow>
-
-      <FormRow label="Heure de début" :required="true" :error="errors.startTime">
-        <AppInput
-          v-model="form.startTime"
-          type="time"
-          :disabled="loading"
-        />
-      </FormRow>
-
-      <FormRow label="Heure de fin" :required="true" :error="errors.endTime">
-        <AppInput
-          v-model="form.endTime"
-          type="time"
-          :disabled="loading"
-        />
-        <p
-          v-if="form.startTime && form.endTime && form.endTime < form.startTime"
-          class="mt-1 text-xs text-blue-500"
-        >
-          Horaire de nuit : la fin est le lendemain matin
-        </p>
-      </FormRow>
-
-      <FormRow label="Début de pause" :error="errors.breakStart">
-        <AppInput
-          v-model="form.breakStart"
-          type="time"
-          :disabled="loading"
-        />
-      </FormRow>
-
-      <FormRow label="Fin de pause" :error="errors.breakEnd">
-        <AppInput
-          v-model="form.breakEnd"
-          type="time"
-          :disabled="loading"
-        />
-      </FormRow>
-
-      <FormRow label="Jours de travail" :required="true" :error="errors.workDays">
-        <div class="flex flex-wrap gap-3">
-          <AppCheckbox
-            v-for="day in weekDays"
-            :key="day.value"
-            :model-value="(form.workDays ?? []).includes(day.value)"
-            @update:model-value="toggleDay(day.value)"
-            :label="day.label"
-            :disabled="loading"
-          />
-        </div>
+        <AppSelect v-model="form.type" :options="typeOptions" :disabled="loading" />
       </FormRow>
 
       <FormRow
-        label="Tolérance retard (minutes)"
-        :error="errors.lateTolerance"
-        help="Nombre de minutes de tolérance avant qu'un retard soit comptabilisé"
+        label="Tolerance retard par defaut (minutes)"
+        help="Appliquee a chaque nouveau pointage (modifiable par segment)"
       >
         <AppInput
-          :model-value="form.lateTolerance?.toString() ?? '0'"
-          @update:model-value="form.lateTolerance = parseInt(String($event)) || 0"
+          :model-value="form.defaultLateTolerance?.toString() ?? '0'"
+          @update:model-value="form.defaultLateTolerance = parseInt(String($event)) || 0"
           type="number"
           min="0"
-          placeholder="0"
           :disabled="loading"
         />
       </FormRow>
+    </FormSection>
 
-      <FormRow label="Départements concernés" :error="errors.assignedDepartments">
+    <FormSection title="Jours et segments de travail">
+      <p v-if="errors.days" class="mb-3 text-sm text-red-600">{{ errors.days }}</p>
+
+      <div
+        v-for="day in form.days"
+        :key="day.weekday"
+        class="mb-4 rounded-lg border border-gray-200 p-4"
+      >
+        <div class="flex items-center justify-between">
+          <AppCheckbox
+            :model-value="day.worked"
+            @update:model-value="toggleDayWorked(day)"
+            :label="dayLabel(day.weekday)"
+            :disabled="loading"
+          />
+          <AppButton
+            v-if="day.worked"
+            type="button"
+            variant="ghost"
+            size="sm"
+            @click="addSegment(day)"
+            :disabled="loading"
+          >
+            <PlusIcon class="w-4 h-4 mr-1" /> Segment
+          </AppButton>
+        </div>
+
+        <div v-if="day.worked" class="mt-3 space-y-4">
+          <div
+            v-for="(segment, sIdx) in day.segments"
+            :key="sIdx"
+            class="rounded-md bg-gray-50 p-3"
+          >
+            <div class="grid grid-cols-1 gap-3 md:grid-cols-4">
+              <div>
+                <label class="mb-1 block text-xs text-gray-500">Type</label>
+                <AppSelect
+                  v-model="segment.kind"
+                  :options="shiftOptions"
+                  :disabled="loading"
+                />
+              </div>
+              <div>
+                <label class="mb-1 block text-xs text-gray-500">Debut</label>
+                <AppInput v-model="segment.startTime" type="time" :disabled="loading" />
+              </div>
+              <div>
+                <label class="mb-1 block text-xs text-gray-500">Fin</label>
+                <AppInput v-model="segment.endTime" type="time" :disabled="loading" />
+              </div>
+              <div>
+                <label class="mb-1 block text-xs text-gray-500">Tolerance (min)</label>
+                <AppInput
+                  :model-value="segment.lateTolerance?.toString() ?? '0'"
+                  @update:model-value="segment.lateTolerance = parseInt(String($event)) || 0"
+                  type="number"
+                  min="0"
+                  :disabled="loading"
+                />
+              </div>
+            </div>
+
+            <div class="mt-3">
+              <div class="mb-1 flex items-center justify-between">
+                <label class="text-xs text-gray-500">Pointages attendus</label>
+                <AppButton
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  @click="addPunch(segment)"
+                  :disabled="loading"
+                >
+                  <PlusIcon class="w-4 h-4 mr-1" /> Heure
+                </AppButton>
+              </div>
+              <div
+                v-for="(punch, pIdx) in segment.expectedPunches"
+                :key="pIdx"
+                class="mb-2 flex items-center gap-2"
+              >
+                <AppInput v-model="punch.time" type="time" :disabled="loading" />
+                <AppInput
+                  v-model="punch.label"
+                  placeholder="Libelle (optionnel)"
+                  :disabled="loading"
+                />
+                <AppButton
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  class="text-red-600"
+                  @click="removePunch(segment, pIdx)"
+                  :disabled="loading || segment.expectedPunches.length <= 1"
+                >
+                  <TrashIcon class="w-4 h-4" />
+                </AppButton>
+              </div>
+            </div>
+
+            <div class="mt-2 flex justify-end">
+              <AppButton
+                type="button"
+                variant="ghost"
+                size="sm"
+                class="text-red-600"
+                @click="removeSegment(day, sIdx)"
+                :disabled="loading"
+              >
+                <TrashIcon class="w-4 h-4 mr-1" /> Supprimer le segment
+              </AppButton>
+            </div>
+          </div>
+        </div>
+      </div>
+    </FormSection>
+
+    <FormSection title="Departements concernes (affectation par defaut)">
+      <FormRow
+        label="Departements"
+        help="Les employes de ces departements utilisent cet horaire sauf affectation individuelle"
+      >
         <div v-if="!form.companyId" class="text-sm text-gray-400 italic">
-          Sélectionner d'abord une entreprise
+          Selectionner d'abord une entreprise
         </div>
         <div v-else-if="filteredDepartments.length === 0" class="text-sm text-gray-400 italic">
-          Aucun département pour cette entreprise
+          Aucun departement pour cette entreprise
         </div>
         <div v-else class="flex flex-wrap gap-3">
           <AppCheckbox
@@ -268,9 +359,7 @@ const handleSubmit = () => {
       <AppButton type="button" variant="ghost" :disabled="loading" @click="emit('cancel')">
         Annuler
       </AppButton>
-      <AppButton type="submit" :loading="loading">
-        Enregistrer
-      </AppButton>
+      <AppButton type="submit" :loading="loading">Enregistrer</AppButton>
     </div>
   </form>
 </template>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue'
+import dayjs from 'dayjs'
 import { useI18n } from 'vue-i18n'
 import { useQrcodeStore } from '@/stores/qrcode.store'
 import AppCard from '@/components/ui/AppCard.vue'
@@ -10,23 +11,32 @@ const { t } = useI18n()
 const store = useQrcodeStore()
 const month = ref(new Date().toISOString().slice(0, 7))
 
+const PAGE_SIZE = 500
+
+function parseMonth(value: string): { year: number; month: number } | null {
+  const ref = dayjs(value, 'YYYY-MM', true)
+  if (!ref.isValid()) return null
+  return { year: ref.year(), month: ref.month() + 1 }
+}
+
 onMounted(() => loadData())
 watch(month, () => loadData())
 
 async function loadData() {
-  // Charger tous les pointages du mois sélectionné (1er au dernier jour)
-  const [year, m] = month.value.split('-').map(Number)
-  const startDate = new Date(year, m - 1, 1).toISOString().slice(0, 10)
-  const endDate = new Date(year, m, 0).toISOString().slice(0, 10)
-  await store.fetchAttendance({ startDate, endDate, perPage: 1000 })
+  const parsed = parseMonth(month.value)
+  if (!parsed) return
+  const ref = dayjs(`${month.value}-01`)
+  const startDate = ref.startOf('month').format('YYYY-MM-DD')
+  const endDate = ref.endOf('month').format('YYYY-MM-DD')
+  await store.fetchAttendance({ startDate, endDate, perPage: PAGE_SIZE })
 }
 
 const recordsForMonth = computed(() => {
-  // Filtrage défensif côté client au cas où le backend ne supporte pas encore startDate/endDate
-  const [year, m] = month.value.split('-').map(Number)
+  const parsed = parseMonth(month.value)
+  if (!parsed) return []
   return store.attendanceRecords.filter((r) => {
     const d = new Date(r.date)
-    return d.getFullYear() === year && d.getMonth() + 1 === m
+    return d.getFullYear() === parsed.year && d.getMonth() + 1 === parsed.month
   })
 })
 

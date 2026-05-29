@@ -135,8 +135,7 @@ async function generateAndDownloadPdf() {
 
     doc.save(`avis-qr-${companyName.value}.pdf`)
     toast.success(t('feelback.downloadPdf'))
-  } catch (err) {
-    console.error(err)
+  } catch {
     toast.error(t('feelback.questionnaireSaveError'))
   } finally {
     isGeneratingPdf.value = false

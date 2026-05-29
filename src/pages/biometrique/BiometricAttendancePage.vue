@@ -87,6 +87,9 @@
                 {{ t('biometric.lateTime') }}
               </th>
               <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                {{ t('attendance.presenceDetail') }}
+              </th>
+              <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
                 {{ t('biometric.doubleBadgeCol') }}
               </th>
               <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
@@ -124,6 +127,9 @@
                 </span>
                 <span v-else class="text-gray-400">-</span>
               </td>
+              <td class="px-4 py-4">
+                <AttendanceSegmentCell :record="record" />
+              </td>
               <td class="whitespace-nowrap px-4 py-4 text-sm">
                 <AppBadge v-if="record.isDoubleBadge" variant="danger" size="sm">
                   {{ t('common.yes') }} ({{ record.ignoredBadges }} {{ record.ignoredBadges > 1 ? t('biometric.ignoredPl') : t('biometric.ignored') }})
@@ -160,6 +166,7 @@ import AppBadge from '@/components/ui/AppBadge.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppSpinner from '@/components/ui/AppSpinner.vue'
 import AppPagination from '@/components/ui/AppPagination.vue'
+import AttendanceSegmentCell from '@/components/attendance/AttendanceSegmentCell.vue'
 import {
   ClipboardDocumentListIcon,
   CheckCircleIcon,
@@ -251,16 +258,20 @@ function statusLabel(status: string): string {
     absent: t('biometric.absent_status'),
     late: t('biometric.late_status'),
     left_early: t('biometric.early_leave_status'),
+    partial: t('attendance.status.partial'),
+    on_leave: t('attendance.status.on_leave'),
   }
   return map[status] ?? status
 }
 
-function statusVariant(status: string): 'success' | 'danger' | 'warning' | 'neutral' {
-  const map: Record<string, 'success' | 'danger' | 'warning' | 'neutral'> = {
+function statusVariant(status: string): 'success' | 'danger' | 'warning' | 'neutral' | 'info' {
+  const map: Record<string, 'success' | 'danger' | 'warning' | 'neutral' | 'info'> = {
     present: 'success',
     absent: 'danger',
     late: 'warning',
     left_early: 'warning',
+    partial: 'warning',
+    on_leave: 'info',
   }
   return map[status] ?? 'neutral'
 }

@@ -92,8 +92,9 @@ async function loadAttendanceStats() {
     const records = await attendanceApi.getByEmployee(employeeId, { startDate: start, endDate: end })
     totalAttendanceDays.value = records.filter(r => r.status === 'present' || r.status === 'late').length
     lateDays.value = records.filter(r => r.status === 'late').length
-  } catch {
-    // stats stay at 0 if API unavailable
+  } catch (e) {
+    console.error('Failed to load attendance stats', e)
+    toast.error(t('common.error'), 'Impossible de charger les statistiques de présence')
   }
 }
 

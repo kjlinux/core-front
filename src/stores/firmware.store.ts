@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { firmwareApi } from '@/services/api/firmware.api'
 import type { FirmwareVersion, DeviceFirmwareStatus, OtaUpdateLog, CompanyUpdateProgress } from '@/types'
@@ -10,8 +10,21 @@ export const useFirmwareStore = defineStore('firmware', () => {
   const isLoading = ref(false)
   const pagination = ref({ currentPage: 1, perPage: 15, total: 0, totalPages: 0 })
 
-  // Mise à jour en masse
-  const latestPublishedVersion = ref<FirmwareVersion | null>(null)
+  // Mise à jour en masse — une derniere version publiee par type d'appareil
+  const latestPublishedByKind = ref<{ rfid: FirmwareVersion | null; biometric: FirmwareVersion | null }>({
+    rfid: null,
+    biometric: null,
+  })
+  // Compat : premiere version publiee non nulle (RFID prioritaire).
+  const latestPublishedVersion = computed<FirmwareVersion | null>(
+    () => latestPublishedByKind.value.rfid ?? latestPublishedByKind.value.biometric,
+  )
+  // Liste des bannieres a afficher (une par type ayant une version publiee).
+  const publishedBanners = computed<FirmwareVersion[]>(() =>
+    [latestPublishedByKind.value.rfid, latestPublishedByKind.value.biometric].filter(
+      (v): v is FirmwareVersion => v !== null,
+    ),
+  )
   const companyUpdateProgress = ref<CompanyUpdateProgress | null>(null)
   const pollingInterval = ref<ReturnType<typeof setInterval> | null>(null)
 
@@ -53,24 +66,24 @@ export const useFirmwareStore = defineStore('firmware', () => {
     const updated = await firmwareApi.publishVersion(id)
     const idx = versions.value.findIndex((v) => v.id === id)
     if (idx !== -1) versions.value[idx] = updated
-    latestPublishedVersion.value = updated
+    if (updated.deviceKind === 'rfid' || updated.deviceKind === 'biometric') {
+      latestPublishedByKind.value[updated.deviceKind] = updated
+    }
     return updated
   }
 
   async function fetchLatestPublished() {
-    try {
-      const response = await firmwareApi.getVersions({ perPage: 1 } as Record<string, unknown>)
-      // On cherche la dernière version publiée parmi toutes les versions
-      const published = response.data.find((v) => v.isPublished)
-      if (published) {
-        latestPublishedVersion.value = published
-      } else {
-        // Pas de version publiée dans la page courante - on essaye sans filtre
-        latestPublishedVersion.value = null
+    // Recupere en parallele la derniere publiee par type d'appareil.
+    const fetchByKind = async (kind: 'rfid' | 'biometric'): Promise<FirmwareVersion | null> => {
+      try {
+        const response = await firmwareApi.getVersions({ device_kind: kind, perPage: 5 } as Record<string, unknown>)
+        return response.data.find((v) => v.isPublished) ?? null
+      } catch {
+        return null
       }
-    } catch {
-      latestPublishedVersion.value = null
     }
+    const [rfid, biometric] = await Promise.all([fetchByKind('rfid'), fetchByKind('biometric')])
+    latestPublishedByKind.value = { rfid, biometric }
   }
 
   async function fetchDeviceStatuses(params?: Record<string, unknown>) {
@@ -144,6 +157,12 @@ export const useFirmwareStore = defineStore('firmware', () => {
     return result
   }
 
+  async function retryPending(firmwareVersionId: string) {
+    const result = await firmwareApi.retryPending(firmwareVersionId)
+    startProgressPolling(firmwareVersionId)
+    return result
+  }
+
   return {
     versions,
     deviceStatuses,
@@ -151,6 +170,8 @@ export const useFirmwareStore = defineStore('firmware', () => {
     isLoading,
     pagination,
     latestPublishedVersion,
+    latestPublishedByKind,
+    publishedBanners,
     companyUpdateProgress,
     fetchVersions,
     uploadVersion,
@@ -165,5 +186,6 @@ export const useFirmwareStore = defineStore('firmware', () => {
     startProgressPolling,
     stopProgressPolling,
     retryFailed,
+    retryPending,
   }
 })

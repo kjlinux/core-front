@@ -1,5 +1,5 @@
 import client from './client'
-import type { AbsenceRequest, AbsenceRequestFilters, CreateAbsencePayload, ReviewAbsencePayload } from '@/types/absence'
+import type { AbsenceRequest, AbsenceRequestFilters, CreateAbsencePayload, ReviewAbsencePayload, UpdateAbsencePayload } from '@/types/absence'
 import type { PaginatedResponse } from '@/types/common'
 
 export const absenceApi = {
@@ -35,6 +35,14 @@ export const absenceApi = {
     return client.post('/absence-requests', form, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
+  },
+
+  update(id: string, data: UpdateAbsencePayload): Promise<AbsenceRequest> {
+    const p: Record<string, unknown> = {}
+    if (data.dateStart !== undefined) p.date_start = data.dateStart
+    if (data.dateEnd !== undefined) p.date_end = data.dateEnd
+    if (data.reason !== undefined) p.reason = data.reason
+    return client.put(`/absence-requests/${id}`, p)
   },
 
   review(id: string, data: ReviewAbsencePayload): Promise<AbsenceRequest> {

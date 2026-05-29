@@ -13,12 +13,18 @@
     </div>
 
     <AppCard class="mb-6">
-      <AppSelect
-        v-model="filterCompanyId"
-        :options="companyOptions"
-        :label="t('schedules.company')"
-        class="w-full sm:w-64"
-      />
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <AppInput
+          v-model="searchQuery"
+          :placeholder="t('common.search') || 'Rechercher...'"
+          :label="t('common.search') || 'Rechercher'"
+        />
+        <AppSelect
+          v-model="filterCompanyId"
+          :options="companyOptions"
+          :label="t('schedules.company')"
+        />
+      </div>
     </AppCard>
 
     <AppCard>
@@ -27,6 +33,8 @@
         :columns="columns"
         :loading="loading"
         :pagination="paginationObj"
+        default-sort-column="name"
+        default-sort-direction="desc"
         @page-change="handlePageChange"
         @row-click="handleRowClick"
       >
@@ -35,25 +43,17 @@
         </template>
 
         <template #type="{ row }">
-          <AppBadge :variant="row.type === 'standard' ? 'blue' : 'purple'">
-            {{ row.type === 'standard' ? t('schedules.standard') : t('schedules.custom') }}
+          <AppBadge :variant="typeBadgeVariant(row.type)">
+            {{ typeLabel(row.type) }}
           </AppBadge>
         </template>
 
-        <template #startTime="{ row }">
-          {{ row.startTime }}
-        </template>
-
-        <template #endTime="{ row }">
-          {{ row.endTime }}
-        </template>
-
-        <template #workDays="{ row }">
+        <template #workedDays="{ row }">
           <div class="flex gap-1">
             <AppBadge
-              v-for="day in getDayBadges(row.workDays)"
+              v-for="day in getWorkedDayBadges(row)"
               :key="day"
-              variant="gray"
+              variant="neutral"
               size="sm"
             >
               {{ day }}
@@ -62,7 +62,7 @@
         </template>
 
         <template #lateTolerance="{ row }">
-          {{ row.lateTolerance }} min
+          {{ row.defaultLateTolerance ?? 0 }} min
         </template>
 
         <template #departmentCount="{ row }">
@@ -112,6 +112,7 @@ import AppButton from '@/components/ui/AppButton.vue'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
+import AppInput from '@/components/ui/AppInput.vue'
 import AppConfirmDialog from '@/components/ui/AppConfirmDialog.vue'
 import { useScheduleStore } from '@/stores/schedule.store'
 import { useCompanyStore } from '@/stores/company.store'
@@ -119,6 +120,7 @@ import { usePermissions } from '@/composables/usePermissions'
 import { useToast } from '@/composables/useToast'
 import type { Schedule } from '@/types/schedule'
 import { PencilIcon, DocumentDuplicateIcon, TrashIcon, PlusIcon } from '@heroicons/vue/24/outline'
+import { sortByRecent } from '@/utils/sort'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -132,6 +134,7 @@ const loading = ref(false)
 const deleteModalVisible = ref(false)
 const scheduleToDelete = ref<Schedule | null>(null)
 const filterCompanyId = ref('')
+const searchQuery = ref('')
 
 const canCreate = computed(() => permissions.isAdminOrSuperOrTech.value)
 const canEdit = computed(() => permissions.isAdminOrSuperOrTech.value)
@@ -147,8 +150,17 @@ const filteredSchedules = computed(() => {
     ...s,
     companyName: companyStore.companies.find(c => c.id === s.companyId)?.name || '-',
   }))
-  if (!filterCompanyId.value) return list
-  return list.filter(s => s.companyId === filterCompanyId.value)
+  let filtered = filterCompanyId.value
+    ? list.filter(s => s.companyId === filterCompanyId.value)
+    : list
+  const q = searchQuery.value.trim().toLowerCase()
+  if (q) {
+    filtered = filtered.filter(s =>
+      (s.name || '').toLowerCase().includes(q) ||
+      (s.companyName || '').toLowerCase().includes(q)
+    )
+  }
+  return filtered
 })
 
 const currentPage = ref(1)
@@ -156,7 +168,7 @@ const perPage = ref(15)
 
 const pagedSchedules = computed(() => {
   const start = (currentPage.value - 1) * perPage.value
-  return filteredSchedules.value.slice(start, start + perPage.value)
+  return sortByRecent(filteredSchedules.value).slice(start, start + perPage.value)
 })
 
 const paginationObj = computed(() => {
@@ -166,23 +178,43 @@ const paginationObj = computed(() => {
 
 const handlePageChange = (page: number) => { currentPage.value = page }
 
-watch(filterCompanyId, () => { currentPage.value = 1 })
+watch([filterCompanyId, searchQuery], () => { currentPage.value = 1 })
 
 const columns = computed(() => [
   { key: 'name', label: t('common.name'), sortable: true },
   { key: 'companyName', label: t('schedules.company'), sortable: true },
   { key: 'type', label: t('schedules.type'), sortable: true },
-  { key: 'startTime', label: t('schedules.startTime'), sortable: true },
-  { key: 'endTime', label: t('schedules.endTime'), sortable: true },
-  { key: 'workDays', label: t('schedules.workedDays'), sortable: false },
+  { key: 'workedDays', label: t('schedules.workedDays'), sortable: false },
   { key: 'lateTolerance', label: t('schedules.lateTolerance'), sortable: true },
   { key: 'departmentCount', label: t('schedules.departments'), sortable: true },
   { key: 'actions', label: t('common.actions'), sortable: false }
 ])
 
-const getDayBadges = (workDays: number[]): string[] => {
+const typeLabel = (type: string): string => {
+  const map: Record<string, string> = {
+    standard: t('schedules.standard'),
+    custom: t('schedules.custom'),
+    day: t('schedules.day'),
+    night: t('schedules.night'),
+  }
+  return map[type] ?? type
+}
+
+const typeBadgeVariant = (type: string): string => {
+  const map: Record<string, string> = {
+    standard: 'info',
+    custom: 'warning',
+    day: 'success',
+    night: 'neutral',
+  }
+  return map[type] ?? 'neutral'
+}
+
+const getWorkedDayBadges = (row: Schedule): string[] => {
   const dayLabels: Record<number, string> = { 1: 'L', 2: 'M', 3: 'M', 4: 'J', 5: 'V', 6: 'S', 7: 'D' }
-  return workDays.map(day => dayLabels[day] ?? String(day))
+  return (row.days ?? [])
+    .filter((d) => d.worked && d.segments.length > 0)
+    .map((d) => dayLabels[d.weekday] ?? String(d.weekday))
 }
 
 const navigateToCreate = () => {

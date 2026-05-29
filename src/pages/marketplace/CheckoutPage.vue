@@ -29,8 +29,9 @@ onMounted(async () => {
     try {
       const companies = await companyApi.getAll()
       companyOptions.value = companies.map((c) => ({ label: c.name, value: c.id }))
-    } catch {
-      // silencieux
+    } catch (e) {
+      console.error('Failed to load companies', e)
+      toast.showError('Impossible de charger la liste des entreprises')
     }
   }
 })

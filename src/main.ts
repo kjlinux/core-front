@@ -2,12 +2,16 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
-import { LineChart, BarChart, PieChart, GaugeChart } from 'echarts/charts'
+import { LineChart, BarChart, PieChart, GaugeChart, HeatmapChart, RadarChart } from 'echarts/charts'
+import { LegacyGridContainLabel } from 'echarts/features'
 import {
   GridComponent,
   TooltipComponent,
   LegendComponent,
   TitleComponent,
+  VisualMapComponent,
+  CalendarComponent,
+  RadarComponent,
 } from 'echarts/components'
 
 import App from './App.vue'
@@ -23,10 +27,16 @@ use([
   BarChart,
   PieChart,
   GaugeChart,
+  HeatmapChart,
+  RadarChart,
   GridComponent,
   TooltipComponent,
   LegendComponent,
   TitleComponent,
+  VisualMapComponent,
+  CalendarComponent,
+  RadarComponent,
+  LegacyGridContainLabel,
 ])
 
 async function bootstrap() {

@@ -36,8 +36,9 @@ async function loadCompanies() {
       { label: 'Toutes les entreprises', value: '' },
       ...companies.map((c) => ({ label: c.name, value: c.id })),
     ]
-  } catch {
-    // silencieux
+  } catch (e) {
+    console.error('Failed to load companies', e)
+    toast.showError('Impossible de charger la liste des entreprises')
   }
 }
 
@@ -123,6 +124,34 @@ async function handleExportExcel() {
   toast.showSuccess(t('marketplace.excelDownloaded'))
 }
 
+function buildExportParams(): SalesReportParams {
+  const params: SalesReportParams = {}
+  if (startDate.value) params.start_date = startDate.value
+  if (endDate.value) params.end_date = endDate.value
+  if (isSuperAdmin.value && selectedCompany.value) params.company_id = selectedCompany.value
+  return params
+}
+
+async function handleExportCsv() {
+  if (!report.value) return
+  try {
+    await salesReportApi.downloadCsv(buildExportParams())
+    toast.showSuccess(t('marketplace.excelDownloaded'))
+  } catch {
+    toast.showError(t('marketplace.loadReportError'))
+  }
+}
+
+async function handleExportPdfServer() {
+  if (!report.value) return
+  try {
+    await salesReportApi.downloadPdf(buildExportParams())
+    toast.showSuccess(t('marketplace.pdfDownloaded'))
+  } catch {
+    toast.showError(t('marketplace.loadReportError'))
+  }
+}
+
 watch([startDate, endDate, selectedCompany], () => {
   if (startDate.value && endDate.value) {
     fetchReport()
@@ -145,6 +174,12 @@ onMounted(() => {
         </AppButton>
         <AppButton variant="outline" size="sm" :disabled="!report" @click="handleExportExcel">
           {{ t('common.exportExcel') }}
+        </AppButton>
+        <AppButton variant="outline" size="sm" :disabled="!report" @click="handleExportCsv">
+          CSV
+        </AppButton>
+        <AppButton variant="outline" size="sm" :disabled="!report" @click="handleExportPdfServer">
+          PDF (serveur)
         </AppButton>
       </div>
     </div>

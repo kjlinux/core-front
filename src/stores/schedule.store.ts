@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { scheduleApi } from '@/services/api/schedule.api'
+import { normalizeSchedule } from '@/utils/schedule'
 import type { Schedule, Holiday } from '@/types'
 
 export const useScheduleStore = defineStore('schedule', () => {
@@ -12,7 +13,7 @@ export const useScheduleStore = defineStore('schedule', () => {
   async function fetchScheduleById(id: string) {
     isLoading.value = true
     try {
-      const schedule = await scheduleApi.getById(id)
+      const schedule = normalizeSchedule(await scheduleApi.getById(id))
       currentSchedule.value = schedule
       return schedule
     } finally {
@@ -24,7 +25,7 @@ export const useScheduleStore = defineStore('schedule', () => {
     isLoading.value = true
     try {
       const response = await scheduleApi.getAll({ perPage: 1000 })
-      schedules.value = response.data
+      schedules.value = response.data.map(normalizeSchedule)
     } finally {
       isLoading.value = false
     }
@@ -33,7 +34,7 @@ export const useScheduleStore = defineStore('schedule', () => {
   async function createSchedule(data: Partial<Schedule>) {
     isLoading.value = true
     try {
-      const created = await scheduleApi.create(data)
+      const created = normalizeSchedule(await scheduleApi.create(data))
       schedules.value.push(created)
       return created
     } finally {
@@ -44,7 +45,7 @@ export const useScheduleStore = defineStore('schedule', () => {
   async function updateSchedule(id: string, data: Partial<Schedule>) {
     isLoading.value = true
     try {
-      const updated = await scheduleApi.update(id, data)
+      const updated = normalizeSchedule(await scheduleApi.update(id, data))
       const index = schedules.value.findIndex((s) => s.id === id)
       if (index !== -1) {
         schedules.value[index] = updated

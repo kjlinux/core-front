@@ -5,21 +5,52 @@ import { useUiStore } from '@/stores/ui.store'
 import { useAuthStore } from '@/stores/auth.store'
 import { useActiveCompanyStore } from '@/stores/active-company.store'
 import { useFirmwareStore } from '@/stores/firmware.store'
+import { usePlan } from '@/composables/usePlan'
 import { UserRole } from '@/types/enums'
+import type { FirmwareVersion } from '@/types'
 import TheHeaderUserMenu from './TheHeaderUserMenu.vue'
 import TheHeaderNotifications from './TheHeaderNotifications.vue'
 import TheLanguageSwitcher from './TheLanguageSwitcher.vue'
 import TheCompanySwitcher from './TheCompanySwitcher.vue'
-import FirmwareUpdateModal from '@/components/firmware/FirmwareUpdateModal.vue'
-import { Bars3Icon, ChevronLeftIcon } from '@heroicons/vue/24/outline'
+import FirmwareCompanyUpdateModal from '@/components/firmware/FirmwareCompanyUpdateModal.vue'
+import AppLiveIndicator from '@/components/ui/AppLiveIndicator.vue'
+import { Bars3Icon, ChevronLeftIcon, SunIcon, MoonIcon } from '@heroicons/vue/24/outline'
+import { useDarkMode } from '@/composables/useDarkMode'
+
+const darkMode = useDarkMode()
+const isDark = ref(document.documentElement.classList.contains('dark'))
+function toggleDark() {
+  darkMode.toggle()
+  isDark.value = document.documentElement.classList.contains('dark')
+}
 
 const ui = useUiStore()
 const auth = useAuthStore()
 const activeCompanyStore = useActiveCompanyStore()
 const firmwareStore = useFirmwareStore()
+const plan = usePlan()
 const route = useRoute()
 
-const showUpdateModal = ref(false)
+const selectedFirmwareForUpdate = ref<FirmwareVersion | null>(null)
+
+// L'OTA en masse exige un plan garantie ou premium cote backend
+// (super_admin bypasse via usePlan).
+const hasOtaPlan = computed(() => {
+  if (plan.isSuperAdmin.value) return true
+  return plan.planCode.value === 'garantie' || plan.planCode.value === 'premium'
+})
+
+function deviceKindLabel(kind: string): string {
+  return kind === 'rfid' ? 'RFID' : 'Biométriques'
+}
+
+function openFirmwareUpdate(version: FirmwareVersion) {
+  selectedFirmwareForUpdate.value = version
+}
+
+function closeFirmwareUpdate() {
+  selectedFirmwareForUpdate.value = null
+}
 
 const now = ref(new Date())
 let clockInterval: ReturnType<typeof setInterval>
@@ -70,11 +101,15 @@ const companyName = computed(() => {
   return auth.user?.companyName ?? null
 })
 
-const showFirmwareBanner = computed(() => {
-  if (!firmwareStore.latestPublishedVersion) return false
+const canSeeFirmwareBanner = computed(() => {
   const role = auth.user?.role
   return role === UserRole.SUPER_ADMIN || role === UserRole.ADMIN_ENTERPRISE || role === UserRole.TECHNICIEN
 })
+
+// Une banniere par type d'appareil ayant une version publiee.
+const firmwareBanners = computed(() =>
+  canSeeFirmwareBanner.value ? firmwareStore.publishedBanners : [],
+)
 
 onMounted(() => {
   clockInterval = setInterval(() => { now.value = new Date() }, 1000)
@@ -111,6 +146,36 @@ onUnmounted(() => {
       </button>
     </div>
 
+    <!-- Bandeaux mise à jour firmware (une par type d'appareil) -->
+    <div
+      v-for="banner in firmwareBanners"
+      :key="banner.id"
+      class="flex items-center justify-between bg-amber-500 px-6 py-2 text-sm text-white"
+    >
+      <span class="font-medium">
+        Mise à jour firmware {{ banner.version }} disponible pour vos terminaux
+        {{ deviceKindLabel(banner.deviceKind) }}.
+        <span v-if="!hasOtaPlan" class="ml-1 opacity-90">
+          (necessite un abonnement Garantie ou Premium)
+        </span>
+      </span>
+      <button
+        v-if="hasOtaPlan"
+        type="button"
+        class="ml-4 rounded-md bg-white/20 px-3 py-1 text-xs font-semibold hover:bg-white/30 transition-colors"
+        @click="openFirmwareUpdate(banner)"
+      >
+        Lancer la mise à jour
+      </button>
+      <router-link
+        v-else
+        to="/abonnement"
+        class="ml-4 rounded-md bg-white/20 px-3 py-1 text-xs font-semibold hover:bg-white/30 transition-colors"
+      >
+        Voir les abonnements
+      </router-link>
+    </div>
+
     <!-- Header principal -->
     <header class="flex h-16 shrink-0 items-center justify-between border-b border-gray-200 bg-white px-6">
       <div class="flex items-center gap-4">
@@ -145,6 +210,8 @@ onUnmounted(() => {
       </div>
 
       <div class="flex items-center gap-4">
+        <AppLiveIndicator class="hidden md:inline-flex" />
+
         <!-- Date et heure en temps réel -->
         <div class="hidden md:flex flex-col items-end leading-tight">
           <span class="text-xs font-medium text-gray-700 capitalize">{{ formattedDate }}</span>
@@ -154,6 +221,15 @@ onUnmounted(() => {
         <TheCompanySwitcher
           v-if="auth.user?.role === UserRole.TECHNICIEN"
         />
+        <button
+          type="button"
+          class="rounded-md p-2 text-gray-500 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          :aria-label="isDark ? 'Activer le mode clair' : 'Activer le mode sombre'"
+          @click="toggleDark"
+        >
+          <SunIcon v-if="isDark" class="h-5 w-5" />
+          <MoonIcon v-else class="h-5 w-5" />
+        </button>
         <TheLanguageSwitcher />
         <TheHeaderNotifications />
         <TheHeaderUserMenu />
@@ -161,12 +237,12 @@ onUnmounted(() => {
     </header>
 
     <!-- Modal mise à jour en masse -->
-    <FirmwareUpdateModal
-      v-if="showUpdateModal && firmwareStore.latestPublishedVersion"
-      :firmware-version-id="firmwareStore.latestPublishedVersion.id"
-      :firmware-version="firmwareStore.latestPublishedVersion.version"
-      :device-kind="firmwareStore.latestPublishedVersion.deviceKind"
-      @close="showUpdateModal = false"
+    <FirmwareCompanyUpdateModal
+      v-if="selectedFirmwareForUpdate"
+      :firmware-version-id="selectedFirmwareForUpdate.id"
+      :firmware-version="selectedFirmwareForUpdate.version"
+      :device-kind="selectedFirmwareForUpdate.deviceKind"
+      @close="closeFirmwareUpdate"
     />
   </div>
 </template>

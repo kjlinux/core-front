@@ -1,21 +1,29 @@
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import type { Payslip } from '@/types/payroll'
+import { i18n } from '@/plugins/i18n'
 
-const PAYMENT_MODE_LABELS: Record<string, string> = {
-  monthly:  'Mensuel',
-  hourly:   'Horaire',
-  daily:    'Journalier',
-  weekly:   'Hebdomadaire',
-  forfait:  'Forfait',
+const t = (key: string, params?: Record<string, unknown>) =>
+  i18n.global.t(key, params ?? {}) as string
+
+function localeTag(): string {
+  return (i18n.global.locale.value as string) === 'en' ? 'en-GB' : 'fr-FR'
+}
+
+const PAYMENT_MODE_KEYS: Record<string, string> = {
+  monthly: 'payslip.modeMonthly',
+  hourly:  'payslip.modeHourly',
+  daily:   'payslip.modeDaily',
+  weekly:  'payslip.modeWeekly',
+  forfait: 'payslip.modeForfait',
 }
 
 function formatAmount(amount: number): string {
-  return new Intl.NumberFormat('fr-FR').format(amount) + ' FCFA'
+  return new Intl.NumberFormat(localeTag()).format(amount) + ' FCFA'
 }
 
 function formatDate(date: string): string {
-  return new Date(date).toLocaleDateString('fr-FR')
+  return new Date(date).toLocaleDateString(localeTag())
 }
 
 const C = {
@@ -43,7 +51,7 @@ function renderPayslipPage(doc: jsPDF, slip: Payslip, pageWidth: number, marginX
   doc.setTextColor(...C.white)
   doc.setFontSize(15)
   doc.setFont('helvetica', 'bold')
-  doc.text('FICHE DE PAIE', marginX, 13)
+  doc.text(t('payslip.title'), marginX, 13)
 
   doc.setFontSize(9)
   doc.setFont('helvetica', 'normal')
@@ -52,18 +60,20 @@ function renderPayslipPage(doc: jsPDF, slip: Payslip, pageWidth: number, marginX
   const periodLabel = (() => {
     const [y, m] = slip.period.split('-')
     return new Date(Number(y), Number(m) - 1, 1)
-      .toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
+      .toLocaleDateString(localeTag(), { month: 'long', year: 'numeric' })
       .toUpperCase()
   })()
-  doc.text(`Periode : ${periodLabel}`, marginX, 21)
-  doc.text(`Du ${formatDate(slip.periodStart)} au ${formatDate(slip.periodEnd)}`, marginX, 27)
-  doc.text(`Entreprise : ${slip.companyName}`, marginX, 33)
+  doc.text(`${t('payslip.period')} : ${periodLabel}`, marginX, 21)
+  doc.text(t('payslip.rangeFromTo', { start: formatDate(slip.periodStart), end: formatDate(slip.periodEnd) }), marginX, 27)
+  doc.text(`${t('payslip.company')} : ${slip.companyName}`, marginX, 33)
 
   // Matricule en haut a droite
   doc.setFontSize(8)
   doc.setTextColor(...C.primary400)
-  doc.text(`Matricule : ${slip.employeeNumber}`, pageWidth - marginX, 21, { align: 'right' })
-  doc.text(`Mode : ${PAYMENT_MODE_LABELS[slip.paymentMode] ?? slip.paymentMode}`, pageWidth - marginX, 27, { align: 'right' })
+  doc.text(`${t('payslip.employeeNumber')} : ${slip.employeeNumber}`, pageWidth - marginX, 21, { align: 'right' })
+  const modeKey = PAYMENT_MODE_KEYS[slip.paymentMode]
+  const modeLabel = modeKey ? t(modeKey) : slip.paymentMode
+  doc.text(`${t('payslip.paymentMode')} : ${modeLabel}`, pageWidth - marginX, 27, { align: 'right' })
 
   let y = 50
 
@@ -75,9 +85,9 @@ function renderPayslipPage(doc: jsPDF, slip: Payslip, pageWidth: number, marginX
   doc.setTextColor(...C.textMuted)
   doc.setFontSize(7.5)
   doc.setFont('helvetica', 'normal')
-  doc.text('NOM & PRENOM', marginX + 3, y + 6)
-  doc.text('POSTE', marginX + 80, y + 6)
-  doc.text('SITE', marginX + 130, y + 6)
+  doc.text(t('payslip.nameAndFirstname'), marginX + 3, y + 6)
+  doc.text(t('payslip.position'), marginX + 80, y + 6)
+  doc.text(t('payslip.site'), marginX + 130, y + 6)
 
   doc.setTextColor(...C.text)
   doc.setFontSize(9)
@@ -93,11 +103,15 @@ function renderPayslipPage(doc: jsPDF, slip: Payslip, pageWidth: number, marginX
   doc.setTextColor(...C.text)
   doc.setFontSize(9)
   doc.setFont('helvetica', 'bold')
-  doc.text('Calcul du salaire', marginX, y)
+  doc.text(t('payslip.calc'), marginX, y)
   y += 4
 
+  const BONUS = t('payslip.bonus')
+  const DEDUCTION = t('payslip.deduction')
+  const GROSS = t('payslip.grossSalary')
+
   const rows: (string | number)[][] = [
-    ['Salaire de base', '', formatAmount(slip.baseSalary)],
+    [t('payslip.baseSalary'), '', formatAmount(slip.baseSalary)],
   ]
 
   // Lignes additionnelles (primes etc.)
@@ -105,30 +119,39 @@ function renderPayslipPage(doc: jsPDF, slip: Payslip, pageWidth: number, marginX
     for (const line of slip.lines) {
       rows.push([
         line.label,
-        line.type === 'earning' ? 'Prime' : 'Deduction',
+        line.type === 'earning' ? BONUS : DEDUCTION,
         (line.type === 'deduction' ? '-' : '+') + formatAmount(line.amount),
       ])
     }
   }
 
   if (slip.overtimeAmount > 0) {
-    rows.push([`Heures supplementaires (${slip.overtimeHours}h)`, 'Prime', `+${formatAmount(slip.overtimeAmount)}`])
+    rows.push([t('payslip.overtime', { hours: slip.overtimeHours }), BONUS, `+${formatAmount(slip.overtimeAmount)}`])
   }
 
   rows.push(['', '', ''])
-  rows.push(['SALAIRE BRUT', '', formatAmount(slip.grossAmount)])
+  rows.push([GROSS, '', formatAmount(slip.grossAmount)])
   rows.push(['', '', ''])
 
-  if (slip.absenceDeduction > 0) {
-    rows.push([`Absence (${slip.absentDays} jour(s))`, 'Deduction', `-${formatAmount(slip.absenceDeduction)}`])
+  // Affiche la ligne dès qu'il y a soit une déduction, soit des jours absents (ex: congé payé = jours sans déduction).
+  if (slip.absenceDeduction > 0 || slip.absentDays > 0) {
+    rows.push([
+      t('payslip.absenceLine', { days: slip.absentDays }),
+      DEDUCTION,
+      slip.absenceDeduction > 0 ? `-${formatAmount(slip.absenceDeduction)}` : formatAmount(0),
+    ])
   }
-  if (slip.latenessDeduction > 0) {
-    rows.push([`Retards (${slip.totalLatenessMinutes} min)`, 'Deduction', `-${formatAmount(slip.latenessDeduction)}`])
+  if (slip.latenessDeduction > 0 || slip.totalLatenessMinutes > 0) {
+    rows.push([
+      t('payslip.latenessLine', { minutes: slip.totalLatenessMinutes }),
+      DEDUCTION,
+      slip.latenessDeduction > 0 ? `-${formatAmount(slip.latenessDeduction)}` : formatAmount(0),
+    ])
   }
 
   autoTable(doc, {
     startY: y,
-    head: [['Libelle', 'Type', 'Montant']],
+    head: [[t('payslip.colLabel'), t('payslip.colType'), t('payslip.colAmount')]],
     body: rows,
     theme: 'grid',
     headStyles: { fillColor: C.primary, textColor: C.white, fontStyle: 'bold', fontSize: 8.5 },
@@ -142,7 +165,7 @@ function renderPayslipPage(doc: jsPDF, slip: Payslip, pageWidth: number, marginX
     didParseCell(data) {
       if (data.section === 'body') {
         const raw = String(data.cell.raw ?? '')
-        if (raw === 'SALAIRE BRUT') {
+        if (raw === GROSS) {
           data.cell.styles.fontStyle = 'bold'
           data.cell.styles.fillColor = C.primary100
         }
@@ -153,8 +176,8 @@ function renderPayslipPage(doc: jsPDF, slip: Payslip, pageWidth: number, marginX
           data.cell.styles.textColor = C.green
         }
         if (data.column.index === 1) {
-          if (raw === 'Prime') data.cell.styles.textColor = C.green
-          if (raw === 'Deduction') data.cell.styles.textColor = C.red
+          if (raw === BONUS) data.cell.styles.textColor = C.green
+          if (raw === DEDUCTION) data.cell.styles.textColor = C.red
         }
       }
     },
@@ -171,7 +194,7 @@ function renderPayslipPage(doc: jsPDF, slip: Payslip, pageWidth: number, marginX
   doc.setTextColor(...C.text)
   doc.setFontSize(10)
   doc.setFont('helvetica', 'bold')
-  doc.text('NET A PAYER', marginX + 5, y + 10)
+  doc.text(t('payslip.netToPay'), marginX + 5, y + 10)
 
   doc.setTextColor(...C.green)
   doc.setFontSize(14)
@@ -183,17 +206,17 @@ function renderPayslipPage(doc: jsPDF, slip: Payslip, pageWidth: number, marginX
   doc.setTextColor(...C.text)
   doc.setFontSize(9)
   doc.setFont('helvetica', 'bold')
-  doc.text('Recapitulatif de presence', marginX, y)
+  doc.text(t('payslip.presenceRecap'), marginX, y)
   y += 4
 
   autoTable(doc, {
     startY: y,
-    head: [['Jours travailles', 'Heures travaillees', 'Absences', 'Retards cumules']],
+    head: [[t('payslip.workedDays'), t('payslip.workedHours'), t('payslip.absences'), t('payslip.latenessTotal')]],
     body: [[
-      `${slip.workedDays} jour(s)`,
-      `${slip.workedHours}h`,
-      `${slip.absentDays} jour(s)`,
-      `${slip.totalLatenessMinutes} min`,
+      t('payslip.daysSuffix', { n: slip.workedDays }),
+      t('payslip.hoursSuffix', { n: slip.workedHours }),
+      t('payslip.daysSuffix', { n: slip.absentDays }),
+      t('payslip.minutesSuffix', { n: slip.totalLatenessMinutes }),
     ]],
     theme: 'grid',
     headStyles: { fillColor: C.primary, textColor: C.white, fontStyle: 'bold', fontSize: 8.5 },
@@ -214,10 +237,10 @@ function renderPayslipPage(doc: jsPDF, slip: Payslip, pageWidth: number, marginX
     const col2x = pageWidth / 2 + 5
 
     doc.line(col1x, y + 18, col1x + 75, y + 18)
-    doc.text('Signature employeur', col1x, y + 23)
+    doc.text(t('payslip.signatureEmployer'), col1x, y + 23)
 
     doc.line(col2x, y + 18, col2x + 75, y + 18)
-    doc.text('Signature employe', col2x, y + 23)
+    doc.text(t('payslip.signatureEmployee'), col2x, y + 23)
   }
 
   // ── Pied de page ───────────────────────────────────────────────────────────
@@ -225,7 +248,7 @@ function renderPayslipPage(doc: jsPDF, slip: Payslip, pageWidth: number, marginX
   doc.setFontSize(7)
   doc.setTextColor(...C.primary400)
   doc.text(
-    `Document genere automatiquement - ${slip.companyName} - ${new Date().toLocaleDateString('fr-FR')}`,
+    t('payslip.footer', { company: slip.companyName, date: new Date().toLocaleDateString(localeTag()) }),
     pageWidth / 2,
     pageH - 6,
     { align: 'center' },
@@ -256,8 +279,11 @@ export function generateBatchPayslipPdf(payslips: Payslip[]): void {
     renderPayslipPage(doc, payslips[i]!, pageWidth, marginX)
   }
 
-  const period = payslips[0]!.period
-  doc.save(`fiches-paie-${period}.pdf`)
+  // Nom de fichier reflète la plage de périodes couvertes par le lot.
+  const periods = Array.from(new Set(payslips.map((p) => p.period))).sort()
+  const periodLabel =
+    periods.length === 1 ? periods[0]! : `${periods[0]!}_a_${periods[periods.length - 1]!}`
+  doc.save(`fiches-paie-${periodLabel}-${payslips.length}slips.pdf`)
 }
 
 export function usePayrollPdf() {

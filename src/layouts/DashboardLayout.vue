@@ -6,6 +6,8 @@ import { useRealtimeSubscriptions } from '@/composables/useRealtimeSubscriptions
 import { authApi } from '@/services/api/auth.api'
 import TheSidebar from '@/components/layout/TheSidebar.vue'
 import TheHeader from '@/components/layout/TheHeader.vue'
+import AppBreadcrumb from '@/components/ui/AppBreadcrumb.vue'
+import CommandPalette from '@/components/ui/CommandPalette.vue'
 
 const ui = useUiStore()
 const authStore = useAuthStore()
@@ -27,7 +29,7 @@ onUnmounted(() => unsubscribeAll())
 </script>
 
 <template>
-  <div class="flex h-screen overflow-hidden bg-gray-50">
+  <div class="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-900">
     <!-- Overlay mobile -->
     <div
       v-if="ui.sidebarMobileOpen"
@@ -42,8 +44,10 @@ onUnmounted(() => unsubscribeAll())
     <div class="flex flex-1 flex-col overflow-hidden">
       <TheHeader />
       <main class="flex-1 overflow-y-auto p-6">
+        <AppBreadcrumb class="mb-3" />
         <slot />
       </main>
+      <CommandPalette />
     </div>
   </div>
 </template>

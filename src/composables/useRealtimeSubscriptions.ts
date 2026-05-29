@@ -4,9 +4,14 @@ import { useNotificationStore } from '@/stores/notification.store'
 import { useAttendanceStore } from '@/stores/attendance.store'
 import { useFeelbackStore } from '@/stores/feelback.store'
 import { useBiometricStore } from '@/stores/biometric.store'
+import { useRfidDeviceStore } from '@/stores/rfid-device.store'
 import { useFeelbackDeviceStore } from '@/stores/feelback-device.store'
 import { useSupportStore } from '@/stores/support.store'
 import { useUiStore } from '@/stores/ui.store'
+import type { DeviceStatusUpdatePayload } from '@/types'
+
+const recentDeviceStatus = new Map<string, { status: string; at: number }>()
+const FLAP_WINDOW_MS = 90_000
 
 /**
  * Centralise tous les abonnements Echo temps réel.
@@ -24,6 +29,7 @@ export function useRealtimeSubscriptions() {
   const attendanceStore = useAttendanceStore()
   const feelbackStore = useFeelbackStore()
   const biometricStore = useBiometricStore()
+  const rfidDeviceStore = useRfidDeviceStore()
   const feelbackDeviceStore = useFeelbackDeviceStore()
   const supportStore = useSupportStore()
   const ui = useUiStore()
@@ -81,21 +87,46 @@ export function useRealtimeSubscriptions() {
         ui.addToast({ type: toastType, title, message })
       })
 
-    // Canal devices - dispatch selon deviceType
+    // Canal devices - dispatch selon deviceType + notification statut
     echo.channel('devices')
       .stopListening('.device.status.updated')
-      .listen('.device.status.updated', (data: {
-        deviceType: string
-        deviceId: string
-        status: string
-        timestamp: string
-        data: Record<string, unknown>
-      }) => {
-        const payload = { deviceId: data.deviceId, status: data.status, timestamp: data.timestamp }
+      .listen('.device.status.updated', (data: DeviceStatusUpdatePayload) => {
+        const key = `${data.deviceType}:${data.deviceId}`
+        const prev = recentDeviceStatus.get(key)
+        const now = Date.now()
+        const isFlap = !!prev && prev.status === data.status && now - prev.at < FLAP_WINDOW_MS
+        recentDeviceStatus.set(key, { status: data.status, at: now })
+
+        // 1. Maj stores module (statut + dernier signal)
+        const modulePayload = { deviceId: data.deviceId, status: data.status, timestamp: data.timestamp }
         if (data.deviceType === 'biometric') {
-          biometricStore.handleRealtimeDevice(payload)
+          biometricStore.handleRealtimeDevice(modulePayload)
+        } else if (data.deviceType === 'rfid') {
+          rfidDeviceStore.handleRealtimeDevice(modulePayload)
         } else if (data.deviceType === 'feelback') {
-          feelbackDeviceStore.handleRealtimeDevice(payload)
+          feelbackDeviceStore.handleRealtimeDevice(modulePayload)
+        }
+
+        // 2. Maj store support (pages capteurs / temoins en direct)
+        supportStore.handleRealtimeDevice(data)
+
+        // 3. Notification utilisateur (anti-flapping + ciblage role)
+        if (isFlap) return
+        const isTarget =
+          authStore.isSupportIt ||
+          authStore.isSuperAdmin ||
+          (authStore.isAdminEnterprise && !!data.companyId && data.companyId === authStore.userCompanyId)
+        if (!isTarget) return
+
+        const fallback = supportStore.devices.find((d) => d.id === data.deviceId && d.kind === data.deviceType)
+        const name = data.deviceName ?? fallback?.name ?? data.serialNumber ?? data.deviceId
+        const ctx = [data.companyName, data.siteName ?? fallback?.siteName].filter(Boolean).join(' - ')
+        const msg = ctx ? `${name} - ${ctx}` : String(name)
+
+        if (data.status === 'offline') {
+          ui.addToast({ type: 'warning', title: 'Capteur hors ligne', message: msg })
+        } else {
+          ui.addToast({ type: 'success', title: 'Capteur en ligne', message: msg })
         }
       })
 

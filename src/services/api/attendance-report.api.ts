@@ -30,8 +30,27 @@ export interface AttendanceReportParams {
   department_id?: string
 }
 
+import { downloadServerCsv, downloadServerFile } from './report-export'
+
 export const attendanceReportApi = {
   getReport(params: AttendanceReportParams): Promise<AttendanceReportData> {
     return apiClient.get('/attendance/reports', { params }).then((r) => r.data)
+  },
+
+  downloadCsv(params: AttendanceReportParams): Promise<void> {
+    return downloadServerCsv(
+      '/attendance/reports/export.csv',
+      params,
+      `rapport-presence_${params.start_date}_au_${params.end_date}.csv`,
+    )
+  },
+
+  downloadPdf(params: AttendanceReportParams): Promise<void> {
+    return downloadServerFile(
+      '/attendance/reports/export.pdf',
+      params,
+      `rapport-presence_${params.start_date}_au_${params.end_date}.pdf`,
+      'application/pdf',
+    )
   },
 }

@@ -1,6 +1,7 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { attendanceApi } from '@/services/api/attendance.api'
+import { useToast } from '@/composables/useToast'
 import type { AttendanceRecord, AttendanceDailyReport, AttendanceSummary } from '@/types'
 import type { DateRange } from '@/services/api/attendance.api'
 
@@ -120,8 +121,10 @@ export const useAttendanceStore = defineStore('attendance', () => {
       const rates = rawSummaries.map((s: any) => (s.totalDays ?? 0) > 0 ? ((s.presentDays ?? 0) / s.totalDays) * 100 : 0)
       const averageAttendanceRate = rates.length > 0 ? Math.round(rates.reduce((a, b) => a + b, 0) / rates.length) : 0
       monthlyStatsData.value = { averageAttendanceRate, totalAbsences, totalLateMinutes }
-    } catch {
+    } catch (e) {
       monthlyStatsData.value = null
+      console.error('fetchMonthlyStats failed', e)
+      useToast().error('Erreur', 'Impossible de charger les statistiques mensuelles')
     }
   }
 
@@ -151,7 +154,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
       const result = await attendanceApi.getByEmployee(params.employeeId, { startDate: params.startDate, endDate: params.endDate })
       const recs = Array.isArray(result) ? result : []
       const totalDays = recs.length
-      const presentDays = recs.filter((r) => r.status === 'present' || r.status === 'late').length
+      const presentDays = recs.filter((r) => r.status === 'present' || r.status === 'late' || r.status === 'partial').length
       const lateDays = recs.filter((r) => r.status === 'late').length
       const onTimeDays = presentDays - lateDays
       employeeStatsData.value = {
@@ -160,8 +163,10 @@ export const useAttendanceStore = defineStore('attendance', () => {
         lateDays,
         onTimePercentage: presentDays > 0 ? Math.round((onTimeDays / presentDays) * 100) : 0,
       }
-    } catch {
+    } catch (e) {
       employeeStatsData.value = null
+      console.error('fetchEmployeeStats failed', e)
+      useToast().error('Erreur', 'Impossible de charger les statistiques employé')
     }
   }
 
@@ -174,6 +179,8 @@ export const useAttendanceStore = defineStore('attendance', () => {
         late: 'En retard',
         absent: 'Absent',
         left_early: 'Départ anticipé',
+        partial: 'Partiel',
+        on_leave: 'Congé',
         weekend: 'Weekend',
       }
       employeeCalendarData.value = recs.map((r) => {
@@ -188,8 +195,10 @@ export const useAttendanceStore = defineStore('attendance', () => {
           tooltip: `${r.date} - ${statusLabels[status] ?? status}`,
         }
       })
-    } catch {
+    } catch (e) {
       employeeCalendarData.value = []
+      console.error('fetchEmployeeCalendar failed', e)
+      useToast().error('Erreur', 'Impossible de charger le calendrier de présence')
     }
   }
 
@@ -205,7 +214,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
       }
       departmentEmployeesData.value = Object.entries(byEmployee).map(([empId, empRecs]) => {
         const totalDays = empRecs.length
-        const presentDays = empRecs.filter((r) => r.status === 'present' || r.status === 'late').length
+        const presentDays = empRecs.filter((r) => r.status === 'present' || r.status === 'late' || r.status === 'partial').length
         const absentDays = empRecs.filter((r) => r.status === 'absent').length
         const lateDays = empRecs.filter((r) => r.status === 'late').length
         return {
@@ -238,7 +247,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
       }
       const rates = Object.values(byEmployee).map((empRecs) => {
         const total = empRecs.length
-        const present = empRecs.filter((r) => r.status === 'present' || r.status === 'late').length
+        const present = empRecs.filter((r) => r.status === 'present' || r.status === 'late' || r.status === 'partial').length
         return total > 0 ? (present / total) * 100 : 0
       })
       const averageAttendanceRate = rates.length > 0 ? Math.round(rates.reduce((a, b) => a + b, 0) / rates.length) : 0
@@ -248,8 +257,10 @@ export const useAttendanceStore = defineStore('attendance', () => {
         totalAbsences,
         totalLateInstances,
       }
-    } catch {
+    } catch (e) {
       departmentStatsData.value = null
+      console.error('fetchDepartmentStats failed', e)
+      useToast().error('Erreur', 'Impossible de charger les statistiques du département')
     }
   }
 
@@ -279,8 +290,10 @@ export const useAttendanceStore = defineStore('attendance', () => {
       if (report) {
         recentActivity.value = (report.records || []).slice(0, limit)
       }
-    } catch {
+    } catch (e) {
       recentActivity.value = []
+      console.error('fetchRecentActivity failed', e)
+      useToast().error('Erreur', 'Impossible de charger l’activité récente')
     }
   }
 

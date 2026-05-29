@@ -15,6 +15,7 @@ import AppSelect from '@/components/ui/AppSelect.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import DataTable from '@/components/data-display/DataTable.vue'
 import { PencilIcon, EyeIcon, EyeSlashIcon, KeyIcon, UserPlusIcon } from '@heroicons/vue/24/outline'
+import { sortByRecent } from '@/utils/sort'
 
 const { t } = useI18n()
 const permissions = usePermissions()
@@ -44,7 +45,7 @@ const perPage = ref(15)
 
 const pagedUsers = computed(() => {
   const start = (currentPage.value - 1) * perPage.value
-  return users.value.slice(start, start + perPage.value)
+  return sortByRecent(users.value).slice(start, start + perPage.value)
 })
 
 const paginationObj = computed(() => {

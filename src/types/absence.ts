@@ -38,3 +38,9 @@ export interface ReviewAbsencePayload {
   status: 'approved' | 'rejected'
   reviewNote?: string
 }
+
+export interface UpdateAbsencePayload {
+  dateStart?: string
+  dateEnd?: string
+  reason?: string
+}

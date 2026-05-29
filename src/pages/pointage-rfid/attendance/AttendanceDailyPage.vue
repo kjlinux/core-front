@@ -89,6 +89,9 @@
           </span>
           <span v-else>-</span>
         </template>
+        <template #presence="{ row }">
+          <AttendanceSegmentCell :record="row" />
+        </template>
         <template #actions="{ row }">
           <AppButton size="small" variant="ghost" @click="viewDetail(row)">
             {{ t('common.detail') }}
@@ -111,6 +114,7 @@ import AppButton from '@/components/ui/AppButton.vue';
 import AppCard from '@/components/ui/AppCard.vue';
 import AppSelect from '@/components/ui/AppSelect.vue';
 import AppInput from '@/components/ui/AppInput.vue';
+import AttendanceSegmentCell from '@/components/attendance/AttendanceSegmentCell.vue';
 import { useToast } from '@/composables/useToast';
 import { departmentApi } from '@/services/api/department.api';
 import { siteApi } from '@/services/api/site.api';
@@ -118,7 +122,7 @@ import { siteApi } from '@/services/api/site.api';
 const { t } = useI18n();
 const router = useRouter();
 const attendanceStore = useAttendanceStore();
-const { info } = useToast();
+const { info, error: toastError } = useToast();
 
 const loading = ref(false);
 const selectedDate = ref(new Date().toISOString().split('T')[0]);
@@ -148,12 +152,15 @@ const statusOptions = computed(() => [
   { label: t('attendance.status.absent'), value: 'absent' },
   { label: t('attendance.status.late'), value: 'late' },
   { label: t('attendance.status.left_early'), value: 'left_early' },
+  { label: t('attendance.status.partial'), value: 'partial' },
+  { label: t('attendance.status.on_leave'), value: 'on_leave' },
 ]);
 
 const sourceOptions = computed(() => [
   { label: t('attendance.allSources'), value: '' },
   { label: 'RFID', value: 'rfid' },
   { label: t('attendance.biometric'), value: 'biometric' },
+  { label: 'QR Code', value: 'qrcode' },
 ]);
 
 const attendanceRecords = computed(() => {
@@ -197,6 +204,7 @@ const columns = computed(() => [
   { key: 'exitTime', label: t('attendance.exitTime'), sortable: true },
   { key: 'status', label: t('common.status'), sortable: true },
   { key: 'lateMinutes', label: t('attendance.lateTime'), sortable: true },
+  { key: 'presence', label: t('attendance.presenceDetail'), sortable: false },
   { key: 'actions', label: t('common.actions'), sortable: false },
 ]);
 
@@ -206,6 +214,8 @@ const getStatusLabel = (status: string): string => {
     absent: t('attendance.status.absent'),
     late: t('attendance.status.late'),
     left_early: t('attendance.status.left_early'),
+    partial: t('attendance.status.partial'),
+    on_leave: t('attendance.status.on_leave'),
   };
   return labels[status] || status;
 };
@@ -228,9 +238,9 @@ const fetchData = async () => {
       page: currentPage.value,
       perPage: perPage.value,
     });
-  } catch (err) {
+  } catch {
     if (seq === fetchSeq) {
-      console.error('[AttendanceDaily] fetch failed', err);
+      toastError('Echec du chargement des presences');
     }
   } finally {
     // Ne baisse le spinner que si on est la derniere requete en vol
@@ -401,6 +411,16 @@ onMounted(() => {
 .status-left_early {
   background-color: #fef3c7;
   color: #92400e;
+}
+
+.status-partial {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.status-on_leave {
+  background-color: #dbeafe;
+  color: #1e40af;
 }
 
 .late-minutes {

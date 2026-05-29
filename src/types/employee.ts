@@ -18,6 +18,8 @@ export interface Employee {
   deviceInfo?: string
   deviceEnrolledAt?: string
   createdAt: string
+  // Horaire affecte (prioritaire sur le departement)
+  scheduleId?: string | null
   // Remuneration
   paymentMode?: 'monthly' | 'hourly' | 'daily' | 'weekly' | 'forfait'
   baseSalary?: number

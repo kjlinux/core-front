@@ -21,6 +21,8 @@ export const AttendanceStatus = {
   ABSENT: 'absent',
   LATE: 'late',
   LEFT_EARLY: 'left_early',
+  PARTIAL: 'partial',
+  ON_LEAVE: 'on_leave',
 } as const
 export type AttendanceStatus = (typeof AttendanceStatus)[keyof typeof AttendanceStatus]
 

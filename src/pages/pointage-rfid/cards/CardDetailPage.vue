@@ -125,36 +125,17 @@
         <template v-if="permissions.isSuperAdmin.value">
           <div class="form-group">
             <label>{{ t('cards.allCompanies') }}</label>
-            <select v-model="assignFilterCompanyId" class="form-select" @change="handleAssignCompanyChange">
-              <option value="">{{ t('cards.allCompanies') }}</option>
-              <option v-for="c in companyStore.companies" :key="c.id" :value="c.id">{{ c.name }}</option>
-            </select>
+            <AppSelect v-model="assignFilterCompanyId" :options="assignCompanyOptions" @update:model-value="handleAssignCompanyChange" />
           </div>
           <div class="form-group">
             <label>{{ t('cards.allSites') }}</label>
-            <select v-model="assignFilterSiteId" class="form-select" :disabled="!assignFilterCompanyId">
-              <option value="">{{ t('cards.allSites') }}</option>
-              <option v-for="s in assignSiteOptions" :key="s.id" :value="s.id">{{ s.name }}</option>
-            </select>
+            <AppSelect v-model="assignFilterSiteId" :disabled="!assignFilterCompanyId" :options="assignSiteSelectOptions" />
           </div>
         </template>
 
         <div class="form-group">
           <label for="employee-select">{{ t('cards.selectEmployee') }}</label>
-          <select
-            id="employee-select"
-            v-model="selectedEmployeeId"
-            class="form-select"
-          >
-            <option value="">{{ t('cards.chooseEmployee') }}</option>
-            <option
-              v-for="employee in filteredAvailableEmployees"
-              :key="employee.id"
-              :value="employee.id"
-            >
-              {{ employee.firstName }} {{ employee.lastName }}{{ employee.employeeNumber ? ` (${employee.employeeNumber})` : '' }}
-            </option>
-          </select>
+          <AppSelect v-model="selectedEmployeeId" :options="employeeSelectOptions" :placeholder="t('cards.chooseEmployee')" />
           <p v-if="filteredAvailableEmployees.length === 0" class="mt-1 text-sm text-gray-500">
             {{ t('cards.noEmployeeAvailable', { suffix: assignFilterCompanyId ? ' pour cette selection' : '' }) }}
           </p>
@@ -230,6 +211,7 @@ import AppButton from '@/components/ui/AppButton.vue';
 import AppCard from '@/components/ui/AppCard.vue';
 import AppBadge from '@/components/ui/AppBadge.vue';
 import AppModal from '@/components/ui/AppModal.vue';
+import AppSelect from '@/components/ui/AppSelect.vue';
 import { ArrowLeftIcon, CheckIcon, XMarkIcon, NoSymbolIcon, LockOpenIcon, ClockIcon } from '@heroicons/vue/24/outline';
 import { useCardStore } from '@/stores/card.store';
 import { useEmployeeStore } from '@/stores/employee.store';
@@ -261,6 +243,11 @@ const blockReason = ref('');
 const assignFilterCompanyId = ref('');
 const assignFilterSiteId = ref('');
 
+const assignCompanyOptions = computed(() => [
+  { value: '', label: t('cards.allCompanies') },
+  ...companyStore.companies.map((c) => ({ value: c.id, label: c.name })),
+]);
+
 const cardId = computed(() => route.params.id as string);
 
 const card = computed(() => cardStore.currentCard);
@@ -287,6 +274,18 @@ function handleAssignCompanyChange() {
   assignFilterSiteId.value = '';
   selectedEmployeeId.value = '';
 }
+
+const assignSiteSelectOptions = computed(() => [
+  { value: '', label: t('cards.allSites') },
+  ...assignSiteOptions.value.map((s) => ({ value: s.id, label: s.name })),
+]);
+const employeeSelectOptions = computed(() => [
+  { value: '', label: t('cards.chooseEmployee') },
+  ...filteredAvailableEmployees.value.map((e) => ({
+    value: e.id,
+    label: `${e.firstName} ${e.lastName}${e.employeeNumber ? ` (${e.employeeNumber})` : ''}`,
+  })),
+]);
 
 const getStatusVariant = (status: CardStatus): string => {
   switch (status) {

@@ -10,6 +10,7 @@ import AppModal from '@/components/ui/AppModal.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
 import { CheckCircleIcon, XCircleIcon, EyeIcon, PaperClipIcon } from '@heroicons/vue/24/outline'
 import type { AbsenceRequest, AbsenceStatus } from '@/types/absence'
+import { sortByRecent } from '@/utils/sort'
 
 const absenceStore = useAbsenceStore()
 const authStore = useAuthStore()
@@ -21,6 +22,9 @@ const showDetailModal = ref(false)
 const selectedRequest = ref<AbsenceRequest | null>(null)
 const reviewAction = ref<'approved' | 'rejected'>('approved')
 const reviewNote = ref('')
+const editDateStart = ref('')
+const editDateEnd = ref('')
+const editReason = ref('')
 
 const statusOptions = [
   { label: 'Tous les statuts', value: '' },
@@ -42,6 +46,7 @@ const statusVariants: Record<AbsenceStatus, string> = {
 }
 
 const companyId = computed(() => authStore.user?.companyId ?? undefined)
+const sortedRequests = computed(() => sortByRecent(absenceStore.requests))
 
 async function loadRequests() {
   await absenceStore.fetchRequests({
@@ -64,12 +69,32 @@ function openReview(request: AbsenceRequest, action: 'approved' | 'rejected') {
   selectedRequest.value = request
   reviewAction.value = action
   reviewNote.value = ''
+  editDateStart.value = request.dateStart
+  editDateEnd.value = request.dateEnd
+  editReason.value = request.reason
   showReviewModal.value = true
 }
 
 async function confirmReview() {
   if (!selectedRequest.value) return
   try {
+    // L'admin peut modifier les dates/motif avant de valider : ce sont les
+    // valeurs modifiees qui font foi (et qui seront prises en compte pour le
+    // calcul des pointages et de la paie).
+    if (reviewAction.value === 'approved') {
+      const req = selectedRequest.value
+      const changed =
+        editDateStart.value !== req.dateStart ||
+        editDateEnd.value !== req.dateEnd ||
+        editReason.value.trim() !== req.reason
+      if (changed) {
+        await absenceStore.updateRequest(req.id, {
+          dateStart: editDateStart.value,
+          dateEnd: editDateEnd.value,
+          reason: editReason.value.trim(),
+        })
+      }
+    }
     await absenceStore.reviewRequest(selectedRequest.value.id, {
       status: reviewAction.value,
       reviewNote: reviewNote.value.trim() || undefined,
@@ -124,13 +149,13 @@ onMounted(loadRequests)
       <div class="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
     </div>
 
-    <div v-else-if="absenceStore.requests.length === 0" class="text-center py-16 text-gray-400">
+    <div v-else-if="sortedRequests.length === 0" class="text-center py-16 text-gray-400">
       Aucune demande d'absence
     </div>
 
     <div v-else class="space-y-3">
       <AppCard
-        v-for="req in absenceStore.requests"
+        v-for="req in sortedRequests"
         :key="req.id"
       >
         <div class="flex items-start justify-between gap-4 flex-wrap">
@@ -312,6 +337,40 @@ onMounted(loadRequests)
             <strong>{{ selectedRequest?.employeeName }}</strong>.
           </template>
         </p>
+
+        <div v-if="reviewAction === 'approved'" class="space-y-3 rounded-lg bg-gray-50 p-3">
+          <p class="text-xs text-gray-500">
+            Vous pouvez ajuster les dates ou le motif avant de valider. Les valeurs
+            modifiees seront prises en compte pour les pointages et la paie.
+          </p>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Date de debut</label>
+              <input
+                v-model="editDateStart"
+                type="date"
+                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Date de fin</label>
+              <input
+                v-model="editDateEnd"
+                type="date"
+                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Motif</label>
+            <textarea
+              v-model="editReason"
+              rows="2"
+              class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
+        </div>
+
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">
             Note (optionnel)
@@ -332,7 +391,7 @@ onMounted(loadRequests)
             :loading="absenceStore.isSubmitting"
             @click="confirmReview"
           >
-            {{ reviewAction === 'approved' ? 'Approuver' : 'Rejeter' }}
+            {{ reviewAction === 'approved' ? 'Modifier et approuver' : 'Rejeter' }}
           </AppButton>
         </div>
       </template>

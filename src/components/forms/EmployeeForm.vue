@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import type { Employee, Company, Site, Department } from '@/types'
+import type { Employee, Company, Site, Department, Schedule } from '@/types'
 import FormSection from './FormSection.vue'
 import FormRow from './FormRow.vue'
 import AppInput from '@/components/ui/AppInput.vue'
@@ -14,6 +14,7 @@ const props = defineProps<{
   sites: Site[]
   departments: Department[]
   employees: Employee[]
+  schedules?: Schedule[]
   loading: boolean
   isEdit?: boolean
 }>()
@@ -86,6 +87,16 @@ const filteredDepartments = computed(() => {
 const departmentOptions = computed(() =>
   filteredDepartments.value.map((d) => ({ label: d.name, value: d.id }))
 )
+
+const scheduleOptions = computed(() => {
+  const list = (props.schedules ?? []).filter(
+    (s) => !localValue.value.companyId || s.companyId === localValue.value.companyId,
+  )
+  return [
+    { label: 'Horaire du departement (defaut)', value: '' },
+    ...list.map((s) => ({ label: s.name, value: s.id })),
+  ]
+})
 
 const paymentModeOptions = [
   { label: 'Mensuel', value: 'monthly' },
@@ -242,6 +253,16 @@ const handleSubmit = () => {
           @update:model-value="updateField('departmentId', $event)"
           :options="departmentOptions"
           placeholder="Sélectionner un département"
+          :disabled="loading"
+        />
+      </FormRow>
+
+      <FormRow label="Horaire de travail" :optional="true" help="Laisser vide pour utiliser l'horaire du departement">
+        <AppSelect
+          :model-value="localValue.scheduleId || ''"
+          @update:model-value="updateField('scheduleId', $event || null)"
+          :options="scheduleOptions"
+          placeholder="Horaire du departement (defaut)"
           :disabled="loading"
         />
       </FormRow>

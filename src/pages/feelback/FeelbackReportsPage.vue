@@ -204,7 +204,9 @@ const tableData = computed(() => {
 })
 
 const periodLabel = computed(() => {
-  if (startDate.value && endDate.value) return `Periode: ${startDate.value} au ${endDate.value}`
+  if (startDate.value && endDate.value) {
+    return t('feelbackReport.periodLabel', { start: startDate.value, end: endDate.value })
+  }
   return ''
 })
 
@@ -299,6 +301,43 @@ async function handleExportExcel() {
   })
   toast.showSuccess(t('marketplace.excelDownloaded'))
 }
+
+function buildExportParams(): FeelbackReportParams {
+  const params: FeelbackReportParams = {
+    start_date: startDate.value,
+    end_date: endDate.value,
+    type: reportType.value,
+  }
+  if (isSuperAdmin.value && selectedCompany.value) {
+    params.company_id = selectedCompany.value
+  } else if (!isSuperAdmin.value && auth.user?.companyId) {
+    params.company_id = auth.user.companyId
+  }
+  if (selectedSite.value) params.site_id = selectedSite.value
+  if (selectedDepartment.value) params.department_id = selectedDepartment.value
+  if (showGranularity.value) params.period_granularity = periodGranularity.value
+  return params
+}
+
+async function handleExportCsv() {
+  if (!report.value) return
+  try {
+    await feelbackReportApi.downloadCsv(buildExportParams())
+    toast.showSuccess(t('marketplace.excelDownloaded'))
+  } catch {
+    toast.showError(t('feelback.reportGenerateError'))
+  }
+}
+
+async function handleExportPdfServer() {
+  if (!report.value) return
+  try {
+    await feelbackReportApi.downloadPdf(buildExportParams())
+    toast.showSuccess(t('marketplace.pdfDownloaded'))
+  } catch {
+    toast.showError(t('feelback.reportGenerateError'))
+  }
+}
 </script>
 
 <template>
@@ -374,6 +413,12 @@ async function handleExportExcel() {
             </AppButton>
             <AppButton variant="outline" size="sm" @click="handleExportExcel">
               {{ t('common.exportExcel') }}
+            </AppButton>
+            <AppButton variant="outline" size="sm" @click="handleExportCsv">
+              CSV
+            </AppButton>
+            <AppButton variant="outline" size="sm" @click="handleExportPdfServer">
+              PDF (serveur)
             </AppButton>
           </div>
         </template>

@@ -1,7 +1,6 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { rfidDeviceApi } from '@/services/api/rfid-device.api'
-import { getEcho } from '@/services/echo'
 import type { RfidDevice } from '@/types'
 
 export const useRfidDeviceStore = defineStore('rfid-device', () => {
@@ -68,31 +67,23 @@ export const useRfidDeviceStore = defineStore('rfid-device', () => {
     }
   }
 
-  function subscribeRealtime() {
-    const echo = getEcho()
-    if (!echo) return
-
-    echo.channel('devices').listen('.device.status.updated', (data: {
-      deviceType: string
-      deviceId: string
-      status: string
-      data: Record<string, unknown>
-      timestamp: string
-    }) => {
-      if (data.deviceType === 'rfid') {
-        const device = devices.value.find((d) => d.id === data.deviceId)
-        if (device) {
-          device.isOnline = data.status === 'online'
-          device.lastPingAt = data.timestamp
-        }
-      }
-    })
-  }
-
-  function unsubscribeRealtime() {
-    const echo = getEcho()
-    if (!echo) return
-    echo.leave('devices')
+  /**
+   * Appelé par useRealtimeSubscriptions - met à jour le statut d'un device RFID.
+   */
+  function handleRealtimeDevice(data: {
+    deviceId: string
+    status: string
+    timestamp: string
+  }) {
+    const device = devices.value.find((d) => d.id === data.deviceId)
+    if (device) {
+      device.isOnline = data.status === 'online'
+      device.lastPingAt = data.timestamp
+    }
+    if (currentDevice.value?.id === data.deviceId) {
+      currentDevice.value.isOnline = data.status === 'online'
+      currentDevice.value.lastPingAt = data.timestamp
+    }
   }
 
   return {
@@ -104,7 +95,6 @@ export const useRfidDeviceStore = defineStore('rfid-device', () => {
     registerDevice,
     updateDevice,
     deleteDevice,
-    subscribeRealtime,
-    unsubscribeRealtime,
+    handleRealtimeDevice,
   }
 })

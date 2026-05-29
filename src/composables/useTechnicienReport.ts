@@ -1,7 +1,15 @@
 import { ref } from 'vue'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import { i18n } from '@/plugins/i18n'
 import { useAuthStore } from '@/stores/auth.store'
+import {
+  technicienReportApi,
+  type TechnicienReportSignature,
+} from '@/services/api/technicien-report.api'
+
+const t = (key: string, params?: Record<string, unknown>) =>
+  i18n.global.t(key, params ?? {}) as string
 import { useActiveCompanyStore } from '@/stores/active-company.store'
 import { useSiteStore } from '@/stores/site.store'
 import { useDepartmentStore } from '@/stores/department.store'
@@ -44,6 +52,9 @@ export function useTechnicienReport() {
   const firmwareStore = useFirmwareStore()
 
   async function collectData(): Promise<ReportData> {
+    if (!activeCompanyStore.hasActiveCompany) {
+      throw new Error(t('technicienReport.issue.noActiveCompany'))
+    }
     await Promise.all([
       siteStore.fetchSites({ perPage: 200 }),
       departmentStore.fetchDepartments({ perPage: 200 }),
@@ -61,11 +72,11 @@ export function useTechnicienReport() {
 
     // ─── Entreprise active ───────────────────────────────────────────────────
     sections.push({
-      title: 'Entreprise',
+      title: t('technicienReport.section.company'),
       status: activeCompanyStore.hasActiveCompany ? 'ok' : 'error',
       total: 1,
       done: activeCompanyStore.hasActiveCompany ? 1 : 0,
-      issues: activeCompanyStore.hasActiveCompany ? [] : ['Aucune entreprise active selectionnee'],
+      issues: activeCompanyStore.hasActiveCompany ? [] : [t('technicienReport.issue.noActiveCompany')],
     })
 
     // ─── Sites ───────────────────────────────────────────────────────────────
@@ -75,9 +86,9 @@ export function useTechnicienReport() {
     const sitesWithDepts = siteStore.sites.filter((s) => siteIdsWithDept.has(s.id))
     const sitesWithoutDepts = siteStore.sites.filter((s) => !siteIdsWithDept.has(s.id))
 
-    const siteIssues: string[] = sitesWithoutDepts.map((s) => `Site sans departement : ${s.name}`)
+    const siteIssues: string[] = sitesWithoutDepts.map((s) => t('technicienReport.issue.siteNoDept', { name: s.name }))
     sections.push({
-      title: 'Sites',
+      title: t('technicienReport.section.sites'),
       status: siteStore.sites.length === 0
         ? 'error'
         : sitesWithoutDepts.length > 0
@@ -91,9 +102,9 @@ export function useTechnicienReport() {
     // ─── Départements ────────────────────────────────────────────────────────
     const deptsWithManager = departmentStore.departments.filter((d) => !!d.managerId)
     const deptsWithoutManager = departmentStore.departments.filter((d) => !d.managerId)
-    const deptIssues: string[] = deptsWithoutManager.map((d) => `Departement sans responsable : ${d.name}`)
+    const deptIssues: string[] = deptsWithoutManager.map((d) => t('technicienReport.issue.deptNoManager', { name: d.name }))
     sections.push({
-      title: 'Departements',
+      title: t('technicienReport.section.departments'),
       status: departmentStore.departments.length === 0
         ? 'error'
         : deptsWithoutManager.length > 0
@@ -115,10 +126,14 @@ export function useTechnicienReport() {
           ? 'warning'
           : 'ok'
     const empIssues: string[] = inactiveEmployees.map(
-      (e) => `Employe inactif : ${e.firstName} ${e.lastName} (${e.employeeNumber})`,
+      (e) => t('technicienReport.issue.employeeInactive', {
+        firstName: e.firstName,
+        lastName: e.lastName,
+        number: e.employeeNumber,
+      }),
     )
     sections.push({
-      title: 'Employes',
+      title: t('technicienReport.section.employees'),
       status: empStatus,
       total: employeeStore.employees.length,
       done: activeEmployees.length,
@@ -135,12 +150,14 @@ export function useTechnicienReport() {
       (e) => !assignedEmployeeIds.has(e.id),
     )
     const cardIssues: string[] = [
-      ...unassignedCards.map((c) => `Carte non assignee : ${c.uid}`),
-      ...blockedCards.map(
-        (c) => `Carte bloquee : ${c.uid}${c.blockReason ? ` (${c.blockReason})` : ''}`,
+      ...unassignedCards.map((c) => t('technicienReport.issue.cardUnassigned', { uid: c.uid })),
+      ...blockedCards.map((c) =>
+        c.blockReason
+          ? t('technicienReport.issue.cardBlockedReason', { uid: c.uid, reason: c.blockReason })
+          : t('technicienReport.issue.cardBlocked', { uid: c.uid }),
       ),
-      ...activeEmployeesWithoutCard.map(
-        (e) => `Employe actif sans carte RFID : ${e.firstName} ${e.lastName}`,
+      ...activeEmployeesWithoutCard.map((e) =>
+        t('technicienReport.issue.activeEmployeeNoCard', { firstName: e.firstName, lastName: e.lastName }),
       ),
     ]
     const cardStatus =
@@ -150,7 +167,7 @@ export function useTechnicienReport() {
           ? 'warning'
           : 'ok'
     sections.push({
-      title: 'Cartes RFID',
+      title: t('technicienReport.section.rfidCards'),
       status: cardStatus,
       total: activeEmployees.length,
       done: assignedCards.length,
@@ -160,11 +177,11 @@ export function useTechnicienReport() {
     // ─── Terminaux RFID ──────────────────────────────────────────────────────
     const rfidOnline = rfidStore.devices.filter((d) => d.isOnline)
     const rfidOffline = rfidStore.devices.filter((d) => !d.isOnline)
-    const rfidIssues: string[] = rfidOffline.map(
-      (d) => `Terminal RFID hors ligne : ${d.name} (${d.serialNumber})`,
+    const rfidIssues: string[] = rfidOffline.map((d) =>
+      t('technicienReport.issue.rfidDeviceOffline', { name: d.name, serial: d.serialNumber }),
     )
     sections.push({
-      title: 'Terminaux RFID',
+      title: t('technicienReport.section.rfidDevices'),
       status: rfidStore.devices.length === 0
         ? 'error'
         : rfidOffline.length > 0
@@ -180,14 +197,14 @@ export function useTechnicienReport() {
     const bioOffline = biometricStore.devices.filter((d) => !d.isOnline)
     const bioDeviceIssues: string[] = [
       ...(biometricStore.devices.length === 0
-        ? ['Aucun terminal biometrique configure']
+        ? [t('technicienReport.issue.noBioDevice')]
         : []),
-      ...bioOffline.map(
-        (d) => `Terminal biometrique hors ligne : ${d.name} (${d.serialNumber})`,
+      ...bioOffline.map((d) =>
+        t('technicienReport.issue.bioDeviceOffline', { name: d.name, serial: d.serialNumber }),
       ),
     ]
     sections.push({
-      title: 'Terminaux biometriques',
+      title: t('technicienReport.section.bioDevices'),
       status: biometricStore.devices.length === 0
         ? 'warning'
         : bioOffline.length > 0
@@ -209,12 +226,14 @@ export function useTechnicienReport() {
 
     // Cas critique : aucun enrolement du tout
     if (biometricStore.enrollments.length === 0) {
-      enrollmentIssues.push('Aucun enrolement biometrique configure')
+      enrollmentIssues.push(t('technicienReport.issue.noBioEnrollment'))
     } else {
       enrollmentIssues.push(
-        ...enrolledFailed.map((e) => `Enrolement echoue : ${e.employeeName}`),
-        ...enrolledPending.map((e) => `Enrolement en attente : ${e.employeeName}`),
-        ...employeesNotEnrolled.map((e) => `Employe non enrole : ${e.firstName} ${e.lastName}`),
+        ...enrolledFailed.map((e) => t('technicienReport.issue.enrollmentFailed', { name: e.employeeName })),
+        ...enrolledPending.map((e) => t('technicienReport.issue.enrollmentPending', { name: e.employeeName })),
+        ...employeesNotEnrolled.map((e) =>
+          t('technicienReport.issue.employeeNotEnrolled', { firstName: e.firstName, lastName: e.lastName }),
+        ),
       )
     }
 
@@ -231,7 +250,7 @@ export function useTechnicienReport() {
             : 'ok'
 
     sections.push({
-      title: 'Enrolements biometriques',
+      title: t('technicienReport.section.bioEnrollments'),
       status: enrollStatus,
       total: activeEmployees.length,
       done: enrolledOk.length,
@@ -246,8 +265,10 @@ export function useTechnicienReport() {
     const sitesWithoutActiveQr = siteStore.sites.filter((s) => !activeQrSiteIds.has(s.id))
     const revokedQr = qrcodeStore.qrCodes.filter((q) => !q.isActive)
     const qrIssues: string[] = [
-      ...sitesWithoutActiveQr.map((s) => `Site sans QR code actif : ${s.name}`),
-      ...revokedQr.map((q) => `QR code revoque : ${q.label ?? q.siteName ?? q.id}`),
+      ...sitesWithoutActiveQr.map((s) => t('technicienReport.issue.siteNoActiveQr', { name: s.name })),
+      ...revokedQr.map((q) =>
+        t('technicienReport.issue.qrRevoked', { label: q.label ?? q.siteName ?? q.id }),
+      ),
     ]
     // Statut : error si aucun QR du tout, warning si des sites non couverts ou QR revoques, ok sinon
     const qrStatus =
@@ -257,7 +278,7 @@ export function useTechnicienReport() {
           ? 'warning'
           : 'ok'
     sections.push({
-      title: 'QR Codes pointage',
+      title: t('technicienReport.section.qrCodes'),
       status: qrStatus,
       total: siteStore.sites.length,
       done: activeQrSiteIds.size,
@@ -267,24 +288,35 @@ export function useTechnicienReport() {
     // ─── Firmware ─────────────────────────────────────────────────────────────
     // Un appareil est "a jour" uniquement si son update_status = 'success' ET sa version courante
     // correspond a la version cible, OU s'il n'a pas de version cible assignee.
+    // Normalisation : tolère 'v1.0' vs '1.0', espaces autour, casse différente.
+    const normVersion = (v: string | null | undefined) =>
+      (v ?? '').toString().trim().toLowerCase().replace(/^v/, '')
+    const sameVersion = (a: string | null | undefined, b: string | null | undefined) =>
+      normVersion(a) === normVersion(b)
     const devicesWithTarget = firmwareStore.deviceStatuses.filter((d) => !!d.targetVersion)
     const devicesUpToDate = devicesWithTarget.filter(
-      (d) => d.updateStatus === 'success' && d.currentVersion === d.targetVersion,
+      (d) => d.updateStatus === 'success' && sameVersion(d.currentVersion, d.targetVersion),
     )
     const devicesFailed = devicesWithTarget.filter((d) => d.updateStatus === 'failed')
     const devicesOutdated = devicesWithTarget.filter(
-      (d) => d.updateStatus !== 'success' || d.currentVersion !== d.targetVersion,
+      (d) => d.updateStatus !== 'success' || !sameVersion(d.currentVersion, d.targetVersion),
     )
     const firmwareIssues: string[] = [
-      ...devicesFailed.map(
-        (d) =>
-          `Mise a jour echouee : ${d.deviceName} (actuel: ${d.currentVersion || '?'}, cible: ${d.targetVersion})`,
+      ...devicesFailed.map((d) =>
+        t('technicienReport.issue.firmwareUpdateFailed', {
+          name: d.deviceName,
+          current: d.currentVersion || '?',
+          target: d.targetVersion,
+        }),
       ),
       ...devicesOutdated
         .filter((d) => d.updateStatus !== 'failed')
-        .map(
-          (d) =>
-            `Firmware non a jour : ${d.deviceName} (actuel: ${d.currentVersion || '?'}, cible: ${d.targetVersion})`,
+        .map((d) =>
+          t('technicienReport.issue.firmwareOutdated', {
+            name: d.deviceName,
+            current: d.currentVersion || '?',
+            target: d.targetVersion,
+          }),
         ),
     ]
     const firmwareStatus =
@@ -296,7 +328,7 @@ export function useTechnicienReport() {
             ? 'warning'
             : 'ok'
     sections.push({
-      title: 'Mises a jour firmware',
+      title: t('technicienReport.section.firmware'),
       status: firmwareStatus,
       total: devicesWithTarget.length,
       done: devicesUpToDate.length,
@@ -329,7 +361,28 @@ export function useTechnicienReport() {
     }
   }
 
-  function generatePdf(data: ReportData) {
+  async function signReport(data: ReportData): Promise<TechnicienReportSignature | null> {
+    const companyId = activeCompanyStore.activeCompanyId
+    if (!companyId) return null
+
+    try {
+      return await technicienReportApi.sign({
+        company_id: companyId,
+        company_name: data.companyName,
+        technicien_name: data.technicienName,
+        global_score: data.globalScore,
+        payload: {
+          sections: data.sections,
+          generatedAt: data.generatedAt,
+        },
+      })
+    } catch (err) {
+      console.warn('Signature du rapport indisponible:', err)
+      return null
+    }
+  }
+
+  function generatePdf(data: ReportData, signature: TechnicienReportSignature | null = null) {
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
     const pageWidth = doc.internal.pageSize.getWidth()
     const marginX = 15
@@ -517,6 +570,7 @@ export function useTechnicienReport() {
 
     // ── Pied de page ──────────────────────────────────────────────────────────
     const pageCount = doc.getNumberOfPages()
+    const pageH = doc.internal.pageSize.getHeight()
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i)
       doc.setFontSize(7.5)
@@ -525,14 +579,30 @@ export function useTechnicienReport() {
       doc.text(
         `Page ${i} / ${pageCount} - Rapport genere automatiquement par le systeme`,
         pageWidth / 2,
-        doc.internal.pageSize.getHeight() - 7,
+        pageH - 11,
         { align: 'center' },
       )
+      if (signature) {
+        // Signature HMAC tronquée + identifiant + URL de vérification, sur dernière ligne.
+        const shortSig = signature.signature.slice(0, 16)
+        doc.setFontSize(6.5)
+        doc.text(
+          `ID: ${signature.id} | Signe: ${signature.signedAt} | HMAC-SHA256: ${shortSig}... | Verifier: ${signature.verifyUrl}`,
+          pageWidth / 2,
+          pageH - 6,
+          { align: 'center' },
+        )
+      }
     }
 
     const dateStr = new Date().toISOString().slice(0, 10)
     doc.save(`rapport-technicien-${dateStr}.pdf`)
   }
 
-  return { isLoading, reportData, buildReport, generatePdf }
+  async function signAndGeneratePdf(data: ReportData) {
+    const signature = await signReport(data)
+    generatePdf(data, signature)
+  }
+
+  return { isLoading, reportData, buildReport, generatePdf, signAndGeneratePdf }
 }

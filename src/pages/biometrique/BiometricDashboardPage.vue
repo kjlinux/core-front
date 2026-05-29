@@ -3,7 +3,9 @@ import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useBiometricStore } from '@/stores/biometric.store'
+import { useSiteStore } from '@/stores/site.store'
 import { useToast } from '@/composables/useToast'
+import { deriveDeviceOnline } from '@/utils/device-status'
 import StatCard from '@/components/data-display/StatCard.vue'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
@@ -22,10 +24,17 @@ import {
 const { t } = useI18n()
 const router = useRouter()
 const biometricStore = useBiometricStore()
+const siteStore = useSiteStore()
 const toast = useToast()
 
+const siteNameById = computed(() => {
+  const map: Record<string, string> = {}
+  for (const s of siteStore.sites) map[s.id] = s.name
+  return map
+})
+
 const totalDevices = computed(() => biometricStore.devices.length)
-const onlineDevices = computed(() => biometricStore.devices.filter(d => d.isOnline).length)
+const onlineDevices = computed(() => biometricStore.devices.filter(d => deriveDeviceOnline(d.lastSyncAt)).length)
 const totalEnrollments = computed(() => biometricStore.enrollments.length)
 const pendingEnrollments = computed(() => biometricStore.enrollments.filter(e => e.status === 'pending').length)
 
@@ -40,6 +49,7 @@ function viewDevice(deviceId: string) {
 onMounted(() => {
   biometricStore.fetchDevices()
   biometricStore.fetchEnrollments()
+  siteStore.fetchSites({ perPage: 200 })
 })
 </script>
 
@@ -141,11 +151,11 @@ onMounted(() => {
                 {{ device.name }}
               </td>
               <td class="whitespace-nowrap px-4 py-4 text-sm text-gray-500">
-                {{ device.siteId }}
+                {{ siteNameById[device.siteId] ?? '-' }}
               </td>
               <td class="whitespace-nowrap px-4 py-4">
-                <AppBadge :variant="device.isOnline ? 'success' : 'danger'" size="sm">
-                  {{ device.isOnline ? t('biometric.online') : t('biometric.offline') }}
+                <AppBadge :variant="deriveDeviceOnline(device.lastSyncAt) ? 'success' : 'danger'" size="sm">
+                  {{ deriveDeviceOnline(device.lastSyncAt) ? t('biometric.online') : t('biometric.offline') }}
                 </AppBadge>
               </td>
               <td class="whitespace-nowrap px-4 py-4 text-sm text-gray-900">

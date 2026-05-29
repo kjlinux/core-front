@@ -5,6 +5,7 @@ import { useFirmwareStore } from '@/stores/firmware.store'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import AppButton from '@/components/ui/AppButton.vue'
+import AppSelect from '@/components/ui/AppSelect.vue'
 import DataTable from '@/components/data-display/DataTable.vue'
 import type { OtaUpdateStatus } from '@/types'
 
@@ -32,6 +33,20 @@ const statusVariant: Record<OtaUpdateStatus, 'success' | 'warning' | 'danger' | 
   failed: 'danger',
   skipped: 'neutral',
 }
+
+const deviceKindOptions = computed(() => [
+  { value: '', label: t('firmware.allTypes') },
+  { value: 'rfid', label: t('firmware.deviceKinds.rfid') },
+  { value: 'biometric', label: t('firmware.deviceKinds.biometric') },
+])
+const statusOptions = computed(() => [
+  { value: '', label: t('firmware.allStatuses') },
+  { value: 'pending', label: t('firmware.status.pending') },
+  { value: 'in_progress', label: t('firmware.status.in_progress') },
+  { value: 'success', label: t('firmware.status.success') },
+  { value: 'failed', label: t('firmware.status.failed') },
+  { value: 'skipped', label: t('firmware.status.skipped') },
+])
 
 const statusLabel = computed<Record<OtaUpdateStatus, string>>(() => ({
   success: t('firmware.status.success'),
@@ -62,28 +77,12 @@ function formatDatetime(d?: string) {
 
     <AppCard>
       <div class="mb-4 flex flex-wrap items-center gap-3">
-        <select
-          v-model="deviceKindFilter"
-          class="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          @change="loadData"
-        >
-          <option value="">{{ t('firmware.allTypes') }}</option>
-          <option value="rfid">{{ t('firmware.deviceKinds.rfid') }}</option>
-          <option value="biometric">{{ t('firmware.deviceKinds.biometric') }}</option>
-        </select>
-
-        <select
-          v-model="statusFilter"
-          class="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          @change="loadData"
-        >
-          <option value="">{{ t('firmware.allStatuses') }}</option>
-          <option value="pending">{{ t('firmware.status.pending') }}</option>
-          <option value="in_progress">{{ t('firmware.status.in_progress') }}</option>
-          <option value="success">{{ t('firmware.status.success') }}</option>
-          <option value="failed">{{ t('firmware.status.failed') }}</option>
-          <option value="skipped">{{ t('firmware.status.skipped') }}</option>
-        </select>
+        <div class="w-56">
+          <AppSelect v-model="deviceKindFilter" :options="deviceKindOptions" @update:model-value="loadData" />
+        </div>
+        <div class="w-56">
+          <AppSelect v-model="statusFilter" :options="statusOptions" @update:model-value="loadData" />
+        </div>
 
         <AppButton variant="ghost" size="sm" @click="loadData">{{ t('common.refresh') }}</AppButton>
       </div>

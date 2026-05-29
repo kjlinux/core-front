@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { supportApi } from '@/services/api/support.api'
+import { supportApi, type SupportCommand } from '@/services/api/support.api'
 import { useSupportStore } from '@/stores/support.store'
 import { useToast } from '@/composables/useToast'
 import AppCard from '@/components/ui/AppCard.vue'
@@ -68,6 +68,21 @@ async function ping() {
   }
 }
 
+const sending = ref<SupportCommand | null>(null)
+
+async function sendCommand(command: SupportCommand) {
+  if (command !== 'STATUS' && !window.confirm(`Confirmer la commande ${command} sur ce capteur ?`)) return
+  sending.value = command
+  try {
+    await supportApi.sendCommand(kind.value, id.value, command)
+    toast.success(`Commande ${command} envoyée`)
+  } catch (e) {
+    toast.error('Échec', String((e as Error).message))
+  } finally {
+    sending.value = null
+  }
+}
+
 function fmtDate(s: string | null | undefined) {
   if (!s) return '-'
   return new Date(s).toLocaleString('fr-FR')
@@ -94,9 +109,15 @@ onMounted(async () => {
           <p class="text-sm text-gray-500 capitalize">{{ kind }}</p>
         </div>
       </div>
-      <div class="flex gap-2">
-        <AppButton v-if="kind === 'rfid' || kind === 'biometric'" variant="outline" @click="ping">
+      <div class="flex gap-2" v-if="kind === 'rfid' || kind === 'biometric'">
+        <AppButton variant="outline" @click="ping">
           <SignalIcon class="w-4 h-4" /> Envoyer STATUS
+        </AppButton>
+        <AppButton variant="outline" :disabled="sending === 'REBOOT'" @click="sendCommand('REBOOT')">
+          Redémarrer
+        </AppButton>
+        <AppButton variant="danger" :disabled="sending === 'RESET'" @click="sendCommand('RESET')">
+          Réinitialiser
         </AppButton>
       </div>
     </div>

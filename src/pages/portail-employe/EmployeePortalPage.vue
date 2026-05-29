@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth.store'
 import { usePayrollStore } from '@/stores/payroll.store'
 import { useAbsenceStore } from '@/stores/absence.store'
+import { useAttendanceStore } from '@/stores/attendance.store'
 import { useToast } from '@/composables/useToast'
 import { usePayrollPdf } from '@/composables/usePayrollPdf'
 import AppCard from '@/components/ui/AppCard.vue'
@@ -10,12 +11,14 @@ import AppButton from '@/components/ui/AppButton.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import AppInput from '@/components/ui/AppInput.vue'
 import AppModal from '@/components/ui/AppModal.vue'
+import AttendanceSegmentCell from '@/components/attendance/AttendanceSegmentCell.vue'
 import { DocumentArrowDownIcon, CalendarDaysIcon, BanknotesIcon, ClipboardDocumentListIcon } from '@heroicons/vue/24/outline'
 import type { Payslip } from '@/types/payroll'
 
 const authStore = useAuthStore()
 const payrollStore = usePayrollStore()
 const absenceStore = useAbsenceStore()
+const attendanceStore = useAttendanceStore()
 const toast = useToast()
 const { generatePayslipPdf } = usePayrollPdf()
 
@@ -71,6 +74,30 @@ function formatDate(date: string) {
   return new Date(date).toLocaleDateString('fr-FR')
 }
 
+// Mois selectionne pour l'onglet presences (format YYYY-MM)
+const selectedMonth = ref(new Date().toISOString().slice(0, 7))
+
+const monthRange = computed(() => {
+  const [year, month] = selectedMonth.value.split('-').map(Number)
+  const start = new Date(year!, month! - 1, 1)
+  const end = new Date(year!, month!, 0)
+  const fmt = (d: Date) => d.toISOString().slice(0, 10)
+  return { startDate: fmt(start), endDate: fmt(end) }
+})
+
+const presenceRecords = computed(() => attendanceStore.employeeAttendance)
+
+async function loadPresences() {
+  if (!employeeId.value) return
+  await attendanceStore.fetchEmployeeAttendance({
+    employeeId: employeeId.value,
+    startDate: monthRange.value.startDate,
+    endDate: monthRange.value.endDate,
+  })
+}
+
+watch(selectedMonth, loadPresences)
+
 function formatPeriod(period: string) {
   const [year, month] = period.split('-')
   const d = new Date(Number(year), Number(month) - 1, 1)
@@ -117,6 +144,7 @@ onMounted(async () => {
   await Promise.all([
     payrollStore.fetchMyPayslips(employeeId.value),
     absenceStore.fetchMyRequests(employeeId.value),
+    loadPresences(),
   ])
 })
 </script>
@@ -160,8 +188,42 @@ onMounted(async () => {
     <!-- Onglet Presences -->
     <div v-if="activeTab === 'presences'" class="space-y-4">
       <AppCard title="Mes pointages du mois">
-        <div class="text-sm text-gray-500 py-6 text-center">
-          Historique de pointage disponible via le module Pointage RFID / QR Code
+        <div class="mb-4 flex items-center gap-3">
+          <label class="text-sm text-gray-600">Mois</label>
+          <input
+            v-model="selectedMonth"
+            type="month"
+            class="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+          />
+        </div>
+
+        <div v-if="attendanceStore.isLoading" class="flex justify-center py-8">
+          <div class="h-6 w-6 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+        </div>
+
+        <div v-else-if="presenceRecords.length === 0" class="text-sm text-gray-500 py-6 text-center">
+          Aucun pointage pour ce mois
+        </div>
+
+        <div v-else class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Date</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Entree</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Sortie</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Presence</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200 bg-white">
+              <tr v-for="rec in presenceRecords" :key="rec.id" class="hover:bg-gray-50">
+                <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-900">{{ formatDate(rec.date) }}</td>
+                <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-700">{{ rec.entryTime ?? '-' }}</td>
+                <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-700">{{ rec.exitTime ?? '-' }}</td>
+                <td class="px-4 py-3"><AttendanceSegmentCell :record="rec" /></td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </AppCard>
     </div>

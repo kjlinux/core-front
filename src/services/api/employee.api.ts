@@ -27,6 +27,7 @@ function toSnakeCase(data: Partial<Employee>): Record<string, unknown> {
   if (data.avatar !== undefined) result.avatar = data.avatar
   if (data.paymentMode !== undefined) result.payment_mode = data.paymentMode
   if (data.baseSalary !== undefined) result.base_salary = data.baseSalary
+  if (data.scheduleId !== undefined) result.schedule_id = data.scheduleId
   return result
 }
 

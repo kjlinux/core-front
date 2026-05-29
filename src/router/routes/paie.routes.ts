@@ -24,6 +24,15 @@ const paieRoutes: RouteRecordRaw[] = [
           roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE],
         },
       },
+      {
+        path: 'regles-retard',
+        name: 'paie-lateness-rules',
+        component: () => import('@/pages/paie/PayrollLatenessRulesPage.vue'),
+        meta: {
+          title: 'Règles de retard',
+          roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE],
+        },
+      },
     ],
   },
   {

@@ -1,4 +1,22 @@
 import type { AttendanceStatus } from './enums'
+import type { ShiftKind } from './schedule'
+
+// Evaluation d'un pointage attendu vs reel
+export interface PunchEvaluation {
+  expectedTime: string
+  actualTime?: string // null => non pointe
+  status: 'on_time' | 'late' | 'missing'
+  lateMinutes: number
+}
+
+// Evaluation d'un segment (matin/soir/...)
+export interface SegmentEvaluation {
+  kind: ShiftKind
+  startTime: string
+  endTime: string
+  punches: PunchEvaluation[]
+  status: 'complete' | 'partial' | 'late' | 'absent' | 'on_leave' | 'not_scheduled'
+}
 
 export interface AttendanceRecord {
   id: string
@@ -10,9 +28,12 @@ export interface AttendanceRecord {
   status: AttendanceStatus
   lateMinutes: number
   earlyDepartureMinutes: number
-  source: 'rfid' | 'biometric'
+  source: 'rfid' | 'biometric' | 'qrcode'
   isDoubleBadge: boolean
   notes?: string
+  expectedShift?: ShiftKind | null // ce que l'employe devait faire ce jour
+  segments?: SegmentEvaluation[] // detail par segment
+  isOnLeave?: boolean // couvert par un conge approuve
 }
 
 export interface AttendanceSummary {

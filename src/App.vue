@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
 import AuthLayout from '@/layouts/AuthLayout.vue'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
+import AppToastContainer from '@/components/ui/AppToastContainer.vue'
 
 const route = useRoute()
 const authStore = useAuthStore()
@@ -25,4 +26,5 @@ const layoutComponent = computed(() => {
   <component v-else :is="layoutComponent">
     <RouterView />
   </component>
+  <AppToastContainer />
 </template>

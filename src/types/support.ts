@@ -1,5 +1,20 @@
 export type DeviceKind = 'rfid' | 'biometric' | 'feelback' | 'qr'
 
+export interface DeviceStatusUpdatePayload {
+  deviceType: DeviceKind
+  deviceId: string
+  status: 'online' | 'offline'
+  previousStatus?: 'online' | 'offline' | null
+  timestamp: string
+  deviceName?: string
+  serialNumber?: string | null
+  companyId?: string | null
+  companyName?: string | null
+  siteId?: string | null
+  siteName?: string | null
+  isWitness?: boolean
+}
+
 export interface SupportDevice {
   id: string
   kind: DeviceKind

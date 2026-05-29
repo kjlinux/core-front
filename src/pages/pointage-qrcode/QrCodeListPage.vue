@@ -13,6 +13,7 @@ import AppBadge from '@/components/ui/AppBadge.vue'
 import AppModal from '@/components/ui/AppModal.vue'
 import DataTable from '@/components/data-display/DataTable.vue'
 import { PlusIcon, TrashIcon, ArrowDownTrayIcon, PrinterIcon } from '@heroicons/vue/24/outline'
+import { sortByRecent } from '@/utils/sort'
 
 const { t } = useI18n()
 const store = useQrcodeStore()
@@ -38,7 +39,7 @@ const perPage = ref(15)
 
 const pagedQrCodes = computed(() => {
   const start = (currentPage.value - 1) * perPage.value
-  return store.qrCodes.slice(start, start + perPage.value)
+  return sortByRecent(store.qrCodes).slice(start, start + perPage.value)
 })
 
 const paginationObj = computed(() => {

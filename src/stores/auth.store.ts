@@ -20,6 +20,7 @@ export const useAuthStore = defineStore('auth', () => {
   const fullName = computed(() => user.value ? `${user.value.firstName} ${user.value.lastName}` : '')
   const isSupportIt = computed(() => user.value?.role === 'support_it')
   const isSuperAdmin = computed(() => user.value?.role === 'super_admin')
+  const isAdminEnterprise = computed(() => user.value?.role === 'admin_enterprise')
 
   async function login(payload: LoginPayload) {
     isLoading.value = true
@@ -124,5 +125,5 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  return { user, accessToken, refreshToken, isLoading, isAuthenticated, userRole, userCompanyId, fullName, isSupportIt, isSuperAdmin, login, logout, loadFromStorage, hasRole, persistUser, updateProfile, changePassword }
+  return { user, accessToken, refreshToken, isLoading, isAuthenticated, userRole, userCompanyId, fullName, isSupportIt, isSuperAdmin, isAdminEnterprise, login, logout, loadFromStorage, hasRole, persistUser, updateProfile, changePassword }
 })

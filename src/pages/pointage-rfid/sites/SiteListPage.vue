@@ -13,6 +13,11 @@
 
     <AppCard class="mb-6">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <AppInput
+          v-model="searchQuery"
+          :placeholder="t('common.search') || 'Rechercher...'"
+          :label="t('common.search') || 'Rechercher'"
+        />
         <AppSelect
           v-model="filters.companyId"
           :options="companyOptions"
@@ -29,6 +34,8 @@
         :data="tableData"
         :loading="siteStore.isLoading"
         :pagination="siteStore.pagination"
+        default-sort-column="name"
+        default-sort-direction="desc"
         @row-click="handleRowClick"
         @page-change="handlePageChange"
       >
@@ -195,6 +202,7 @@ import type { TableColumn } from '@/types/common'
 import type { Site } from '@/types'
 import { useToast } from '@/composables/useToast'
 import { PencilIcon, TrashIcon } from '@heroicons/vue/24/outline'
+import { sortByRecent } from '@/utils/sort'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -216,6 +224,7 @@ const filters = ref({
   page: 1,
   perPage: 10,
 })
+const searchQuery = ref('')
 
 const formData = ref({
   name: '',
@@ -253,7 +262,7 @@ const columns = computed<TableColumn[]>(() => {
 })
 
 const tableData = computed(() => {
-  return siteStore.sites.map(site => {
+  const rows = sortByRecent(siteStore.sites).map(site => {
     const company = companyStore.companies.find(c => c.id === site.companyId)
     return {
       id: site.id,
@@ -265,6 +274,13 @@ const tableData = computed(() => {
       _raw: site,
     }
   })
+  const q = searchQuery.value.trim().toLowerCase()
+  if (!q) return rows
+  return rows.filter(r =>
+    r.name.toLowerCase().includes(q) ||
+    r.companyName.toLowerCase().includes(q) ||
+    (r.address || '').toLowerCase().includes(q)
+  )
 })
 
 onMounted(async () => {

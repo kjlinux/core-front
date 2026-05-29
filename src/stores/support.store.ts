@@ -1,8 +1,8 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
-import { supportApi, type AlertsFilter, type DevicesFilter } from '@/services/api/support.api'
+import { supportApi, type AlertsFilter, type DevicesFilter, type SupportCompanyRow, type SupportCompanyDetail } from '@/services/api/support.api'
 import { getEcho } from '@/services/echo'
-import type { DeviceAlert, DeviceKind, DevicesOverview, SupportDevice, SystemHealth } from '@/types'
+import type { DeviceAlert, DeviceKind, DevicesOverview, SupportDevice, SystemHealth, DeviceStatusUpdatePayload } from '@/types'
 
 export const useSupportStore = defineStore('support', () => {
   const health = ref<SystemHealth | null>(null)
@@ -11,6 +11,8 @@ export const useSupportStore = defineStore('support', () => {
   const witnesses = ref<SupportDevice[]>([])
   const alerts = ref<DeviceAlert[]>([])
   const alertsTotal = ref(0)
+  const companies = ref<SupportCompanyRow[]>([])
+  const companyDetail = ref<SupportCompanyDetail | null>(null)
   const isLoading = ref(false)
 
   const openAlertsCount = computed(
@@ -84,6 +86,45 @@ export const useSupportStore = defineStore('support', () => {
     if (idx !== -1) alerts.value[idx] = updated
   }
 
+  async function fetchCompanies() {
+    isLoading.value = true
+    try {
+      companies.value = await supportApi.getCompanies()
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  async function fetchCompanyDetail(id: string) {
+    isLoading.value = true
+    try {
+      companyDetail.value = await supportApi.getCompanyDetail(id)
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  function handleRealtimeDevice(p: DeviceStatusUpdatePayload) {
+    const isOnline = p.status === 'online'
+    const d = devices.value.find((x) => x.id === p.deviceId && x.kind === p.deviceType)
+    if (d) {
+      d.isOnline = isOnline
+      d.lastSeenAt = p.timestamp
+    }
+    const w = witnesses.value.find((x) => x.id === p.deviceId && x.kind === p.deviceType)
+    if (w) {
+      w.isOnline = isOnline
+      w.lastSeenAt = p.timestamp
+    }
+    if (overview.value && p.previousStatus && p.previousStatus !== p.status) {
+      const kind = p.deviceType as 'rfid' | 'biometric' | 'feelback'
+      const bucket = overview.value[kind]
+      if (bucket) {
+        bucket.online = Math.max(0, Math.min(bucket.total, bucket.online + (isOnline ? 1 : -1)))
+      }
+    }
+  }
+
   function subscribeRealtime() {
     const echo = getEcho()
     if (!echo) return
@@ -117,6 +158,8 @@ export const useSupportStore = defineStore('support', () => {
     witnesses,
     alerts,
     alertsTotal,
+    companies,
+    companyDetail,
     isLoading,
     openAlertsCount,
     fetchHealth,
@@ -129,6 +172,9 @@ export const useSupportStore = defineStore('support', () => {
     fetchAlerts,
     acknowledgeAlert,
     resolveAlert,
+    fetchCompanies,
+    fetchCompanyDetail,
+    handleRealtimeDevice,
     subscribeRealtime,
     unsubscribeRealtime,
   }

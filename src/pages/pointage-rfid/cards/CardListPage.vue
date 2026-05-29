@@ -16,17 +16,10 @@
       <div class="filters">
         <div class="filter-group">
           <label for="status-filter">{{ t('common.status') }}</label>
-          <select
-            id="status-filter"
+          <AppSelect
             v-model="filters.status"
-            class="filter-select"
-          >
-            <option value="">{{ t('cards.allStatuses') }}</option>
-            <option value="active">{{ t('cards.status.active') }}</option>
-            <option value="inactive">{{ t('cards.status.inactive') }}</option>
-            <option value="blocked">{{ t('cards.status.blocked') }}</option>
-            <option value="lost">{{ t('cards.status.lost') }}</option>
-          </select>
+            :options="statusFilterOptions"
+          />
         </div>
 
         <div class="filter-group">
@@ -135,20 +128,11 @@
         </template>
         <div class="form-group">
           <label for="employee-select">{{ t('cards.selectEmployee') }}</label>
-          <select
-            id="employee-select"
+          <AppSelect
             v-model="selectedEmployeeId"
-            class="form-select"
-          >
-            <option value="">{{ t('cards.chooseEmployee') }}</option>
-            <option
-              v-for="employee in availableEmployees"
-              :key="employee.id"
-              :value="employee.id"
-            >
-              {{ employee.firstName }} {{ employee.lastName }}
-            </option>
-          </select>
+            :options="availableEmployeeOptions"
+            :placeholder="t('cards.chooseEmployee')"
+          />
         </div>
       </div>
       <template #footer>
@@ -217,6 +201,7 @@ import { useToast } from '@/composables/useToast';
 import type { RfidCard } from '@/types/card'
 import { CardStatus } from '@/types/enums';
 import { EyeIcon, CheckIcon, NoSymbolIcon, LockOpenIcon, PlusIcon } from '@heroicons/vue/24/outline';
+import { sortByRecent } from '@/utils/sort';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -273,7 +258,7 @@ const perPage = ref(15);
 
 const pagedCards = computed(() => {
   const start = (currentPage.value - 1) * perPage.value;
-  return filteredCards.value.slice(start, start + perPage.value);
+  return sortByRecent(filteredCards.value).slice(start, start + perPage.value);
 });
 
 const paginationObj = computed(() => {
@@ -299,6 +284,19 @@ const assignSiteOptions = computed(() => {
     ...sites.map((s) => ({ label: s.name, value: s.id })),
   ];
 });
+
+const statusFilterOptions = computed(() => [
+  { value: '', label: t('cards.allStatuses') },
+  { value: 'active', label: t('cards.status.active') },
+  { value: 'inactive', label: t('cards.status.inactive') },
+  { value: 'blocked', label: t('cards.status.blocked') },
+  { value: 'lost', label: t('cards.status.lost') },
+]);
+
+const availableEmployeeOptions = computed(() => [
+  { value: '', label: t('cards.chooseEmployee') },
+  ...availableEmployees.value.map((e) => ({ value: e.id, label: `${e.firstName} ${e.lastName}` })),
+]);
 
 const availableEmployees = computed(() => {
   let emps = employeeStore.employees.filter(emp => !emp.rfidCardId);

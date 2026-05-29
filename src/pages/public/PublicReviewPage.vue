@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { publicReviewApi } from '@/services/api/public-review.api'
 import StarRating from '@/components/review/StarRating.vue'
+import AppSelect from '@/components/ui/AppSelect.vue'
 import type { PublicReviewConfig, ReviewAnswer } from '@/types/review'
 
 const { t } = useI18n()
@@ -20,6 +21,10 @@ const error = ref('')
 const answers = ref<Record<string, number>>({})
 const recommendations = ref('')
 const selectedChannel = ref('')
+const channelOptions = computed(() => [
+  { value: '', label: t('publicReview.discoveryPlaceholder') },
+  ...(config.value?.channels || []).map((c) => ({ value: c.name, label: c.name })),
+])
 
 onMounted(async () => {
   try {
@@ -190,21 +195,11 @@ async function submit() {
               <span class="font-normal text-gray-400 ml-1">{{ t('publicReview.optional') }}</span>
             </label>
           </div>
-          <div class="relative">
-            <select
-              v-model="selectedChannel"
-              class="w-full appearance-none rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 pr-10 text-sm focus:outline-none focus:ring-2 focus:border-transparent transition-all text-gray-700"
-              style="--tw-ring-color: #1e293b;"
-            >
-              <option value="">{{ t('publicReview.discoveryPlaceholder') }}</option>
-              <option v-for="channel in config.channels" :key="channel.id" :value="channel.name">
-                {{ channel.name }}
-              </option>
-            </select>
-            <svg class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-            </svg>
-          </div>
+          <AppSelect
+            v-model="selectedChannel"
+            :options="channelOptions"
+            :placeholder="t('publicReview.discoveryPlaceholder')"
+          />
         </div>
 
         <!-- Error -->

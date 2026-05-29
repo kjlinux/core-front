@@ -3,16 +3,27 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { technicienActivityApi, type TechnicienActivity } from '@/services/api/technicien-activity.api'
 import { userApi, type UserData } from '@/services/api/user.api'
 import { useCompanyStore } from '@/stores/company.store'
+import { useToast } from '@/composables/useToast'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
+import AppSearchInput from '@/components/ui/AppSearchInput.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
+import DataTable from '@/components/data-display/DataTable.vue'
+import BarChart from '@/components/charts/BarChart.vue'
+import HeatmapChart from '@/components/charts/HeatmapChart.vue'
+import type { TableColumn } from '@/types/common'
 
 const companyStore = useCompanyStore()
+const toast = useToast()
 
 const techniciens = ref<UserData[]>([])
 const selectedCompanyId = ref<string>('')
 const selectedTechnicienId = ref<string>('')
+const selectedResourceType = ref<string>('')
+const dateFrom = ref<string>('')
+const dateTo = ref<string>('')
+const search = ref<string>('')
 
 const activities = ref<TechnicienActivity[]>([])
 const isLoading = ref(false)
@@ -80,6 +91,43 @@ const actionVariant: Record<string, 'success' | 'warning' | 'danger' | 'info' | 
   deactivate: 'warning',
 }
 
+const columns: TableColumn[] = [
+  { key: 'createdAt', label: 'Date' },
+  { key: 'technicien', label: 'Technicien' },
+  { key: 'company', label: 'Entreprise' },
+  { key: 'action', label: 'Action' },
+  { key: 'resourceType', label: 'Ressource' },
+  { key: 'resourceLabel', label: 'Element' },
+]
+
+const filteredActivities = computed(() => {
+  const q = search.value.trim().toLowerCase()
+  let list = activities.value
+  if (q) {
+    list = list.filter(
+      (a) =>
+        (a.technicien?.fullName ?? '').toLowerCase().includes(q) ||
+        (a.technicien?.email ?? '').toLowerCase().includes(q) ||
+        (a.company?.name ?? '').toLowerCase().includes(q) ||
+        (a.resourceLabel ?? '').toLowerCase().includes(q) ||
+        (resourceTypeLabel[a.resourceType] ?? a.resourceType).toLowerCase().includes(q),
+    )
+  }
+  return [...list].sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+})
+
+const paginationObj = computed(() => ({
+  currentPage: currentPage.value,
+  perPage,
+  total: totalActivities.value,
+  totalPages: Math.max(1, Math.ceil(totalActivities.value / perPage)),
+}))
+
+function onPageChange(p: number) {
+  currentPage.value = p
+  loadActivities()
+}
+
 function formatDate(iso: string | null) {
   if (!iso) return '-'
   return new Date(iso).toLocaleString('fr-FR', {
@@ -100,26 +148,88 @@ async function loadActivities() {
     }
     if (selectedCompanyId.value) params.company_id = selectedCompanyId.value
     if (selectedTechnicienId.value) params.technicien_id = selectedTechnicienId.value
+    if (selectedResourceType.value) params.resource_type = selectedResourceType.value
+    if (dateFrom.value) params.date_from = dateFrom.value
+    if (dateTo.value) params.date_to = dateTo.value
 
     const res = await technicienActivityApi.getActivities(params)
     activities.value = res.data ?? []
     totalActivities.value = res.meta?.total ?? 0
+  } catch (e) {
+    toast.error('Impossible de charger les activités', String((e as Error).message))
   } finally {
     isLoading.value = false
   }
 }
 
-watch([selectedCompanyId, selectedTechnicienId], () => {
+watch([selectedCompanyId, selectedTechnicienId, selectedResourceType, dateFrom, dateTo], () => {
   currentPage.value = 1
   loadActivities()
 })
 
+const resourceTypeOptions = computed(() => [
+  { label: 'Toutes les ressources', value: '' },
+  ...Object.entries(resourceTypeLabel).map(([value, label]) => ({ label, value })),
+])
+
+// Repartition des actions par jour (chart)
+const activityByDay = computed(() => {
+  const map = new Map<string, number>()
+  for (const a of activities.value) {
+    const day = a.createdAt.slice(0, 10)
+    map.set(day, (map.get(day) ?? 0) + 1)
+  }
+  return [...map.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([d, v]) => ({ name: d.slice(5), value: v }))
+})
+
+// Heatmap : jour x heure du jour (24h)
+const heatmap = computed(() => {
+  const days = new Map<string, number>() // day key -> col index
+  const counts = new Map<string, number>() // `${day}|${hour}` -> count
+  for (const a of activities.value) {
+    const d = a.createdAt.slice(0, 10)
+    const h = new Date(a.createdAt).getHours()
+    if (!days.has(d)) days.set(d, days.size)
+    const k = `${d}|${h}`
+    counts.set(k, (counts.get(k) ?? 0) + 1)
+  }
+  const xAxis = [...days.keys()].sort().map((d) => d.slice(5))
+  const xIndex = new Map(xAxis.map((d, i) => [d, i]))
+  const yAxis = Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2, '0')}h`)
+  const data: Array<[number, number, number]> = []
+  for (const [k, v] of counts.entries()) {
+    const [d, h] = k.split('|')
+    const xi = xIndex.get(d.slice(5))
+    if (xi == null) continue
+    data.push([xi, Number(h), v])
+  }
+  return { xAxis, yAxis, data }
+})
+
+// Repartition par type d'action
+const actionDistribution = computed(() => {
+  const map = new Map<string, number>()
+  for (const a of activities.value) {
+    map.set(a.action, (map.get(a.action) ?? 0) + 1)
+  }
+  return [...map.entries()].map(([k, v]) => ({
+    name: actionLabel[k] ?? k,
+    value: v,
+  })).sort((a, b) => b.value - a.value)
+})
+
 onMounted(async () => {
-  const [, techs] = await Promise.all([
-    companyStore.fetchCompanies({ perPage: 200 }),
-    userApi.getAll({ role: 'technicien', perPage: 200 }),
-  ])
-  techniciens.value = techs
+  try {
+    const [, techs] = await Promise.all([
+      companyStore.fetchCompanies({ perPage: 200 }),
+      userApi.getAll({ role: 'technicien', perPage: 200 }),
+    ])
+    techniciens.value = techs
+  } catch (e) {
+    toast.error('Impossible de charger les filtres', String((e as Error).message))
+  }
   await loadActivities()
 })
 </script>
@@ -150,11 +260,68 @@ onMounted(async () => {
             :options="technicienOptions"
           />
         </div>
+        <div class="min-w-55 flex-1">
+          <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Type de ressource</label>
+          <AppSelect v-model="selectedResourceType" :options="resourceTypeOptions" />
+        </div>
+        <div>
+          <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Du</label>
+          <input
+            type="date"
+            v-model="dateFrom"
+            class="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary-700 focus:ring-2 focus:ring-primary-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
+          />
+        </div>
+        <div>
+          <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Au</label>
+          <input
+            type="date"
+            v-model="dateTo"
+            class="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary-700 focus:ring-2 focus:ring-primary-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
+          />
+        </div>
+        <div class="min-w-55 flex-1">
+          <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Recherche</label>
+          <AppSearchInput v-model="search" placeholder="Rechercher (technicien, entreprise, element)..." />
+        </div>
         <AppButton variant="ghost" size="sm" :disabled="isLoading" @click="loadActivities">
           Actualiser
         </AppButton>
       </div>
     </AppCard>
+
+    <!-- Synthese visuelle : heatmap jour/heure + repartition actions -->
+    <div v-if="activities.length > 0" class="grid gap-4 lg:grid-cols-3">
+      <AppCard class="lg:col-span-2">
+        <h3 class="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-200">Heatmap activite (jour x heure)</h3>
+        <HeatmapChart
+          v-if="heatmap.xAxis.length > 0"
+          :x-axis="heatmap.xAxis"
+          :y-axis="heatmap.yAxis"
+          :data="heatmap.data"
+          height="280px"
+        />
+        <BarChart
+          v-else
+          :data="activityByDay"
+          series-name="Actions"
+          height="220px"
+        />
+      </AppCard>
+      <AppCard>
+        <h3 class="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-200">Top actions</h3>
+        <ul class="space-y-2">
+          <li
+            v-for="a in actionDistribution.slice(0, 6)"
+            :key="a.name"
+            class="flex items-center justify-between text-sm"
+          >
+            <span class="text-gray-600 dark:text-gray-300">{{ a.name }}</span>
+            <span class="font-semibold text-gray-900 dark:text-gray-100">{{ a.value }}</span>
+          </li>
+        </ul>
+      </AppCard>
+    </div>
 
     <!-- Stats par technicien (quand des activites existent) -->
     <div v-if="statsByTechnicien.length > 0" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -176,90 +343,37 @@ onMounted(async () => {
     </div>
 
     <!-- Tableau chronologique -->
-    <div v-if="isLoading" class="flex items-center justify-center py-16 text-gray-400">
-      <div class="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-gray-500" />
-    </div>
-
-    <template v-else>
-      <div
-        v-if="activities.length === 0"
-        class="rounded-lg border border-dashed border-gray-300 p-16 text-center text-gray-400"
+    <AppCard padding="none">
+      <DataTable
+        :columns="columns"
+        :data="filteredActivities"
+        :loading="isLoading"
+        :pagination="paginationObj"
+        default-sort-column="createdAt"
+        default-sort-direction="desc"
+        empty-message="Aucune activite enregistree"
+        @page-change="onPageChange"
       >
-        Aucune activite enregistree
-        <span v-if="selectedCompanyId || selectedTechnicienId"> pour ces filtres</span>
-      </div>
-
-      <AppCard v-else class="overflow-hidden !p-0">
-        <div class="flex items-center justify-between border-b border-gray-100 px-4 py-3">
-          <p class="text-sm font-medium text-gray-700">
-            {{ totalActivities }} action{{ totalActivities > 1 ? 's' : '' }} au total
-          </p>
-        </div>
-        <table class="w-full text-sm">
-          <thead class="bg-gray-50 text-xs font-semibold uppercase tracking-wider text-gray-500">
-            <tr>
-              <th class="px-4 py-3 text-left">Date</th>
-              <th class="px-4 py-3 text-left">Technicien</th>
-              <th class="px-4 py-3 text-left">Entreprise</th>
-              <th class="px-4 py-3 text-left">Action</th>
-              <th class="px-4 py-3 text-left">Ressource</th>
-              <th class="px-4 py-3 text-left">Element</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-100">
-            <tr
-              v-for="activity in activities"
-              :key="activity.id"
-              class="transition-colors hover:bg-gray-50"
-            >
-              <td class="whitespace-nowrap px-4 py-3 text-xs text-gray-500">
-                {{ formatDate(activity.createdAt) }}
-              </td>
-              <td class="px-4 py-3">
-                <p class="font-medium text-gray-900">{{ activity.technicien?.fullName ?? '-' }}</p>
-                <p class="text-xs text-gray-400">{{ activity.technicien?.email ?? '' }}</p>
-              </td>
-              <td class="px-4 py-3 text-gray-700">
-                {{ activity.company?.name ?? '-' }}
-              </td>
-              <td class="px-4 py-3">
-                <AppBadge :variant="actionVariant[activity.action] ?? 'neutral'" size="sm">
-                  {{ actionLabel[activity.action] ?? activity.action }}
-                </AppBadge>
-              </td>
-              <td class="px-4 py-3 text-gray-600">
-                {{ resourceTypeLabel[activity.resourceType] ?? activity.resourceType }}
-              </td>
-              <td class="px-4 py-3 text-xs text-gray-500">
-                {{ activity.resourceLabel ?? '-' }}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </AppCard>
-
-      <!-- Pagination -->
-      <div v-if="totalActivities > perPage" class="flex items-center justify-between text-sm text-gray-500">
-        <span>Page {{ currentPage }} / {{ Math.ceil(totalActivities / perPage) }}</span>
-        <div class="flex gap-2">
-          <AppButton
-            variant="ghost"
-            size="sm"
-            :disabled="currentPage <= 1"
-            @click="currentPage--; loadActivities()"
-          >
-            Precedent
-          </AppButton>
-          <AppButton
-            variant="ghost"
-            size="sm"
-            :disabled="currentPage * perPage >= totalActivities"
-            @click="currentPage++; loadActivities()"
-          >
-            Suivant
-          </AppButton>
-        </div>
-      </div>
-    </template>
+        <template #createdAt="{ row }">
+          <span class="whitespace-nowrap text-xs text-gray-500">{{ formatDate(row.createdAt) }}</span>
+        </template>
+        <template #technicien="{ row }">
+          <p class="font-medium text-gray-900">{{ row.technicien?.fullName ?? '-' }}</p>
+          <p class="text-xs text-gray-400">{{ row.technicien?.email ?? '' }}</p>
+        </template>
+        <template #company="{ row }">{{ row.company?.name ?? '-' }}</template>
+        <template #action="{ row }">
+          <AppBadge :variant="actionVariant[row.action] ?? 'neutral'" size="sm">
+            {{ actionLabel[row.action] ?? row.action }}
+          </AppBadge>
+        </template>
+        <template #resourceType="{ row }">
+          {{ resourceTypeLabel[row.resourceType] ?? row.resourceType }}
+        </template>
+        <template #resourceLabel="{ row }">
+          <span class="text-xs text-gray-500">{{ row.resourceLabel ?? '-' }}</span>
+        </template>
+      </DataTable>
+    </AppCard>
   </div>
 </template>
