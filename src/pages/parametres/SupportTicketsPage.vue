@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { supportTicketApi, type ClientTicket, type TicketPriority } from '@/services/api/support-ticket.api'
+import { extractApiErrorMessage } from '@/utils/api-error'
 import { useToast } from '@/composables/useToast'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
@@ -9,6 +11,7 @@ import AppInput from '@/components/ui/AppInput.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
 
 const toast = useToast()
+const { t } = useI18n()
 
 const tickets = ref<ClientTicket[]>([])
 const loading = ref(false)
@@ -40,7 +43,7 @@ async function load() {
   try {
     tickets.value = await supportTicketApi.listMine()
   } catch (e) {
-    toast.error('Erreur de chargement', String((e as Error).message))
+    toast.error(t('toast.parametres.ticketsLoadError'), extractApiErrorMessage(e, t('common.genericError')))
   } finally {
     loading.value = false
   }
@@ -48,19 +51,23 @@ async function load() {
 
 async function submit() {
   if (!subject.value.trim() || !message.value.trim()) {
-    toast.error('Champs requis', 'Sujet et description obligatoires')
+    toast.error(t('toast.parametres.requiredFieldsTitle'), t('toast.parametres.requiredFieldsMsg'))
+    return
+  }
+  if (subject.value.trim().length > 200) {
+    toast.error(t('toast.parametres.subjectTooLongTitle'), t('toast.parametres.subjectTooLongMsg'))
     return
   }
   submitting.value = true
   try {
     await supportTicketApi.create({ subject: subject.value, message: message.value, priority: priority.value })
-    toast.success('Plainte envoyée', 'Le support IT en a été notifié.')
+    toast.success(t('toast.parametres.complaintSentTitle'), t('toast.parametres.complaintSentMsg'))
     subject.value = ''
     message.value = ''
     priority.value = 'medium'
     await load()
   } catch (e) {
-    toast.error('Échec', String((e as Error).message))
+    toast.error(t('common.failed'), extractApiErrorMessage(e, t('common.genericError')))
   } finally {
     submitting.value = false
   }

@@ -58,7 +58,7 @@ function handleDeactivate() {
 }
 
 onMounted(async () => {
-  await companyStore.fetchCompanies()
+  await companyStore.fetchCompanies({ perPage: 200 })
   const userCompanyId = authStore.user?.companyId
   if (userCompanyId) {
     await companyStore.fetchCompany(userCompanyId)
@@ -121,7 +121,7 @@ onMounted(async () => {
         </div>
         <div v-else class="text-sm text-gray-500 py-4">
           {{ t('parametres.noSite') }}
-          <router-link to="/pointage-rfid/sites" class="text-primary underline ml-1">{{ t('parametres.manageSites') }}</router-link>
+          <router-link to="/organisation/sites" class="text-primary underline ml-1">{{ t('parametres.manageSites') }}</router-link>
         </div>
       </AppCard>
 

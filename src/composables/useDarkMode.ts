@@ -8,9 +8,8 @@ function systemPrefersDark(): boolean {
     && window.matchMedia?.('(prefers-color-scheme: dark)').matches
 }
 
-function apply(mode: Mode) {
-  const isDark = mode === 'dark' || (mode === 'system' && systemPrefersDark())
-  document.documentElement.classList.toggle('dark', isDark)
+function computeIsDark(mode: Mode): boolean {
+  return mode === 'dark' || (mode === 'system' && systemPrefersDark())
 }
 
 const stored = (typeof window !== 'undefined'
@@ -18,6 +17,15 @@ const stored = (typeof window !== 'undefined'
   : null) ?? 'system'
 
 const mode = ref<Mode>(stored)
+// Etat sombre reactif (consomme par l'UI ET par le theme des graphiques echarts).
+const isDark = ref<boolean>(computeIsDark(stored))
+
+function apply(m: Mode) {
+  const dark = computeIsDark(m)
+  document.documentElement.classList.toggle('dark', dark)
+  isDark.value = dark
+}
+
 apply(mode.value)
 
 if (typeof window !== 'undefined') {
@@ -33,10 +41,6 @@ watch(mode, (m) => {
 
 export function useDarkMode() {
   function setMode(m: Mode) { mode.value = m }
-  function toggle() {
-    const isDark = document.documentElement.classList.contains('dark')
-    mode.value = isDark ? 'light' : 'dark'
-  }
-  const isDark = () => document.documentElement.classList.contains('dark')
+  function toggle() { mode.value = isDark.value ? 'light' : 'dark' }
   return { mode, setMode, toggle, isDark }
 }

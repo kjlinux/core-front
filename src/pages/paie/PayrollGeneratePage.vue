@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth.store'
 import { usePayrollStore } from '@/stores/payroll.store'
 import { useCompanyStore } from '@/stores/company.store'
 import { useSiteStore } from '@/stores/site.store'
 import { useDepartmentStore } from '@/stores/department.store'
+import { useI18n } from 'vue-i18n'
 import { useToast } from '@/composables/useToast'
 import { usePayrollPdf } from '@/composables/usePayrollPdf'
 import AppCard from '@/components/ui/AppCard.vue'
@@ -21,9 +22,17 @@ const companyStore = useCompanyStore()
 const siteStore = useSiteStore()
 const departmentStore = useDepartmentStore()
 const toast = useToast()
+const { t } = useI18n()
 const { generatePayslipPdf, generateBatchPayslipPdf } = usePayrollPdf()
 
-const companyId = computed(() => authStore.user?.companyId ?? '')
+const isSuperAdmin = computed(() => authStore.user?.role === 'super_admin')
+const selectedCompanyId = ref('')
+const companyId = computed(() => authStore.user?.companyId || selectedCompanyId.value || '')
+
+const companyOptions = computed(() => [
+  { label: 'Sélectionner une entreprise...', value: '' },
+  ...companyStore.companies.map((c) => ({ label: c.name, value: c.id })),
+])
 
 const filters = ref({
   siteId: '',
@@ -46,7 +55,7 @@ const siteOptions = computed(() => [
 ])
 
 const departmentOptions = computed(() => [
-  { label: 'Tous les departements', value: '' },
+  { label: 'Tous les départements', value: '' },
   ...departmentStore.departments
     .filter((d) => !filters.value.siteId || d.siteId === filters.value.siteId)
     .map((d) => ({ label: d.name, value: d.id })),
@@ -78,11 +87,15 @@ function formatAmount(amount: number) {
 
 async function generatePayslips() {
   if (!filters.value.periodStart || !filters.value.periodEnd) {
-    toast.showError('Veuillez renseigner la période')
+    toast.showError(t('toast.payroll.periodRequired'))
     return
   }
   if (filters.value.periodEnd < filters.value.periodStart) {
-    toast.showError('La date de fin doit être postérieure à la date de début')
+    toast.showError(t('toast.payroll.endAfterStart'))
+    return
+  }
+  if (!companyId.value) {
+    toast.showError(t('toast.payroll.selectCompany'))
     return
   }
   try {
@@ -93,9 +106,9 @@ async function generatePayslips() {
       periodStart: filters.value.periodStart,
       periodEnd: filters.value.periodEnd,
     })
-    toast.showSuccess(`${payrollStore.payslips.length} fiche(s) de paie générée(s)`)
+    toast.showSuccess(t('toast.payroll.payslipsGenerated', { count: payrollStore.payslips.length }))
   } catch {
-    toast.showError('Erreur lors de la génération')
+    toast.showError(t('toast.payroll.generateError'))
   }
 }
 
@@ -107,16 +120,16 @@ async function loadExistingPayslips() {
       departmentId: filters.value.departmentId || undefined,
     })
   } catch {
-    toast.showError('Erreur lors du chargement des fiches')
+    toast.showError(t('toast.payroll.loadPayslipsError'))
   }
 }
 
 async function validatePayslip(payslip: Payslip) {
   try {
     await payrollStore.validatePayslip(payslip.id)
-    toast.showSuccess('Fiche validée')
+    toast.showSuccess(t('toast.payroll.payslipValidated'))
   } catch {
-    toast.showError('Erreur lors de la validation')
+    toast.showError(t('toast.payroll.validateError'))
   }
 }
 
@@ -129,15 +142,28 @@ function downloadAll() {
   generateBatchPayslipPdf(payrollStore.payslips)
 }
 
-onMounted(async () => {
+async function loadData() {
   if (!companyId.value) return
   await Promise.all([
     siteStore.fetchSites({ companyId: companyId.value }),
-    departmentStore.fetchDepartments({ companyId: companyId.value }),
+    departmentStore.fetchDepartments({ companyId: companyId.value, perPage: 200 }),
     payrollStore.fetchPayslips({
       companyId: companyId.value,
     }),
   ])
+}
+
+watch(companyId, () => {
+  filters.value.siteId = ''
+  filters.value.departmentId = ''
+  loadData()
+})
+
+onMounted(async () => {
+  if (isSuperAdmin.value) {
+    await companyStore.fetchCompanies({ perPage: 200 })
+  }
+  await loadData()
 })
 </script>
 
@@ -150,8 +176,21 @@ onMounted(async () => {
       </p>
     </div>
 
+    <!-- Selecteur entreprise (super_admin) -->
+    <AppCard v-if="isSuperAdmin">
+      <label class="mb-1 block text-sm font-medium text-gray-700">Entreprise</label>
+      <AppSelect v-model="selectedCompanyId" :options="companyOptions" />
+    </AppCard>
+
+    <div
+      v-if="isSuperAdmin && !companyId"
+      class="rounded-lg border border-dashed border-gray-300 py-12 text-center text-sm text-gray-500"
+    >
+      Sélectionnez une entreprise pour générer les fiches de paie.
+    </div>
+
     <!-- Filtres de generation -->
-    <AppCard title="Paramètres de génération">
+    <AppCard v-else title="Paramètres de génération">
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Période du</label>
@@ -223,7 +262,7 @@ onMounted(async () => {
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Site / Dept</th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Mode</th>
               <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Brut</th>
-              <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Deductions</th>
+              <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Déductions</th>
               <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Net</th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Statut</th>
               <th class="px-4 py-3"></th>
@@ -282,7 +321,7 @@ onMounted(async () => {
       </div>
     </template>
 
-    <div v-else class="text-center py-12 text-gray-400">
+    <div v-else-if="companyId" class="text-center py-12 text-gray-400">
       <p>Utilisez les filtres ci-dessus pour générer les fiches de paie</p>
     </div>
   </div>

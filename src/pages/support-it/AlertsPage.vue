@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
 import { useSupportStore } from '@/stores/support.store'
+import { useI18n } from 'vue-i18n'
 import { useToast } from '@/composables/useToast'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
@@ -8,9 +9,11 @@ import AppButton from '@/components/ui/AppButton.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
 import { CheckIcon, EyeIcon } from '@heroicons/vue/24/outline'
 import type { AlertSeverity, AlertStatus } from '@/types'
+import { extractApiErrorMessage } from '@/utils/api-error'
 
 const store = useSupportStore()
 const toast = useToast()
+const { t } = useI18n()
 
 const filter = ref<{ status?: AlertStatus | ''; severity?: AlertSeverity | '' }>({
   status: 'open',
@@ -44,17 +47,17 @@ watch(filter, load, { deep: true })
 async function ack(id: string) {
   try {
     await store.acknowledgeAlert(id)
-    toast.success('Alerte reconnue')
+    toast.success(t('toast.support.alertAcknowledged'))
   } catch (e) {
-    toast.error('Échec', String((e as Error).message))
+    toast.error(t('common.failed'), extractApiErrorMessage(e, t('common.genericError')))
   }
 }
 async function resolve(id: string) {
   try {
     await store.resolveAlert(id)
-    toast.success('Alerte résolue')
+    toast.success(t('toast.support.alertResolved'))
   } catch (e) {
-    toast.error('Échec', String((e as Error).message))
+    toast.error(t('common.failed'), extractApiErrorMessage(e, t('common.genericError')))
   }
 }
 

@@ -120,7 +120,7 @@ onMounted(async () => {
   await Promise.all([
     store.fetchStats(buildParams()),
     store.fetchComparison(buildParams()),
-    companyStore.fetchCompanies(),
+    companyStore.fetchCompanies({ perPage: 200 }),
     siteStore.fetchSites({ perPage: 200 }),
   ])
 })

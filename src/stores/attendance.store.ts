@@ -2,6 +2,7 @@ import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { attendanceApi } from '@/services/api/attendance.api'
 import { useToast } from '@/composables/useToast'
+import { i18n } from '@/plugins/i18n'
 import type { AttendanceRecord, AttendanceDailyReport, AttendanceSummary } from '@/types'
 import type { DateRange } from '@/services/api/attendance.api'
 
@@ -124,7 +125,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
     } catch (e) {
       monthlyStatsData.value = null
       console.error('fetchMonthlyStats failed', e)
-      useToast().error('Erreur', 'Impossible de charger les statistiques mensuelles')
+      useToast().error(i18n.global.t('common.error'), i18n.global.t('toast.attendance.loadMonthlyError'))
     }
   }
 
@@ -166,7 +167,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
     } catch (e) {
       employeeStatsData.value = null
       console.error('fetchEmployeeStats failed', e)
-      useToast().error('Erreur', 'Impossible de charger les statistiques employé')
+      useToast().error(i18n.global.t('common.error'), i18n.global.t('toast.attendance.loadEmployeeError'))
     }
   }
 
@@ -198,7 +199,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
     } catch (e) {
       employeeCalendarData.value = []
       console.error('fetchEmployeeCalendar failed', e)
-      useToast().error('Erreur', 'Impossible de charger le calendrier de présence')
+      useToast().error(i18n.global.t('common.error'), i18n.global.t('toast.attendance.loadCalendarError'))
     }
   }
 
@@ -260,7 +261,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
     } catch (e) {
       departmentStatsData.value = null
       console.error('fetchDepartmentStats failed', e)
-      useToast().error('Erreur', 'Impossible de charger les statistiques du département')
+      useToast().error(i18n.global.t('common.error'), i18n.global.t('toast.attendance.loadDepartmentError'))
     }
   }
 
@@ -293,7 +294,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
     } catch (e) {
       recentActivity.value = []
       console.error('fetchRecentActivity failed', e)
-      useToast().error('Erreur', 'Impossible de charger l’activité récente')
+      useToast().error(i18n.global.t('common.error'), i18n.global.t('toast.attendance.loadActivityError'))
     }
   }
 

@@ -1,17 +1,20 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useFirmwareStore } from '@/stores/firmware.store'
 import { usePermissions } from '@/composables/usePermissions'
+import { useServerTable } from '@/composables/useServerTable'
 import { useToast } from '@/composables/useToast'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import AppToggle from '@/components/ui/AppToggle.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
+import AppInput from '@/components/ui/AppInput.vue'
 import AppConfirmDialog from '@/components/ui/AppConfirmDialog.vue'
 import DataTable from '@/components/data-display/DataTable.vue'
+import type { FirmwareDeviceKind } from '@/types'
 import { PlusIcon, TrashIcon, BellAlertIcon } from '@heroicons/vue/24/outline'
 import { sortByRecent } from '@/utils/sort'
 
@@ -21,11 +24,30 @@ const router = useRouter()
 const permissions = usePermissions()
 const toast = useToast()
 
-const deviceKindFilter = ref('')
+const { filters, search, applyFilters, handlePageChange, reload } = useServerTable({
+  initialFilters: {
+    deviceKind: '' as '' | FirmwareDeviceKind,
+    isPublished: '' as '' | 'true' | 'false',
+  },
+  fetcher: (p) =>
+    store.fetchVersions({
+      page: p.page,
+      perPage: p.perPage,
+      deviceKind: p.deviceKind || undefined,
+      isPublished: p.isPublished !== '' ? p.isPublished === 'true' : undefined,
+      search: p.search || undefined,
+    }),
+})
+
 const deviceKindOptions = computed(() => [
   { value: '', label: t('firmware.allTypes') },
   { value: 'rfid', label: t('firmware.deviceKinds.rfid') },
   { value: 'biometric', label: t('firmware.deviceKinds.biometric') },
+])
+const publishedOptions = computed(() => [
+  { value: '', label: t('firmware.allStatuses') || 'Tous les statuts' },
+  { value: 'true', label: t('firmware.published') },
+  { value: 'false', label: t('firmware.notPublished') },
 ])
 const confirmDeleteId = ref<string | null>(null)
 const confirmPublishId = ref<string | null>(null)
@@ -42,33 +64,9 @@ const columns = computed(() => [
   { key: 'actions', label: t('common.actions') },
 ])
 
-const currentPage = ref(1)
-const perPage = ref(15)
+const pagedVersions = computed(() => sortByRecent(store.versions))
 
-const filteredVersions = computed(() => {
-  if (!deviceKindFilter.value) return store.versions
-  return store.versions.filter((v) => v.deviceKind === deviceKindFilter.value)
-})
-
-const pagedVersions = computed(() => {
-  const start = (currentPage.value - 1) * perPage.value
-  return sortByRecent(filteredVersions.value).slice(start, start + perPage.value)
-})
-
-const paginationObj = computed(() => {
-  const total = filteredVersions.value.length
-  return { currentPage: currentPage.value, totalPages: Math.ceil(total / perPage.value) || 1, perPage: perPage.value, total }
-})
-
-const handlePageChange = (page: number) => { currentPage.value = page }
-
-watch(deviceKindFilter, () => { currentPage.value = 1 })
-
-onMounted(() => loadData())
-
-async function loadData() {
-  await store.fetchVersions(deviceKindFilter.value ? { deviceKind: deviceKindFilter.value, perPage: 1000 } : { perPage: 1000 })
-}
+onMounted(() => reload())
 
 function formatSize(bytes?: number) {
   if (!bytes) return '-'
@@ -93,6 +91,7 @@ async function handlePublish(id: string) {
   try {
     await store.publishVersion(id)
     toast.success(t('firmware.publishedSuccess'))
+    await reload()
   } catch {
     toast.error(t('firmware.publishError'))
   } finally {
@@ -106,6 +105,7 @@ async function handleDelete(id: string) {
     await store.deleteVersion(id)
     toast.success(t('firmware.deletedSuccess'))
     confirmDeleteId.value = null
+    await reload()
   } catch {
     toast.error(t('firmware.deleteError'))
   }
@@ -127,17 +127,27 @@ async function handleDelete(id: string) {
     </div>
 
     <AppCard>
-      <div class="mb-4 flex items-center gap-4">
-        <div class="w-64">
-          <AppSelect
-            v-model="deviceKindFilter"
-            :options="deviceKindOptions"
-            @update:model-value="loadData"
-          />
-        </div>
+      <div class="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <AppInput
+          v-model="search"
+          :label="t('common.search') || 'Rechercher'"
+          :placeholder="t('firmware.version')"
+        />
+        <AppSelect
+          v-model="filters.deviceKind"
+          :options="deviceKindOptions"
+          :label="t('firmware.deviceKind')"
+          @update:model-value="applyFilters"
+        />
+        <AppSelect
+          v-model="filters.isPublished"
+          :options="publishedOptions"
+          :label="t('firmware.published')"
+          @update:model-value="applyFilters"
+        />
       </div>
 
-      <DataTable :columns="columns" :data="pagedVersions" :loading="store.isLoading" :pagination="paginationObj" @page-change="handlePageChange">
+      <DataTable :columns="columns" :data="pagedVersions" :loading="store.isLoading" :pagination="store.pagination" @page-change="handlePageChange">
         <template #deviceKind="{ row }">
           <AppBadge variant="info">{{ row.deviceKind === 'rfid' ? t('firmware.deviceKinds.rfid') : t('firmware.deviceKinds.biometric') }}</AppBadge>
         </template>

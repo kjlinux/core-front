@@ -2,7 +2,9 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { supportTicketApi, type SupportTicket, type TicketStatus, type TicketPriority } from '@/services/api/support-ticket.api'
+import { useI18n } from 'vue-i18n'
 import { useToast } from '@/composables/useToast'
+import { extractApiErrorMessage } from '@/utils/api-error'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
@@ -12,6 +14,7 @@ import { PhoneIcon, EnvelopeIcon, BuildingOffice2Icon, WrenchScrewdriverIcon } f
 
 const router = useRouter()
 const toast = useToast()
+const { t } = useI18n()
 
 const tickets = ref<SupportTicket[]>([])
 const loading = ref(false)
@@ -56,7 +59,7 @@ async function load() {
       priority: filterPriority.value || undefined,
     })
   } catch (e) {
-    toast.error('Erreur de chargement', String((e as Error).message))
+    toast.error(t('toast.support.loadError'), extractApiErrorMessage(e, t('common.genericError')))
   } finally {
     loading.value = false
   }
@@ -76,11 +79,11 @@ async function save() {
       status: editStatus.value,
       support_notes: editNotes.value,
     })
-    toast.success('Ticket mis à jour')
+    toast.success(t('toast.support.ticketUpdated'))
     selected.value = null
     await load()
   } catch (e) {
-    toast.error('Échec', String((e as Error).message))
+    toast.error(t('common.failed'), extractApiErrorMessage(e, t('common.genericError')))
   } finally {
     saving.value = false
   }

@@ -19,6 +19,7 @@ const profileForm = ref({
   firstName: '',
   lastName: '',
   email: '',
+  phone: '',
 })
 
 const passwordForm = ref({
@@ -27,12 +28,6 @@ const passwordForm = ref({
   confirmPassword: '',
 })
 
-const roleLabels = computed<Record<string, string>>(() => ({
-  super_admin: t('roles.super_admin'),
-  admin_enterprise: t('roles.admin_enterprise'),
-  manager: t('roles.manager'),
-}))
-
 const initials = computed(() => {
   const first = profileForm.value.firstName[0] ?? ''
   const last = profileForm.value.lastName[0] ?? ''
@@ -40,11 +35,16 @@ const initials = computed(() => {
 })
 
 async function saveProfile() {
+  if (!profileForm.value.firstName.trim() || !profileForm.value.lastName.trim()) {
+    toast.showError(t('parametres.nameRequired'))
+    return
+  }
   isSavingProfile.value = true
   try {
     await authStore.updateProfile({
       firstName: profileForm.value.firstName,
       lastName: profileForm.value.lastName,
+      phone: profileForm.value.phone,
     })
     toast.showSuccess(t('parametres.profileUpdated'))
   } catch {
@@ -100,6 +100,7 @@ onMounted(() => {
     profileForm.value.firstName = user.value.firstName
     profileForm.value.lastName = user.value.lastName
     profileForm.value.email = user.value.email
+    profileForm.value.phone = user.value.phone ?? ''
   }
 })
 </script>
@@ -122,6 +123,7 @@ onMounted(() => {
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl">
         <AppInput v-model="profileForm.firstName" :label="t('parametres.firstName')" />
         <AppInput v-model="profileForm.lastName" :label="t('parametres.lastName')" />
+        <AppInput v-model="profileForm.phone" :label="t('common.phone')" type="tel" />
         <div class="sm:col-span-2">
           <AppInput
             v-model="profileForm.email"
@@ -134,7 +136,7 @@ onMounted(() => {
         <div>
           <p class="text-sm font-medium text-gray-700 mb-1">{{ t('parametres.role') }}</p>
           <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-            {{ roleLabels[user?.role ?? ''] ?? user?.role }}
+            {{ user?.role ? t('roles.' + user.role) : '' }}
           </span>
         </div>
       </div>

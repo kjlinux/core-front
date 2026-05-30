@@ -165,7 +165,7 @@ onMounted(async () => {
     companyStore.fetchCompanies({ perPage: 100 }),
     employeeStore.fetchEmployees({ perPage: 500, companyId: undefined, siteId: undefined, departmentId: undefined, search: undefined }),
     siteStore.fetchSites({ perPage: 200 }),
-    store.fetchDevices(),
+    store.fetchDevices({ perPage: 200 }),
   ])
 
   // Apply prefills: employee drives company+site selection

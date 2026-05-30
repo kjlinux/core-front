@@ -46,7 +46,7 @@ export interface SubscriptionPayment {
   period_end: string | null
   payment_method: string | null
   payment_status: 'pending' | 'paid' | 'failed'
-  intouch_token: string | null
+  gateway_token: string | null
   triggered_by_superadmin: boolean
   created_at: string
   updated_at: string

@@ -3,6 +3,7 @@ import { authGuard } from './guards'
 import authRoutes from './routes/auth.routes'
 import dashboardRoutes from './routes/dashboard.routes'
 import pointageRfidRoutes from './routes/pointage-rfid.routes'
+import organisationRoutes from './routes/organisation.routes'
 import pointageQrcodeRoutes from './routes/pointage-qrcode.routes'
 import biometriqueRoutes from './routes/biometrique.routes'
 import firmwareRoutes from './routes/firmware.routes'
@@ -21,6 +22,7 @@ const router = createRouter({
     ...publicRoutes,
     ...authRoutes,
     ...dashboardRoutes,
+    ...organisationRoutes,
     ...pointageRfidRoutes,
     ...pointageQrcodeRoutes,
     ...biometriqueRoutes,

@@ -18,7 +18,7 @@ const crumbs = computed<Crumb[]>(() => {
     items.push({ label: title, to: r.path })
   }
   // dedupe consecutive duplicates
-  return items.filter((c, i, arr) => i === 0 || c.label !== arr[i - 1].label)
+  return items.filter((c, i, arr) => i === 0 || c.label !== arr[i - 1]?.label)
 })
 
 const hideOnRoot = computed(() => route.path === '/' || route.path === '/dashboard')

@@ -14,10 +14,20 @@ export interface Company {
   subscriptionNextExpiresAt?: string | null
   warrantyStartsAt?: string | null
   warrantyEndsAt?: string | null
+  warrantyAutoRenew?: boolean
+  isWarrantyActive?: boolean
   sites: Site[]
+  admin?: CompanyAdmin | null
   employeeCount: number
   createdAt: string
   updatedAt: string
+}
+
+export interface CompanyAdmin {
+  id: string
+  name: string
+  email: string
+  phone?: string | null
 }
 
 export interface Site {

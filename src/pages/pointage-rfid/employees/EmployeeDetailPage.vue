@@ -7,6 +7,7 @@ import { useCompanyStore } from '@/stores/company.store'
 import { useCardStore } from '@/stores/card.store'
 import { usePermissions } from '@/composables/usePermissions'
 import { useToast } from '@/composables/useToast'
+import { extractApiErrorMessage } from '@/utils/api-error'
 import { attendanceApi } from '@/services/api/attendance.api'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
@@ -138,7 +139,7 @@ const handleConfirmAssignCard = async () => {
     closeAssignCardModal()
     await employeeStore.fetchEmployee(employeeId)
   } catch (error: any) {
-    toast.error(t('common.error'), error.message || t('employees.cardAssignError'))
+    toast.error(t('common.error'), extractApiErrorMessage(error, t('employees.cardAssignError')))
   }
 }
 
@@ -153,7 +154,7 @@ async function handleToggleActive() {
     await employeeStore.toggleActive(employeeId)
     toast.success(t('common.success'), employee.value.isActive ? t('employees.deactivated') : t('employees.activated'))
   } catch (error: any) {
-    toast.error(t('common.error'), error.message || t('common.error'))
+    toast.error(t('common.error'), extractApiErrorMessage(error, t('common.error')))
   }
 }
 </script>
@@ -315,7 +316,7 @@ async function handleToggleActive() {
 
     <div
       v-if="showAssignCardModal"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm"
       @click.self="closeAssignCardModal"
     >
       <div class="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">

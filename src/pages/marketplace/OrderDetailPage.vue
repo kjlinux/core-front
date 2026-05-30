@@ -28,6 +28,7 @@ const stepLabels = computed<Record<string, string>>(() => ({
 }))
 
 const paymentMethodLabels: Record<string, string> = {
+  ligdicash: 'LigdiCash',
   intouch_mobile_money: 'InTouch / Mobile Money',
   intouch_card: 'InTouch / Carte bancaire',
   // Anciennes valeurs LigdiCash conservées pour l'historique des commandes existantes
@@ -62,7 +63,7 @@ async function cancelOrder() {
     await store.cancelOrder(orderId)
     toast.showSuccess(t('marketplace.orderCancelled'))
   } catch {
-    toast.showError("Erreur lors de l'annulation")
+    toast.showError(t('toast.marketplace.cancelError'))
   }
 }
 

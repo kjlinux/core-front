@@ -6,6 +6,7 @@ import { useAuthStore } from '@/stores/auth.store'
 import { useActiveCompanyStore } from '@/stores/active-company.store'
 import { useFirmwareStore } from '@/stores/firmware.store'
 import { usePlan } from '@/composables/usePlan'
+import { usePermissions } from '@/composables/usePermissions'
 import { UserRole } from '@/types/enums'
 import type { FirmwareVersion } from '@/types'
 import TheHeaderUserMenu from './TheHeaderUserMenu.vue'
@@ -17,18 +18,14 @@ import AppLiveIndicator from '@/components/ui/AppLiveIndicator.vue'
 import { Bars3Icon, ChevronLeftIcon, SunIcon, MoonIcon } from '@heroicons/vue/24/outline'
 import { useDarkMode } from '@/composables/useDarkMode'
 
-const darkMode = useDarkMode()
-const isDark = ref(document.documentElement.classList.contains('dark'))
-function toggleDark() {
-  darkMode.toggle()
-  isDark.value = document.documentElement.classList.contains('dark')
-}
+const { isDark, toggle: toggleDark } = useDarkMode()
 
 const ui = useUiStore()
 const auth = useAuthStore()
 const activeCompanyStore = useActiveCompanyStore()
 const firmwareStore = useFirmwareStore()
 const plan = usePlan()
+const { canCollapseSidebar } = usePermissions()
 const route = useRoute()
 
 const selectedFirmwareForUpdate = ref<FirmwareVersion | null>(null)
@@ -76,7 +73,7 @@ const APP_VERSION = '2.9.8'
 const APP_UPDATE_BANNER_KEY = 'app_update_banner_dismissed_version'
 const showAppUpdateBanner = ref(
   typeof window !== 'undefined' &&
-  window.localStorage?.getItem(APP_UPDATE_BANNER_KEY) !== APP_VERSION
+    window.localStorage?.getItem(APP_UPDATE_BANNER_KEY) !== APP_VERSION,
 )
 
 function dismissAppUpdateBanner() {
@@ -103,7 +100,11 @@ const companyName = computed(() => {
 
 const canSeeFirmwareBanner = computed(() => {
   const role = auth.user?.role
-  return role === UserRole.SUPER_ADMIN || role === UserRole.ADMIN_ENTERPRISE || role === UserRole.TECHNICIEN
+  return (
+    role === UserRole.SUPER_ADMIN ||
+    role === UserRole.ADMIN_ENTERPRISE ||
+    role === UserRole.TECHNICIEN
+  )
 })
 
 // Une banniere par type d'appareil ayant une version publiee.
@@ -112,7 +113,9 @@ const firmwareBanners = computed(() =>
 )
 
 onMounted(() => {
-  clockInterval = setInterval(() => { now.value = new Date() }, 1000)
+  clockInterval = setInterval(() => {
+    now.value = new Date()
+  }, 1000)
   if (
     auth.user?.role === UserRole.SUPER_ADMIN ||
     auth.user?.role === UserRole.ADMIN_ENTERPRISE ||
@@ -135,7 +138,8 @@ onUnmounted(() => {
       class="flex items-center justify-between bg-green-600 px-6 py-2 text-sm text-white"
     >
       <span class="font-medium">
-        Bonne nouvelle ! Votre application vient d'être mise à jour en version {{ APP_VERSION }}. Profitez des dernières améliorations.
+        Bonne nouvelle ! Votre application vient d'être mise à jour en version {{ APP_VERSION }}.
+        Profitez des dernières améliorations.
       </span>
       <button
         type="button"
@@ -156,7 +160,7 @@ onUnmounted(() => {
         Mise à jour firmware {{ banner.version }} disponible pour vos terminaux
         {{ deviceKindLabel(banner.deviceKind) }}.
         <span v-if="!hasOtaPlan" class="ml-1 opacity-90">
-          (necessite un abonnement Garantie ou Premium)
+          (nécessite un abonnement Garantie ou Premium)
         </span>
       </span>
       <button
@@ -177,7 +181,9 @@ onUnmounted(() => {
     </div>
 
     <!-- Header principal -->
-    <header class="flex h-16 shrink-0 items-center justify-between border-b border-gray-200 bg-white px-6">
+    <header
+      class="flex h-16 shrink-0 items-center justify-between border-b border-gray-200 bg-white px-6"
+    >
       <div class="flex items-center gap-4">
         <!-- Mobile menu button -->
         <button
@@ -190,6 +196,7 @@ onUnmounted(() => {
 
         <!-- Collapse sidebar button (desktop) -->
         <button
+          v-if="canCollapseSidebar"
           type="button"
           class="hidden text-gray-500 hover:text-gray-700 lg:block"
           @click="ui.toggleSidebar()"
@@ -203,7 +210,7 @@ onUnmounted(() => {
         <span
           v-if="companyName"
           class="hidden sm:inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold text-white"
-          style="background-color: #334155;"
+          style="background-color: #334155"
         >
           {{ companyName }}
         </span>
@@ -218,9 +225,7 @@ onUnmounted(() => {
           <span class="text-sm font-semibold text-gray-900 tabular-nums">{{ formattedTime }}</span>
         </div>
 
-        <TheCompanySwitcher
-          v-if="auth.user?.role === UserRole.TECHNICIEN"
-        />
+        <TheCompanySwitcher v-if="auth.user?.role === UserRole.TECHNICIEN" />
         <button
           type="button"
           class="rounded-md p-2 text-gray-500 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"

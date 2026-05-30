@@ -5,7 +5,11 @@ import { useTechnicienReport } from '@/composables/useTechnicienReport'
 import { useAuthStore } from '@/stores/auth.store'
 import { useActiveCompanyStore } from '@/stores/active-company.store'
 import { useCompanyStore } from '@/stores/company.store'
+import { companyApi } from '@/services/api/company.api'
+import { extractApiErrorMessage } from '@/utils/api-error'
+import { useToast } from '@/composables/useToast'
 import { UserRole } from '@/types/enums'
+import type { Company } from '@/types'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
@@ -15,11 +19,58 @@ const { t } = useI18n()
 const auth = useAuthStore()
 const activeCompanyStore = useActiveCompanyStore()
 const companyStore = useCompanyStore()
+const toast = useToast()
 const { isLoading, reportData, buildReport, signAndGeneratePdf } = useTechnicienReport()
 
 const isSuperAdmin = computed(() => auth.user?.role === UserRole.SUPER_ADMIN)
 const selectedCompanyId = ref<string>(activeCompanyStore.activeCompanyId ?? '')
 const isSelectingCompany = ref(false)
+
+// --- Garantie materielle ---
+const warrantyCompany = ref<Company | null>(null)
+const warrantyLoading = ref(false)
+
+const targetCompanyId = computed(() =>
+  isSuperAdmin.value ? selectedCompanyId.value : (activeCompanyStore.activeCompanyId ?? ''),
+)
+
+async function loadWarranty() {
+  if (!targetCompanyId.value) {
+    warrantyCompany.value = null
+    return
+  }
+  try {
+    warrantyCompany.value = await companyApi.getById(targetCompanyId.value)
+  } catch {
+    warrantyCompany.value = null
+  }
+}
+
+async function activateWarranty() {
+  if (!targetCompanyId.value) return
+  warrantyLoading.value = true
+  try {
+    warrantyCompany.value = await companyApi.activateWarranty(targetCompanyId.value)
+    toast.success(t('common.success'), 'Garantie activée (12 mois, renouvellement automatique)')
+  } catch (e: any) {
+    toast.error(t('common.error'), extractApiErrorMessage(e))
+  } finally {
+    warrantyLoading.value = false
+  }
+}
+
+async function stopWarranty() {
+  if (!targetCompanyId.value) return
+  warrantyLoading.value = true
+  try {
+    warrantyCompany.value = await companyApi.stopWarranty(targetCompanyId.value)
+    toast.success(t('common.success'), 'Garantie arrêtée')
+  } catch (e: any) {
+    toast.error(t('common.error'), extractApiErrorMessage(e))
+  } finally {
+    warrantyLoading.value = false
+  }
+}
 
 const companyOptions = computed(() =>
   companyStore.companies.map((c) => ({ label: c.name, value: c.id })),
@@ -40,7 +91,7 @@ async function selectAndGenerate() {
       isSelectingCompany.value = false
     }
   }
-  await buildReport()
+  await Promise.all([buildReport(), loadWarranty()])
 }
 
 const statusVariant: Record<string, 'success' | 'warning' | 'danger'> = {
@@ -61,10 +112,10 @@ onMounted(async () => {
     // Si le super admin a deja une entreprise active, generer automatiquement
     if (activeCompanyStore.hasActiveCompany) {
       selectedCompanyId.value = activeCompanyStore.activeCompanyId ?? ''
-      await buildReport()
+      await Promise.all([buildReport(), loadWarranty()])
     }
   } else {
-    await buildReport()
+    await Promise.all([buildReport(), loadWarranty()])
   }
 })
 </script>
@@ -98,12 +149,12 @@ onMounted(async () => {
       <div class="flex items-end gap-4">
         <div class="flex-1">
           <label class="mb-1 block text-sm font-medium text-gray-700">
-            Entreprise a auditer
+            Entreprise à auditer
           </label>
           <AppSelect
             v-model="selectedCompanyId"
-            :options="[{ label: 'Selectionner une entreprise...', value: '' }, ...companyOptions]"
-            placeholder="Selectionner une entreprise"
+            :options="[{ label: 'Sélectionner une entreprise...', value: '' }, ...companyOptions]"
+            placeholder="Sélectionner une entreprise"
           />
         </div>
         <AppButton
@@ -111,8 +162,49 @@ onMounted(async () => {
           :disabled="!selectedCompanyId || isLoading || isSelectingCompany"
           @click="selectAndGenerate"
         >
-          Generer le rapport
+          Générer le rapport
         </AppButton>
+      </div>
+    </AppCard>
+
+    <!-- Garantie materielle : conditionne l'acces aux plans garantie/premium de l'entreprise -->
+    <AppCard v-if="targetCompanyId">
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h3 class="font-semibold text-gray-900">Garantie matérielle</h3>
+          <p class="mt-0.5 text-sm text-gray-500">
+            Active la garantie pour permettre à cette entreprise de souscrire un abonnement Garantie ou Premium.
+          </p>
+          <div v-if="warrantyCompany" class="mt-2 flex flex-wrap items-center gap-2 text-sm">
+            <AppBadge :variant="warrantyCompany.isWarrantyActive ? 'success' : 'neutral'">
+              {{ warrantyCompany.isWarrantyActive ? 'Garantie active' : 'Aucune garantie' }}
+            </AppBadge>
+            <span v-if="warrantyCompany.warrantyAutoRenew" class="text-gray-500">
+              Renouvellement automatique
+            </span>
+            <span v-if="warrantyCompany.isWarrantyActive && warrantyCompany.warrantyEndsAt" class="text-gray-400">
+              · Échéance : {{ new Date(warrantyCompany.warrantyEndsAt).toLocaleDateString('fr-FR') }}
+            </span>
+          </div>
+        </div>
+        <div class="flex shrink-0 gap-2">
+          <AppButton
+            v-if="!warrantyCompany?.isWarrantyActive"
+            variant="primary"
+            :loading="warrantyLoading"
+            @click="activateWarranty"
+          >
+            Activer la garantie
+          </AppButton>
+          <AppButton
+            v-else
+            variant="outline"
+            :loading="warrantyLoading"
+            @click="stopWarranty"
+          >
+            Arrêter la garantie
+          </AppButton>
+        </div>
       </div>
     </AppCard>
 
@@ -126,7 +218,7 @@ onMounted(async () => {
       v-else-if="isSuperAdmin && !canGenerate && !reportData"
       class="rounded-lg border border-dashed border-gray-300 p-16 text-center text-gray-400"
     >
-      Selectionnez une entreprise pour generer le rapport de mise en service
+      Sélectionnez une entreprise pour générer le rapport de mise en service
     </div>
 
     <template v-else-if="reportData">

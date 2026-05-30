@@ -34,7 +34,7 @@ async function handleDeleteEnrollment(enrollmentId: string) {
 }
 
 onMounted(async () => {
-  await Promise.all([store.fetchDevices(), store.fetchEnrollments()])
+  await Promise.all([store.fetchDevices({ perPage: 200 }), store.fetchEnrollments({ perPage: 200 })])
   if (!device.value) {
     await store.fetchDevice(deviceId)
   }

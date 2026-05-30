@@ -250,7 +250,7 @@ const sections: HelpSection[] = [
   },
   {
     id: 'biometrique',
-    title: 'Biometrique',
+    title: 'Biométrique',
     description: 'Contrôle d\'accès et pointage par empreinte digitale',
     icon: FingerPrintIcon,
     color: 'text-purple-600',
@@ -623,7 +623,7 @@ function collapseAll() {
             <!-- Steps -->
             <div v-if="item.steps && item.steps.length" class="mt-4">
               <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                Etapes à suivre
+                Étapes à suivre
               </p>
               <ol class="space-y-2">
                 <li

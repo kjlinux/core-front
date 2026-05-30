@@ -41,7 +41,7 @@
             </svg>
             {{ Math.abs(trend.value) }}%
           </span>
-          <span class="text-xs text-gray-500">vs periode precedente</span>
+          <span class="text-xs text-gray-500">vs période précédente</span>
         </div>
       </div>
     </div>

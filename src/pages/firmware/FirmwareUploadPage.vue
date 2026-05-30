@@ -36,8 +36,9 @@ function handleFileChange(e: Event) {
 
 function validate(): boolean {
   errors.value = {}
-  if (!version.value.trim()) errors.value.version = t('firmware.versionRequired')
-  else if (!/^\d+\.\d+\.\d+$/.test(version.value.trim())) errors.value.version = t('firmware.versionFormat')
+  const v = version.value.trim()
+  if (!v) errors.value.version = t('firmware.versionRequired')
+  else if (v.length > 20 || !/^[vV]?\d+(\.\d+){0,3}([-.][0-9A-Za-z]+)*$/.test(v)) errors.value.version = t('firmware.versionFormat')
   if (!file.value) errors.value.file = t('firmware.fileBinRequired')
   return Object.keys(errors.value).length === 0
 }

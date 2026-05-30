@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue'
 import type { Schedule, Company, Department, ScheduleDay, ScheduleSegment } from '@/types'
-import { normalizeSchedule } from '@/utils/schedule'
+import { normalizeSchedule, inferShiftKind, shiftKindLabel } from '@/utils/schedule'
 import FormSection from './FormSection.vue'
 import FormRow from './FormRow.vue'
 import AppInput from '@/components/ui/AppInput.vue'
@@ -35,20 +35,6 @@ const weekDays = [
   { label: 'Dimanche', value: 7 },
 ]
 
-const typeOptions = [
-  { label: 'Standard', value: 'standard' },
-  { label: 'Personnalise', value: 'custom' },
-  { label: 'Jour', value: 'day' },
-  { label: 'Nuit', value: 'night' },
-]
-
-const shiftOptions = [
-  { label: 'Matin', value: 'morning' },
-  { label: 'Soir', value: 'evening' },
-  { label: 'Journee', value: 'full_day' },
-  { label: 'Nuit', value: 'night' },
-]
-
 function emptyDays(): ScheduleDay[] {
   return [1, 2, 3, 4, 5, 6, 7].map((weekday) => ({ weekday, worked: false, segments: [] }))
 }
@@ -73,7 +59,9 @@ watch(
         companyId: normalized.companyId,
         type: normalized.type,
         defaultLateTolerance: normalized.defaultLateTolerance,
-        days: normalized.days.length ? structuredClone(normalized.days) : emptyDays(),
+        days: normalized.days.length
+          ? (JSON.parse(JSON.stringify(normalized.days)) as ScheduleDay[])
+          : emptyDays(),
         assignedDepartments: [...normalized.assignedDepartments],
       }
       await nextTick()
@@ -82,6 +70,17 @@ watch(
   },
   { immediate: true },
 )
+
+// Le type d'horaire (Jour/Nuit) est déduit des segments : nuit dès qu'un segment franchit minuit
+const derivedType = computed<'day' | 'night'>(() =>
+  (form.value.days ?? []).some((d) => d.worked && d.segments.some((s) => s.kind === 'night'))
+    ? 'night'
+    : 'day',
+)
+
+watch(derivedType, (t) => (form.value.type = t), { immediate: true })
+
+const typeLabel = (type?: string): string => (type === 'night' ? 'Nuit' : 'Jour')
 
 const companyOptions = computed(() =>
   props.companies.map((c) => ({ label: c.name, value: c.id })),
@@ -133,6 +132,78 @@ const removeSegment = (day: ScheduleDay, index: number) => {
   day.segments.splice(index, 1)
 }
 
+// Copie de la config d'un jour vers d'autres jours
+const copySource = ref<number | null>(null)
+const copyTargets = ref<number[]>([])
+
+const otherDays = (weekday: number) => weekDays.filter((d) => d.value !== weekday)
+
+const openCopy = (day: ScheduleDay) => {
+  copySource.value = day.weekday
+  copyTargets.value = []
+}
+
+const cancelCopy = () => {
+  copySource.value = null
+  copyTargets.value = []
+}
+
+const toggleCopyTarget = (weekday: number) => {
+  const i = copyTargets.value.indexOf(weekday)
+  if (i > -1) copyTargets.value.splice(i, 1)
+  else copyTargets.value.push(weekday)
+}
+
+const applyCopy = () => {
+  const source = (form.value.days ?? []).find((d) => d.weekday === copySource.value)
+  if (!source) {
+    cancelCopy()
+    return
+  }
+  for (const target of form.value.days ?? []) {
+    if (copyTargets.value.includes(target.weekday)) {
+      target.segments = structuredClone(source.segments)
+      target.worked = true
+    }
+  }
+  cancelCopy()
+}
+
+// Renseigne le pointage attendu dérivé d'une borne (Début → Arrivée, Fin → Départ)
+// sans écraser un pointage personnalisé : met à jour celui portant ce libellé s'il
+// existe, sinon réutilise un emplacement vierge, sinon en ajoute un nouveau.
+const setDerivedPunch = (segment: ScheduleSegment, label: string, time: string) => {
+  const punches = segment.expectedPunches
+  const labelled = punches.find((p) => p.label === label)
+  if (labelled) {
+    labelled.time = time
+    return
+  }
+  const blank = punches.find((p) => !p.time && !p.label)
+  if (blank) {
+    blank.time = time
+    blank.label = label
+    return
+  }
+  punches.push({ time, label })
+}
+
+// Le type de segment (Matin/Soir/Journée/Nuit) est déduit des heures, jamais saisi à la main.
+// La saisie des heures pré-remplit aussi les pointages attendus (ajustables ensuite).
+const updateSegmentTime = (
+  segment: ScheduleSegment,
+  field: 'startTime' | 'endTime',
+  value: string,
+) => {
+  segment[field] = value
+  if (segment.startTime && segment.endTime) {
+    segment.kind = inferShiftKind(segment.startTime, segment.endTime)
+  }
+  if (value) {
+    setDerivedPunch(segment, field === 'startTime' ? 'Arrivée' : 'Départ', value)
+  }
+}
+
 const addPunch = (segment: ScheduleSegment) => {
   segment.expectedPunches.push({ time: '', label: '' })
 }
@@ -145,11 +216,10 @@ const validate = (): boolean => {
   errors.value = {}
   if (!form.value.companyId) errors.value.companyId = "L'entreprise est requise"
   if (!form.value.name?.trim()) errors.value.name = 'Le nom est requis'
-  if (!form.value.type) errors.value.type = 'Le type est requis'
 
   const workedDays = (form.value.days ?? []).filter((d) => d.worked)
   if (workedDays.length === 0) {
-    errors.value.days = 'Selectionner au moins un jour de travail'
+    errors.value.days = 'Sélectionner au moins un jour de travail'
   }
   for (const day of workedDays) {
     if (day.segments.length === 0) {
@@ -184,7 +254,7 @@ const handleSubmit = () => {
         <AppSelect
           v-model="form.companyId"
           :options="companyOptions"
-          placeholder="Selectionner une entreprise"
+          placeholder="Sélectionner une entreprise"
           :disabled="loading"
         />
       </FormRow>
@@ -197,13 +267,18 @@ const handleSubmit = () => {
         />
       </FormRow>
 
-      <FormRow label="Type" :required="true" :error="errors.type">
-        <AppSelect v-model="form.type" :options="typeOptions" :disabled="loading" />
+      <FormRow
+        label="Type (auto)"
+        help="Déduit des segments : « Nuit » dès qu'un segment franchit minuit, sinon « Jour »"
+      >
+        <div class="rounded-md border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-600">
+          {{ typeLabel(form.type) }}
+        </div>
       </FormRow>
 
       <FormRow
-        label="Tolerance retard par defaut (minutes)"
-        help="Appliquee a chaque nouveau pointage (modifiable par segment)"
+        label="Tolérance retard par défaut (minutes)"
+        help="Appliquée à chaque nouveau pointage (modifiable par segment)"
       >
         <AppInput
           :model-value="form.defaultLateTolerance?.toString() ?? '0'"
@@ -230,16 +305,67 @@ const handleSubmit = () => {
             :label="dayLabel(day.weekday)"
             :disabled="loading"
           />
-          <AppButton
-            v-if="day.worked"
-            type="button"
-            variant="ghost"
-            size="sm"
-            @click="addSegment(day)"
-            :disabled="loading"
-          >
-            <PlusIcon class="w-4 h-4 mr-1" /> Segment
-          </AppButton>
+          <div v-if="day.worked" class="flex items-center gap-2">
+            <AppButton
+              type="button"
+              variant="ghost"
+              size="sm"
+              @click="openCopy(day)"
+              :disabled="loading || day.segments.length === 0"
+            >
+              Copier vers…
+            </AppButton>
+            <AppButton
+              type="button"
+              variant="ghost"
+              size="sm"
+              @click="addSegment(day)"
+              :disabled="loading"
+            >
+              <PlusIcon class="w-4 h-4 mr-1" /> Segment
+            </AppButton>
+          </div>
+        </div>
+
+        <div
+          v-if="copySource === day.weekday"
+          class="mt-3 rounded-md border border-blue-200 bg-blue-50 p-3"
+        >
+          <p class="mb-2 text-xs font-medium text-gray-600">
+            Copier les segments de {{ dayLabel(day.weekday) }} vers :
+          </p>
+          <div class="flex flex-wrap gap-3">
+            <AppCheckbox
+              v-for="target in otherDays(day.weekday)"
+              :key="target.value"
+              :model-value="copyTargets.includes(target.value)"
+              @update:model-value="toggleCopyTarget(target.value)"
+              :label="target.label"
+              :disabled="loading"
+            />
+          </div>
+          <div class="mt-3 flex gap-2">
+            <AppButton
+              type="button"
+              size="sm"
+              @click="applyCopy"
+              :disabled="loading || copyTargets.length === 0"
+            >
+              Appliquer
+            </AppButton>
+            <AppButton
+              type="button"
+              variant="ghost"
+              size="sm"
+              @click="cancelCopy"
+              :disabled="loading"
+            >
+              Annuler
+            </AppButton>
+          </div>
+          <p class="mt-2 text-xs text-gray-400">
+            Écrase les segments existants des jours sélectionnés.
+          </p>
         </div>
 
         <div v-if="day.worked" class="mt-3 space-y-4">
@@ -250,23 +376,34 @@ const handleSubmit = () => {
           >
             <div class="grid grid-cols-1 gap-3 md:grid-cols-4">
               <div>
-                <label class="mb-1 block text-xs text-gray-500">Type</label>
-                <AppSelect
-                  v-model="segment.kind"
-                  :options="shiftOptions"
+                <label class="mb-1 block text-xs text-gray-500">Type (auto)</label>
+                <div
+                  class="rounded-md border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-600"
+                  title="Déduit automatiquement des heures de début et de fin"
+                >
+                  {{ shiftKindLabel(segment.kind) }}
+                </div>
+              </div>
+              <div>
+                <label class="mb-1 block text-xs text-gray-500">Début</label>
+                <AppInput
+                  :model-value="segment.startTime"
+                  @update:model-value="updateSegmentTime(segment, 'startTime', String($event))"
+                  type="time"
                   :disabled="loading"
                 />
               </div>
               <div>
-                <label class="mb-1 block text-xs text-gray-500">Debut</label>
-                <AppInput v-model="segment.startTime" type="time" :disabled="loading" />
-              </div>
-              <div>
                 <label class="mb-1 block text-xs text-gray-500">Fin</label>
-                <AppInput v-model="segment.endTime" type="time" :disabled="loading" />
+                <AppInput
+                  :model-value="segment.endTime"
+                  @update:model-value="updateSegmentTime(segment, 'endTime', String($event))"
+                  type="time"
+                  :disabled="loading"
+                />
               </div>
               <div>
-                <label class="mb-1 block text-xs text-gray-500">Tolerance (min)</label>
+                <label class="mb-1 block text-xs text-gray-500">Tolérance (min)</label>
                 <AppInput
                   :model-value="segment.lateTolerance?.toString() ?? '0'"
                   @update:model-value="segment.lateTolerance = parseInt(String($event)) || 0"
@@ -298,7 +435,7 @@ const handleSubmit = () => {
                 <AppInput v-model="punch.time" type="time" :disabled="loading" />
                 <AppInput
                   v-model="punch.label"
-                  placeholder="Libelle (optionnel)"
+                  placeholder="Libellé (optionnel)"
                   :disabled="loading"
                 />
                 <AppButton
@@ -331,16 +468,16 @@ const handleSubmit = () => {
       </div>
     </FormSection>
 
-    <FormSection title="Departements concernes (affectation par defaut)">
+    <FormSection title="Départements concernés (affectation par défaut)">
       <FormRow
-        label="Departements"
-        help="Les employes de ces departements utilisent cet horaire sauf affectation individuelle"
+        label="Départements"
+        help="Les employés de ces départements utilisent cet horaire sauf affectation individuelle"
       >
         <div v-if="!form.companyId" class="text-sm text-gray-400 italic">
-          Selectionner d'abord une entreprise
+          Sélectionner d'abord une entreprise
         </div>
         <div v-else-if="filteredDepartments.length === 0" class="text-sm text-gray-400 italic">
-          Aucun departement pour cette entreprise
+          Aucun département pour cette entreprise
         </div>
         <div v-else class="flex flex-wrap gap-3">
           <AppCheckbox

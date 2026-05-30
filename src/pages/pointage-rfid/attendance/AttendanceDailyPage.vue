@@ -1,7 +1,7 @@
 <template>
   <div class="attendance-daily-page">
     <div class="page-header">
-      <h1>{{ t('attendance.dailyTitle') }}</h1>
+      <h1 class="text-gray-900">{{ t('attendance.dailyTitle') }}</h1>
       <div class="header-actions">
         <AppInput
           v-model="selectedDate"
@@ -18,20 +18,20 @@
       <AppCard>
         <div class="summary-grid">
           <div class="summary-item">
-            <span class="summary-label">{{ t('attendance.totalEmployees') }}</span>
-            <span class="summary-value">{{ summary.totalEmployees }}</span>
+            <span class="summary-label text-gray-500">{{ t('attendance.totalEmployees') }}</span>
+            <span class="summary-value text-gray-900">{{ summary.totalEmployees }}</span>
           </div>
           <div class="summary-item">
-            <span class="summary-label">{{ t('attendance.present') }}</span>
-            <span class="summary-value text-green">{{ summary.presentPercentage }}%</span>
+            <span class="summary-label text-gray-500">{{ t('attendance.present') }}</span>
+            <span class="summary-value text-emerald-600">{{ summary.presentPercentage }}%</span>
           </div>
           <div class="summary-item">
-            <span class="summary-label">{{ t('attendance.absent') }}</span>
-            <span class="summary-value text-red">{{ summary.absentPercentage }}%</span>
+            <span class="summary-label text-gray-500">{{ t('attendance.absent') }}</span>
+            <span class="summary-value text-red-600">{{ summary.absentPercentage }}%</span>
           </div>
           <div class="summary-item">
-            <span class="summary-label">{{ t('attendance.late') }}</span>
-            <span class="summary-value text-orange">{{ summary.latePercentage }}%</span>
+            <span class="summary-label text-gray-500">{{ t('attendance.late') }}</span>
+            <span class="summary-value text-orange-600">{{ summary.latePercentage }}%</span>
           </div>
         </div>
       </AppCard>
@@ -84,7 +84,7 @@
           {{ formatTime(row.exitTime) }}
         </template>
         <template #lateMinutes="{ row }">
-          <span v-if="row.lateMinutes > 0" class="late-minutes">
+          <span v-if="row.lateMinutes > 0" class="late-minutes text-orange-600">
             {{ row.lateMinutes }} min
           </span>
           <span v-else>-</span>
@@ -240,7 +240,7 @@ const fetchData = async () => {
     });
   } catch {
     if (seq === fetchSeq) {
-      toastError('Echec du chargement des presences');
+      toastError('Échec du chargement des présences');
     }
   } finally {
     // Ne baisse le spinner que si on est la derniere requete en vol
@@ -309,7 +309,6 @@ onMounted(() => {
 .page-header h1 {
   font-size: 28px;
   font-weight: 600;
-  color: #1f2937;
   margin: 0;
 }
 
@@ -337,25 +336,11 @@ onMounted(() => {
 
 .summary-label {
   font-size: 14px;
-  color: #6b7280;
 }
 
 .summary-value {
   font-size: 24px;
   font-weight: 600;
-  color: #1f2937;
-}
-
-.text-green {
-  color: #059669;
-}
-
-.text-red {
-  color: #dc2626;
-}
-
-.text-orange {
-  color: #ea580c;
 }
 
 .filters {
@@ -424,7 +409,14 @@ onMounted(() => {
 }
 
 .late-minutes {
-  color: #ea580c;
   font-weight: 500;
 }
+
+/* Dark mode: pastilles de statut (classes dynamiques) — aligne sur le retrofit de main.css */
+.dark .status-present   { background-color: rgb(34 197 94 / 0.18); color: #86efac; }
+.dark .status-absent    { background-color: rgb(239 68 68 / 0.18); color: #fca5a5; }
+.dark .status-late      { background-color: rgb(249 115 22 / 0.18); color: #fdba74; }
+.dark .status-left_early,
+.dark .status-partial   { background-color: rgb(245 158 11 / 0.18); color: #fcd34d; }
+.dark .status-on_leave  { background-color: rgb(59 130 246 / 0.18); color: #93c5fd; }
 </style>

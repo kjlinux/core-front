@@ -2,9 +2,20 @@ import apiClient from './client'
 import type { FirmwareVersion, DeviceFirmwareStatus, OtaUpdateLog, FirmwareFilters, OtaLogFilters, CompanyUpdateProgress } from '@/types'
 import type { PaginatedResponse } from '@/types'
 
+function toSnakeVersionFilters(params?: FirmwareFilters): Record<string, unknown> | undefined {
+  if (!params) return undefined
+  const result: Record<string, unknown> = {}
+  if (params.deviceKind !== undefined) result.device_kind = params.deviceKind
+  if (params.isPublished !== undefined) result.is_published = params.isPublished
+  if (params.search !== undefined) result.search = params.search
+  if (params.page !== undefined) result.page = params.page
+  if (params.perPage !== undefined) result.per_page = params.perPage
+  return result
+}
+
 export const firmwareApi = {
   getVersions(params?: FirmwareFilters): Promise<PaginatedResponse<FirmwareVersion>> {
-    return apiClient.get('/firmware/versions', { params }).then((r) => r.data)
+    return apiClient.get('/firmware/versions', { params: toSnakeVersionFilters(params) }).then((r) => r.data)
   },
 
   getVersion(id: string): Promise<FirmwareVersion> {

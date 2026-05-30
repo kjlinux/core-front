@@ -31,7 +31,7 @@ export function maxLength(max: number): (value: string) => true | string {
 export function phone(value: string): true | string {
   if (!value) return true
   const pattern = /^\+?[0-9\s\-()]{8,20}$/
-  return pattern.test(value) || 'Numero de telephone invalide'
+  return pattern.test(value) || 'Numéro de téléphone invalide'
 }
 
 export function rfidUid(value: string): true | string {

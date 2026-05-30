@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { useCompanyStore } from '@/stores/company.store'
 import { usePermissions } from '@/composables/usePermissions'
 import { useToast } from '@/composables/useToast'
+import { extractApiErrorMessage } from '@/utils/api-error'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
@@ -41,7 +42,7 @@ onMounted(async () => {
   try {
     await companyStore.fetchCompany(companyId.value)
   } catch (error: any) {
-    toast.error(t('common.error'), error.message || t('companies.loadError'))
+    toast.error(t('common.error'), extractApiErrorMessage(error, t('companies.loadError')))
     router.push({ name: 'rfid-companies' })
   }
 })

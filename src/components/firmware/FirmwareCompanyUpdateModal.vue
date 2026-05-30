@@ -2,6 +2,7 @@
 import { ref, computed, onUnmounted } from 'vue'
 import { useFirmwareStore } from '@/stores/firmware.store'
 import { firmwareApi } from '@/services/api/firmware.api'
+import { useI18n } from 'vue-i18n'
 import { useToast } from '@/composables/useToast'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
@@ -12,12 +13,13 @@ const emit = defineEmits<{ close: [] }>()
 
 const store = useFirmwareStore()
 const toast = useToast()
+const { t } = useI18n()
 
 type ModalStep = 'confirm' | 'progress' | 'done'
 const step = ref<ModalStep>('confirm')
 const isStarting = ref(false)
 
-const kindLabel = computed(() => props.deviceKind === 'rfid' ? 'RFID' : 'Biometrique')
+const kindLabel = computed(() => props.deviceKind === 'rfid' ? 'RFID' : 'Biométrique')
 
 const progress = computed(() => store.companyUpdateProgress)
 const progressPct = computed(() => {
@@ -39,11 +41,11 @@ async function startUpdate() {
     try {
       store.companyUpdateProgress = await firmwareApi.getCompanyUpdateProgress(props.firmwareVersionId)
     } catch (e) {
-      toast.error('Impossible de charger la progression initiale')
+      toast.error(t('toast.firmware.loadProgressError'))
       throw e
     }
   } catch {
-    toast.error('Erreur lors du declenchement de la mise a jour')
+    toast.error(t('toast.firmware.triggerError'))
   } finally {
     isStarting.value = false
   }
@@ -52,9 +54,9 @@ async function startUpdate() {
 async function retryFailed() {
   try {
     await store.retryFailed(props.firmwareVersionId)
-    toast.success('Capteurs en echec relances')
+    toast.success(t('toast.firmware.failedRelaunched'))
   } catch {
-    toast.error('Erreur lors de la relance')
+    toast.error(t('toast.firmware.relaunchError'))
   }
 }
 
@@ -65,9 +67,9 @@ const pendingCount = computed(() =>
 async function retryPending() {
   try {
     const result = await store.retryPending(props.firmwareVersionId)
-    toast.success(`${result.triggered} capteur(s) en attente relance(s)`)
+    toast.success(t('toast.firmware.pendingRelaunched', { count: result.triggered }))
   } catch {
-    toast.error('Erreur lors de la relance')
+    toast.error(t('toast.firmware.relaunchError'))
   }
 }
 
@@ -102,9 +104,9 @@ const statusVariant: Record<OtaUpdateStatus, 'success' | 'warning' | 'danger' | 
 const statusLabel: Record<OtaUpdateStatus, string> = {
   pending:     'En attente',
   in_progress: 'En cours...',
-  success:     'Termine',
-  failed:      'Echec',
-  skipped:     'Ignore',
+  success:     'Terminé',
+  failed:      'Échec',
+  skipped:     'Ignoré',
 }
 </script>
 
@@ -113,22 +115,22 @@ const statusLabel: Record<OtaUpdateStatus, string> = {
     <div class="w-full max-w-lg rounded-xl bg-white shadow-2xl">
 
       <div class="border-b border-gray-200 px-6 py-4">
-        <h2 class="text-lg font-semibold text-gray-900">Mise a jour firmware v{{ firmwareVersion }}</h2>
+        <h2 class="text-lg font-semibold text-gray-900">Mise à jour firmware v{{ firmwareVersion }}</h2>
         <p class="mt-0.5 text-sm text-gray-500">Capteurs {{ kindLabel }}</p>
       </div>
 
       <div v-if="step === 'confirm'" class="px-6 py-5">
         <p class="text-sm text-gray-700">
-          Cette action va envoyer la mise a jour firmware <strong>v{{ firmwareVersion }}</strong>
-          a tous vos capteurs <strong>{{ kindLabel }}</strong> connectes.
+          Cette action va envoyer la mise à jour firmware <strong>v{{ firmwareVersion }}</strong>
+          à tous vos capteurs <strong>{{ kindLabel }}</strong> connectés.
         </p>
         <p class="mt-2 text-sm text-gray-500">
-          Chaque capteur telechargera le nouveau firmware et redemarrera automatiquement.
+          Chaque capteur téléchargera le nouveau firmware et redémarrera automatiquement.
         </p>
         <div class="mt-6 flex justify-end gap-3">
           <AppButton variant="ghost" @click="close">Annuler</AppButton>
           <AppButton variant="primary" :loading="isStarting" @click="startUpdate">
-            Demarrer la mise a jour
+            Démarrer la mise à jour
           </AppButton>
         </div>
       </div>
@@ -148,8 +150,8 @@ const statusLabel: Record<OtaUpdateStatus, string> = {
           <div class="mt-2 flex gap-4 text-xs text-gray-500">
             <span v-if="(progress?.pending ?? 0) > 0">En attente : {{ progress?.pending }}</span>
             <span v-if="(progress?.inProgress ?? 0) > 0">En cours : {{ progress?.inProgress }}</span>
-            <span v-if="(progress?.success ?? 0) > 0" class="text-green-600">Termines : {{ progress?.success }}</span>
-            <span v-if="(progress?.failed ?? 0) > 0" class="text-red-600">Echecs : {{ progress?.failed }}</span>
+            <span v-if="(progress?.success ?? 0) > 0" class="text-green-600">Terminés : {{ progress?.success }}</span>
+            <span v-if="(progress?.failed ?? 0) > 0" class="text-red-600">Échecs : {{ progress?.failed }}</span>
           </div>
         </div>
 
@@ -199,9 +201,9 @@ const statusLabel: Record<OtaUpdateStatus, string> = {
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
           </svg>
         </div>
-        <h3 class="text-lg font-semibold text-gray-900">Mise a jour terminee</h3>
+        <h3 class="text-lg font-semibold text-gray-900">Mise à jour terminée</h3>
         <p class="mt-2 text-sm text-gray-600">
-          <span class="text-green-600 font-medium">{{ progress?.success ?? 0 }} capteur(s)</span> mis a jour avec succes.
+          <span class="text-green-600 font-medium">{{ progress?.success ?? 0 }} capteur(s)</span> mis à jour avec succès.
           <template v-if="(progress?.failed ?? 0) > 0">
             <br><span class="text-red-500 font-medium">{{ progress?.failed }} echec(s)</span> - vous pouvez relancer depuis la page Firmware.
           </template>

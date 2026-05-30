@@ -1,7 +1,7 @@
 <template>
   <div class="attendance-dashboard-page">
     <div class="page-header">
-      <h1>{{ t('attendance.dashboard') }}</h1>
+      <h1 class="text-gray-900">{{ t('attendance.dashboard') }}</h1>
       <div class="header-actions">
         <AppInput
           v-model="selectedDate"
@@ -51,26 +51,26 @@
 
       <div class="quick-stats">
         <AppCard>
-          <h3>{{ t('attendance.quickStats') }}</h3>
+          <h3 class="text-gray-900">{{ t('attendance.quickStats') }}</h3>
           <div class="quick-stats-grid">
             <div class="stat-item">
-              <span class="stat-label">{{ t('attendance.avgEntry') }}</span>
-              <span class="stat-value">{{ stats.averageEntryTime }}</span>
+              <span class="stat-label text-gray-500">{{ t('attendance.avgEntry') }}</span>
+              <span class="stat-value text-gray-900">{{ stats.averageEntryTime }}</span>
             </div>
             <div class="stat-item">
-              <span class="stat-label">{{ t('attendance.lateEmployees') }}</span>
-              <span class="stat-value">{{ stats.lateCount }}</span>
+              <span class="stat-label text-gray-500">{{ t('attendance.lateEmployees') }}</span>
+              <span class="stat-value text-gray-900">{{ stats.lateCount }}</span>
             </div>
             <div class="stat-item">
-              <span class="stat-label">{{ t('attendance.earlyLeaves') }}</span>
-              <span class="stat-value">{{ stats.earlyDepartures }}</span>
+              <span class="stat-label text-gray-500">{{ t('attendance.earlyLeaves') }}</span>
+              <span class="stat-value text-gray-900">{{ stats.earlyDepartures }}</span>
             </div>
           </div>
         </AppCard>
       </div>
 
       <AppCard class="recent-activity">
-        <h3>{{ t('attendance.recentActivity') }}</h3>
+        <h3 class="text-gray-900">{{ t('attendance.recentActivity') }}</h3>
         <DataTable
           :columns="activityColumns"
           :data="recentActivity"
@@ -233,7 +233,6 @@ onMounted(() => {
 .page-header h1 {
   font-size: 28px;
   font-weight: 600;
-  color: #1f2937;
   margin: 0;
 }
 
@@ -277,7 +276,6 @@ onMounted(() => {
 .quick-stats h3 {
   font-size: 18px;
   font-weight: 600;
-  color: #1f2937;
   margin: 0 0 16px 0;
 }
 
@@ -295,19 +293,16 @@ onMounted(() => {
 
 .stat-label {
   font-size: 14px;
-  color: #6b7280;
 }
 
 .stat-value {
   font-size: 24px;
   font-weight: 600;
-  color: #1f2937;
 }
 
 .recent-activity h3 {
   font-size: 18px;
   font-weight: 600;
-  color: #1f2937;
   margin: 0 0 16px 0;
 }
 
@@ -356,4 +351,11 @@ onMounted(() => {
   background-color: #fef3c7;
   color: #92400e;
 }
+
+.dark .status-entry { background-color: rgb(59 130 246 / 0.18); color: #93c5fd; }
+.dark .status-exit { background-color: rgb(245 158 11 / 0.18); color: #fcd34d; }
+.dark .type-present { background-color: rgb(34 197 94 / 0.18); color: #86efac; }
+.dark .type-late { background-color: rgb(249 115 22 / 0.18); color: #fdba74; }
+.dark .type-absent { background-color: rgb(239 68 68 / 0.18); color: #fca5a5; }
+.dark .type-left_early { background-color: rgb(245 158 11 / 0.18); color: #fcd34d; }
 </style>

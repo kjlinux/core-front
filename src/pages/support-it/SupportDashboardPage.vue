@@ -2,7 +2,9 @@
 import { computed, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useSupportStore } from '@/stores/support.store'
+import { useI18n } from 'vue-i18n'
 import { useToast } from '@/composables/useToast'
+import { extractApiErrorMessage } from '@/utils/api-error'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import StatCard from '@/components/data-display/StatCard.vue'
@@ -15,6 +17,7 @@ import {
 
 const store = useSupportStore()
 const toast = useToast()
+const { t } = useI18n()
 
 const totalDevices = computed(() => {
   const o = store.overview
@@ -50,7 +53,7 @@ onMounted(async () => {
   try {
     await Promise.all([store.fetchHealth(), store.fetchOverview(), store.fetchAlerts({ per_page: 10 })])
   } catch (e) {
-    toast.error('Erreur de chargement', String((e as Error).message))
+    toast.error(t('toast.support.loadError'), extractApiErrorMessage(e, t('common.genericError')))
   }
 })
 </script>

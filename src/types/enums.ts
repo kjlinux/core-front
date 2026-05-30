@@ -44,6 +44,7 @@ export const OrderStatus = {
 export type OrderStatus = (typeof OrderStatus)[keyof typeof OrderStatus]
 
 export const PaymentMethod = {
+  LIGDICASH: 'ligdicash',
   INTOUCH_MOBILE_MONEY: 'intouch_mobile_money',
   INTOUCH_CARD: 'intouch_card',
   MANUAL: 'manual',

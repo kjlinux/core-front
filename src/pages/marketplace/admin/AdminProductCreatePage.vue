@@ -36,12 +36,16 @@ const categoryOptions = computed(() => [
 ])
 
 async function handleSubmit() {
-  if (!form.value.name || !form.value.description || form.value.price <= 0) {
+  if (!form.value.name || !form.value.description || form.value.price < 0) {
     toast.error(t('marketplace.fillRequiredFields'))
     return
   }
   try {
-    await store.createProduct(form.value)
+    await store.createProduct({
+      ...form.value,
+      price: Math.round(form.value.price),
+      stockQuantity: Math.round(form.value.stockQuantity),
+    })
     toast.success(t('marketplace.productCreated'))
     router.push('/marketplace/admin/products')
   } catch {
@@ -62,8 +66,8 @@ async function handleSubmit() {
         <AppInput v-model="form.name" :label="t('marketplace.productName')" :placeholder="t('marketplace.productNamePlaceholder')" />
         <AppTextarea v-model="form.description" :label="t('marketplace.descriptionLabel')" :placeholder="t('marketplace.descriptionPlaceholder')" :rows="3" />
         <div class="grid grid-cols-2 gap-4">
-          <AppInput v-model.number="form.price" :label="t('marketplace.priceLabel')" type="number" :min="0" />
-          <AppInput v-model.number="form.stockQuantity" :label="t('marketplace.initialStock')" type="number" :min="0" />
+          <AppInput v-model.number="form.price" :label="t('marketplace.priceLabel')" type="number" :min="0" :step="1" />
+          <AppInput v-model.number="form.stockQuantity" :label="t('marketplace.initialStock')" type="number" :min="0" :step="1" />
         </div>
         <div class="flex items-center justify-between py-2">
           <div>

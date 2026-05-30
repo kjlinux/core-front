@@ -1,24 +1,35 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useOrderStore } from '@/stores/order.store'
-import { useToast } from '@/composables/useToast'
+import { useServerTable } from '@/composables/useServerTable'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
 import AppInput from '@/components/ui/AppInput.vue'
+import DataTable from '@/components/data-display/DataTable.vue'
 import { EyeIcon } from '@heroicons/vue/24/outline'
 
 const { t } = useI18n()
 const router = useRouter()
 const store = useOrderStore()
-const toast = useToast()
 
-const filterStatus = ref('')
-const filterPayment = ref('')
-const filterStartDate = ref('')
+const { filters, search, applyFilters, handlePageChange } = useServerTable({
+  initialFilters: {
+    status: '' as '' | 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled',
+    paymentStatus: '' as '' | 'pending' | 'paid' | 'failed',
+  },
+  fetcher: (p) =>
+    store.fetchAllOrders({
+      page: p.page,
+      perPage: p.perPage,
+      search: p.search || undefined,
+      status: p.status || undefined,
+      paymentStatus: p.paymentStatus || undefined,
+    }),
+})
 
 const statusOptions = computed(() => [
   { label: t('common.all'), value: '' },
@@ -55,12 +66,27 @@ const statusLabels = computed<Record<string, string>>(() => ({
   cancelled: t('marketplace.cancelled'),
 }))
 
-const filteredOrders = computed(() => {
-  let list = store.orders
-  if (filterStatus.value) list = list.filter((o) => o.status === filterStatus.value)
-  if (filterPayment.value) list = list.filter((o) => o.paymentStatus === filterPayment.value)
-  return list
-})
+const columns = computed(() => [
+  { key: 'orderNumber', label: t('marketplace.orderNumber2'), sortable: false },
+  { key: 'company', label: t('marketplace.company'), sortable: false },
+  { key: 'date', label: t('marketplace.date'), sortable: false },
+  { key: 'total', label: t('marketplace.total'), sortable: false },
+  { key: 'status', label: t('marketplace.orderStatus'), sortable: false },
+  { key: 'paymentStatus', label: t('marketplace.paymentStatus'), sortable: false },
+  { key: 'actions', label: t('common.actions'), align: 'right' as const, width: '80px' },
+])
+
+const tableData = computed(() =>
+  store.orders.map((o) => ({
+    id: o.id,
+    orderNumber: o.orderNumber,
+    company: o.companyName,
+    date: formatDate(o.createdAt),
+    total: formatPrice(o.total, o.currency),
+    status: o.status,
+    paymentStatus: o.paymentStatus,
+  })),
+)
 
 function formatPrice(amount: number | undefined, currency = 'FCFA') {
   if (amount == null) return `-- ${currency}`
@@ -83,56 +109,63 @@ onMounted(async () => {
     </div>
 
     <AppCard>
-      <div class="flex flex-wrap gap-4 mb-6">
-        <AppSelect v-model="filterStatus" :options="statusOptions" class="w-48" />
-        <AppSelect v-model="filterPayment" :options="paymentStatusOptions" class="w-48" />
-        <AppInput v-model="filterStartDate" type="date" />
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <AppInput
+          v-model="search"
+          :placeholder="t('marketplace.searchOrderPlaceholder')"
+          :label="t('common.search') || 'Rechercher'"
+        />
+        <AppSelect
+          v-model="filters.status"
+          :options="statusOptions"
+          :label="t('marketplace.orderStatus')"
+          @update:model-value="applyFilters"
+        />
+        <AppSelect
+          v-model="filters.paymentStatus"
+          :options="paymentStatusOptions"
+          :label="t('marketplace.paymentStatus')"
+          @update:model-value="applyFilters"
+        />
       </div>
 
-      <p class="text-sm text-gray-500 mb-4">{{ filteredOrders.length }} {{ t('marketplace.ordersCountLabel') }}</p>
+      <p class="text-sm text-gray-500 mt-4 mb-4">{{ store.adminPagination.total }} {{ t('marketplace.ordersCountLabel') }}</p>
 
-      <div v-if="store.isLoading" class="flex justify-center py-12">
-        <div class="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-      </div>
+      <DataTable
+        :columns="columns"
+        :data="tableData"
+        :loading="store.isLoading"
+        :pagination="store.adminPagination"
+        @page-change="handlePageChange"
+      >
+        <template #orderNumber="{ row }">
+          <span class="font-mono text-sm font-medium text-gray-900">{{ row.orderNumber }}</span>
+        </template>
 
-      <div v-else class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-          <thead class="bg-gray-50">
-            <tr>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('marketplace.orderNumber2') }}</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('marketplace.company') }}</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('marketplace.date') }}</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('marketplace.total') }}</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('marketplace.orderStatus') }}</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('marketplace.paymentStatus') }}</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ t('common.actions') }}</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-100">
-            <tr v-for="order in filteredOrders" :key="order.id" class="hover:bg-gray-50">
-              <td class="px-4 py-3 font-mono text-sm font-medium text-gray-900">{{ order.orderNumber }}</td>
-              <td class="px-4 py-3 text-sm text-gray-600">{{ order.companyName }}</td>
-              <td class="px-4 py-3 text-sm text-gray-600">{{ formatDate(order.createdAt) }}</td>
-              <td class="px-4 py-3 text-sm font-semibold text-primary">{{ formatPrice(order.total, order.currency) }}</td>
-              <td class="px-4 py-3">
-                <AppBadge :variant="(statusVariants[order.status] ?? 'neutral') as any">
-                  {{ statusLabels[order.status] ?? order.status }}
-                </AppBadge>
-              </td>
-              <td class="px-4 py-3">
-                <AppBadge :variant="(paymentVariants[order.paymentStatus] ?? 'neutral') as any">
-                  {{ order.paymentStatus }}
-                </AppBadge>
-              </td>
-              <td class="px-4 py-3">
-                <AppButton size="sm" variant="ghost" @click="router.push(`/marketplace/admin/orders/${order.id}`)" :title="t('common.view')">
-                  <EyeIcon class="w-4 h-4" />
-                </AppButton>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+        <template #total="{ row }">
+          <span class="text-sm font-semibold text-primary">{{ row.total }}</span>
+        </template>
+
+        <template #status="{ row }">
+          <AppBadge :variant="(statusVariants[row.status] ?? 'neutral') as any">
+            {{ statusLabels[row.status] ?? row.status }}
+          </AppBadge>
+        </template>
+
+        <template #paymentStatus="{ row }">
+          <AppBadge :variant="(paymentVariants[row.paymentStatus] ?? 'neutral') as any">
+            {{ row.paymentStatus }}
+          </AppBadge>
+        </template>
+
+        <template #actions="{ row }">
+          <div class="flex justify-end">
+            <AppButton size="sm" variant="ghost" @click="router.push(`/marketplace/admin/orders/${row.id}`)" :title="t('common.view')">
+              <EyeIcon class="w-4 h-4" />
+            </AppButton>
+          </div>
+        </template>
+      </DataTable>
     </AppCard>
   </div>
 </template>

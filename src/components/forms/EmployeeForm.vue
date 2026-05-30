@@ -31,15 +31,20 @@ const localValue = computed({
   set: (value) => emit('update:modelValue', value)
 })
 
-const selectedCompany = computed(() =>
-  props.companies.find((c) => c.id === localValue.value.companyId)
-)
+const derivePrefix = (name: string): string => {
+  const words = name.trim().split(/\s+/).filter(Boolean)
+  const raw = words.length > 1
+    ? words.map((w) => w[0]).join('')
+    : (words[0] ?? '')
+  return raw.replace(/[^a-zA-Z]/g, '').slice(0, 5).toUpperCase() || 'EMP'
+}
 
 const generateMatricule = (companyId: string): string => {
   const company = props.companies.find((c) => c.id === companyId)
-  if (!company?.matriculePrefix) return ''
+  if (!company) return ''
+  const prefix = company.matriculePrefix?.trim() || derivePrefix(company.name)
   const count = props.employees.filter((e) => e.companyId === companyId).length
-  return `${company.matriculePrefix}${String(count + 1).padStart(3, '0')}`
+  return `${prefix}${String(count + 1).padStart(3, '0')}`
 }
 
 watch(
@@ -51,7 +56,8 @@ watch(
         localValue.value = { ...localValue.value, employeeNumber: matricule }
       }
     }
-  }
+  },
+  { immediate: true }
 )
 
 const updateField = (field: keyof Employee, value: any) => {
@@ -93,7 +99,7 @@ const scheduleOptions = computed(() => {
     (s) => !localValue.value.companyId || s.companyId === localValue.value.companyId,
   )
   return [
-    { label: 'Horaire du departement (defaut)', value: '' },
+    { label: 'Horaire du département (défaut)', value: '' },
     ...list.map((s) => ({ label: s.name, value: s.id })),
   ]
 })
@@ -128,7 +134,7 @@ const validate = (): boolean => {
   }
 
   if (!localValue.value.phone?.trim()) {
-    errors.value.phone = 'Le telephone est requis'
+    errors.value.phone = 'Le téléphone est requis'
   }
 
   if (!localValue.value.position?.trim()) {
@@ -148,7 +154,7 @@ const validate = (): boolean => {
   }
 
   if (!localValue.value.departmentId) {
-    errors.value.departmentId = 'Le departement est requis'
+    errors.value.departmentId = 'Le département est requis'
   }
 
   return Object.keys(errors.value).length === 0
@@ -206,13 +212,13 @@ const handleSubmit = () => {
         label="Matricule"
         :required="true"
         :error="errors.employeeNumber"
-        :help="!isEdit && localValue.companyId && !selectedCompany?.matriculePrefix ? 'Cette entreprise n\'a pas de préfixe matricule configuré' : (!isEdit ? 'Généré automatiquement selon le préfixe de l\'entreprise' : undefined)"
+        :help="!isEdit ? 'Généré automatiquement selon le préfixe de l\'entreprise' : undefined"
       >
         <AppInput
           :model-value="localValue.employeeNumber || ''"
           @update:model-value="updateField('employeeNumber', $event)"
           placeholder="Sélectionner d'abord une entreprise"
-          :disabled="loading || (!isEdit && !!localValue.companyId && !!selectedCompany?.matriculePrefix)"
+          :disabled="loading || (!isEdit && !!localValue.companyId)"
         />
       </FormRow>
 
@@ -257,12 +263,12 @@ const handleSubmit = () => {
         />
       </FormRow>
 
-      <FormRow label="Horaire de travail" :optional="true" help="Laisser vide pour utiliser l'horaire du departement">
+      <FormRow label="Horaire de travail" :optional="true" help="Laisser vide pour utiliser l'horaire du département">
         <AppSelect
           :model-value="localValue.scheduleId || ''"
           @update:model-value="updateField('scheduleId', $event || null)"
           :options="scheduleOptions"
-          placeholder="Horaire du departement (defaut)"
+          placeholder="Horaire du département (défaut)"
           :disabled="loading"
         />
       </FormRow>

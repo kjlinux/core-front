@@ -62,10 +62,10 @@ export function authGuard(to: RouteLocationNormalized, _from: RouteLocationNorma
     const plan = (subs.state?.subscription as PlanCode) ?? 'freemium'
     const allowed = PLAN_FEATURES[plan] ?? []
     if (!allowed.includes(required)) {
-      // Seuls admin_enterprise et super_admin peuvent gerer l'abonnement
+      // Seuls admin_enterprise, manager et super_admin peuvent gerer l'abonnement
       // (cf. abonnement.routes.ts). Les autres roles vont au dashboard pour eviter
       // une boucle role-guard <-> plan-guard.
-      const canManage = auth.user?.role === 'admin_enterprise'
+      const canManage = auth.user?.role === 'admin_enterprise' || auth.user?.role === 'manager'
       return canManage
         ? { name: 'abonnement-plans', query: { feature: required } }
         : { name: 'dashboard' }

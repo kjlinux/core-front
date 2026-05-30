@@ -82,7 +82,15 @@ async function handleTransfer() {
     })
     toast.showSuccess(t('employees.transferedSuccess'))
     showTransferModal.value = false
-    loadEmployees()
+    await employeeStore.fetchEmployees({
+      page: filters.value.page,
+      perPage: filters.value.perPage,
+      companyId: filters.value.companyId || undefined,
+      siteId: filters.value.siteId || undefined,
+      departmentId: filters.value.departmentId || undefined,
+      search: filters.value.search || undefined,
+      isActive: filters.value.isActive !== '' ? filters.value.isActive === 'true' : undefined,
+    })
   } catch {
     toast.showError(t('employees.transferError'))
   } finally {

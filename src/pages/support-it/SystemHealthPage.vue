@@ -1,15 +1,18 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { useSupportStore } from '@/stores/support.store'
+import { useI18n } from 'vue-i18n'
 import { useToast } from '@/composables/useToast'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import { ArrowPathIcon } from '@heroicons/vue/24/outline'
+import { extractApiErrorMessage } from '@/utils/api-error'
 import type { HealthComponent } from '@/types'
 
 const store = useSupportStore()
 const toast = useToast()
+const { t } = useI18n()
 
 interface Row {
   name: string
@@ -40,9 +43,9 @@ function variantFor(s: string) {
 async function refresh() {
   try {
     await store.fetchHealth()
-    toast.success('Santé système actualisée')
+    toast.success(t('toast.support.healthRefreshed'))
   } catch (e) {
-    toast.error('Échec de la vérification', String((e as Error).message))
+    toast.error(t('toast.support.checkFailed'), extractApiErrorMessage(e, t('common.genericError')))
   }
 }
 
@@ -50,7 +53,7 @@ onMounted(async () => {
   try {
     await store.fetchHealth()
   } catch (e) {
-    toast.error('Impossible de charger la santé système', String((e as Error).message))
+    toast.error(t('toast.support.loadHealthError'), extractApiErrorMessage(e, t('common.genericError')))
   }
 })
 </script>

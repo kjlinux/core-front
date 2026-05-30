@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useSupportStore } from '@/stores/support.store'
+import { useI18n } from 'vue-i18n'
 import { useToast } from '@/composables/useToast'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
@@ -9,6 +10,7 @@ import AppButton from '@/components/ui/AppButton.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
 import AppSearchInput from '@/components/ui/AppSearchInput.vue'
 import DataTable from '@/components/data-display/DataTable.vue'
+import { extractApiErrorMessage } from '@/utils/api-error'
 import { SignalIcon, EyeIcon } from '@heroicons/vue/24/outline'
 import type { DeviceKind } from '@/types'
 import type { TableColumn } from '@/types/common'
@@ -16,6 +18,7 @@ import type { TableColumn } from '@/types/common'
 const store = useSupportStore()
 const router = useRouter()
 const toast = useToast()
+const { t } = useI18n()
 
 const filter = ref<{ type?: DeviceKind; status?: 'online' | 'offline' }>({})
 const search = ref('')
@@ -80,7 +83,7 @@ async function load() {
   try {
     await store.fetchDevices({ type: filter.value.type, status: filter.value.status })
   } catch (e) {
-    toast.error('Impossible de charger les capteurs', String((e as Error).message))
+    toast.error(t('toast.support.loadSensorsError'), extractApiErrorMessage(e, t('common.genericError')))
   }
 }
 
@@ -89,9 +92,9 @@ watch(filter, load, { deep: true })
 async function ping(kind: DeviceKind, id: string) {
   try {
     await store.pingDevice(kind, id)
-    toast.success('Commande STATUS envoyée')
+    toast.success(t('toast.support.statusCommandSent'))
   } catch (e) {
-    toast.error('Échec ping', String((e as Error).message))
+    toast.error(t('toast.support.pingFailed'), extractApiErrorMessage(e, t('common.genericError')))
   }
 }
 
@@ -113,7 +116,7 @@ onMounted(load)
     <AppCard padding="sm">
       <div class="flex flex-wrap gap-3 items-end">
         <div class="flex-1 min-w-[220px]">
-          <AppSearchInput v-model="search" placeholder="Rechercher (nom, serie, site)..." />
+          <AppSearchInput v-model="search" placeholder="Rechercher (nom, série, site)..." />
         </div>
         <AppSelect v-model="filter.type" :options="typeOptions" label="Type" />
         <AppSelect v-model="filter.status" :options="statusOptions" label="Statut" />

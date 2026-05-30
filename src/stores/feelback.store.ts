@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
-import { feelbackApi } from '@/services/api/feelback.api'
+import { feelbackApi, type FeelbackAlertFilters } from '@/services/api/feelback.api'
 import type { FeelbackEntry, SatisfactionStats, FeelbackAlert } from '@/types'
 
 export const useFeelbackStore = defineStore('feelback', () => {
@@ -8,6 +8,16 @@ export const useFeelbackStore = defineStore('feelback', () => {
   const stats = ref<SatisfactionStats | null>(null)
   const statsByAgency = ref<SatisfactionStats[]>([])
   const alerts = ref<FeelbackAlert[]>([])
+  const alertFilters = ref<FeelbackAlertFilters>({
+    page: 1,
+    perPage: 15,
+  })
+  const alertsPagination = ref({
+    currentPage: 1,
+    perPage: 15,
+    total: 0,
+    totalPages: 0,
+  })
   const isLoading = ref(false)
 
   async function fetchStats(params?: Record<string, unknown>) {
@@ -39,11 +49,15 @@ export const useFeelbackStore = defineStore('feelback', () => {
     }
   }
 
-  async function fetchAlerts() {
+  async function fetchAlerts(newFilters?: Partial<FeelbackAlertFilters>) {
+    if (newFilters) {
+      alertFilters.value = { page: 1, perPage: alertFilters.value.perPage, ...newFilters }
+    }
     isLoading.value = true
     try {
-      const response = await feelbackApi.getAlerts()
+      const response = await feelbackApi.getAlerts(alertFilters.value)
       alerts.value = response.data
+      alertsPagination.value = response.meta
     } finally {
       isLoading.value = false
     }
@@ -88,6 +102,8 @@ export const useFeelbackStore = defineStore('feelback', () => {
     statsByAgency,
     comparison,
     alerts,
+    alertFilters,
+    alertsPagination,
     isLoading,
     fetchStats,
     fetchEntries,

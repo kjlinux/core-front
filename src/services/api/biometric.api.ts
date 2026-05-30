@@ -1,10 +1,50 @@
 import apiClient from './client'
-import type { PaginatedResponse, PaginationParams } from '@/types'
+import type { PaginatedResponse } from '@/types'
 import type { BiometricDevice, FingerprintEnrollment } from '@/types'
 
+export interface BiometricDeviceFilters {
+  companyId?: string
+  siteId?: string
+  isOnline?: boolean
+  search?: string
+  page?: number
+  perPage?: number
+}
+
+export interface EnrollmentFilters {
+  deviceId?: string
+  status?: string
+  search?: string
+  page?: number
+  perPage?: number
+}
+
+function toSnakeDeviceFilters(params?: BiometricDeviceFilters): Record<string, unknown> | undefined {
+  if (!params) return undefined
+  const result: Record<string, unknown> = {}
+  if (params.companyId !== undefined) result.company_id = params.companyId
+  if (params.siteId !== undefined) result.site_id = params.siteId
+  if (params.isOnline !== undefined) result.is_online = params.isOnline
+  if (params.search !== undefined) result.search = params.search
+  if (params.page !== undefined) result.page = params.page
+  if (params.perPage !== undefined) result.per_page = params.perPage
+  return result
+}
+
+function toSnakeEnrollmentFilters(params?: EnrollmentFilters): Record<string, unknown> | undefined {
+  if (!params) return undefined
+  const result: Record<string, unknown> = {}
+  if (params.deviceId !== undefined) result.device_id = params.deviceId
+  if (params.status !== undefined) result.status = params.status
+  if (params.search !== undefined) result.search = params.search
+  if (params.page !== undefined) result.page = params.page
+  if (params.perPage !== undefined) result.per_page = params.perPage
+  return result
+}
+
 export const biometricApi = {
-  getDevices(params?: PaginationParams): Promise<PaginatedResponse<BiometricDevice>> {
-    return apiClient.get('/biometric/devices', { params }).then((r) => r.data)
+  getDevices(params?: BiometricDeviceFilters): Promise<PaginatedResponse<BiometricDevice>> {
+    return apiClient.get('/biometric/devices', { params: toSnakeDeviceFilters(params) }).then((r) => r.data)
   },
 
   getDevice(id: string): Promise<BiometricDevice> {
@@ -27,8 +67,8 @@ export const biometricApi = {
     return apiClient.post(`/biometric/devices/${id}/sync`).then((r) => r.data)
   },
 
-  getEnrollments(params?: PaginationParams): Promise<PaginatedResponse<FingerprintEnrollment>> {
-    return apiClient.get('/biometric/enrollments', { params }).then((r) => r.data)
+  getEnrollments(params?: EnrollmentFilters): Promise<PaginatedResponse<FingerprintEnrollment>> {
+    return apiClient.get('/biometric/enrollments', { params: toSnakeEnrollmentFilters(params) }).then((r) => r.data)
   },
 
   startEnrollment(data: Partial<FingerprintEnrollment>): Promise<FingerprintEnrollment> {

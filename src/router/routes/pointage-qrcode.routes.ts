@@ -32,7 +32,7 @@ const pointageQrcodeRoutes: RouteRecordRaw[] = [
         name: 'qrcode-generate',
         component: () => import('@/pages/pointage-qrcode/QrCodeGeneratePage.vue'),
         meta: {
-          title: 'Generer QR Code de site',
+          title: 'Générer QR Code de site',
           roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE, UserRole.TECHNICIEN],
         },
       },
@@ -41,7 +41,7 @@ const pointageQrcodeRoutes: RouteRecordRaw[] = [
         name: 'qrcode-enroll',
         component: () => import('@/pages/pointage-qrcode/QrCodeEnrollPage.vue'),
         meta: {
-          title: 'Enrolement telephones',
+          title: 'Enrôlement téléphones',
           roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE, UserRole.TECHNICIEN],
         },
       },

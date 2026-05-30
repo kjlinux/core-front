@@ -3,17 +3,19 @@ import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useFeelbackStore } from '@/stores/feelback.store'
 import { useToast } from '@/composables/useToast'
+import { useServerTable } from '@/composables/useServerTable'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import AppModal from '@/components/ui/AppModal.vue'
 import AppInput from '@/components/ui/AppInput.vue'
+import AppPagination from '@/components/ui/AppPagination.vue'
 
 const { t } = useI18n()
 const store = useFeelbackStore()
 const toast = useToast()
 
-const filterTab = ref('all')
+const filterTab = ref<'all' | 'unread' | 'read'>('all')
 const showSettingsModal = ref(false)
 
 const alertSettings = ref({
@@ -27,13 +29,26 @@ const tabs = computed(() => [
   { label: t('feelback.read'), value: 'read' },
 ])
 
-const filteredAlerts = computed(() => {
-  switch (filterTab.value) {
-    case 'unread': return store.alerts.filter((a) => !a.isRead)
-    case 'read': return store.alerts.filter((a) => a.isRead)
-    default: return store.alerts
-  }
+const { filters, search, applyFilters, handlePageChange, reload } = useServerTable({
+  initialFilters: {
+    // all -> undefined, unread -> false, read -> true
+    isRead: undefined as boolean | undefined,
+  },
+  fetcher: (p) =>
+    store.fetchAlerts({
+      page: p.page,
+      perPage: p.perPage,
+      search: p.search || undefined,
+      isRead: p.isRead,
+    }),
 })
+
+function selectTab(tab: 'all' | 'unread' | 'read') {
+  filterTab.value = tab
+  // Mappe l'onglet courant vers le filtre booleen isRead cote serveur.
+  filters.isRead = tab === 'all' ? undefined : tab === 'read'
+  applyFilters()
+}
 
 function getTypeLabel(type: string) {
   switch (type) {
@@ -67,7 +82,7 @@ function markAllAsRead() {
 
 async function saveSettings() {
   await store.updateAlertSettings({
-    thresholdMauvais: alertSettings.value.thresholdMauvais,
+    threshold: alertSettings.value.thresholdMauvais,
     offlineDelayMinutes: alertSettings.value.offlineDelayMinutes,
   })
   toast.showSuccess(t('feelback.alertsSaved'))
@@ -75,7 +90,7 @@ async function saveSettings() {
 }
 
 onMounted(async () => {
-  await store.fetchAlerts()
+  await reload()
 })
 </script>
 
@@ -101,23 +116,29 @@ onMounted(async () => {
         :key="tab.value"
         class="px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors"
         :class="filterTab === tab.value ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'"
-        @click="filterTab = tab.value"
+        @click="selectTab(tab.value as 'all' | 'unread' | 'read')"
       >
         {{ tab.label }}
       </button>
     </div>
 
+    <AppInput
+      v-model="search"
+      :placeholder="t('common.search') || 'Rechercher...'"
+      class="max-w-md"
+    />
+
     <div v-if="store.isLoading" class="flex justify-center py-12">
       <div class="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
     </div>
 
-    <div v-else-if="filteredAlerts.length === 0" class="text-center py-12">
+    <div v-else-if="store.alerts.length === 0" class="text-center py-12">
       <p class="text-gray-500">{{ t('feelback.noAlerts') }}</p>
     </div>
 
     <div v-else class="space-y-3">
       <AppCard
-        v-for="alert in filteredAlerts"
+        v-for="alert in store.alerts"
         :key="alert.id"
         class="transition-colors"
         :class="{ 'opacity-60': alert.isRead }"
@@ -146,6 +167,15 @@ onMounted(async () => {
           </div>
         </div>
       </AppCard>
+    </div>
+
+    <div v-if="!store.isLoading && store.alerts.length > 0">
+      <AppPagination
+        :current-page="store.alertsPagination.currentPage"
+        :total-pages="store.alertsPagination.totalPages"
+        :per-page="store.alertsPagination.perPage"
+        @page-change="handlePageChange"
+      />
     </div>
 
     <!-- Settings Modal -->

@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { technicienActivityApi, type TechnicienActivity } from '@/services/api/technicien-activity.api'
 import { userApi, type UserData } from '@/services/api/user.api'
+import { useI18n } from 'vue-i18n'
 import { useCompanyStore } from '@/stores/company.store'
 import { useToast } from '@/composables/useToast'
 import AppCard from '@/components/ui/AppCard.vue'
@@ -13,9 +14,11 @@ import DataTable from '@/components/data-display/DataTable.vue'
 import BarChart from '@/components/charts/BarChart.vue'
 import HeatmapChart from '@/components/charts/HeatmapChart.vue'
 import type { TableColumn } from '@/types/common'
+import { extractApiErrorMessage } from '@/utils/api-error'
 
 const companyStore = useCompanyStore()
 const toast = useToast()
+const { t } = useI18n()
 
 const techniciens = ref<UserData[]>([])
 const selectedCompanyId = ref<string>('')
@@ -63,22 +66,22 @@ const statsByTechnicien = computed(() => {
 
 const resourceTypeLabel: Record<string, string> = {
   site: 'Site',
-  employee: 'Employe',
+  employee: 'Employé',
   card: 'Carte RFID',
   rfid_device: 'Terminal RFID',
-  biometric_device: 'Terminal biometrique',
-  biometric_enrollment: 'Enrolement biometrique',
-  department: 'Departement',
+  biometric_device: 'Terminal biométrique',
+  biometric_enrollment: 'Enrôlement biométrique',
+  department: 'Département',
 }
 
 const actionLabel: Record<string, string> = {
-  create: 'Creation',
+  create: 'Création',
   update: 'Modification',
   delete: 'Suppression',
   assign: 'Assignation',
-  enroll: 'Enrolement',
+  enroll: 'Enrôlement',
   activate: 'Activation',
-  deactivate: 'Desactivation',
+  deactivate: 'Désactivation',
 }
 
 const actionVariant: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'neutral'> = {
@@ -97,7 +100,7 @@ const columns: TableColumn[] = [
   { key: 'company', label: 'Entreprise' },
   { key: 'action', label: 'Action' },
   { key: 'resourceType', label: 'Ressource' },
-  { key: 'resourceLabel', label: 'Element' },
+  { key: 'resourceLabel', label: 'Élément' },
 ]
 
 const filteredActivities = computed(() => {
@@ -156,7 +159,7 @@ async function loadActivities() {
     activities.value = res.data ?? []
     totalActivities.value = res.meta?.total ?? 0
   } catch (e) {
-    toast.error('Impossible de charger les activités', String((e as Error).message))
+    toast.error(t('toast.parametres.loadActivitiesError'), extractApiErrorMessage(e, t('common.genericError')))
   } finally {
     isLoading.value = false
   }
@@ -200,7 +203,7 @@ const heatmap = computed(() => {
   const yAxis = Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2, '0')}h`)
   const data: Array<[number, number, number]> = []
   for (const [k, v] of counts.entries()) {
-    const [d, h] = k.split('|')
+    const [d = '', h = ''] = k.split('|')
     const xi = xIndex.get(d.slice(5))
     if (xi == null) continue
     data.push([xi, Number(h), v])
@@ -226,9 +229,9 @@ onMounted(async () => {
       companyStore.fetchCompanies({ perPage: 200 }),
       userApi.getAll({ role: 'technicien', perPage: 200 }),
     ])
-    techniciens.value = techs
+    techniciens.value = techs.data
   } catch (e) {
-    toast.error('Impossible de charger les filtres', String((e as Error).message))
+    toast.error(t('toast.parametres.loadFiltersError'), extractApiErrorMessage(e, t('common.genericError')))
   }
   await loadActivities()
 })
@@ -237,9 +240,9 @@ onMounted(async () => {
 <template>
   <div class="space-y-6">
     <div>
-      <h1 class="text-2xl font-bold text-gray-900">Activites des techniciens</h1>
+      <h1 class="text-2xl font-bold text-gray-900">Activités des techniciens</h1>
       <p class="mt-1 text-sm text-gray-500">
-        Historique de toutes les actions effectuees par les techniciens
+        Historique de toutes les actions effectuées par les techniciens
       </p>
     </div>
 
@@ -282,7 +285,7 @@ onMounted(async () => {
         </div>
         <div class="min-w-55 flex-1">
           <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Recherche</label>
-          <AppSearchInput v-model="search" placeholder="Rechercher (technicien, entreprise, element)..." />
+          <AppSearchInput v-model="search" placeholder="Rechercher (technicien, entreprise, élément)..." />
         </div>
         <AppButton variant="ghost" size="sm" :disabled="isLoading" @click="loadActivities">
           Actualiser
@@ -293,7 +296,7 @@ onMounted(async () => {
     <!-- Synthese visuelle : heatmap jour/heure + repartition actions -->
     <div v-if="activities.length > 0" class="grid gap-4 lg:grid-cols-3">
       <AppCard class="lg:col-span-2">
-        <h3 class="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-200">Heatmap activite (jour x heure)</h3>
+        <h3 class="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-200">Heatmap activité (jour x heure)</h3>
         <HeatmapChart
           v-if="heatmap.xAxis.length > 0"
           :x-axis="heatmap.xAxis"
@@ -333,7 +336,7 @@ onMounted(async () => {
         <div>
           <p class="font-medium text-gray-900">{{ stat.name }}</p>
           <p class="text-xs text-gray-400">{{ stat.email }}</p>
-          <p class="mt-1 text-xs text-gray-500">Derniere action : {{ formatDate(stat.lastAt) }}</p>
+          <p class="mt-1 text-xs text-gray-500">Dernière action : {{ formatDate(stat.lastAt) }}</p>
         </div>
         <div class="text-right">
           <p class="text-2xl font-bold text-gray-900">{{ stat.count }}</p>
@@ -351,7 +354,7 @@ onMounted(async () => {
         :pagination="paginationObj"
         default-sort-column="createdAt"
         default-sort-direction="desc"
-        empty-message="Aucune activite enregistree"
+        empty-message="Aucune activité enregistrée"
         @page-change="onPageChange"
       >
         <template #createdAt="{ row }">

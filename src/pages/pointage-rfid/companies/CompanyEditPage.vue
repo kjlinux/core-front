@@ -9,6 +9,7 @@ import CompanyForm from '@/components/forms/CompanyForm.vue'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import { ArrowLeftIcon } from '@heroicons/vue/24/outline'
+import { extractApiErrorMessage } from '@/utils/api-error'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -28,12 +29,13 @@ onMounted(async () => {
         email: companyStore.currentCompany.email,
         phone: companyStore.currentCompany.phone,
         address: companyStore.currentCompany.address,
+        matriculePrefix: companyStore.currentCompany.matriculePrefix,
         isActive: companyStore.currentCompany.isActive,
         subscription: companyStore.currentCompany.subscription,
       }
     }
   } catch (error: any) {
-    toast.error(t('common.error'), error.message || t('companies.loadError'))
+    toast.error(t('common.error'), extractApiErrorMessage(error, t('companies.loadError')))
     router.push({ name: 'rfid-companies' })
   }
 })
@@ -44,7 +46,7 @@ async function handleSubmit() {
     toast.success(t('common.success'), t('companies.updatedSuccess'))
     router.push({ name: 'rfid-company-detail', params: { id: companyId.value } })
   } catch (error: any) {
-    toast.error(t('common.error'), error.message || t('companies.updateError'))
+    toast.error(t('common.error'), extractApiErrorMessage(error, t('companies.updateError')))
   }
 }
 

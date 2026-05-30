@@ -10,6 +10,10 @@ export interface AttendanceReportRow {
   late: number
   overtime: number
   rate: number
+  /** Jours de congé approuvés sur la période (additif, backend récent). */
+  leave?: number
+  /** Jours ouvrés attendus servant de dénominateur au taux (additif). */
+  expected?: number
   [key: string]: unknown
 }
 
@@ -18,6 +22,10 @@ export interface AttendanceReportData {
   totalPresent: number
   totalAbsent: number
   totalLate: number
+  /** Total des jours de congé approuvés (additif, backend récent). */
+  totalLeave?: number
+  /** Taux de présence global = présents+retards / jours ouvrés (additif). */
+  globalRate?: number
   rows: AttendanceReportRow[]
 }
 
@@ -28,6 +36,9 @@ export interface AttendanceReportParams {
   company_id?: string
   site_id?: string
   department_id?: string
+  /** Filtre par canal de pointage. Le backend accepte rfid|qrcode|biometric|manual. */
+  source?: 'rfid' | 'qrcode' | 'biometric' | 'manual'
+  [key: string]: unknown
 }
 
 import { downloadServerCsv, downloadServerFile } from './report-export'

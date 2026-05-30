@@ -3,7 +3,9 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useSupportStore } from '@/stores/support.store'
 import { supportApi, type SupportCompanyUser } from '@/services/api/support.api'
+import { useI18n } from 'vue-i18n'
 import { useToast } from '@/composables/useToast'
+import { extractApiErrorMessage } from '@/utils/api-error'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import AppButton from '@/components/ui/AppButton.vue'
@@ -14,6 +16,7 @@ const route = useRoute()
 const router = useRouter()
 const store = useSupportStore()
 const toast = useToast()
+const { t } = useI18n()
 
 const id = computed(() => route.params.id as string)
 const detail = computed(() => store.companyDetail)
@@ -38,9 +41,9 @@ async function doReset() {
   try {
     const res = await supportApi.resetUserPassword(confirmUser.value.id)
     tempPassword.value = res.tempPassword
-    toast.success('Mot de passe réinitialisé')
+    toast.success(t('toast.support.passwordReset'))
   } catch (e) {
-    toast.error('Échec', String((e as Error).message))
+    toast.error(t('common.failed'), extractApiErrorMessage(e, t('common.genericError')))
   } finally {
     resetting.value = false
   }
@@ -55,7 +58,7 @@ onMounted(async () => {
   try {
     await store.fetchCompanyDetail(id.value)
   } catch (e) {
-    toast.error('Erreur de chargement', String((e as Error).message))
+    toast.error(t('toast.support.loadError'), extractApiErrorMessage(e, t('common.genericError')))
   }
 })
 </script>

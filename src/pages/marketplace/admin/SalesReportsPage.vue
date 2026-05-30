@@ -5,6 +5,7 @@ import { salesReportApi, type SalesReportData, type SalesReportParams } from '@/
 import { useAuthStore } from '@/stores/auth.store'
 import { companyApi } from '@/services/api/company.api'
 import { useToast } from '@/composables/useToast'
+import { usePeriodSelector, type PeriodMode } from '@/composables/usePeriodSelector'
 import { formatCurrency } from '@/utils/format'
 import { exportToPdf, exportToExcel } from '@/utils/export-helpers'
 import AppCard from '@/components/ui/AppCard.vue'
@@ -28,17 +29,42 @@ const endDate = ref('')
 const isLoading = ref(false)
 const report = ref<SalesReportData | null>(null)
 
+// Période auto-couplée : « custom » par défaut pour préserver le comportement
+// « toutes périodes » (dates vides). Choisir un mode rapide remplit les dates.
+const {
+  periodMode,
+  day: pDay,
+  month: pMonth,
+  weekDay: pWeekDay,
+  startDate: pComputedStart,
+  endDate: pComputedEnd,
+} = usePeriodSelector('custom')
+
+const periodModeOptions = computed(() => [
+  { label: t('reports.pmDaily'), value: 'daily' },
+  { label: t('reports.pmWeekly'), value: 'weekly' },
+  { label: t('reports.pmMonthly'), value: 'monthly' },
+  { label: t('reports.pmCustom'), value: 'custom' },
+])
+
+watch([pComputedStart, pComputedEnd, periodMode], () => {
+  if (periodMode.value !== 'custom') {
+    startDate.value = pComputedStart.value
+    endDate.value = pComputedEnd.value
+  }
+})
+
 async function loadCompanies() {
   if (!isSuperAdmin.value) return
   try {
-    const companies = await companyApi.getAll()
+    const companies = (await companyApi.getAll({ perPage: 1000 })).data
     companyOptions.value = [
       { label: 'Toutes les entreprises', value: '' },
       ...companies.map((c) => ({ label: c.name, value: c.id })),
     ]
   } catch (e) {
     console.error('Failed to load companies', e)
-    toast.showError('Impossible de charger la liste des entreprises')
+    toast.showError(t('toast.marketplace.loadCompaniesError'))
   }
 }
 
@@ -63,15 +89,15 @@ async function fetchReport() {
     if (isSuperAdmin.value && selectedCompany.value) params.company_id = selectedCompany.value
     report.value = await salesReportApi.getReport(params)
   } catch {
-    toast.showError('Erreur lors du chargement du rapport')
+    toast.showError(t('toast.marketplace.loadReportError'))
   } finally {
     isLoading.value = false
   }
 }
 
 const periodLabel = computed(() => {
-  if (startDate.value && endDate.value) return `Periode: ${startDate.value} au ${endDate.value}`
-  return 'Toutes les periodes'
+  if (startDate.value && endDate.value) return `Période: ${startDate.value} au ${endDate.value}`
+  return 'Toutes les périodes'
 })
 
 async function handleExportPdf() {
@@ -192,8 +218,27 @@ onMounted(() => {
         :label="t('marketplace.company')"
         class="min-w-48"
       />
-      <AppInput v-model="startDate" type="date" :label="t('marketplace.startDate')" />
-      <AppInput v-model="endDate" type="date" :label="t('marketplace.endDate')" />
+      <AppSelect
+        :model-value="periodMode"
+        :options="periodModeOptions"
+        :label="t('reports.periodMode')"
+        class="min-w-40"
+        @update:model-value="(v) => (periodMode = v as PeriodMode)"
+      />
+      <AppInput v-if="periodMode === 'daily'" v-model="pDay" type="date" :label="t('reports.selectDay')" />
+      <div v-else-if="periodMode === 'monthly'">
+        <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('reports.selectMonth') }}</label>
+        <input
+          v-model="pMonth"
+          type="month"
+          class="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-700"
+        />
+      </div>
+      <AppInput v-else-if="periodMode === 'weekly'" v-model="pWeekDay" type="date" :label="t('reports.selectWeek')" />
+      <template v-else>
+        <AppInput v-model="startDate" type="date" :label="t('marketplace.startDate')" />
+        <AppInput v-model="endDate" type="date" :label="t('marketplace.endDate')" />
+      </template>
     </div>
 
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -209,7 +254,7 @@ onMounted(() => {
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <AppCard :title="t('marketplace.ordersByStatus')">
-        <PieChart :data="statusPieData" title="Repartition" />
+        <PieChart :data="statusPieData" title="Répartition" />
       </AppCard>
       <AppCard :title="t('marketplace.topProducts')">
         <BarChart :data="topProductsData" :title="t('marketplace.revenue')" />

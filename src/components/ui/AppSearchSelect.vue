@@ -12,7 +12,7 @@
         type="text"
         autocomplete="off"
         :value="displayValue"
-        :placeholder="placeholder || 'Selectionner...'"
+        :placeholder="placeholder || 'Sélectionner...'"
         :disabled="disabled"
         :required="required"
         :class="inputClasses"
@@ -45,14 +45,16 @@
       role="listbox"
     >
       <li v-if="filteredOptions.length === 0" class="px-3 py-2 text-gray-500 italic">
-        Aucun resultat
+        Aucun résultat
       </li>
       <li
         v-for="(option, index) in filteredOptions"
         :key="option.value"
         :class="[
           'cursor-pointer select-none px-3 py-2',
-          highlightedIndex === index ? 'bg-primary-50 text-primary-900' : 'text-gray-900',
+          highlightedIndex === index
+            ? 'bg-primary-50 text-primary-900 dark:bg-primary-700 dark:text-white'
+            : 'text-gray-900 dark:text-gray-100',
           String(option.value) === String(modelValue) ? 'font-semibold' : ''
         ]"
         role="option"

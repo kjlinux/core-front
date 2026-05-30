@@ -41,6 +41,21 @@ use([
 
 async function bootstrap() {
   const app = createApp(App)
+
+  // Silence Pinia's "🍍 ... store installed 🆕" devtools logs in dev.
+  // The Pinia devtools plugin defaults logStoreChanges to true; persist it as
+  // false before Pinia registers its plugin (must be before app.use(pinia)).
+  if (import.meta.env.DEV) {
+    try {
+      localStorage.setItem(
+        '__vue-devtools-plugin-settings__pinia',
+        JSON.stringify({ logStoreChanges: false }),
+      )
+    } catch {
+      // ignore (e.g. storage disabled)
+    }
+  }
+
   const pinia = createPinia()
 
   app.use(pinia)

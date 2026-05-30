@@ -19,8 +19,36 @@ export interface ClientFollowupCall {
   installationSheet?: any
 }
 
+/** Libellés FR partagés (liste, détail, fiche d'installation). */
+export const FOLLOWUP_STATUS_LABELS: Record<ClientFollowupCall['status'], string> = {
+  pending: 'En attente',
+  done: 'Fait',
+  skipped: 'Ignoré',
+  escalated: 'Escaladé',
+}
+
+export const FOLLOWUP_RESULT_LABELS: Record<'ok' | 'partial' | 'problem', string> = {
+  ok: 'Tout va bien',
+  partial: 'Quelques réserves',
+  problem: 'Problème à traiter',
+}
+
+export const FOLLOWUP_TYPE_LABELS: Record<ClientFollowupCall['call_type'], string> = {
+  j2: 'J+2',
+  j7: 'J+7',
+  j30: 'J+30',
+}
+
+export function followupStatusLabel(status: string): string {
+  return FOLLOWUP_STATUS_LABELS[status as ClientFollowupCall['status']] ?? status
+}
+
+export function followupTypeLabel(type: string): string {
+  return FOLLOWUP_TYPE_LABELS[type as ClientFollowupCall['call_type']] ?? type.toUpperCase()
+}
+
 export const followupApi = {
-  list(params?: { status?: string; type?: string; overdue?: boolean }): Promise<PaginatedResponse<ClientFollowupCall>> {
+  list(params?: { status?: string; type?: string; overdue?: boolean; page?: number }): Promise<PaginatedResponse<ClientFollowupCall>> {
     return apiClient.get('/followups', { params }).then((r) => r.data)
   },
   get(id: number | string): Promise<ClientFollowupCall> {

@@ -40,9 +40,15 @@ const validate = (): boolean => {
     errors.value.email = "L'email n'est pas valide"
   }
 
-  if (!localValue.value.matriculePrefix?.trim()) {
-    errors.value.matriculePrefix = 'Le préfixe matricule est requis'
-  } else if (!/^[A-Z]{1,5}$/.test(localValue.value.matriculePrefix)) {
+  if (!localValue.value.phone?.trim()) {
+    errors.value.phone = 'Le téléphone est requis'
+  }
+
+  if (!localValue.value.address?.trim()) {
+    errors.value.address = "L'adresse est requise"
+  }
+
+  if (localValue.value.matriculePrefix?.trim() && !/^[A-Z]{1,5}$/.test(localValue.value.matriculePrefix)) {
     errors.value.matriculePrefix = 'Le préfixe doit contenir 1 à 5 lettres majuscules'
   }
 
@@ -78,7 +84,7 @@ const handleSubmit = () => {
         />
       </FormRow>
 
-      <FormRow label="Téléphone" :optional="true" :error="errors.phone">
+      <FormRow label="Téléphone" :required="true" :error="errors.phone">
         <AppInput
           :model-value="localValue.phone || ''"
           @update:model-value="updateField('phone', $event)"
@@ -88,7 +94,7 @@ const handleSubmit = () => {
         />
       </FormRow>
 
-      <FormRow label="Adresse" :optional="true" :error="errors.address">
+      <FormRow label="Adresse" :required="true" :error="errors.address">
         <AppInput
           :model-value="localValue.address || ''"
           @update:model-value="updateField('address', $event)"
@@ -97,7 +103,7 @@ const handleSubmit = () => {
         />
       </FormRow>
 
-      <FormRow label="Préfixe matricule" :required="true" :error="errors.matriculePrefix" help="Ex: TG, CBF, ACME - utilisé pour générer les matricules employés">
+      <FormRow label="Préfixe matricule" :optional="true" :error="errors.matriculePrefix" help="Ex: TG, CBF, ACME - utilisé pour générer les matricules employés">
         <AppInput
           :model-value="localValue.matriculePrefix || ''"
           @update:model-value="updateField('matriculePrefix', String($event).toUpperCase())"

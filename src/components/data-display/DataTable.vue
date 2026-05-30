@@ -211,7 +211,7 @@ const props = withDefaults(defineProps<Props>(), {
   loading: false,
   sortable: true,
   selectable: false,
-  emptyMessage: 'Aucune donnee disponible',
+  emptyMessage: 'Aucune donnée disponible',
   defaultSortColumn: '',
   defaultSortDirection: 'desc',
   searchable: false,

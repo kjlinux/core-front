@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useCompanyStore } from '@/stores/company.store'
 import { usePermissions } from '@/composables/usePermissions'
+import { useServerTable } from '@/composables/useServerTable'
 import type { Company } from '@/types'
 import type { TableColumn } from '@/types/common'
 import AppButton from '@/components/ui/AppButton.vue'
@@ -15,15 +16,24 @@ import DataTable from '@/components/data-display/DataTable.vue'
 import { EyeIcon, PencilIcon, NoSymbolIcon, CheckCircleIcon } from '@heroicons/vue/24/outline'
 import { useToast } from '@/composables/useToast'
 import { sortByRecent } from '@/utils/sort'
+import { extractApiErrorMessage } from '@/utils/api-error'
 
 const { t } = useI18n()
 const router = useRouter()
 const companyStore = useCompanyStore()
-const { isSuperAdmin } = usePermissions()
+const { isSetupRole } = usePermissions()
 const toast = useToast()
 
-const searchQuery = ref('')
-const statusFilter = ref<'' | 'active' | 'inactive'>('')
+const { filters, search, applyFilters, handlePageChange, reload } = useServerTable({
+  initialFilters: { status: '' as '' | 'active' | 'inactive' },
+  fetcher: (p) =>
+    companyStore.fetchCompanies({
+      page: p.page,
+      perPage: p.perPage,
+      search: p.search || undefined,
+      isActive: p.status === '' ? undefined : p.status === 'active',
+    }),
+})
 
 const statusOptions = computed(() => [
   { value: '', label: t('companies.allStatuses') || 'Tous les statuts' },
@@ -40,33 +50,19 @@ const columns = computed<TableColumn[]>(() => [
   { key: 'actions', label: t('common.actions'), align: 'right' as const, width: '160px' },
 ])
 
-const tableData = computed(() => {
-  const q = searchQuery.value.trim().toLowerCase()
-  return sortByRecent(companyStore.companies)
-    .filter((c) => {
-      if (statusFilter.value === 'active' && !c.isActive) return false
-      if (statusFilter.value === 'inactive' && c.isActive) return false
-      if (!q) return true
-      return (
-        (c.name || '').toLowerCase().includes(q) ||
-        (c.email || '').toLowerCase().includes(q) ||
-        (c.phone || '').toLowerCase().includes(q)
-      )
-    })
-    .map((c) => ({
-      id: c.id,
-      name: c.name,
-      email: c.email,
-      phone: c.phone,
-      status: c.isActive ? 'active' : 'inactive',
-      employeeCount: c.employeeCount,
-      _raw: c,
-    }))
-})
+const tableData = computed(() =>
+  sortByRecent(companyStore.companies).map((c) => ({
+    id: c.id,
+    name: c.name,
+    email: c.email,
+    phone: c.phone,
+    status: c.isActive ? 'active' : 'inactive',
+    employeeCount: c.employeeCount,
+    _raw: c,
+  })),
+)
 
-onMounted(() => {
-  companyStore.fetchCompanies()
-})
+onMounted(reload)
 
 function handleRowClick(row: { id: string }) {
   router.push({ name: 'rfid-company-detail', params: { id: row.id } })
@@ -84,20 +80,13 @@ function handleEditCompany(id: string) {
   router.push({ name: 'rfid-company-edit', params: { id } })
 }
 
-function handlePageChange(page: number) {
-  companyStore.fetchCompanies({ page })
-}
-
-function handleSort(column: string, direction: 'asc' | 'desc') {
-  companyStore.fetchCompanies({ sortBy: column, sortOrder: direction })
-}
-
 async function handleToggleActive(company: Company) {
   try {
     await companyStore.toggleActive(company.id)
     toast.success(t('common.success'), company.isActive ? t('companies.deactivated') : t('companies.activated'))
+    await reload()
   } catch (error: any) {
-    toast.error(t('common.error'), error.message || t('companies.statusError'))
+    toast.error(t('common.error'), extractApiErrorMessage(error, t('companies.statusError')))
   }
 }
 </script>
@@ -106,7 +95,7 @@ async function handleToggleActive(company: Company) {
   <div>
     <div class="mb-6 flex items-center justify-between">
       <h1 class="text-2xl font-bold text-gray-900">{{ t('companies.title') }}</h1>
-      <AppButton v-if="isSuperAdmin" @click="handleCreateCompany">
+      <AppButton v-if="isSetupRole" @click="handleCreateCompany">
         {{ t('companies.create') }}
       </AppButton>
     </div>
@@ -114,14 +103,15 @@ async function handleToggleActive(company: Company) {
     <AppCard class="mb-6">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <AppInput
-          v-model="searchQuery"
+          v-model="search"
           :placeholder="t('common.search') || 'Rechercher...'"
           :label="t('common.search') || 'Rechercher'"
         />
         <AppSelect
-          v-model="statusFilter"
+          v-model="filters.status"
           :options="statusOptions"
           :label="t('common.status')"
+          @update:model-value="applyFilters"
         />
       </div>
     </AppCard>
@@ -132,11 +122,8 @@ async function handleToggleActive(company: Company) {
         :data="tableData"
         :loading="companyStore.isLoading"
         :pagination="companyStore.pagination"
-        default-sort-column="name"
-        default-sort-direction="desc"
         @row-click="handleRowClick"
         @page-change="handlePageChange"
-        @sort="handleSort"
       >
         <template #status="{ row }">
           <AppBadge :variant="row.status === 'active' ? 'success' : 'neutral'">
@@ -154,7 +141,7 @@ async function handleToggleActive(company: Company) {
               <EyeIcon class="h-5 w-5" />
             </button>
             <button
-              v-if="isSuperAdmin"
+              v-if="isSetupRole"
               @click="handleEditCompany(row.id)"
               class="text-gray-600 hover:text-gray-900"
               :title="t('common.edit')"
@@ -162,7 +149,7 @@ async function handleToggleActive(company: Company) {
               <PencilIcon class="h-5 w-5" />
             </button>
             <button
-              v-if="isSuperAdmin"
+              v-if="isSetupRole"
               @click="handleToggleActive(row._raw)"
               :class="row.status === 'active' ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'"
               :title="row.status === 'active' ? t('common.deactivate') : t('common.activate')"

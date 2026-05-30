@@ -94,7 +94,7 @@ async function confirmCancel() {
     await store.cancelOrder(cancelOrderId.value)
     toast.showSuccess(t('marketplace.orderCancelled'))
   } catch {
-    toast.showError("Erreur lors de l'annulation")
+    toast.showError(t('toast.marketplace.cancelError'))
   }
 }
 

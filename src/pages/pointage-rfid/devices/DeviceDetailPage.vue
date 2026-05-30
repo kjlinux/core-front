@@ -67,7 +67,7 @@ async function handleDelete() {
 }
 
 onMounted(async () => {
-  await store.fetchDevices()
+  await store.fetchDevices({ perPage: 200 })
   if (!device.value) {
     await store.fetchDevice(deviceId)
   }

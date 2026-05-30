@@ -14,7 +14,7 @@
     <AppCard class="mb-6">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <AppInput
-          v-model="searchQuery"
+          v-model="search"
           :placeholder="t('common.search') || 'Rechercher...'"
           :label="t('common.search') || 'Rechercher'"
         />
@@ -23,7 +23,7 @@
           :options="companyOptions"
           :label="t('sites.company')"
           :placeholder="t('sites.allCompanies')"
-          @update:model-value="handleFilterChange"
+          @update:model-value="applyFilters"
         />
       </div>
     </AppCard>
@@ -191,6 +191,7 @@ import { useI18n } from 'vue-i18n'
 import { useSiteStore } from '@/stores/site.store'
 import { useCompanyStore } from '@/stores/company.store'
 import { usePermissions } from '@/composables/usePermissions'
+import { useServerTable } from '@/composables/useServerTable'
 import DataTable from '@/components/data-display/DataTable.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppCard from '@/components/ui/AppCard.vue'
@@ -203,6 +204,7 @@ import type { Site } from '@/types'
 import { useToast } from '@/composables/useToast'
 import { PencilIcon, TrashIcon } from '@heroicons/vue/24/outline'
 import { sortByRecent } from '@/utils/sort'
+import { extractApiErrorMessage } from '@/utils/api-error'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -219,12 +221,16 @@ const deletingSite = ref<Site | null>(null)
 const isSubmitting = ref(false)
 const siteErrors = ref<Record<string, string>>({})
 
-const filters = ref({
-  companyId: '',
-  page: 1,
-  perPage: 10,
+const { filters, search, applyFilters, handlePageChange, reload } = useServerTable({
+  initialFilters: { companyId: '' },
+  fetcher: (p) =>
+    siteStore.fetchSites({
+      page: p.page,
+      perPage: p.perPage,
+      companyId: p.companyId || undefined,
+      search: p.search || undefined,
+    }),
 })
-const searchQuery = ref('')
 
 const formData = ref({
   name: '',
@@ -261,8 +267,8 @@ const columns = computed<TableColumn[]>(() => {
   return cols
 })
 
-const tableData = computed(() => {
-  const rows = sortByRecent(siteStore.sites).map(site => {
+const tableData = computed(() =>
+  sortByRecent(siteStore.sites).map(site => {
     const company = companyStore.companies.find(c => c.id === site.companyId)
     return {
       id: site.id,
@@ -274,19 +280,12 @@ const tableData = computed(() => {
       _raw: site,
     }
   })
-  const q = searchQuery.value.trim().toLowerCase()
-  if (!q) return rows
-  return rows.filter(r =>
-    r.name.toLowerCase().includes(q) ||
-    r.companyName.toLowerCase().includes(q) ||
-    (r.address || '').toLowerCase().includes(q)
-  )
-})
+)
 
 onMounted(async () => {
   await Promise.all([
     companyStore.fetchCompanies({ perPage: 100 }),
-    siteStore.fetchSites(filters.value),
+    reload(),
   ])
 })
 
@@ -295,20 +294,29 @@ function validateSiteForm(): boolean {
   if (!formData.value.name?.toString().trim()) siteErrors.value.name = 'Le nom est requis'
   if (!formData.value.address?.toString().trim()) siteErrors.value.address = "L'adresse est requise"
   if (!formData.value.companyId) siteErrors.value.companyId = "L'entreprise est requise"
-  if (formData.value.latitude === '' || formData.value.latitude === null || formData.value.latitude === undefined) siteErrors.value.latitude = 'La latitude est requise'
-  if (formData.value.longitude === '' || formData.value.longitude === null || formData.value.longitude === undefined) siteErrors.value.longitude = 'La longitude est requise'
-  if (!formData.value.geofenceRadius) siteErrors.value.geofenceRadius = 'Le rayon de géofencing est requis'
+
+  const lat = Number(formData.value.latitude)
+  if (formData.value.latitude === '' || formData.value.latitude === null || formData.value.latitude === undefined) {
+    siteErrors.value.latitude = 'La latitude est requise'
+  } else if (Number.isNaN(lat) || lat < -90 || lat > 90) {
+    siteErrors.value.latitude = 'La latitude doit être comprise entre -90 et 90'
+  }
+
+  const lng = Number(formData.value.longitude)
+  if (formData.value.longitude === '' || formData.value.longitude === null || formData.value.longitude === undefined) {
+    siteErrors.value.longitude = 'La longitude est requise'
+  } else if (Number.isNaN(lng) || lng < -180 || lng > 180) {
+    siteErrors.value.longitude = 'La longitude doit être comprise entre -180 et 180'
+  }
+
+  const radius = Number(formData.value.geofenceRadius)
+  if (!formData.value.geofenceRadius) {
+    siteErrors.value.geofenceRadius = 'Le rayon de géofencing est requis'
+  } else if (Number.isNaN(radius) || !Number.isInteger(radius) || radius < 10 || radius > 5000) {
+    siteErrors.value.geofenceRadius = 'Le rayon doit être un entier entre 10 et 5000 mètres'
+  }
+
   return Object.keys(siteErrors.value).length === 0
-}
-
-function handleFilterChange() {
-  filters.value.page = 1
-  siteStore.fetchSites(filters.value)
-}
-
-function handlePageChange(page: number) {
-  filters.value.page = page
-  siteStore.fetchSites(filters.value)
 }
 
 function handleRowClick(row: any) {
@@ -329,9 +337,9 @@ async function handleCreateSite() {
     })
     toast.success(t('common.success'), t('sites.createdSuccess'))
     closeCreateModal()
-    await siteStore.fetchSites(filters.value)
+    await reload()
   } catch (error: any) {
-    toast.error(t('common.error'), error.message || t('sites.createError'))
+    toast.error(t('common.error'), extractApiErrorMessage(error, t('sites.createError')))
   } finally {
     isSubmitting.value = false
   }
@@ -365,9 +373,9 @@ async function handleEditSite() {
     })
     toast.success(t('common.success'), t('sites.updatedSuccess'))
     closeEditModal()
-    await siteStore.fetchSites(filters.value)
+    await reload()
   } catch (error: any) {
-    toast.error(t('common.error'), error.message || t('sites.updateError'))
+    toast.error(t('common.error'), extractApiErrorMessage(error, t('sites.updateError')))
   } finally {
     isSubmitting.value = false
   }
@@ -385,9 +393,9 @@ async function confirmDeleteSite() {
     await siteStore.deleteSite(deletingSite.value.id)
     toast.success(t('common.success'), t('sites.deletedSuccess'))
     closeDeleteModal()
-    await siteStore.fetchSites(filters.value)
+    await reload()
   } catch (error: any) {
-    toast.error(t('common.error'), error.message || t('sites.deleteError'))
+    toast.error(t('common.error'), extractApiErrorMessage(error, t('sites.deleteError')))
   } finally {
     isSubmitting.value = false
   }

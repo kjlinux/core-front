@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
-import { scheduleApi } from '@/services/api/schedule.api'
+import { scheduleApi, type ScheduleFilters, type HolidayFilters } from '@/services/api/schedule.api'
 import { normalizeSchedule } from '@/utils/schedule'
 import type { Schedule, Holiday } from '@/types'
 
@@ -9,6 +9,18 @@ export const useScheduleStore = defineStore('schedule', () => {
   const holidays = ref<Holiday[]>([])
   const currentSchedule = ref<Schedule | null>(null)
   const isLoading = ref(false)
+  const pagination = ref({
+    currentPage: 1,
+    perPage: 15,
+    total: 0,
+    totalPages: 0,
+  })
+  const holidayPagination = ref({
+    currentPage: 1,
+    perPage: 15,
+    total: 0,
+    totalPages: 0,
+  })
 
   async function fetchScheduleById(id: string) {
     isLoading.value = true
@@ -21,11 +33,15 @@ export const useScheduleStore = defineStore('schedule', () => {
     }
   }
 
-  async function fetchSchedules() {
+  async function fetchSchedules(filters?: ScheduleFilters) {
     isLoading.value = true
     try {
-      const response = await scheduleApi.getAll({ perPage: 1000 })
+      // Sans filtres (ex: dropdowns EmployeeCreate/Edit), on charge une page large
+      // pour conserver l'ancien comportement « liste complète ».
+      const params: ScheduleFilters = filters ?? { perPage: 200 }
+      const response = await scheduleApi.getAll(params)
       schedules.value = response.data.map(normalizeSchedule)
+      pagination.value = response.meta
     } finally {
       isLoading.value = false
     }
@@ -72,11 +88,13 @@ export const useScheduleStore = defineStore('schedule', () => {
     }
   }
 
-  async function fetchHolidays() {
+  async function fetchHolidays(filters?: HolidayFilters) {
     isLoading.value = true
     try {
-      const response = await scheduleApi.getHolidays({ perPage: 1000 })
+      const params: HolidayFilters = filters ?? { perPage: 200 }
+      const response = await scheduleApi.getHolidays(params)
       holidays.value = response.data
+      holidayPagination.value = response.meta
     } finally {
       isLoading.value = false
     }
@@ -93,6 +111,20 @@ export const useScheduleStore = defineStore('schedule', () => {
     }
   }
 
+  async function updateHoliday(id: string, data: Partial<Holiday>) {
+    isLoading.value = true
+    try {
+      const updated = await scheduleApi.updateHoliday(id, data)
+      const index = holidays.value.findIndex((h) => h.id === id)
+      if (index !== -1) {
+        holidays.value[index] = updated
+      }
+      return updated
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   async function deleteHoliday(id: string) {
     isLoading.value = true
     try {
@@ -103,5 +135,5 @@ export const useScheduleStore = defineStore('schedule', () => {
     }
   }
 
-  return { schedules, holidays, currentSchedule, isLoading, fetchScheduleById, fetchSchedules, createSchedule, updateSchedule, deleteSchedule, fetchHolidays, createHoliday, deleteHoliday }
+  return { schedules, holidays, currentSchedule, isLoading, pagination, holidayPagination, fetchScheduleById, fetchSchedules, createSchedule, updateSchedule, deleteSchedule, fetchHolidays, createHoliday, updateHoliday, deleteHoliday }
 })

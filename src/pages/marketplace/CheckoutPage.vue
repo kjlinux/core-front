@@ -27,11 +27,11 @@ const companyOptions = ref<{ label: string; value: string }[]>([])
 onMounted(async () => {
   if (isSuperAdmin.value) {
     try {
-      const companies = await companyApi.getAll()
+      const companies = (await companyApi.getAll({ perPage: 1000 })).data
       companyOptions.value = companies.map((c) => ({ label: c.name, value: c.id }))
     } catch (e) {
       console.error('Failed to load companies', e)
-      toast.showError('Impossible de charger la liste des entreprises')
+      toast.showError(t('toast.marketplace.loadCompaniesError'))
     }
   }
 })
@@ -39,8 +39,7 @@ onMounted(async () => {
 const step = ref(1)
 const selectedOrderId = ref('')
 const isSubmitting = ref(false)
-const selectedPaymentMethod = ref<string>('intouch_mobile_money')
-const mobileNumber = ref('')
+const selectedPaymentMethod = ref<string>('ligdicash')
 const DELIVERY_FEE = 2000
 
 const deliveryAddress = ref<DeliveryAddress>({
@@ -85,10 +84,6 @@ async function confirmOrder() {
     toast.showError(t('marketplace.selectCompanyRequired'))
     return
   }
-  if (selectedPaymentMethod.value === 'intouch_mobile_money' && !mobileNumber.value.trim()) {
-    toast.showError(t('marketplace.mobileMoneyRequired'))
-    return
-  }
   isSubmitting.value = true
   try {
     const items = cartStore.items.map((item) => ({
@@ -98,13 +93,13 @@ async function confirmOrder() {
     }))
     const order = await orderStore.createOrder({
       items,
-      paymentMethod: selectedPaymentMethod.value as 'intouch_mobile_money' | 'intouch_card' | 'manual',
+      paymentMethod: selectedPaymentMethod.value as 'ligdicash' | 'intouch_mobile_money' | 'intouch_card' | 'manual',
       deliveryAddress: deliveryAddress.value,
       ...(isSuperAdmin.value && selectedCompanyId.value ? { companyId: selectedCompanyId.value } : {}),
     })
     if (order) {
       selectedOrderId.value = order.orderNumber ?? order.id
-      const paymentResult = await orderStore.initiatePayment(order.id, selectedPaymentMethod.value as any, mobileNumber.value || undefined)
+      const paymentResult = await orderStore.initiatePayment(order.id, selectedPaymentMethod.value as any)
       if (paymentResult && (paymentResult as any).payment_url) {
         cartStore.clearCart()
         window.location.href = (paymentResult as any).payment_url
@@ -117,7 +112,7 @@ async function confirmOrder() {
     cartStore.clearCart()
     step.value = 3
   } catch {
-    toast.showError('Erreur lors de la confirmation de la commande')
+    toast.showError(t('toast.marketplace.orderConfirmError'))
   } finally {
     isSubmitting.value = false
   }
@@ -184,41 +179,20 @@ async function confirmOrder() {
       <div class="lg:col-span-2 space-y-4">
         <AppCard :title="t('marketplace.paymentMethod')">
           <div class="space-y-3">
-            <!-- InTouch Mobile Money -->
+            <!-- LigdiCash -->
             <label
               class="flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-colors"
-              :class="selectedPaymentMethod === 'intouch_mobile_money' ? 'border-primary-600 bg-primary-50' : 'border-gray-200 hover:border-gray-300'"
+              :class="selectedPaymentMethod === 'ligdicash' ? 'border-primary-600 bg-primary-50' : 'border-gray-200 hover:border-gray-300'"
             >
-              <input v-model="selectedPaymentMethod" type="radio" value="intouch_mobile_money" class="sr-only" />
+              <input v-model="selectedPaymentMethod" type="radio" value="ligdicash" class="sr-only" />
               <div class="w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center"
-                :class="selectedPaymentMethod === 'intouch_mobile_money' ? 'border-primary-600' : 'border-gray-300'">
-                <div v-if="selectedPaymentMethod === 'intouch_mobile_money'" class="w-2 h-2 rounded-full bg-primary-600"></div>
+                :class="selectedPaymentMethod === 'ligdicash' ? 'border-primary-600' : 'border-gray-300'">
+                <div v-if="selectedPaymentMethod === 'ligdicash'" class="w-2 h-2 rounded-full bg-primary-600"></div>
               </div>
-              <img src="/intouch.png" alt="InTouch" class="h-8 object-contain" onerror="this.style.display='none'" />
+              <img src="/ligdicash-logo.png" alt="LigdiCash" class="h-8 object-contain" onerror="this.style.display='none'" />
               <div>
-                <p class="font-semibold text-gray-900">{{ t('marketplace.intouchMobile') }}</p>
-                <p class="text-sm text-gray-500">{{ t('marketplace.intouchMobileHint') }}</p>
-              </div>
-            </label>
-
-            <div v-if="selectedPaymentMethod === 'intouch_mobile_money'" class="px-4 pb-2">
-              <AppInput v-model="mobileNumber" :label="t('marketplace.mobileMoneyPhone')" type="tel" :placeholder="t('marketplace.mobileMoneyPlaceholder')" />
-            </div>
-
-            <!-- InTouch Carte bancaire -->
-            <label
-              class="flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-colors"
-              :class="selectedPaymentMethod === 'intouch_card' ? 'border-primary-600 bg-primary-50' : 'border-gray-200 hover:border-gray-300'"
-            >
-              <input v-model="selectedPaymentMethod" type="radio" value="intouch_card" class="sr-only" />
-              <div class="w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center"
-                :class="selectedPaymentMethod === 'intouch_card' ? 'border-primary-600' : 'border-gray-300'">
-                <div v-if="selectedPaymentMethod === 'intouch_card'" class="w-2 h-2 rounded-full bg-primary-600"></div>
-              </div>
-              <img src="/intouch.png" alt="InTouch" class="h-8 object-contain" onerror="this.style.display='none'" />
-              <div>
-                <p class="font-semibold text-gray-900">{{ t('marketplace.intouchCard') }}</p>
-                <p class="text-sm text-gray-500">{{ t('marketplace.intouchCardHint') }}</p>
+                <p class="font-semibold text-gray-900">{{ t('marketplace.ligdicash') }}</p>
+                <p class="text-sm text-gray-500">{{ t('marketplace.ligdicashHint') }}</p>
               </div>
             </label>
 

@@ -49,7 +49,7 @@
         <!-- Mobile Logo -->
         <div class="lg:hidden text-center mb-8">
           <h1 class="text-2xl font-bold text-primary-800">TANGAFLOW</h1>
-          <p class="mt-1 text-sm text-primary-500">Plateforme de gestion centralisee</p>
+          <p class="mt-1 text-sm text-primary-500">Plateforme de gestion centralisée</p>
         </div>
 
         <slot />

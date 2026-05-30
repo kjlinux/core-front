@@ -14,7 +14,7 @@
     <AppCard class="mb-6">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <AppInput
-          v-model="searchQuery"
+          v-model="search"
           :placeholder="t('common.search') || 'Rechercher...'"
           :label="t('common.search') || 'Rechercher'"
         />
@@ -31,7 +31,7 @@
           :options="siteOptions"
           :label="t('departments.site')"
           :placeholder="t('departments.allSites')"
-          @update:model-value="handleFilterChange"
+          @update:model-value="applyFilters"
         />
       </div>
     </AppCard>
@@ -166,6 +166,7 @@ import { useDepartmentStore } from '@/stores/department.store'
 import { useCompanyStore } from '@/stores/company.store'
 import { useSiteStore } from '@/stores/site.store'
 import { usePermissions } from '@/composables/usePermissions'
+import { useServerTable } from '@/composables/useServerTable'
 import DataTable from '@/components/data-display/DataTable.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppCard from '@/components/ui/AppCard.vue'
@@ -179,6 +180,7 @@ import { useToast } from '@/composables/useToast'
 import { userApi, type UserData } from '@/services/api/user.api'
 import { PencilIcon, TrashIcon } from '@heroicons/vue/24/outline'
 import { sortByRecent } from '@/utils/sort'
+import { extractApiErrorMessage } from '@/utils/api-error'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -195,11 +197,17 @@ const isSubmitting = ref(false)
 const deptErrors = ref<Record<string, string>>({})
 const managers = ref<UserData[]>([])
 
-const filters = ref({
-  companyId: '',
-  siteId: '',
-  page: 1,
+const { filters, search, applyFilters, handlePageChange, reload } = useServerTable({
+  initialFilters: { companyId: '', siteId: '' },
   perPage: 10,
+  fetcher: (p) =>
+    departmentStore.fetchDepartments({
+      page: p.page,
+      perPage: p.perPage,
+      companyId: p.companyId || undefined,
+      siteId: p.siteId || undefined,
+      search: p.search || undefined,
+    }),
 })
 
 const formData = ref({
@@ -208,7 +216,6 @@ const formData = ref({
   siteId: '',
   managerId: '',
 })
-const searchQuery = ref('')
 
 const canCreate = computed(() =>
   permissions.isAdminOrSuperOrTech.value
@@ -223,8 +230,8 @@ const companyOptions = computed(() => [
 ])
 
 const siteOptions = computed(() => {
-  const sites = filters.value.companyId
-    ? siteStore.sites.filter(s => s.companyId === filters.value.companyId)
+  const sites = filters.companyId
+    ? siteStore.sites.filter(s => s.companyId === filters.companyId)
     : siteStore.sites
 
   return [
@@ -272,8 +279,8 @@ const columns = computed<TableColumn[]>(() => {
   return cols
 })
 
-const tableData = computed(() => {
-  const rows = sortByRecent(departmentStore.departments).map(dept => {
+const tableData = computed(() =>
+  sortByRecent(departmentStore.departments).map(dept => {
     const site = siteStore.sites.find(s => s.id === dept.siteId)
     const company = companyStore.companies.find(c => c.id === dept.companyId)
     return {
@@ -290,24 +297,16 @@ const tableData = computed(() => {
       _raw: dept,
     }
   })
-  const q = searchQuery.value.trim().toLowerCase()
-  if (!q) return rows
-  return rows.filter(r =>
-    r.name.toLowerCase().includes(q) ||
-    r.siteName.toLowerCase().includes(q) ||
-    r.companyName.toLowerCase().includes(q) ||
-    r.manager.toLowerCase().includes(q)
-  )
-})
+)
 
 onMounted(async () => {
-  const [, , , users] = await Promise.all([
+  const [, , users] = await Promise.all([
     companyStore.fetchCompanies({ perPage: 100 }),
     siteStore.fetchSites({ perPage: 100 }),
-    departmentStore.fetchDepartments(filters.value),
     userApi.getAll({ role: 'manager', perPage: 200 }),
   ])
-  managers.value = users
+  managers.value = users.data
+  await reload()
 })
 
 function validateDeptForm(): boolean {
@@ -319,19 +318,8 @@ function validateDeptForm(): boolean {
 }
 
 function handleCompanyFilterChange() {
-  filters.value.siteId = ''
-  filters.value.page = 1
-  departmentStore.fetchDepartments(filters.value)
-}
-
-function handleFilterChange() {
-  filters.value.page = 1
-  departmentStore.fetchDepartments(filters.value)
-}
-
-function handlePageChange(page: number) {
-  filters.value.page = page
-  departmentStore.fetchDepartments(filters.value)
+  filters.siteId = ''
+  applyFilters()
 }
 
 function handleRowClick(row: any) {
@@ -354,9 +342,9 @@ async function handleCreateDepartment() {
     })
     toast.success(t('common.success'), t('departments.createdSuccess'))
     closeCreateModal()
-    await departmentStore.fetchDepartments(filters.value)
+    await reload()
   } catch (error: any) {
-    toast.error(t('common.error'), error.message || t('departments.createError'))
+    toast.error(t('common.error'), extractApiErrorMessage(error, t('departments.createError')))
   } finally {
     isSubmitting.value = false
   }
@@ -386,9 +374,9 @@ async function handleEditDepartment() {
     })
     toast.success(t('common.success'), t('departments.updatedSuccess'))
     closeEditModal()
-    await departmentStore.fetchDepartments(filters.value)
+    await reload()
   } catch (error: any) {
-    toast.error(t('common.error'), error.message || t('departments.updateError'))
+    toast.error(t('common.error'), extractApiErrorMessage(error, t('departments.updateError')))
   } finally {
     isSubmitting.value = false
   }
@@ -399,9 +387,9 @@ async function handleDeleteDepartment(dept: Department) {
   try {
     await departmentStore.deleteDepartment(dept.id)
     toast.success(t('common.success'), t('departments.deletedSuccess'))
-    await departmentStore.fetchDepartments(filters.value)
+    await reload()
   } catch (error: any) {
-    toast.error(t('common.error'), error.message || t('departments.deleteError'))
+    toast.error(t('common.error'), extractApiErrorMessage(error, t('departments.deleteError')))
   }
 }
 

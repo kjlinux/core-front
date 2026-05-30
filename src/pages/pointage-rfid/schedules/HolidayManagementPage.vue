@@ -6,7 +6,7 @@
           <h1 class="text-2xl font-bold">{{ t('holidays.title') }}</h1>
           <div class="flex gap-4 items-center">
             <div class="w-48">
-              <AppSelect v-model="selectedYear" :options="yearOptions" @update:model-value="filterHolidays" />
+              <AppSelect v-model="filters.year" :options="yearOptions" @update:model-value="applyFilters" />
             </div>
             <AppButton
               v-if="canCreate"
@@ -20,11 +20,19 @@
         </div>
       </template>
 
+      <div class="mb-4">
+        <AppInput
+          v-model="search"
+          :placeholder="t('common.search') || 'Rechercher...'"
+          :label="t('common.search') || 'Rechercher'"
+        />
+      </div>
+
       <DataTable
-        :data="pagedHolidays"
+        :data="holidays"
         :columns="columns"
-        :loading="loading"
-        :pagination="paginationObj"
+        :loading="scheduleStore.isLoading"
+        :pagination="scheduleStore.holidayPagination"
         @page-change="handlePageChange"
       >
         <template #date="{ row }">
@@ -114,7 +122,7 @@
 
 <script setup lang="ts">
 // @ts-nocheck
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import DataTable from '@/components/data-display/DataTable.vue'
 import AppButton from '@/components/ui/AppButton.vue'
@@ -122,30 +130,30 @@ import AppCard from '@/components/ui/AppCard.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import AppModal from '@/components/ui/AppModal.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
+import AppInput from '@/components/ui/AppInput.vue'
 import AppConfirmDialog from '@/components/ui/AppConfirmDialog.vue'
 import { useScheduleStore } from '@/stores/schedule.store'
+import { useServerTable } from '@/composables/useServerTable'
 import { usePermissions } from '@/composables/usePermissions'
 import { useToast } from '@/composables/useToast'
 import { formatDate } from '@/utils/format'
+import { extractApiErrorMessage } from '@/utils/api-error'
 import type { Holiday } from '@/types/schedule'
-import dayjs from 'dayjs'
 import { PencilIcon, TrashIcon, PlusIcon } from '@heroicons/vue/24/outline'
 
 const { t } = useI18n()
 const scheduleStore = useScheduleStore()
 const permissions = usePermissions()
-const { isSuperAdmin, isAdminEnterprise } = permissions
 const toast = useToast()
 
-const loading = ref(false)
 const formModalVisible = ref(false)
 const deleteModalVisible = ref(false)
 const editingHoliday = ref<Holiday | null>(null)
 const holidayToDelete = ref<Holiday | null>(null)
-const selectedYear = ref<string | number>('all')
 const currentYear = new Date().getFullYear()
+
 const yearOptions = computed(() => [
-  { value: 'all', label: t('holidays.allYears') },
+  { value: '', label: t('holidays.allYears') },
   { value: currentYear, label: String(currentYear) },
   { value: currentYear + 1, label: String(currentYear + 1) },
 ])
@@ -159,32 +167,18 @@ const formData = ref({
 const canCreate = computed(() => permissions.isAdminOrSuperOrTech.value)
 const canDelete = computed(() => permissions.isAdminOrSuperOrTech.value)
 
-const holidays = computed(() => scheduleStore.holidays || [])
-
-const filteredHolidays = computed(() => {
-  let filtered = [...holidays.value]
-
-  if (selectedYear.value !== 'all') {
-    filtered = filtered.filter(holiday => {
-      const year = dayjs(holiday.date).year()
-      return year === Number(selectedYear.value)
-    })
-  }
-
-  return filtered.sort((a, b) => {
-    const dateA = dayjs(a.date)
-    const dateB = dayjs(b.date)
-    const now = dayjs()
-
-    const isAUpcoming = dateA.isAfter(now)
-    const isBUpcoming = dateB.isAfter(now)
-
-    if (isAUpcoming && !isBUpcoming) return -1
-    if (!isAUpcoming && isBUpcoming) return 1
-
-    return dateA.diff(dateB)
-  })
+const { filters, search, applyFilters, handlePageChange, reload } = useServerTable({
+  initialFilters: { year: '' as '' | number },
+  fetcher: (p) =>
+    scheduleStore.fetchHolidays({
+      page: p.page,
+      perPage: p.perPage,
+      search: p.search || undefined,
+      year: p.year === '' ? undefined : p.year,
+    }),
 })
+
+const holidays = computed(() => scheduleStore.holidays || [])
 
 const columns = computed(() => [
   { key: 'name', label: t('holidays.name'), sortable: true },
@@ -192,23 +186,6 @@ const columns = computed(() => [
   { key: 'isRecurring', label: t('holidays.recurring'), sortable: true },
   { key: 'actions', label: t('common.actions'), sortable: false }
 ])
-
-const currentPage = ref(1)
-const perPage = ref(15)
-
-const pagedHolidays = computed(() => {
-  const start = (currentPage.value - 1) * perPage.value
-  return filteredHolidays.value.slice(start, start + perPage.value)
-})
-
-const paginationObj = computed(() => {
-  const total = filteredHolidays.value.length
-  return { currentPage: currentPage.value, totalPages: Math.ceil(total / perPage.value) || 1, perPage: perPage.value, total }
-})
-
-const handlePageChange = (page: number) => { currentPage.value = page }
-
-watch(selectedYear, () => { currentPage.value = 1 })
 
 const openCreateModal = () => {
   editingHoliday.value = null
@@ -233,14 +210,15 @@ const openEditModal = (holiday: Holiday) => {
 const handleSubmit = async () => {
   try {
     if (editingHoliday.value) {
-      await scheduleStore.createHoliday({ ...formData.value, id: editingHoliday.value.id })
+      await scheduleStore.updateHoliday(editingHoliday.value.id, formData.value)
     } else {
       await scheduleStore.createHoliday(formData.value)
     }
     formModalVisible.value = false
     resetForm()
+    await reload()
   } catch (error: unknown) {
-    toast.error(t('common.error'), (error as Error)?.message || t('holidays.saveError'))
+    toast.error(t('common.error'), extractApiErrorMessage(error, t('holidays.saveError')))
   }
 }
 
@@ -255,14 +233,11 @@ const confirmDelete = async () => {
       await scheduleStore.deleteHoliday(holidayToDelete.value.id)
       deleteModalVisible.value = false
       holidayToDelete.value = null
+      await reload()
     } catch (error: unknown) {
-      toast.error(t('common.error'), (error as Error)?.message || t('holidays.deleteError'))
+      toast.error(t('common.error'), extractApiErrorMessage(error, t('holidays.deleteError')))
     }
   }
-}
-
-const filterHolidays = () => {
-  // Filtering is handled by computed property
 }
 
 const resetForm = () => {
@@ -274,14 +249,7 @@ const resetForm = () => {
   editingHoliday.value = null
 }
 
-onMounted(async () => {
-  loading.value = true
-  try {
-    await scheduleStore.fetchHolidays()
-  } finally {
-    loading.value = false
-  }
-})
+onMounted(reload)
 </script>
 
 <style scoped>

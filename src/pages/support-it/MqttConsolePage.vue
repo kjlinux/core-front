@@ -9,7 +9,9 @@ import {
 } from '@/services/api/mqtt.api'
 import { useRfidDeviceStore } from '@/stores/rfid-device.store'
 import { useBiometricStore } from '@/stores/biometric.store'
+import { useI18n } from 'vue-i18n'
 import { useToast } from '@/composables/useToast'
+import { extractApiErrorMessage } from '@/utils/api-error'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
@@ -24,6 +26,7 @@ import {
 const rfidStore = useRfidDeviceStore()
 const biometricStore = useBiometricStore()
 const toast = useToast()
+const { t } = useI18n()
 
 const deviceType = ref<DeviceType>('rfid')
 const selectedDeviceId = ref<string>('')
@@ -45,7 +48,8 @@ interface LogEntry {
 const logs = ref<LogEntry[]>([])
 
 const RFID_COMMANDS: RfidCommand[] = ['STATUS', 'RESET', 'REBOOT', 'WAKE_UP', 'SLEEP', 'SCAN']
-const BIOMETRIC_COMMANDS: BiometricCommand[] = [...RFID_COMMANDS, 'ENROLE']
+// Le firmware biometrique ne supporte pas SCAN (cf. config/mqtt.php command_codes.biometric)
+const BIOMETRIC_COMMANDS: BiometricCommand[] = [...RFID_COMMANDS.filter((c) => c !== 'SCAN'), 'ENROLE']
 
 const commandOptions = computed(() =>
   (deviceType.value === 'rfid' ? RFID_COMMANDS : BIOMETRIC_COMMANDS).map((c) => ({
@@ -59,7 +63,7 @@ const deviceOptions = computed(() => {
     ? rfidStore.devices
     : biometricStore.devices
   return [
-    { label: 'Selectionner un capteur...', value: '' },
+    { label: 'Sélectionner un capteur...', value: '' },
     ...list.map((d) => ({
       label: `${d.name} - ${d.serialNumber}${d.isOnline ? '' : ' (hors ligne)'}`,
       value: d.id,
@@ -79,11 +83,11 @@ async function testBroker() {
   try {
     const r = await mqttApi.testConnection()
     brokerConnected.value = r.connected
-    if (r.connected) toast.success('Broker MQTT connecte')
-    else toast.error('Broker MQTT inaccessible')
+    if (r.connected) toast.success(t('toast.support.brokerConnected'))
+    else toast.error(t('toast.support.brokerUnreachable'))
   } catch (e) {
     brokerConnected.value = false
-    toast.error('Test broker echoue', String((e as Error).message))
+    toast.error(t('toast.support.brokerTestFailed'), extractApiErrorMessage(e, t('common.genericError')))
   } finally {
     testing.value = false
   }
@@ -105,12 +109,12 @@ async function sendCommand() {
     const res = await mqttApi.sendCommand(selectedDeviceId.value, deviceType.value, selectedCommand.value)
     entry.topic = res.topic
     logs.value.unshift(entry)
-    toast.success(`Commande ${selectedCommand.value} envoyee`, res.topic)
+    toast.success(t('toast.support.commandSent', { command: selectedCommand.value }), res.topic)
   } catch (e) {
     entry.status = 'error'
-    entry.message = String((e as Error).message)
+    entry.message = extractApiErrorMessage(e, t('common.genericError'))
     logs.value.unshift(entry)
-    toast.error(`Echec envoi ${selectedCommand.value}`)
+    toast.error(t('toast.support.commandFailed', { command: selectedCommand.value }))
   } finally {
     sending.value = false
   }
@@ -126,8 +130,8 @@ function formatTime(iso: string) {
 
 onMounted(async () => {
   await Promise.all([
-    rfidStore.fetchDevices().catch(() => undefined),
-    biometricStore.fetchDevices().catch(() => undefined),
+    rfidStore.fetchDevices({ perPage: 200 }).catch(() => undefined),
+    biometricStore.fetchDevices({ perPage: 200 }).catch(() => undefined),
   ])
 })
 </script>
@@ -161,9 +165,9 @@ onMounted(async () => {
           <div>
             <p class="font-semibold text-gray-900 dark:text-gray-100">Broker MQTT</p>
             <p class="text-xs text-gray-500 dark:text-gray-400">
-              <span v-if="brokerConnected === true">Connecte</span>
+              <span v-if="brokerConnected === true">Connecté</span>
               <span v-else-if="brokerConnected === false">Hors ligne</span>
-              <span v-else>Etat inconnu - lancer un test</span>
+              <span v-else>État inconnu - lancer un test</span>
             </p>
           </div>
         </div>
@@ -183,7 +187,7 @@ onMounted(async () => {
             v-model="deviceType"
             :options="[
               { label: 'RFID', value: 'rfid' },
-              { label: 'Biometrique', value: 'biometric' },
+              { label: 'Biométrique', value: 'biometric' },
             ]"
           />
         </div>
@@ -225,7 +229,7 @@ onMounted(async () => {
         </button>
       </div>
       <div v-if="logs.length === 0" class="py-6 text-center text-sm text-gray-500 dark:text-gray-400">
-        Aucune commande envoyee dans cette session
+        Aucune commande envoyée dans cette session
       </div>
       <ul v-else class="divide-y divide-gray-200 dark:divide-gray-700">
         <li v-for="l in logs" :key="l.id" class="py-3">
@@ -237,7 +241,7 @@ onMounted(async () => {
                   {{ l.deviceType.toUpperCase() }}
                 </AppBadge>
                 <AppBadge :variant="l.status === 'ok' ? 'success' : 'danger'" size="sm">
-                  {{ l.status === 'ok' ? 'Envoye' : 'Echec' }}
+                  {{ l.status === 'ok' ? 'Envoyé' : 'Échec' }}
                 </AppBadge>
               </div>
               <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ l.deviceName }}</p>

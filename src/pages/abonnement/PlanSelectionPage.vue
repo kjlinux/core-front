@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { useSubscriptionStore } from '@/stores/subscription.store'
 import { PLAN_LABELS, PLAN_PRICES_XOF, PLAN_FEATURES, FEATURE_LABELS } from '@/config/plan-features'
@@ -7,11 +8,13 @@ import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import { formatCurrency } from '@/utils/format'
 import { useToast } from '@/composables/useToast'
+import { extractApiErrorMessage } from '@/utils/api-error'
 import type { PlanCode, PlanFeature } from '@/types/subscription'
 
 const route = useRoute()
 const store = useSubscriptionStore()
 const toast = useToast()
+const { t, locale } = useI18n()
 
 const highlightedFeature = computed(() => route.query.feature as PlanFeature | undefined)
 const plans: PlanCode[] = ['freemium', 'garantie', 'premium']
@@ -38,9 +41,9 @@ async function selectPlan(code: PlanCode) {
     const isActive = store.state?.is_active
     const r = isActive ? await store.upgrade(code) : await store.subscribe(code)
     if (r.payment_url) window.location.href = r.payment_url
-    else if (r.scheduled_at) toast.success('Changement planifié pour le ' + new Date(r.scheduled_at).toLocaleDateString('fr-FR'))
+    else if (r.scheduled_at) toast.success(t('toast.abonnement.changeScheduled', { date: new Date(r.scheduled_at).toLocaleDateString(locale.value === 'fr' ? 'fr-FR' : 'en-US') }))
   } catch (e: any) {
-    toast.error(e.response?.data?.message ?? e.message)
+    toast.error(extractApiErrorMessage(e))
   }
 }
 </script>

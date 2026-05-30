@@ -47,8 +47,8 @@ function viewDevice(deviceId: string) {
 }
 
 onMounted(() => {
-  biometricStore.fetchDevices()
-  biometricStore.fetchEnrollments()
+  biometricStore.fetchDevices({ perPage: 200 })
+  biometricStore.fetchEnrollments({ perPage: 200 })
   siteStore.fetchSites({ perPage: 200 })
 })
 </script>

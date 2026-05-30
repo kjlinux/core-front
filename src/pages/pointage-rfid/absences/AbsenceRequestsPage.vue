@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useAbsenceStore } from '@/stores/absence.store'
 import { useAuthStore } from '@/stores/auth.store'
 import { useToast } from '@/composables/useToast'
@@ -15,6 +16,7 @@ import { sortByRecent } from '@/utils/sort'
 const absenceStore = useAbsenceStore()
 const authStore = useAuthStore()
 const toast = useToast()
+const { t } = useI18n()
 
 const filterStatus = ref<AbsenceStatus | ''>('')
 const showReviewModal = ref(false)
@@ -99,11 +101,12 @@ async function confirmReview() {
       status: reviewAction.value,
       reviewNote: reviewNote.value.trim() || undefined,
     })
-    toast.showSuccess(reviewAction.value === 'approved' ? 'Demande approuvée' : 'Demande rejetée')
+    toast.showSuccess(reviewAction.value === 'approved' ? t('toast.absence.approved') : t('toast.absence.rejected'))
     showReviewModal.value = false
+    await absenceStore.fetchRequests({ page: absenceStore.pagination.currentPage })
     selectedRequest.value = null
   } catch {
-    toast.showError('Une erreur est survenue')
+    toast.showError(t('toast.absence.genericError'))
   }
 }
 
@@ -315,7 +318,7 @@ onMounted(loadRequests)
               Approuver
             </AppButton>
           </template>
-          <AppButton v-else variant="secondary" @click="showDetailModal = false">Fermer</AppButton>
+          <AppButton v-else variant="secondary" @click="showDetailModal = false">{{ t('common.close') }}</AppButton>
         </div>
       </template>
     </AppModal>
@@ -341,11 +344,11 @@ onMounted(loadRequests)
         <div v-if="reviewAction === 'approved'" class="space-y-3 rounded-lg bg-gray-50 p-3">
           <p class="text-xs text-gray-500">
             Vous pouvez ajuster les dates ou le motif avant de valider. Les valeurs
-            modifiees seront prises en compte pour les pointages et la paie.
+            modifiées seront prises en compte pour les pointages et la paie.
           </p>
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Date de debut</label>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Date de début</label>
               <input
                 v-model="editDateStart"
                 type="date"
@@ -385,7 +388,7 @@ onMounted(loadRequests)
       </div>
       <template #footer>
         <div class="flex justify-end gap-3">
-          <AppButton variant="secondary" @click="showReviewModal = false">Annuler</AppButton>
+          <AppButton variant="secondary" @click="showReviewModal = false">{{ t('common.cancel') }}</AppButton>
           <AppButton
             :variant="reviewAction === 'approved' ? 'primary' : 'danger'"
             :loading="absenceStore.isSubmitting"

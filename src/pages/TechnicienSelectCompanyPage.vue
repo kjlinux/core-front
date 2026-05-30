@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useActiveCompanyStore } from '@/stores/active-company.store'
 import { useCompanyStore } from '@/stores/company.store'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
-import { BuildingOffice2Icon } from '@heroicons/vue/24/outline'
+import { BuildingOffice2Icon, MagnifyingGlassIcon } from '@heroicons/vue/24/outline'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -14,6 +14,13 @@ const activeCompanyStore = useActiveCompanyStore()
 const companyStore = useCompanyStore()
 
 const selectedId = ref('')
+const search = ref('')
+
+const filteredCompanies = computed(() => {
+  const query = search.value.trim().toLowerCase()
+  if (!query) return companyStore.companies
+  return companyStore.companies.filter((c) => c.name.toLowerCase().includes(query))
+})
 
 onMounted(async () => {
   await companyStore.fetchCompanies({ perPage: 200 })
@@ -41,9 +48,21 @@ async function confirm() {
       </div>
 
       <AppCard>
-        <div class="divide-y divide-gray-100">
+        <div class="relative mb-3">
+          <MagnifyingGlassIcon
+            class="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
+          />
+          <input
+            v-model="search"
+            type="text"
+            :placeholder="t('technicien.searchPlaceholder')"
+            class="w-full rounded-lg border border-gray-200 py-2 pl-10 pr-3 text-sm text-gray-900 placeholder-gray-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+          />
+        </div>
+
+        <div class="max-h-80 overflow-y-auto divide-y divide-gray-100">
           <button
-            v-for="company in companyStore.companies"
+            v-for="company in filteredCompanies"
             :key="company.id"
             type="button"
             class="flex w-full items-center gap-3 px-2 py-3 text-left transition-colors hover:bg-gray-50 rounded-lg"
@@ -65,6 +84,12 @@ async function confirm() {
 
           <p v-if="companyStore.companies.length === 0" class="py-4 text-center text-sm text-gray-400">
             {{ t('technicien.noCompany') }}
+          </p>
+          <p
+            v-else-if="filteredCompanies.length === 0"
+            class="py-4 text-center text-sm text-gray-400"
+          >
+            {{ t('technicien.noResult') }}
           </p>
         </div>
 

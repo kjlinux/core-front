@@ -1,13 +1,16 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useBiometricStore } from '@/stores/biometric.store'
 import { useToast } from '@/composables/useToast'
+import { useServerTable } from '@/composables/useServerTable'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
+import AppInput from '@/components/ui/AppInput.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
+import AppPagination from '@/components/ui/AppPagination.vue'
 import { ArrowPathIcon, TrashIcon, PlusIcon } from '@heroicons/vue/24/outline'
 
 const { t } = useI18n()
@@ -15,8 +18,20 @@ const router = useRouter()
 const store = useBiometricStore()
 const toast = useToast()
 
-const filterStatus = ref('')
-const filterDevice = ref('')
+const { filters, search, applyFilters, handlePageChange, reload } = useServerTable({
+  initialFilters: {
+    status: '' as '' | 'pending' | 'enrolled' | 'failed',
+    deviceId: '' as string,
+  },
+  fetcher: (p) =>
+    store.fetchEnrollments({
+      page: p.page,
+      perPage: p.perPage,
+      search: p.search || undefined,
+      status: p.status || undefined,
+      deviceId: p.deviceId || undefined,
+    }),
+})
 
 const statusOptions = computed(() => [
   { label: t('biometric.allStatuses'), value: '' },
@@ -29,17 +44,6 @@ const deviceOptions = computed(() => [
   { label: t('biometric.devicesTitle'), value: '' },
   ...store.devices.map((d) => ({ label: d.name, value: d.id })),
 ])
-
-const filteredEnrollments = computed(() => {
-  let list = store.enrollments
-  if (filterStatus.value) {
-    list = list.filter((e) => e.status === filterStatus.value)
-  }
-  if (filterDevice.value) {
-    list = list.filter((e) => e.deviceId === filterDevice.value)
-  }
-  return list
-})
 
 function getStatusVariant(status: string) {
   switch (status) {
@@ -70,13 +74,15 @@ async function handleDelete(id: string) {
   try {
     await store.deleteEnrollment(id)
     toast.showSuccess(t('biometric.enrollmentDeleted'))
+    await reload()
   } catch {
     toast.showError(t('biometric.enrollmentDeleteError'))
   }
 }
 
 onMounted(async () => {
-  await Promise.all([store.fetchEnrollments(), store.fetchDevices()])
+  await store.fetchDevices({ perPage: 200 })
+  await reload()
 })
 </script>
 
@@ -95,15 +101,16 @@ onMounted(async () => {
 
     <AppCard>
       <div class="flex flex-col sm:flex-row gap-4 mb-6">
-        <AppSelect v-model="filterStatus" :options="statusOptions" class="w-full sm:w-48" />
-        <AppSelect v-model="filterDevice" :options="deviceOptions" class="w-full sm:w-64" />
+        <AppInput v-model="search" :placeholder="t('common.search') || 'Rechercher...'" class="w-full sm:w-64" />
+        <AppSelect v-model="filters.status" :options="statusOptions" class="w-full sm:w-48" @update:model-value="applyFilters" />
+        <AppSelect v-model="filters.deviceId" :options="deviceOptions" class="w-full sm:w-64" @update:model-value="applyFilters" />
       </div>
 
       <div v-if="store.isLoading" class="flex justify-center py-12">
         <div class="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
       </div>
 
-      <div v-else-if="filteredEnrollments.length === 0" class="text-center py-12 text-gray-500">
+      <div v-else-if="store.enrollments.length === 0" class="text-center py-12 text-gray-500">
         {{ t('biometric.noEnrollmentFound') }}
       </div>
 
@@ -120,7 +127,7 @@ onMounted(async () => {
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-100">
-            <tr v-for="enrollment in filteredEnrollments" :key="enrollment.id" class="hover:bg-gray-50">
+            <tr v-for="enrollment in store.enrollments" :key="enrollment.id" class="hover:bg-gray-50">
               <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ enrollment.employeeName }}</td>
               <td class="px-4 py-3 text-sm text-gray-600">
                 {{ store.devices.find((d) => d.id === enrollment.deviceId)?.name ?? enrollment.deviceId }}
@@ -151,6 +158,15 @@ onMounted(async () => {
             </tr>
           </tbody>
         </table>
+
+        <div v-if="store.enrollmentsPagination.totalPages > 1" class="mt-4">
+          <AppPagination
+            :current-page="store.enrollmentsPagination.currentPage"
+            :total-pages="store.enrollmentsPagination.totalPages"
+            :per-page="store.enrollmentsPagination.perPage"
+            @page-change="handlePageChange"
+          />
+        </div>
       </div>
     </AppCard>
   </div>

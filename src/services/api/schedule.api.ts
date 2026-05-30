@@ -3,8 +3,41 @@ import type {
   PaginatedResponse,
   Schedule,
   Holiday,
-  PaginationParams,
 } from '@/types'
+
+export interface ScheduleFilters {
+  companyId?: string
+  search?: string
+  page?: number
+  perPage?: number
+}
+
+export interface HolidayFilters {
+  year?: number | string
+  search?: string
+  page?: number
+  perPage?: number
+}
+
+function toSnakeScheduleFilters(params?: ScheduleFilters): Record<string, unknown> | undefined {
+  if (!params) return undefined
+  const result: Record<string, unknown> = {}
+  if (params.companyId !== undefined) result.company_id = params.companyId
+  if (params.search !== undefined) result.search = params.search
+  if (params.page !== undefined) result.page = params.page
+  if (params.perPage !== undefined) result.per_page = params.perPage
+  return result
+}
+
+function toSnakeHolidayFilters(params?: HolidayFilters): Record<string, unknown> | undefined {
+  if (!params) return undefined
+  const result: Record<string, unknown> = {}
+  if (params.year !== undefined) result.year = params.year
+  if (params.search !== undefined) result.search = params.search
+  if (params.page !== undefined) result.page = params.page
+  if (params.perPage !== undefined) result.per_page = params.perPage
+  return result
+}
 
 function toSnakePayload(data: Partial<Schedule>): Record<string, unknown> {
   const out: Record<string, unknown> = {}
@@ -18,8 +51,8 @@ function toSnakePayload(data: Partial<Schedule>): Record<string, unknown> {
 }
 
 export const scheduleApi = {
-  getAll(params?: PaginationParams): Promise<PaginatedResponse<Schedule>> {
-    return apiClient.get('/schedules', { params }).then((r) => r.data)
+  getAll(params?: ScheduleFilters): Promise<PaginatedResponse<Schedule>> {
+    return apiClient.get('/schedules', { params: toSnakeScheduleFilters(params) }).then((r) => r.data)
   },
 
   getById(id: string): Promise<Schedule> {
@@ -38,8 +71,8 @@ export const scheduleApi = {
     return apiClient.delete(`/schedules/${id}`).then((r) => r.data)
   },
 
-  getHolidays(params?: PaginationParams): Promise<PaginatedResponse<Holiday>> {
-    return apiClient.get('/holidays', { params }).then((r) => r.data)
+  getHolidays(params?: HolidayFilters): Promise<PaginatedResponse<Holiday>> {
+    return apiClient.get('/holidays', { params: toSnakeHolidayFilters(params) }).then((r) => r.data)
   },
 
   createHoliday(data: Partial<Holiday>): Promise<Holiday> {

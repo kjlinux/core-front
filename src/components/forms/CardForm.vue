@@ -40,7 +40,7 @@ const companyOptions = computed(() =>
 )
 
 const deviceOptions = computed(() => [
-  { label: 'Selectionner un capteur', value: '' },
+  { label: 'Sélectionner un capteur', value: '' },
   ...(props.devices || []).map((d) => ({
     label: `${d.name} (${d.serialNumber})${d.isOnline ? '' : ' - Hors ligne'}`,
     value: d.id,
@@ -102,7 +102,7 @@ const handleScan = () => {
       <template v-if="!isEditing">
         <FormRow
           label="Capteur de scan"
-          :help="'Selectionnez le capteur qui va lire la carte'"
+          :help="'Sélectionnez le capteur qui va lire la carte'"
         >
           <div class="flex gap-2">
             <AppSelect
@@ -141,7 +141,7 @@ const handleScan = () => {
             Approchez la carte du capteur...
           </p>
           <p v-if="isReceived" class="mt-2 text-sm text-green-600">
-            UID recupere avec succes
+            UID récupéré avec succès
           </p>
         </FormRow>
       </template>
@@ -166,7 +166,7 @@ const handleScan = () => {
           :model-value="localValue.companyId"
           @update:model-value="updateField('companyId', $event)"
           :options="companyOptions"
-          placeholder="Selectionner une entreprise"
+          placeholder="Sélectionner une entreprise"
           :disabled="loading"
         />
       </FormRow>

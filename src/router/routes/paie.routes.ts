@@ -16,6 +16,15 @@ const paieRoutes: RouteRecordRaw[] = [
         },
       },
       {
+        path: 'aide',
+        name: 'paie-help',
+        component: () => import('@/pages/paie/PayrollHelpPage.vue'),
+        meta: {
+          title: 'Aide - Paie',
+          roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE],
+        },
+      },
+      {
         path: 'generer',
         name: 'paie-generate',
         component: () => import('@/pages/paie/PayrollGeneratePage.vue'),

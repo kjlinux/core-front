@@ -1,7 +1,7 @@
 <template>
   <div class="card-list-page">
     <div class="page-header">
-      <h1>{{ t('cards.title') }}</h1>
+      <h1 class="text-gray-900">{{ t('cards.title') }}</h1>
       <AppButton
         v-if="permissions.isAdminOrSuperOrTech.value"
         @click="navigateToRegister"
@@ -15,20 +15,18 @@
     <AppCard>
       <div class="filters">
         <div class="filter-group">
-          <label for="status-filter">{{ t('common.status') }}</label>
+          <label for="status-filter" class="text-gray-700">{{ t('common.status') }}</label>
           <AppSelect
             v-model="filters.status"
             :options="statusFilterOptions"
+            @update:model-value="applyFilters"
           />
         </div>
 
         <div class="filter-group">
-          <label for="search-filter">{{ t('cards.searchByUid') }}</label>
-          <input
-            id="search-filter"
-            v-model="filters.search"
-            type="text"
-            class="filter-input"
+          <label for="search-filter" class="text-gray-700">{{ t('cards.searchByUid') }}</label>
+          <AppInput
+            v-model="search"
             :placeholder="t('cards.enterUid')"
           />
         </div>
@@ -37,14 +35,14 @@
       <DataTable
         :columns="columns"
         :data="pagedCards"
-        :loading="loading"
-        :pagination="paginationObj"
+        :loading="cardStore.isLoading"
+        :pagination="cardStore.pagination"
         @page-change="handlePageChange"
         @row-click="handleRowClick"
       >
         <template #employee="{ row }">
           <span v-if="row.employeeName">{{ row.employeeName }}</span>
-          <span v-else class="unassigned">{{ t('cards.notUnassigned') }}</span>
+          <span v-else class="unassigned text-gray-500">{{ t('cards.notUnassigned') }}</span>
         </template>
 
         <template #company="{ row }">
@@ -107,7 +105,7 @@
       :title="t('cards.assignModal')"
     >
       <div class="modal-content">
-        <p>{{ t('cards.uid') }}: <strong>{{ selectedCard?.uid }}</strong></p>
+        <p class="text-gray-700">{{ t('cards.uid') }}: <strong>{{ selectedCard?.uid }}</strong></p>
         <template v-if="permissions.isSuperAdmin.value">
           <div class="form-group">
             <AppSelect
@@ -127,7 +125,7 @@
           </div>
         </template>
         <div class="form-group">
-          <label for="employee-select">{{ t('cards.selectEmployee') }}</label>
+          <label for="employee-select" class="text-gray-700">{{ t('cards.selectEmployee') }}</label>
           <AppSelect
             v-model="selectedEmployeeId"
             :options="availableEmployeeOptions"
@@ -146,14 +144,14 @@
       :title="t('cards.blockModal')"
     >
       <div class="modal-content">
-        <p>{{ t('cards.blockConfirm') }}</p>
-        <p>{{ t('cards.uid') }}: <strong>{{ selectedCard?.uid }}</strong></p>
+        <p class="text-gray-700">{{ t('cards.blockConfirm') }}</p>
+        <p class="text-gray-700">{{ t('cards.uid') }}: <strong>{{ selectedCard?.uid }}</strong></p>
         <div class="form-group">
-          <label for="block-reason">{{ t('cards.blockReason') }}</label>
+          <label for="block-reason" class="text-gray-700">{{ t('cards.blockReason') }}</label>
           <textarea
             id="block-reason"
             v-model="blockReason"
-            class="form-textarea"
+            class="form-textarea border border-gray-300 bg-white text-gray-900"
             rows="3"
             :placeholder="t('cards.blockReasonPlaceholder')"
           ></textarea>
@@ -170,8 +168,8 @@
       :title="t('cards.unblockModal')"
     >
       <div class="modal-content">
-        <p>{{ t('cards.unblockConfirm') }}</p>
-        <p>{{ t('cards.uid') }}: <strong>{{ selectedCard?.uid }}</strong></p>
+        <p class="text-gray-700">{{ t('cards.unblockConfirm') }}</p>
+        <p class="text-gray-700">{{ t('cards.uid') }}: <strong>{{ selectedCard?.uid }}</strong></p>
       </div>
       <template #footer>
         <AppButton variant="secondary" @click="cancelUnblock">{{ t('common.cancel') }}</AppButton>
@@ -183,7 +181,7 @@
 
 <script setup lang="ts">
 // @ts-nocheck
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import DataTable from '@/components/data-display/DataTable.vue';
@@ -192,6 +190,8 @@ import AppCard from '@/components/ui/AppCard.vue';
 import AppBadge from '@/components/ui/AppBadge.vue';
 import AppModal from '@/components/ui/AppModal.vue';
 import AppSelect from '@/components/ui/AppSelect.vue';
+import AppInput from '@/components/ui/AppInput.vue';
+import { useServerTable } from '@/composables/useServerTable';
 import { useCardStore } from '@/stores/card.store';
 import { useEmployeeStore } from '@/stores/employee.store';
 import { useCompanyStore } from '@/stores/company.store';
@@ -202,6 +202,7 @@ import type { RfidCard } from '@/types/card'
 import { CardStatus } from '@/types/enums';
 import { EyeIcon, CheckIcon, NoSymbolIcon, LockOpenIcon, PlusIcon } from '@heroicons/vue/24/outline';
 import { sortByRecent } from '@/utils/sort';
+import { extractApiErrorMessage } from '@/utils/api-error'
 
 const { t } = useI18n();
 const router = useRouter();
@@ -212,10 +213,15 @@ const siteStore = useSiteStore();
 const permissions = usePermissions();
 const toast = useToast();
 
-const loading = ref(false);
-const filters = ref({
-  status: '',
-  search: ''
+const { filters, search, applyFilters, handlePageChange, reload } = useServerTable({
+  initialFilters: { status: '' },
+  fetcher: (p) =>
+    cardStore.fetchCards({
+      page: p.page,
+      perPage: p.perPage,
+      status: p.status || undefined,
+      search: p.search || undefined,
+    }),
 });
 
 const assignModalVisible = ref(false);
@@ -236,39 +242,7 @@ const columns = computed(() => [
   { key: 'actions', label: t('common.actions'), sortable: false }
 ]);
 
-const filteredCards = computed(() => {
-  let cards = cardStore.cards;
-
-  if (filters.value.status) {
-    cards = cards.filter(card => card.status === filters.value.status);
-  }
-
-  if (filters.value.search) {
-    const searchLower = filters.value.search.toLowerCase();
-    cards = cards.filter(card =>
-      card.uid.toLowerCase().includes(searchLower)
-    );
-  }
-
-  return cards;
-});
-
-const currentPage = ref(1);
-const perPage = ref(15);
-
-const pagedCards = computed(() => {
-  const start = (currentPage.value - 1) * perPage.value;
-  return sortByRecent(filteredCards.value).slice(start, start + perPage.value);
-});
-
-const paginationObj = computed(() => {
-  const total = filteredCards.value.length;
-  return { currentPage: currentPage.value, totalPages: Math.ceil(total / perPage.value) || 1, perPage: perPage.value, total };
-});
-
-const handlePageChange = (page: number) => { currentPage.value = page; };
-
-watch([() => filters.value.status, () => filters.value.search], () => { currentPage.value = 1; });
+const pagedCards = computed(() => sortByRecent(cardStore.cards));
 
 const assignCompanyOptions = computed(() => [
   { label: t('cards.allCompanies'), value: '' },
@@ -380,10 +354,11 @@ const confirmAssign = async () => {
     await cardStore.assignCard(selectedCard.value.id, selectedEmployeeId.value);
     toast.success(t('common.success'), t('cards.assignedSuccess'));
     assignModalVisible.value = false;
+    await reload();
     selectedCard.value = null;
     selectedEmployeeId.value = '';
   } catch (error: any) {
-    toast.error(t('common.error'), error.message || t('cards.assignError'));
+    toast.error(t('common.error'), extractApiErrorMessage(error, t('cards.assignError')));
   }
 };
 
@@ -408,10 +383,11 @@ const confirmBlock = async () => {
     await cardStore.blockCard(selectedCard.value.id, blockReason.value);
     toast.success(t('common.success'), t('cards.blockedSuccess'));
     blockModalVisible.value = false;
+    await reload();
     selectedCard.value = null;
     blockReason.value = '';
   } catch (error: any) {
-    toast.error(t('common.error'), error.message || t('cards.blockError'));
+    toast.error(t('common.error'), extractApiErrorMessage(error, t('cards.blockError')));
   }
 };
 
@@ -433,9 +409,10 @@ const confirmUnblock = async () => {
     await cardStore.unblockCard(selectedCard.value.id);
     toast.success(t('common.success'), t('cards.unblockedSuccess'));
     unblockModalVisible.value = false;
+    await reload();
     selectedCard.value = null;
   } catch (error: any) {
-    toast.error(t('common.error'), error.message || t('cards.unblockError'));
+    toast.error(t('common.error'), extractApiErrorMessage(error, t('cards.unblockError')));
   }
 };
 
@@ -445,18 +422,15 @@ const cancelUnblock = () => {
 };
 
 onMounted(async () => {
-  loading.value = true;
   try {
     await Promise.all([
-      cardStore.fetchCards({ perPage: 500 }),
-      employeeStore.fetchEmployees({ perPage: 500, companyId: undefined, siteId: undefined, departmentId: undefined, search: undefined }),
+      employeeStore.fetchEmployees({ perPage: 200, companyId: undefined, siteId: undefined, departmentId: undefined, search: undefined }),
       companyStore.fetchCompanies({ perPage: 100 }),
-      siteStore.fetchSites({ perPage: 500 }),
+      siteStore.fetchSites({ perPage: 200 }),
     ]);
+    await reload();
   } catch {
     toast.error(t('common.error'), t('cards.loadListError'));
-  } finally {
-    loading.value = false;
   }
 });
 </script>
@@ -476,7 +450,6 @@ onMounted(async () => {
 .page-header h1 {
   font-size: 2rem;
   font-weight: 600;
-  color: #1f2937;
   margin: 0;
 }
 
@@ -498,13 +471,11 @@ onMounted(async () => {
 .filter-group label {
   font-size: 0.875rem;
   font-weight: 500;
-  color: #374151;
 }
 
 .filter-select,
 .filter-input {
   padding: 0.5rem 0.75rem;
-  border: 1px solid #d1d5db;
   border-radius: 0.375rem;
   font-size: 0.875rem;
   transition: border-color 0.2s;
@@ -518,7 +489,6 @@ onMounted(async () => {
 }
 
 .unassigned {
-  color: #6b7280;
   font-style: italic;
 }
 
@@ -534,7 +504,6 @@ onMounted(async () => {
 
 .modal-content p {
   margin-bottom: 1rem;
-  color: #374151;
 }
 
 .form-group {
@@ -546,14 +515,12 @@ onMounted(async () => {
   margin-bottom: 0.5rem;
   font-size: 0.875rem;
   font-weight: 500;
-  color: #374151;
 }
 
 .form-select,
 .form-textarea {
   width: 100%;
   padding: 0.5rem 0.75rem;
-  border: 1px solid #d1d5db;
   border-radius: 0.375rem;
   font-size: 0.875rem;
   transition: border-color 0.2s;

@@ -32,6 +32,11 @@ export function usePermissions() {
     auth.user?.role === UserRole.ADMIN_ENTERPRISE ||
     auth.user?.role === UserRole.TECHNICIEN,
   )
+  // Support IT et Employe ont des menus courts : pas besoin de replier la sidebar,
+  // elle reste toujours dépliée pour eux.
+  const canCollapseSidebar = computed(() =>
+    auth.user?.role !== UserRole.SUPPORT_IT && auth.user?.role !== UserRole.EMPLOYE,
+  )
 
   return {
     can,
@@ -42,5 +47,6 @@ export function usePermissions() {
     isAdminOrSuper,
     isSetupRole,
     isAdminOrSuperOrTech,
+    canCollapseSidebar,
   }
 }

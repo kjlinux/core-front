@@ -6,12 +6,14 @@ import { useCompanyStore } from '@/stores/company.store'
 import { useSiteStore } from '@/stores/site.store'
 import { usePermissions } from '@/composables/usePermissions'
 import { useToast } from '@/composables/useToast'
+import { useServerTable } from '@/composables/useServerTable'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import AppModal from '@/components/ui/AppModal.vue'
 import AppInput from '@/components/ui/AppInput.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
+import AppPagination from '@/components/ui/AppPagination.vue'
 import type { FeelbackDevice } from '@/types'
 import { TrashIcon, WifiIcon, PlusIcon, PencilIcon } from '@heroicons/vue/24/outline'
 
@@ -24,9 +26,22 @@ const toast = useToast()
 
 const showAddModal = ref(false)
 const showEditModal = ref(false)
-const filterCompany = ref('')
-const filterStatus = ref('')
 const isSubmitting = ref(false)
+
+const { filters, search, applyFilters, handlePageChange, reload } = useServerTable({
+  initialFilters: {
+    companyId: '',
+    status: '' as '' | 'online' | 'offline',
+  },
+  fetcher: (p) =>
+    deviceStore.fetchDevices({
+      page: p.page,
+      perPage: p.perPage,
+      search: p.search || undefined,
+      companyId: p.companyId || undefined,
+      isOnline: p.status === '' ? undefined : p.status === 'online',
+    }),
+})
 
 const newDevice = ref({
   serialNumber: '',
@@ -93,19 +108,6 @@ watch(() => editForm.value.companyId, () => {
   editForm.value.siteId = ''
 })
 
-const filteredDevices = computed(() => {
-  let list = deviceStore.devices
-  if (filterCompany.value) {
-    list = list.filter((d) => d.companyId === filterCompany.value)
-  }
-  if (filterStatus.value === 'online') {
-    list = list.filter((d) => d.isOnline)
-  } else if (filterStatus.value === 'offline') {
-    list = list.filter((d) => !d.isOnline)
-  }
-  return list
-})
-
 const canManage = computed(() => permissions.isAdminOrSuperOrTech.value)
 
 function formatDate(date: string) {
@@ -121,9 +123,10 @@ function openEditModal(device: FeelbackDevice) {
 async function handleToggleOnline(device: FeelbackDevice) {
   try {
     await deviceStore.setDeviceOnline(device.id, !device.isOnline)
-    toast.showSuccess(device.isOnline ? device.serialNumber + ' mis hors ligne' : device.serialNumber + ' mis en ligne')
+    toast.showSuccess(device.isOnline ? t('toast.feelback.deviceOffline', { serial: device.serialNumber }) : t('toast.feelback.deviceOnline', { serial: device.serialNumber }))
+    await reload()
   } catch {
-    toast.showError('Erreur lors du changement de statut')
+    toast.showError(t('toast.feelback.statusChangeError'))
   }
 }
 
@@ -131,15 +134,16 @@ async function handleDelete(id: string) {
   if (!confirm(t('common.confirm_delete'))) return
   try {
     await deviceStore.deleteDevice(id)
-    toast.showSuccess(t('common.delete'))
+    toast.showSuccess(t('toast.feelback.deviceDeleted'))
+    await reload()
   } catch {
-    toast.showError('Erreur lors de la suppression')
+    toast.showError(t('toast.feelback.deleteError'))
   }
 }
 
 async function handleAddDevice() {
   if (!newDevice.value.companyId || !newDevice.value.siteId) {
-    toast.showError('Veuillez remplir tous les champs obligatoires')
+    toast.showError(t('toast.feelback.fillRequired'))
     return
   }
   isSubmitting.value = true
@@ -148,8 +152,9 @@ async function handleAddDevice() {
     toast.showSuccess(t('feelback.addDevice'))
     showAddModal.value = false
     newDevice.value = { serialNumber: '', companyId: '', siteId: '' }
+    await reload()
   } catch {
-    toast.showError("Erreur lors de l'ajout")
+    toast.showError(t('toast.feelback.addError'))
   } finally {
     isSubmitting.value = false
   }
@@ -157,23 +162,28 @@ async function handleAddDevice() {
 
 async function handleEditDevice() {
   if (!editDevice.value || !editForm.value.siteId) {
-    toast.showError('Veuillez selectionner un site')
+    toast.showError(t('toast.feelback.selectSite'))
     return
   }
   isSubmitting.value = true
   try {
     await deviceStore.updateDevice(editDevice.value.id, editForm.value)
-    toast.showSuccess('Terminal mis a jour')
+    toast.showSuccess(t('toast.feelback.deviceUpdated'))
     showEditModal.value = false
+    await reload()
   } catch {
-    toast.showError('Erreur lors de la mise a jour')
+    toast.showError(t('toast.feelback.updateError'))
   } finally {
     isSubmitting.value = false
   }
 }
 
 onMounted(async () => {
-  await Promise.all([deviceStore.fetchDevices(), companyStore.fetchCompanies(), siteStore.fetchSites({ perPage: 200 })])
+  await Promise.all([
+    companyStore.fetchCompanies({ perPage: 200 }),
+    siteStore.fetchSites({ perPage: 200 }),
+  ])
+  await reload()
 })
 </script>
 
@@ -192,15 +202,20 @@ onMounted(async () => {
 
     <AppCard>
       <div class="flex flex-col sm:flex-row gap-4 mb-6">
-        <AppSelect v-model="filterCompany" :options="companyOptions" class="w-64" />
-        <AppSelect v-model="filterStatus" :options="statusOptions" class="w-48" />
+        <AppInput
+          v-model="search"
+          :placeholder="t('common.search') || 'Rechercher...'"
+          class="w-64"
+        />
+        <AppSelect v-model="filters.companyId" :options="companyOptions" class="w-64" @update:model-value="applyFilters" />
+        <AppSelect v-model="filters.status" :options="statusOptions" class="w-48" @update:model-value="applyFilters" />
       </div>
 
       <div v-if="deviceStore.isLoading" class="flex justify-center py-12">
         <div class="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
       </div>
 
-      <div v-else-if="filteredDevices.length === 0" class="text-center py-12 text-gray-500">
+      <div v-else-if="deviceStore.devices.length === 0" class="text-center py-12 text-gray-500">
         {{ t('feelback.noDevice') }}
       </div>
 
@@ -217,7 +232,7 @@ onMounted(async () => {
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-100">
-            <tr v-for="device in filteredDevices" :key="device.id" class="hover:bg-gray-50">
+            <tr v-for="device in deviceStore.devices" :key="device.id" class="hover:bg-gray-50">
               <td class="px-4 py-3 font-mono text-sm">{{ device.serialNumber }}</td>
               <td class="px-4 py-3 text-sm text-gray-900">{{ device.siteName }}</td>
               <td class="px-4 py-3">
@@ -251,6 +266,15 @@ onMounted(async () => {
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <div v-if="!deviceStore.isLoading && deviceStore.devices.length > 0" class="mt-4">
+        <AppPagination
+          :current-page="deviceStore.pagination.currentPage"
+          :total-pages="deviceStore.pagination.totalPages"
+          :per-page="deviceStore.pagination.perPage"
+          @page-change="handlePageChange"
+        />
       </div>
     </AppCard>
 

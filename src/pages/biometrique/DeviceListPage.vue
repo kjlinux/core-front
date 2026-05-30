@@ -7,6 +7,7 @@ import { useCompanyStore } from '@/stores/company.store'
 import { useSiteStore } from '@/stores/site.store'
 import { usePermissions } from '@/composables/usePermissions'
 import { useToast } from '@/composables/useToast'
+import { useServerTable } from '@/composables/useServerTable'
 import { mqttApi } from '@/services/api/mqtt.api'
 import type { DeviceCommand } from '@/services/api/mqtt.api'
 import { deriveDeviceOnline } from '@/utils/device-status'
@@ -31,7 +32,6 @@ import {
   PlusIcon,
   WifiIcon,
 } from '@heroicons/vue/24/outline'
-import { sortByRecent } from '@/utils/sort'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -42,13 +42,23 @@ const permissions = usePermissions()
 const toast = useToast()
 
 const showAddModal = ref(false)
-const filterCompany = ref('')
-const filterStatus = ref('')
-const searchQuery = ref('')
-const currentPage = ref(1)
-const perPage = ref(15)
 const isSubmitting = ref(false)
 const sendingCommand = ref<string | null>(null)
+
+const { filters, search, applyFilters, handlePageChange, reload } = useServerTable({
+  initialFilters: {
+    companyId: '' as string,
+    status: '' as '' | 'online' | 'offline',
+  },
+  fetcher: (p) =>
+    store.fetchDevices({
+      page: p.page,
+      perPage: p.perPage,
+      search: p.search || undefined,
+      companyId: p.companyId || undefined,
+      isOnline: p.status === '' ? undefined : p.status === 'online',
+    }),
+})
 
 const newDevice = ref({
   name: '',
@@ -98,39 +108,6 @@ watch(() => newDevice.value.companyId, () => {
   newDevice.value.siteId = ''
 })
 
-const filteredDevices = computed(() => {
-  let list = store.devices
-  if (filterCompany.value) {
-    list = list.filter((d) => d.companyId === filterCompany.value)
-  }
-  if (filterStatus.value === 'online') {
-    list = list.filter((d) => d.isOnline)
-  } else if (filterStatus.value === 'offline') {
-    list = list.filter((d) => !d.isOnline)
-  }
-  const q = searchQuery.value.trim().toLowerCase()
-  if (q) {
-    list = list.filter((d) =>
-      (d.name || '').toLowerCase().includes(q) ||
-      (d.serialNumber || '').toLowerCase().includes(q) ||
-      (d.firmwareVersion || '').toLowerCase().includes(q)
-    )
-  }
-  return list
-})
-
-const pagedDevices = computed(() => {
-  const start = (currentPage.value - 1) * perPage.value
-  return sortByRecent(filteredDevices.value).slice(start, start + perPage.value)
-})
-
-const paginationObj = computed(() => {
-  const total = filteredDevices.value.length
-  return { currentPage: currentPage.value, totalPages: Math.ceil(total / perPage.value) || 1, perPage: perPage.value, total }
-})
-
-watch([filterCompany, filterStatus, searchQuery], () => { currentPage.value = 1 })
-
 const deviceColumns = computed<TableColumn[]>(() => [
   { key: 'serialNumber', label: t('biometric.serialNumber'), sortable: true },
   { key: 'name', label: t('biometric.name'), sortable: true },
@@ -170,9 +147,10 @@ async function handleCommand(deviceId: string, command: DeviceCommand) {
 }
 
 async function handleToggleOnline(device: BiometricDevice) {
+  const goingOnline = !device.isOnline
   try {
-    await store.setDeviceOnline(device.id, !device.isOnline)
-    toast.showSuccess(device.isOnline ? device.name + ' mis hors ligne' : device.name + ' mis en ligne')
+    await store.setDeviceOnline(device.id, goingOnline)
+    toast.showSuccess(goingOnline ? t('devices.setOnlineSuccess') : t('devices.setOfflineSuccess'))
   } catch {
     toast.showError(t('devices.statusChangeError'))
   }
@@ -198,7 +176,7 @@ async function handleAddDevice() {
     toast.showSuccess(t('devices.addedSuccess'))
     showAddModal.value = false
     newDevice.value = { name: '', serialNumber: '', companyId: '', siteId: '', firmwareVersion: '' }
-    await store.fetchDevices()
+    await reload()
   } catch {
     toast.showError(t('devices.addError'))
   } finally {
@@ -207,7 +185,8 @@ async function handleAddDevice() {
 }
 
 onMounted(async () => {
-  await Promise.all([store.fetchDevices(), companyStore.fetchCompanies(), siteStore.fetchSites({ perPage: 200 })])
+  await Promise.all([companyStore.fetchCompanies({ perPage: 200 }), siteStore.fetchSites({ perPage: 200 })])
+  await reload()
 })
 </script>
 
@@ -226,21 +205,21 @@ onMounted(async () => {
 
     <AppCard>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <AppInput v-model="searchQuery" :placeholder="t('common.search') || 'Rechercher...'" :label="t('common.search') || 'Rechercher'" />
-        <AppSelect v-model="filterCompany" :options="companyOptions" :label="t('biometric.companyLabel')" />
-        <AppSelect v-model="filterStatus" :options="statusOptions" :label="t('biometric.status')" />
+        <AppInput v-model="search" :placeholder="t('common.search') || 'Rechercher...'" :label="t('common.search') || 'Rechercher'" />
+        <AppSelect v-model="filters.companyId" :options="companyOptions" :label="t('biometric.companyLabel')" @update:model-value="applyFilters" />
+        <AppSelect v-model="filters.status" :options="statusOptions" :label="t('biometric.status')" @update:model-value="applyFilters" />
       </div>
 
       <DataTable
         :columns="deviceColumns"
-        :data="pagedDevices"
+        :data="store.devices"
         :loading="store.isLoading"
-        :pagination="paginationObj"
+        :pagination="store.devicesPagination"
         default-sort-column="name"
         default-sort-direction="desc"
         :empty-message="t('biometric.notFound')"
         @row-click="(row) => router.push(`/biometrique/devices/${row.id}`)"
-        @page-change="(p) => currentPage = p"
+        @page-change="handlePageChange"
       >
         <template #status="{ row }">
           <AppBadge :variant="deriveDeviceOnline(row.lastSyncAt) ? 'success' : 'danger'">
@@ -295,7 +274,7 @@ onMounted(async () => {
 
     <AppModal v-model="showAddModal" :title="t('biometric.addBioTitle')" size="md">
       <div class="space-y-4">
-        <AppInput v-model="newDevice.name" :label="t('biometric.name') + ' *'" placeholder="Ex: Lecteur Entree principale" />
+        <AppInput v-model="newDevice.name" :label="t('biometric.name') + ' *'" placeholder="Ex: Lecteur Entrée principale" />
         <div>
           <p class="text-sm font-medium text-gray-700 mb-1">{{ t('biometric.serialNumber') }}</p>
           <p class="font-mono text-sm bg-gray-50 border border-gray-200 rounded-md px-3 py-2 text-gray-900">{{ newDevice.serialNumber }}</p>

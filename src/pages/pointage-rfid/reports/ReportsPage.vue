@@ -11,6 +11,7 @@ import { useToast } from '@/composables/useToast'
 import { useAuthStore } from '@/stores/auth.store'
 import { attendanceReportApi, type AttendanceReportData, type AttendanceReportParams } from '@/services/api/attendance-report.api'
 import { exportToPdf, exportToExcel } from '@/utils/export-helpers'
+import { usePeriodSelector, type PeriodMode } from '@/composables/usePeriodSelector'
 import { companyApi } from '@/services/api/company.api'
 import type { TableColumn } from '@/types/common'
 import { formatPercent } from '@/utils/format'
@@ -21,9 +22,11 @@ const { success, error } = useToast()
 const authStore = useAuthStore()
 
 // ---------- State ----------
-const reportType = ref('daily')
-const startDate = ref('')
-const endDate = ref('')
+// La période est auto-couplée au type via le composable : choisir « Mensuel »
+// contraint start/end au mois civil, « Journalier » à un jour, etc.
+const { periodMode, day, month, weekDay, customStart, customEnd, startDate, endDate } =
+  usePeriodSelector('monthly')
+const focus = ref<'all' | 'late' | 'absence'>('all')
 const exportFormat = ref('pdf')
 const selectedCompany = ref('')
 const selectedSite = ref('')
@@ -40,13 +43,25 @@ const departments = ref<Department[]>([])
 
 const isSuperAdmin = computed(() => authStore.userRole === 'super_admin')
 
-// ---------- Report type options ----------
-const reportTypeOptions = computed(() => [
-  { label: t('reports.daily'), value: 'daily' },
-  { label: t('reports.monthly'), value: 'monthly' },
-  { label: t('reports.lates'), value: 'late' },
-  { label: t('reports.absences'), value: 'absence' },
+// ---------- Période & focus ----------
+const periodModeOptions = computed(() => [
+  { label: t('reports.pmDaily'), value: 'daily' },
+  { label: t('reports.pmWeekly'), value: 'weekly' },
+  { label: t('reports.pmMonthly'), value: 'monthly' },
+  { label: t('reports.pmCustom'), value: 'custom' },
 ])
+
+const focusOptions = computed(() => [
+  { label: t('reports.focusAll'), value: 'all' },
+  { label: t('reports.focusLate'), value: 'late' },
+  { label: t('reports.focusAbsence'), value: 'absence' },
+])
+
+// Le backend n'expose qu'un paramètre `type` : le focus prime (late/absence),
+// sinon la granularité de période (indicative côté serveur, daily/monthly).
+const backendType = computed<NonNullable<AttendanceReportParams['type']>>(() =>
+  focus.value !== 'all' ? focus.value : periodMode.value === 'monthly' ? 'monthly' : 'daily',
+)
 
 const exportFormatOptions = [
   { label: 'PDF', value: 'pdf' },
@@ -64,6 +79,7 @@ const columnsByType = computed<Record<string, TableColumn[]>>(() => ({
     { key: 'present', label: t('reports.presentCount'), align: 'center' },
     { key: 'absent', label: t('reports.absentCount'), align: 'center' },
     { key: 'late', label: t('reports.lateCount'), align: 'center' },
+    { key: 'leave', label: t('reports.leave'), align: 'center' },
     { key: 'overtime', label: t('reports.overtime'), align: 'center' },
     { key: 'rate', label: t('reports.attendanceRate'), align: 'center', render: (v: unknown) => formatPercent(typeof v === 'number' ? v : 0) },
   ],
@@ -74,6 +90,7 @@ const columnsByType = computed<Record<string, TableColumn[]>>(() => ({
     { key: 'present', label: t('reports.presentDays'), align: 'center' },
     { key: 'absent', label: t('reports.absencesCount'), align: 'center' },
     { key: 'late', label: t('reports.lateCount'), align: 'center' },
+    { key: 'leave', label: t('reports.leave'), align: 'center' },
     { key: 'overtime', label: t('reports.overtime'), align: 'center' },
     { key: 'rate', label: t('reports.attendanceRate'), align: 'center', render: (v: unknown) => formatPercent(typeof v === 'number' ? v : 0) },
   ],
@@ -94,10 +111,12 @@ const columnsByType = computed<Record<string, TableColumn[]>>(() => ({
   ],
 }))
 
-const currentColumns = computed<TableColumn[]>(() => columnsByType.value[reportType.value] ?? columnsByType.value.daily!)
+const currentColumns = computed<TableColumn[]>(() => columnsByType.value[backendType.value] ?? columnsByType.value.daily!)
 
 const currentReportLabel = computed(() => {
-  return reportTypeOptions.value.find((o) => o.value === reportType.value)?.label ?? t('reports.title')
+  if (focus.value === 'late') return t('reports.lates')
+  if (focus.value === 'absence') return t('reports.absences')
+  return periodModeOptions.value.find((o) => o.value === periodMode.value)?.label ?? t('reports.title')
 })
 
 const periodLabel = computed(() => {
@@ -105,18 +124,18 @@ const periodLabel = computed(() => {
   return ''
 })
 
-// ---------- Summary stats (dynamic per type) ----------
+// ---------- Summary stats (dynamic per focus) ----------
 const summaryStats = computed(() => {
   if (!report.value) return []
   const r = report.value
-  const base = [
+  const base: { title: string; value: number | string }[] = [
     { title: t('reports.employeesTotal'), value: r.totalEmployees },
   ]
-  if (reportType.value === 'late') {
+  if (focus.value === 'late') {
     base.push({ title: t('reports.totalLates'), value: r.totalLate })
     return base
   }
-  if (reportType.value === 'absence') {
+  if (focus.value === 'absence') {
     base.push({ title: t('reports.totalAbsences'), value: r.totalAbsent })
     return base
   }
@@ -125,6 +144,12 @@ const summaryStats = computed(() => {
     { title: t('reports.absencesCount'), value: r.totalAbsent },
     { title: t('reports.lateCount'), value: r.totalLate },
   )
+  if (typeof r.totalLeave === 'number') {
+    base.push({ title: t('reports.leave'), value: r.totalLeave })
+  }
+  if (typeof r.globalRate === 'number') {
+    base.push({ title: t('reports.globalRate'), value: formatPercent(r.globalRate) })
+  }
   return base
 })
 
@@ -132,7 +157,7 @@ const summaryStats = computed(() => {
 onMounted(async () => {
   if (isSuperAdmin.value) {
     try {
-      companies.value = await companyApi.getAll()
+      companies.value = (await companyApi.getAll({ perPage: 1000 })).data
     } catch {
       // silent
     }
@@ -165,8 +190,8 @@ watch(selectedSite, async (siteId) => {
   }
 })
 
-// Reset report when type changes
-watch(reportType, () => {
+// Reset report when the effective report shape (période/focus) changes
+watch(backendType, () => {
   reportGenerated.value = false
   report.value = null
   currentPage.value = 1
@@ -203,7 +228,7 @@ const generateReport = async () => {
     const params: AttendanceReportParams = {
       start_date: startDate.value,
       end_date: endDate.value,
-      type: reportType.value,
+      type: backendType.value,
     }
     if (selectedCompany.value) params.company_id = selectedCompany.value
     if (selectedSite.value) params.site_id = selectedSite.value
@@ -240,14 +265,14 @@ const handleExport = async () => {
 
   exporting.value = true
   try {
-    const baseFilename = `pointage-${reportType.value}-${startDate.value}`
+    const baseFilename = `pointage-${backendType.value}-${startDate.value}`
     const title = `${t('reports.title')} - ${currentReportLabel.value}`
 
     if (exportFormat.value === 'csv' || exportFormat.value === 'pdf-server') {
       const params: AttendanceReportParams = {
         start_date: startDate.value,
         end_date: endDate.value,
-        type: reportType.value as AttendanceReportParams['type'],
+        type: backendType.value,
       }
       if (selectedCompany.value) params.company_id = selectedCompany.value
       if (exportFormat.value === 'csv') {
@@ -303,16 +328,51 @@ const handleExport = async () => {
     <AppCard :title="t('reports.params')">
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('reports.reportType') }}</label>
-          <AppSelect v-model="reportType" :options="reportTypeOptions" />
+          <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('reports.periodMode') }}</label>
+          <AppSelect
+            :model-value="periodMode"
+            :options="periodModeOptions"
+            @update:model-value="(v) => (periodMode = v as PeriodMode)"
+          />
         </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('reports.startDate') }}</label>
-          <AppInput v-model="startDate" type="date" />
+
+        <!-- Dates auto-couplées au type de période -->
+        <div v-if="periodMode === 'daily'">
+          <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('reports.selectDay') }}</label>
+          <AppInput v-model="day" type="date" />
         </div>
+        <div v-else-if="periodMode === 'monthly'">
+          <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('reports.selectMonth') }}</label>
+          <input
+            v-model="month"
+            type="month"
+            class="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-700"
+          />
+        </div>
+        <div v-else-if="periodMode === 'weekly'">
+          <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('reports.selectWeek') }}</label>
+          <AppInput v-model="weekDay" type="date" />
+          <p class="mt-1 text-xs text-gray-500">{{ t('reports.period', { start: startDate, end: endDate }) }}</p>
+        </div>
+        <template v-else>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('reports.startDate') }}</label>
+            <AppInput v-model="customStart" type="date" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('reports.endDate') }}</label>
+            <AppInput v-model="customEnd" type="date" />
+          </div>
+        </template>
+
+        <!-- Focus : tous / retards / absences -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('reports.endDate') }}</label>
-          <AppInput v-model="endDate" type="date" />
+          <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('reports.focus') }}</label>
+          <AppSelect
+            :model-value="focus"
+            :options="focusOptions"
+            @update:model-value="(v) => (focus = v as 'all' | 'late' | 'absence')"
+          />
         </div>
 
         <!-- Location filters -->

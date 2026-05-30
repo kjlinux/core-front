@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { biometricApi } from '@/services/api/biometric.api'
+import type { BiometricDeviceFilters, EnrollmentFilters } from '@/services/api/biometric.api'
 import type { BiometricDevice, FingerprintEnrollment } from '@/types'
 
 export const useBiometricStore = defineStore('biometric', () => {
@@ -8,13 +9,29 @@ export const useBiometricStore = defineStore('biometric', () => {
   const currentDevice = ref<BiometricDevice | null>(null)
   const enrollments = ref<FingerprintEnrollment[]>([])
 
+  // Pagination distincte par liste : les deux listes partagent le store mais
+  // chacune a sa propre table server-side (cf. DeviceListPage / EnrollmentListPage).
+  const devicesPagination = ref({
+    currentPage: 1,
+    perPage: 15,
+    total: 0,
+    totalPages: 0,
+  })
+  const enrollmentsPagination = ref({
+    currentPage: 1,
+    perPage: 15,
+    total: 0,
+    totalPages: 0,
+  })
+
   const isLoading = ref(false)
 
-  async function fetchDevices() {
+  async function fetchDevices(filters?: BiometricDeviceFilters) {
     isLoading.value = true
     try {
-      const response = await biometricApi.getDevices()
+      const response = await biometricApi.getDevices(filters)
       devices.value = response.data
+      devicesPagination.value = response.meta
     } finally {
       isLoading.value = false
     }
@@ -31,11 +48,12 @@ export const useBiometricStore = defineStore('biometric', () => {
     }
   }
 
-  async function fetchEnrollments() {
+  async function fetchEnrollments(filters?: EnrollmentFilters) {
     isLoading.value = true
     try {
-      const response = await biometricApi.getEnrollments()
+      const response = await biometricApi.getEnrollments(filters)
       enrollments.value = response.data
+      enrollmentsPagination.value = response.meta
     } finally {
       isLoading.value = false
     }
@@ -90,18 +108,18 @@ export const useBiometricStore = defineStore('biometric', () => {
     const promise = new Promise<FingerprintEnrollment>((resolve, reject) => {
       const poll = async () => {
         if (cancelled) {
-          reject(new Error('Enrolement annule'))
+          reject(new Error('Enrôlement annulé'))
           return
         }
         if (Date.now() - startTime > timeout) {
-          reject(new Error('Delai d\'attente depasse pour l\'enrolement'))
+          reject(new Error('Délai d\'attente dépassé pour l\'enrôlement'))
           return
         }
 
         try {
           const enrollment = await biometricApi.getEnrollment(enrollmentId)
           if (cancelled) {
-            reject(new Error('Enrolement annule'))
+            reject(new Error('Enrôlement annulé'))
             return
           }
           onUpdate(enrollment)
@@ -118,7 +136,7 @@ export const useBiometricStore = defineStore('biometric', () => {
           }
 
           if (enrollment.status === 'failed') {
-            reject(new Error('L\'enrolement a echoue'))
+            reject(new Error('L\'enrôlement a échoué'))
             return
           }
 
@@ -180,6 +198,8 @@ export const useBiometricStore = defineStore('biometric', () => {
     devices,
     currentDevice,
     enrollments,
+    devicesPagination,
+    enrollmentsPagination,
     isLoading,
     fetchDevices,
     fetchDevice,

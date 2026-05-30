@@ -109,7 +109,7 @@ export const useAuthStore = defineStore('auth', () => {
     return user.value?.role === role
   }
 
-  async function updateProfile(data: { firstName: string; lastName: string }) {
+  async function updateProfile(data: { firstName: string; lastName: string; phone?: string }) {
     user.value = await authApi.updateProfile(data)
     persistUser()
   }

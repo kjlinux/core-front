@@ -46,6 +46,7 @@ export interface QrCodeStats {
 export interface QrCodeFilters {
   siteId?: string
   isActive?: boolean
+  search?: string
   page?: number
   perPage?: number
 }

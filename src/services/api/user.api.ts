@@ -1,4 +1,5 @@
 import apiClient from './client'
+import type { PaginatedResponse } from '@/types'
 
 export interface UserData {
   id: string
@@ -15,12 +16,24 @@ export interface UserData {
 }
 
 export interface UserFilters {
-  company_id?: string
-  role?: string
   search?: string
-  is_active?: boolean
+  role?: string
+  companyId?: string
+  isActive?: boolean
   page?: number
   perPage?: number
+}
+
+function toSnakeFilters(params?: UserFilters): Record<string, unknown> | undefined {
+  if (!params) return undefined
+  const result: Record<string, unknown> = {}
+  if (params.search !== undefined) result.search = params.search
+  if (params.role !== undefined) result.role = params.role
+  if (params.companyId !== undefined) result.company_id = params.companyId
+  if (params.isActive !== undefined) result.is_active = params.isActive
+  if (params.page !== undefined) result.page = params.page
+  if (params.perPage !== undefined) result.per_page = params.perPage
+  return result
 }
 
 export interface CreateUserPayload {
@@ -45,8 +58,8 @@ export interface UpdateUserPayload {
 }
 
 export const userApi = {
-  getAll(params?: UserFilters): Promise<UserData[]> {
-    return apiClient.get('/users', { params }).then((r) => r.data?.data ?? r.data)
+  getAll(params?: UserFilters): Promise<PaginatedResponse<UserData>> {
+    return apiClient.get('/users', { params: toSnakeFilters(params) }).then((r) => r.data)
   },
 
   getById(id: string): Promise<UserData> {
@@ -67,5 +80,9 @@ export const userApi = {
 
   resetPassword(id: string): Promise<void> {
     return apiClient.post(`/users/${id}/reset-password`).then((r) => r.data)
+  },
+
+  remove(id: string): Promise<void> {
+    return apiClient.delete(`/users/${id}`).then((r) => r.data)
   },
 }

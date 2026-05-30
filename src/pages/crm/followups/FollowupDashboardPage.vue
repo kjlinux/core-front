@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { followupApi, type ClientFollowupCall } from '@/services/api/followup.api'
+import { extractApiErrorMessage } from '@/utils/api-error'
 import { useToast } from '@/composables/useToast'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
@@ -21,6 +23,7 @@ interface DashboardData {
 }
 
 const toast = useToast()
+const { t } = useI18n()
 const data = ref<DashboardData | null>(null)
 const overdue = ref<ClientFollowupCall[]>([])
 const isLoading = ref(true)
@@ -35,7 +38,7 @@ async function load() {
     data.value = dash
     overdue.value = list
   } catch (e) {
-    toast.error('Impossible de charger le tableau de bord', String((e as Error).message))
+    toast.error(t('toast.crm.loadDashboardError'), extractApiErrorMessage(e, t('common.genericError')))
   } finally {
     isLoading.value = false
   }
@@ -44,10 +47,10 @@ async function load() {
 onMounted(load)
 
 const statusLabel: Record<string, string> = {
-  pending: 'A traiter',
-  done: 'Termines',
-  skipped: 'Ignores',
-  escalated: 'Escalades',
+  pending: 'À traiter',
+  done: 'Terminés',
+  skipped: 'Ignorés',
+  escalated: 'Escaladés',
 }
 
 const statusVariant: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'neutral'> = {
@@ -86,7 +89,7 @@ function formatDate(iso: string) {
       <div>
         <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Routine clients</h1>
         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          Suivi automatique J+2 / J+7 / J+30 apres installation
+          Suivi automatique J+2 / J+7 / J+30 après installation
         </p>
       </div>
       <AppButton variant="ghost" size="sm" :disabled="isLoading" @click="load">
@@ -133,7 +136,7 @@ function formatDate(iso: string) {
       <AppCard>
         <div class="flex items-start justify-between">
           <div>
-            <p class="text-xs font-medium uppercase text-gray-500 dark:text-gray-400">Taux completion</p>
+            <p class="text-xs font-medium uppercase text-gray-500 dark:text-gray-400">Taux complétion</p>
             <p v-if="!isLoading" class="mt-2 text-3xl font-bold text-gray-900 dark:text-gray-100">{{ completionRate }}%</p>
             <AppSkeleton v-else width="4rem" height="2rem" class="mt-2" />
             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ totalActions }} actions au total</p>
@@ -145,7 +148,7 @@ function formatDate(iso: string) {
 
     <!-- Distribution par statut -->
     <AppCard v-if="data && !isLoading">
-      <h3 class="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">Repartition des suivis</h3>
+      <h3 class="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">Répartition des suivis</h3>
       <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div
           v-for="(count, status) in data.by_status"
@@ -178,7 +181,7 @@ function formatDate(iso: string) {
           <div>
             <p class="font-medium text-gray-900 dark:text-gray-100">{{ f.company?.name ?? 'Client inconnu' }}</p>
             <p class="text-xs text-gray-500 dark:text-gray-400">
-              Programme le {{ formatDate(f.scheduled_at) }}
+              Programmé le {{ formatDate(f.scheduled_at) }}
               <span v-if="f.company?.phone" class="ml-2">- {{ f.company.phone }}</span>
             </p>
           </div>

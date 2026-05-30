@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useSupportStore } from '@/stores/support.store'
 import { useToast } from '@/composables/useToast'
 import AppCard from '@/components/ui/AppCard.vue'
@@ -8,12 +9,14 @@ import AppButton from '@/components/ui/AppButton.vue'
 import AppModal from '@/components/ui/AppModal.vue'
 import AppSearchInput from '@/components/ui/AppSearchInput.vue'
 import DataTable from '@/components/data-display/DataTable.vue'
+import { extractApiErrorMessage } from '@/utils/api-error'
 import { PlusIcon, TrashIcon } from '@heroicons/vue/24/outline'
 import type { DeviceKind } from '@/types'
 import type { TableColumn } from '@/types/common'
 
 const store = useSupportStore()
 const toast = useToast()
+const { t } = useI18n()
 
 const showAdd = ref(false)
 const search = ref('')
@@ -74,7 +77,7 @@ async function openAdd() {
     try {
       await store.fetchDevices()
     } catch (e) {
-      toast.error('Impossible de charger les capteurs', String((e as Error).message))
+      toast.error(t('toast.support.loadSensorsError'), extractApiErrorMessage(e, t('common.genericError')))
     }
   }
 }
@@ -82,10 +85,10 @@ async function openAdd() {
 async function add(kind: DeviceKind, id: string) {
   try {
     await store.markWitness(kind, id)
-    toast.success('Capteur marqué comme témoin')
+    toast.success(t('toast.support.markedWitness'))
     showAdd.value = false
   } catch (e) {
-    toast.error('Échec', String((e as Error).message))
+    toast.error(t('common.failed'), extractApiErrorMessage(e, t('common.genericError')))
   }
 }
 
@@ -93,9 +96,9 @@ async function remove(kind: DeviceKind, id: string) {
   if (!confirm('Retirer ce capteur de la liste des témoins ?')) return
   try {
     await store.unmarkWitness(kind, id)
-    toast.success('Retiré')
+    toast.success(t('toast.support.removed'))
   } catch (e) {
-    toast.error('Échec', String((e as Error).message))
+    toast.error(t('common.failed'), extractApiErrorMessage(e, t('common.genericError')))
   }
 }
 
@@ -108,7 +111,7 @@ onMounted(async () => {
   try {
     await store.fetchWitnesses()
   } catch (e) {
-    toast.error('Impossible de charger les capteurs témoins', String((e as Error).message))
+    toast.error(t('toast.support.loadWitnessError'), extractApiErrorMessage(e, t('common.genericError')))
   }
 })
 </script>
@@ -128,7 +131,7 @@ onMounted(async () => {
     <AppCard padding="sm">
       <div class="flex flex-wrap gap-3 items-end">
         <div class="flex-1 min-w-55">
-          <AppSearchInput v-model="searchWitness" placeholder="Rechercher (nom, serie)..." />
+          <AppSearchInput v-model="searchWitness" placeholder="Rechercher (nom, série)..." />
         </div>
       </div>
     </AppCard>

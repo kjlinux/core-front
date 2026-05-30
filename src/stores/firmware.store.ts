@@ -1,7 +1,7 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { firmwareApi } from '@/services/api/firmware.api'
-import type { FirmwareVersion, DeviceFirmwareStatus, OtaUpdateLog, CompanyUpdateProgress } from '@/types'
+import type { FirmwareVersion, DeviceFirmwareStatus, OtaUpdateLog, CompanyUpdateProgress, FirmwareFilters } from '@/types'
 
 export const useFirmwareStore = defineStore('firmware', () => {
   const versions = ref<FirmwareVersion[]>([])
@@ -28,7 +28,7 @@ export const useFirmwareStore = defineStore('firmware', () => {
   const companyUpdateProgress = ref<CompanyUpdateProgress | null>(null)
   const pollingInterval = ref<ReturnType<typeof setInterval> | null>(null)
 
-  async function fetchVersions(params?: Record<string, unknown>) {
+  async function fetchVersions(params?: Partial<FirmwareFilters>) {
     isLoading.value = true
     try {
       const response = await firmwareApi.getVersions(params)
@@ -76,7 +76,7 @@ export const useFirmwareStore = defineStore('firmware', () => {
     // Recupere en parallele la derniere publiee par type d'appareil.
     const fetchByKind = async (kind: 'rfid' | 'biometric'): Promise<FirmwareVersion | null> => {
       try {
-        const response = await firmwareApi.getVersions({ device_kind: kind, perPage: 5 } as Record<string, unknown>)
+        const response = await firmwareApi.getVersions({ deviceKind: kind, perPage: 5 })
         return response.data.find((v) => v.isPublished) ?? null
       } catch {
         return null

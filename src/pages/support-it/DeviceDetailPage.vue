@@ -3,12 +3,14 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { supportApi, type SupportCommand } from '@/services/api/support.api'
 import { useSupportStore } from '@/stores/support.store'
+import { useI18n } from 'vue-i18n'
 import { useToast } from '@/composables/useToast'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
 import { ArrowLeftIcon, SignalIcon } from '@heroicons/vue/24/outline'
+import { extractApiErrorMessage } from '@/utils/api-error'
 import type { DeviceAlert, DeviceKind, SupportDevice } from '@/types'
 
 interface RawDevice {
@@ -29,6 +31,7 @@ const route = useRoute()
 const router = useRouter()
 const store = useSupportStore()
 const toast = useToast()
+const { t } = useI18n()
 
 const kind = computed(() => route.params.kind as DeviceKind)
 const id = computed(() => route.params.id as string)
@@ -62,9 +65,9 @@ async function load() {
 async function ping() {
   try {
     await store.pingDevice(kind.value, id.value)
-    toast.success('Commande STATUS envoyée')
+    toast.success(t('toast.support.statusCommandSent'))
   } catch (e) {
-    toast.error('Échec', String((e as Error).message))
+    toast.error(t('common.failed'), extractApiErrorMessage(e, t('common.genericError')))
   }
 }
 
@@ -75,9 +78,9 @@ async function sendCommand(command: SupportCommand) {
   sending.value = command
   try {
     await supportApi.sendCommand(kind.value, id.value, command)
-    toast.success(`Commande ${command} envoyée`)
+    toast.success(t('toast.support.commandSent', { command }))
   } catch (e) {
-    toast.error('Échec', String((e as Error).message))
+    toast.error(t('common.failed'), extractApiErrorMessage(e, t('common.genericError')))
   } finally {
     sending.value = null
   }
@@ -92,7 +95,7 @@ onMounted(async () => {
   try {
     await Promise.all([load(), store.fetchWitnesses()])
   } catch (e) {
-    toast.error('Erreur de chargement', String((e as Error).message))
+    toast.error(t('toast.support.loadError'), extractApiErrorMessage(e, t('common.genericError')))
   }
 })
 </script>

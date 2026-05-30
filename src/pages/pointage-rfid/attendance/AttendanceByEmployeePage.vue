@@ -5,7 +5,7 @@
         <AppButton variant="ghost" @click="goBack">
           {{ t('common.back') }}
         </AppButton>
-        <h1>{{ t('attendance.byEmployeeTitle', { employeeName }) }}</h1>
+        <h1 class="text-gray-900">{{ t('attendance.byEmployeeTitle', { employeeName }) }}</h1>
       </div>
     </div>
 
@@ -22,7 +22,7 @@
               type="date"
               :placeholder="t('attendance.startDate')"
             />
-            <span class="separator">-</span>
+            <span class="separator text-gray-500">-</span>
             <AppInput
               v-model="endDate"
               type="date"
@@ -63,7 +63,7 @@
       </div>
 
       <AppCard class="calendar-view">
-        <h3>{{ t('attendance.calendarView') }}</h3>
+        <h3 class="text-gray-900">{{ t('attendance.calendarView') }}</h3>
         <div class="calendar-grid">
           <div
             v-for="day in calendarDays"
@@ -75,20 +75,20 @@
             <div class="day-status">{{ day.statusLabel }}</div>
           </div>
         </div>
-        <div class="calendar-legend">
-          <div class="legend-item">
+        <div class="calendar-legend border-t border-gray-200">
+          <div class="legend-item text-gray-500">
             <span class="legend-color status-present"></span>
             <span>{{ t('attendance.status.present') }}</span>
           </div>
-          <div class="legend-item">
+          <div class="legend-item text-gray-500">
             <span class="legend-color status-late"></span>
             <span>{{ t('attendance.status.late') }}</span>
           </div>
-          <div class="legend-item">
+          <div class="legend-item text-gray-500">
             <span class="legend-color status-absent"></span>
             <span>{{ t('attendance.status.absent') }}</span>
           </div>
-          <div class="legend-item">
+          <div class="legend-item text-gray-500">
             <span class="legend-color status-weekend"></span>
             <span>{{ t('attendance.weekend') }}</span>
           </div>
@@ -96,7 +96,7 @@
       </AppCard>
 
       <AppCard class="details-table">
-        <h3>{{ t('attendance.attendanceDetails') }}</h3>
+        <h3 class="text-gray-900">{{ t('attendance.attendanceDetails') }}</h3>
         <DataTable
           :columns="columns"
           :data="attendanceRecords"
@@ -111,7 +111,7 @@
             </span>
           </template>
           <template #cell-lateMinutes="{ row }">
-            <span v-if="row.lateMinutes > 0" class="late-minutes">
+            <span v-if="row.lateMinutes > 0" class="late-minutes text-orange-600">
               {{ row.lateMinutes }} min
             </span>
             <span v-else>-</span>
@@ -263,7 +263,6 @@ onMounted(() => {
 .page-header h1 {
   font-size: 28px;
   font-weight: 600;
-  color: #1f2937;
   margin: 0;
 }
 
@@ -299,7 +298,6 @@ onMounted(() => {
 }
 
 .separator {
-  color: #6b7280;
   font-weight: 500;
 }
 
@@ -317,7 +315,6 @@ onMounted(() => {
 .calendar-view h3 {
   font-size: 18px;
   font-weight: 600;
-  color: #1f2937;
   margin: 0 0 16px 0;
 }
 
@@ -380,7 +377,6 @@ onMounted(() => {
   gap: 16px;
   flex-wrap: wrap;
   padding-top: 16px;
-  border-top: 1px solid #e5e7eb;
 }
 
 .legend-item {
@@ -388,7 +384,6 @@ onMounted(() => {
   align-items: center;
   gap: 8px;
   font-size: 14px;
-  color: #6b7280;
 }
 
 .legend-color {
@@ -400,7 +395,6 @@ onMounted(() => {
 .details-table h3 {
   font-size: 18px;
   font-weight: 600;
-  color: #1f2937;
   margin: 0 0 16px 0;
 }
 
@@ -428,7 +422,30 @@ onMounted(() => {
 }
 
 .late-minutes {
-  color: #ea580c;
   font-weight: 500;
+}
+
+/* Dark mode: statuts du calendrier et pastilles (classes dynamiques) — aligne sur le retrofit de main.css */
+.dark .calendar-day.status-present,
+.dark .status-badge.status-present {
+  background-color: rgb(34 197 94 / 0.18);
+  color: #86efac;
+}
+
+.dark .calendar-day.status-late,
+.dark .status-badge.status-late {
+  background-color: rgb(249 115 22 / 0.18);
+  color: #fdba74;
+}
+
+.dark .calendar-day.status-absent,
+.dark .status-badge.status-absent {
+  background-color: rgb(239 68 68 / 0.18);
+  color: #fca5a5;
+}
+
+.dark .calendar-day.status-weekend {
+  background-color: rgb(75 85 99 / 0.25);
+  color: #9ca3af;
 }
 </style>

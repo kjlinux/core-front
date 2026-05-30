@@ -5,12 +5,15 @@ export const ROLE_LABELS: Record<string, string> = {
   super_admin: 'Super Admin',
   admin_enterprise: 'Admin Entreprise',
   manager: 'Manager',
+  technicien: 'Technicien',
+  support_it: 'Support IT',
+  employe: 'Employé',
 }
 
 export const CARD_STATUS_LABELS: Record<string, string> = {
   active: 'Active',
   inactive: 'Inactive',
-  blocked: 'Bloquee',
+  blocked: 'Bloquée',
   lost: 'Perdue',
 }
 
@@ -22,10 +25,10 @@ export const CARD_STATUS_COLORS: Record<string, string> = {
 }
 
 export const ATTENDANCE_STATUS_LABELS: Record<string, string> = {
-  present: 'Present',
+  present: 'Présent',
   absent: 'Absent',
   late: 'En retard',
-  left_early: 'Parti tot',
+  left_early: 'Parti tôt',
 }
 
 export const SATISFACTION_LABELS: Record<string, string> = {
@@ -42,14 +45,15 @@ export const SATISFACTION_COLORS: Record<string, string> = {
 
 export const ORDER_STATUS_LABELS: Record<string, string> = {
   pending: 'En attente',
-  confirmed: 'Confirmee',
+  confirmed: 'Confirmée',
   processing: 'En traitement',
-  shipped: 'Expediee',
-  delivered: 'Livree',
-  cancelled: 'Annulee',
+  shipped: 'Expédiée',
+  delivered: 'Livrée',
+  cancelled: 'Annulée',
 }
 
 export const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  ligdicash: 'LigdiCash',
   intouch_mobile_money: 'InTouch / Mobile Money',
   intouch_card: 'InTouch / Carte bancaire',
   manual: 'Paiement manuel',

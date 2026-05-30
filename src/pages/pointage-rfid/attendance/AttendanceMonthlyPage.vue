@@ -1,7 +1,7 @@
 <template>
   <div class="attendance-monthly-page">
     <div class="page-header">
-      <h1>{{ t('attendance.monthlyTitle') }}</h1>
+      <h1 class="text-gray-900">{{ t('attendance.monthlyTitle') }}</h1>
       <div class="header-actions">
         <AppSelect
           v-model="selectedMonth"
@@ -23,16 +23,16 @@
       <AppCard>
         <div class="summary-grid">
           <div class="summary-item">
-            <span class="summary-label">{{ t('attendance.avgRate') }}</span>
-            <span class="summary-value text-blue">{{ summary.averageAttendanceRate }}%</span>
+            <span class="summary-label text-gray-500">{{ t('attendance.avgRate') }}</span>
+            <span class="summary-value text-blue-600">{{ summary.averageAttendanceRate }}%</span>
           </div>
           <div class="summary-item">
-            <span class="summary-label">{{ t('attendance.totalAbsencesStat') }}</span>
-            <span class="summary-value text-red">{{ summary.totalAbsences }}</span>
+            <span class="summary-label text-gray-500">{{ t('attendance.totalAbsencesStat') }}</span>
+            <span class="summary-value text-red-600">{{ summary.totalAbsences }}</span>
           </div>
           <div class="summary-item">
-            <span class="summary-label">{{ t('attendance.totalLateMinutes') }}</span>
-            <span class="summary-value text-orange">{{ summary.totalLateMinutes }}</span>
+            <span class="summary-label text-gray-500">{{ t('attendance.totalLateMinutes') }}</span>
+            <span class="summary-value text-orange-600">{{ summary.totalLateMinutes }}</span>
           </div>
         </div>
       </AppCard>
@@ -72,7 +72,7 @@
           </span>
         </template>
         <template #cell-totalLateMinutes="{ row }">
-          <span class="late-minutes">{{ row.totalLateMinutes }} min</span>
+          <span class="late-minutes text-orange-600">{{ row.totalLateMinutes }} min</span>
         </template>
       </DataTable>
     </AppCard>
@@ -250,7 +250,6 @@ onMounted(() => {
 .page-header h1 {
   font-size: 28px;
   font-weight: 600;
-  color: #1f2937;
   margin: 0;
 }
 
@@ -278,25 +277,11 @@ onMounted(() => {
 
 .summary-label {
   font-size: 14px;
-  color: #6b7280;
 }
 
 .summary-value {
   font-size: 24px;
   font-weight: 600;
-  color: #1f2937;
-}
-
-.text-blue {
-  color: #2563eb;
-}
-
-.text-red {
-  color: #dc2626;
-}
-
-.text-orange {
-  color: #ea580c;
 }
 
 .filters {
@@ -350,7 +335,21 @@ onMounted(() => {
 }
 
 .late-minutes {
-  color: #ea580c;
   font-weight: 500;
+}
+
+.dark .rate-high {
+  background-color: rgb(34 197 94 / 0.18);
+  color: #86efac;
+}
+
+.dark .rate-medium {
+  background-color: rgb(249 115 22 / 0.18);
+  color: #fdba74;
+}
+
+.dark .rate-low {
+  background-color: rgb(239 68 68 / 0.18);
+  color: #fca5a5;
 }
 </style>

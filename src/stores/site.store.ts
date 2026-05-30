@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
-import { siteApi } from '@/services/api/site.api'
+import { siteApi, type SiteFilters } from '@/services/api/site.api'
 import type { Site, PaginatedResponse } from '@/types'
 
 export const useSiteStore = defineStore('site', () => {
@@ -14,7 +14,7 @@ export const useSiteStore = defineStore('site', () => {
     totalPages: 0,
   })
 
-  async function fetchSites(params?: Record<string, unknown>) {
+  async function fetchSites(params?: SiteFilters) {
     isLoading.value = true
     try {
       const response: PaginatedResponse<Site> = await siteApi.getAll(params)

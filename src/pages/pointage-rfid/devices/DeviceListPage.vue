@@ -1,14 +1,16 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useRfidDeviceStore } from '@/stores/rfid-device.store'
 import { useCompanyStore } from '@/stores/company.store'
 import { useSiteStore } from '@/stores/site.store'
 import { usePermissions } from '@/composables/usePermissions'
+import { useServerTable } from '@/composables/useServerTable'
 import { useToast } from '@/composables/useToast'
 import { mqttApi } from '@/services/api/mqtt.api'
 import type { DeviceCommand } from '@/services/api/mqtt.api'
+import { rfidDeviceApi } from '@/services/api/rfid-device.api'
 import { deriveDeviceOnline } from '@/utils/device-status'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
@@ -40,13 +42,20 @@ const permissions = usePermissions()
 const toast = useToast()
 
 const showAddModal = ref(false)
-const filterCompany = ref('')
-const filterStatus = ref('')
-const searchQuery = ref('')
-const currentPage = ref(1)
-const perPage = ref(15)
 const isSubmitting = ref(false)
 const sendingCommand = ref<string | null>(null)
+
+const { filters, search, applyFilters, handlePageChange, reload } = useServerTable({
+  initialFilters: { companyId: '', status: '' as '' | 'online' | 'offline' },
+  fetcher: (p) =>
+    deviceStore.fetchDevices({
+      page: p.page,
+      perPage: p.perPage,
+      companyId: p.companyId || undefined,
+      status: p.status || undefined,
+      search: p.search || undefined,
+    }),
+})
 
 const newDevice = ref({
   name: '',
@@ -56,24 +65,39 @@ const newDevice = ref({
   isOnline: false,
 })
 
-function generateSerialNumber(prefix: string): string {
+function generateSerialNumber(prefix: string, devices: { serialNumber: string }[]): string {
   const year = new Date().getFullYear()
   const pattern = new RegExp(`^${prefix}-${year}-(\\d+)$`)
   let max = 0
-  for (const d of deviceStore.devices) {
+  for (const d of devices) {
     const match = d.serialNumber.match(pattern)
     if (match) max = Math.max(max, parseInt(match[1]!))
   }
   return `${prefix}-${year}-${String(max + 1).padStart(3, '0')}`
 }
 
+// Le numéro de série est calculé à partir de la liste COMPLÈTE des devices
+// (la table n'affiche qu'une page server-side), donc on récupère tout au moment d'ouvrir le modal.
+async function openAddModal() {
+  let all: { serialNumber: string }[] = deviceStore.devices
+  try {
+    const response = await rfidDeviceApi.getAll({ perPage: 1000 })
+    all = response.data
+  } catch {
+    // fallback sur la page courante si la récupération échoue
+  }
+  newDevice.value.serialNumber = generateSerialNumber('RFID', all)
+  showAddModal.value = true
+}
+
 const togglingStatus = ref<string | null>(null)
 
 async function handleToggleStatus(device: { id: string; isOnline: boolean }) {
   togglingStatus.value = device.id
+  const goingOnline = !device.isOnline
   try {
-    await deviceStore.updateDevice(device.id, { isOnline: !device.isOnline })
-    toast.showSuccess(device.isOnline ? t('devices.setOfflineSuccess') : t('devices.setOnlineSuccess'))
+    await deviceStore.updateDevice(device.id, { isOnline: goingOnline })
+    toast.showSuccess(goingOnline ? t('devices.setOnlineSuccess') : t('devices.setOfflineSuccess'))
   } catch {
     toast.showError(t('devices.statusChangeError'))
   } finally {
@@ -99,38 +123,7 @@ const siteOptionsForForm = computed(() => {
     .map(s => ({ label: s.name, value: s.id }))
 })
 
-const filteredDevices = computed(() => {
-  let list = deviceStore.devices
-  if (filterCompany.value) {
-    list = list.filter((d) => d.companyId === filterCompany.value)
-  }
-  if (filterStatus.value === 'online') {
-    list = list.filter((d) => d.isOnline)
-  } else if (filterStatus.value === 'offline') {
-    list = list.filter((d) => !d.isOnline)
-  }
-  const q = searchQuery.value.trim().toLowerCase()
-  if (q) {
-    list = list.filter((d) =>
-      (d.name || '').toLowerCase().includes(q) ||
-      (d.serialNumber || '').toLowerCase().includes(q) ||
-      ((d as { siteName?: string }).siteName || '').toLowerCase().includes(q)
-    )
-  }
-  return list
-})
-
-const pagedDevices = computed(() => {
-  const start = (currentPage.value - 1) * perPage.value
-  return sortByRecent(filteredDevices.value).slice(start, start + perPage.value)
-})
-
-const paginationObj = computed(() => {
-  const total = filteredDevices.value.length
-  return { currentPage: currentPage.value, totalPages: Math.ceil(total / perPage.value) || 1, perPage: perPage.value, total }
-})
-
-watch([filterCompany, filterStatus, searchQuery], () => { currentPage.value = 1 })
+const tableData = computed(() => sortByRecent(deviceStore.devices))
 
 const canManage = computed(() => permissions.isAdminOrSuperOrTech.value)
 
@@ -178,7 +171,7 @@ async function handleDelete(id: string) {
 }
 
 async function handleAddDevice() {
-  if (!newDevice.value.name) {
+  if (!newDevice.value.name || !newDevice.value.companyId || !newDevice.value.siteId) {
     toast.showError(t('devices.fillRequired'))
     return
   }
@@ -187,6 +180,7 @@ async function handleAddDevice() {
     await deviceStore.registerDevice(newDevice.value)
     toast.showSuccess(t('devices.addedSuccess'))
     showAddModal.value = false
+    await reload()
     newDevice.value = { name: '', serialNumber: '', companyId: '', siteId: '', isOnline: false }
   } catch {
     toast.showError(t('devices.addError'))
@@ -197,10 +191,10 @@ async function handleAddDevice() {
 
 onMounted(async () => {
   await Promise.all([
-    deviceStore.fetchDevices(),
     companyStore.fetchCompanies({ perPage: 100 }),
     siteStore.fetchSites({ perPage: 200 }),
   ])
+  await reload()
 })
 </script>
 
@@ -211,28 +205,28 @@ onMounted(async () => {
         <h1 class="text-2xl font-bold text-gray-900">{{ t('devices.rfidTitle') }}</h1>
         <p class="text-sm text-gray-500 mt-1">{{ t('devices.rfidSubtitle') }}</p>
       </div>
-      <AppButton v-if="canManage" variant="primary" @click="() => { newDevice.serialNumber = generateSerialNumber('RFID'); showAddModal = true }">
+      <AppButton v-if="canManage" variant="primary" @click="openAddModal">
         {{ t('devices.addDevice') }}
       </AppButton>
     </div>
 
     <AppCard>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <AppInput v-model="searchQuery" :placeholder="t('common.search') || 'Rechercher...'" :label="t('common.search') || 'Rechercher'" />
-        <AppSelect v-model="filterCompany" :options="companyOptions" :label="t('devices.companyLabel')" />
-        <AppSelect v-model="filterStatus" :options="statusOptions" :label="t('devices.status')" />
+        <AppInput v-model="search" :placeholder="t('common.search') || 'Rechercher...'" :label="t('common.search') || 'Rechercher'" />
+        <AppSelect v-model="filters.companyId" :options="companyOptions" :label="t('devices.companyLabel')" @update:model-value="applyFilters" />
+        <AppSelect v-model="filters.status" :options="statusOptions" :label="t('devices.status')" @update:model-value="applyFilters" />
       </div>
 
       <DataTable
         :columns="deviceColumns"
-        :data="pagedDevices"
+        :data="tableData"
         :loading="deviceStore.isLoading"
-        :pagination="paginationObj"
+        :pagination="deviceStore.pagination"
         default-sort-column="name"
         default-sort-direction="desc"
         :empty-message="t('devices.notFound')"
         @row-click="(row) => router.push(`/pointage-rfid/devices/${row.id}`)"
-        @page-change="(p) => currentPage = p"
+        @page-change="handlePageChange"
       >
         <template #status="{ row }">
           <AppBadge :variant="deriveDeviceOnline(row.lastPingAt) ? 'success' : 'danger'">
@@ -288,7 +282,7 @@ onMounted(async () => {
 
     <AppModal v-model="showAddModal" :title="t('devices.addRfidTitle')" size="md">
       <div class="space-y-4">
-        <AppInput v-model="newDevice.name" :label="t('devices.deviceName')" :placeholder="t('devices.deviceNamePlaceholder')" />
+        <AppInput v-model="newDevice.name" :label="t('devices.deviceName')" :placeholder="t('devices.deviceNamePlaceholder')" :required="true" />
         <div>
           <p class="text-sm font-medium text-gray-700 mb-1">{{ t('devices.serialLabel') }}</p>
           <p class="font-mono text-sm bg-gray-50 border border-gray-200 rounded-md px-3 py-2 text-gray-900">{{ newDevice.serialNumber }}</p>
@@ -297,6 +291,7 @@ onMounted(async () => {
           v-model="newDevice.companyId"
           :label="t('devices.companyLabel')"
           :options="companyOptions"
+          :required="true"
           @update:model-value="newDevice.siteId = ''"
         />
         <AppSelect
@@ -304,6 +299,7 @@ onMounted(async () => {
           :label="t('devices.siteLabel')"
           :options="siteOptionsForForm"
           :placeholder="t('devices.selectSite')"
+          :required="true"
           :disabled="!newDevice.companyId"
         />
         <div class="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3">

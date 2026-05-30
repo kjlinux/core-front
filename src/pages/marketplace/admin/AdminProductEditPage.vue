@@ -40,7 +40,12 @@ const categoryOptions = computed(() => [
 
 async function handleSubmit() {
   try {
-    await store.updateProduct(productId, form.value)
+    await store.updateProduct(productId, {
+      ...form.value,
+      price: Math.round(form.value.price),
+      stockQuantity: Math.round(form.value.stockQuantity),
+      minQuantity: Math.round(form.value.minQuantity),
+    })
     toast.success(t('marketplace.productUpdated'))
     router.push('/marketplace/admin/products')
   } catch {
@@ -87,12 +92,12 @@ onMounted(async () => {
         <AppTextarea v-model="form.description" :label="t('marketplace.descriptionLabel')" :rows="3" />
         <AppSelect v-model="form.category" :label="t('marketplace.category')" :options="categoryOptions" />
         <div class="grid grid-cols-2 gap-4">
-          <AppInput v-model.number="form.price" :label="t('marketplace.price')" type="number" :min="0" />
+          <AppInput v-model.number="form.price" :label="t('marketplace.price')" type="number" :min="0" :step="1" />
           <AppInput v-model="form.currency" :label="t('marketplace.currency')" />
         </div>
         <div class="grid grid-cols-2 gap-4">
-          <AppInput v-model.number="form.stockQuantity" :label="t('marketplace.stock')" type="number" :min="0" />
-          <AppInput v-model.number="form.minQuantity" :label="t('marketplace.minQty')" type="number" :min="1" />
+          <AppInput v-model.number="form.stockQuantity" :label="t('marketplace.stock')" type="number" :min="0" :step="1" />
+          <AppInput v-model.number="form.minQuantity" :label="t('marketplace.minQty')" type="number" :min="1" :step="1" />
         </div>
         <div class="flex items-center justify-between py-2">
           <p class="text-sm font-medium text-gray-800">{{ t('marketplace.customizableLabel') }}</p>

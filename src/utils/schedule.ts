@@ -23,7 +23,7 @@ function emptyDays(): ScheduleDay[] {
 }
 
 // Determine le type de shift a partir d'une plage horaire
-function inferShiftKind(startTime: string, endTime: string): ShiftKind {
+export function inferShiftKind(startTime: string, endTime: string): ShiftKind {
   const start = parseInt(startTime.slice(0, 2), 10) || 0
   const end = parseInt(endTime.slice(0, 2), 10) || 0
   // Plage qui franchit minuit => nuit
@@ -55,7 +55,7 @@ export function normalizeSchedule(raw: Partial<Schedule> & LegacySchedule): Sche
       kind,
       startTime: raw.startTime,
       endTime: raw.endTime,
-      expectedPunches: [{ time: raw.startTime, label: 'Arrivee' }],
+      expectedPunches: [{ time: raw.startTime, label: 'Arrivée' }],
       lateTolerance: tolerance,
     }
     const workDays = raw.workDays ?? []
@@ -86,7 +86,7 @@ export function resolveEmployeeSchedule(
 const SHIFT_LABELS: Record<ShiftKind, string> = {
   morning: 'Matin',
   evening: 'Soir',
-  full_day: 'Journee',
+  full_day: 'Journée',
   night: 'Nuit',
 }
 
@@ -95,12 +95,12 @@ export function shiftKindLabel(kind: ShiftKind): string {
 }
 
 const SEGMENT_STATUS_LABELS: Record<string, string> = {
-  complete: 'Present',
+  complete: 'Présent',
   partial: 'Partiel',
   late: 'En retard',
   absent: 'Absent',
-  on_leave: 'Conge',
-  not_scheduled: 'Non programme',
+  on_leave: 'Congé',
+  not_scheduled: 'Non programmé',
 }
 
 export function segmentStatusLabel(status: string): string {

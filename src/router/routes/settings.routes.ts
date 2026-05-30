@@ -17,7 +17,7 @@ const settingsRoutes: RouteRecordRaw[] = [
         name: 'settings-company',
         component: () => import('@/pages/parametres/CompanySettingsPage.vue'),
         meta: {
-          title: 'Parametres entreprise',
+          title: 'Paramètres entreprise',
           roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE],
         },
       },
@@ -35,8 +35,35 @@ const settingsRoutes: RouteRecordRaw[] = [
         name: 'settings-roles',
         component: () => import('@/pages/parametres/RoleManagementPage.vue'),
         meta: {
-          title: 'Gestion des roles',
+          title: 'Gestion des rôles',
           roles: [UserRole.SUPER_ADMIN],
+        },
+      },
+      {
+        path: 'fiches-installation',
+        name: 'technicien-installation-sheets',
+        component: () => import('@/pages/parametres/InstallationSheetsListPage.vue'),
+        meta: {
+          title: "Fiches d'installation",
+          roles: [UserRole.SUPER_ADMIN, UserRole.TECHNICIEN],
+        },
+      },
+      {
+        path: 'fiches-installation/nouvelle',
+        name: 'technicien-installation-sheet',
+        component: () => import('@/pages/parametres/InstallationSheetCreatePage.vue'),
+        meta: {
+          title: "Nouvelle fiche d'installation",
+          roles: [UserRole.SUPER_ADMIN, UserRole.TECHNICIEN],
+        },
+      },
+      {
+        path: 'fiches-installation/:id',
+        name: 'technicien-installation-sheet-detail',
+        component: () => import('@/pages/parametres/InstallationSheetDetailPage.vue'),
+        meta: {
+          title: "Fiche d'installation",
+          roles: [UserRole.SUPER_ADMIN, UserRole.TECHNICIEN],
         },
       },
       {
@@ -53,7 +80,7 @@ const settingsRoutes: RouteRecordRaw[] = [
         name: 'technicien-activities',
         component: () => import('@/pages/parametres/TechnicienActivitiesPage.vue'),
         meta: {
-          title: 'Activites techniciens',
+          title: 'Activités techniciens',
           roles: [UserRole.SUPER_ADMIN],
         },
       },
@@ -71,7 +98,7 @@ const settingsRoutes: RouteRecordRaw[] = [
         name: 'report-schedules',
         component: () => import('@/pages/parametres/ReportSchedulesPage.vue'),
         meta: {
-          title: 'Rapports planifies',
+          title: 'Rapports planifiés',
           roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE],
         },
       },

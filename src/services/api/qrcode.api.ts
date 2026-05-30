@@ -11,9 +11,20 @@ import type {
 } from '@/types'
 import type { PaginatedResponse } from '@/types'
 
+function toSnakeFilters(params?: QrCodeFilters): Record<string, unknown> | undefined {
+  if (!params) return undefined
+  const result: Record<string, unknown> = {}
+  if (params.siteId !== undefined) result.site_id = params.siteId
+  if (params.isActive !== undefined) result.is_active = params.isActive
+  if (params.search !== undefined) result.search = params.search
+  if (params.page !== undefined) result.page = params.page
+  if (params.perPage !== undefined) result.per_page = params.perPage
+  return result
+}
+
 export const qrcodeApi = {
   getAll(params?: QrCodeFilters): Promise<PaginatedResponse<QrCode>> {
-    return apiClient.get('/qr-codes', { params }).then((r) => r.data)
+    return apiClient.get('/qr-codes', { params: toSnakeFilters(params) }).then((r) => r.data)
   },
 
   getById(id: string): Promise<QrCode> {

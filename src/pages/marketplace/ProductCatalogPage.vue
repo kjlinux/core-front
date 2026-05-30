@@ -55,7 +55,7 @@ function confirmAddToCart() {
 }
 
 onMounted(async () => {
-  await store.fetchProducts()
+  await store.fetchProducts({ isActive: true, perPage: 200 })
 })
 </script>
 

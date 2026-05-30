@@ -4,6 +4,8 @@ import { useI18n } from 'vue-i18n'
 import QRCode from 'qrcode'
 import { useQrcodeStore } from '@/stores/qrcode.store'
 import { useSiteStore } from '@/stores/site.store'
+import { useAuthStore } from '@/stores/auth.store'
+import { useActiveCompanyStore } from '@/stores/active-company.store'
 import { useToast } from '@/composables/useToast'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
@@ -13,6 +15,8 @@ import AppInput from '@/components/ui/AppInput.vue'
 const { t } = useI18n()
 const store = useQrcodeStore()
 const siteStore = useSiteStore()
+const authStore = useAuthStore()
+const activeCompanyStore = useActiveCompanyStore()
 const toast = useToast()
 
 const selectedSiteId = ref('')
@@ -30,6 +34,10 @@ const siteOptions = computed(() => [
 async function generate() {
   if (!selectedSiteId.value) {
     toast.error(t('qrcode.siteRequired'))
+    return
+  }
+  if (authStore.isSuperAdmin && !activeCompanyStore.activeCompanyId) {
+    toast.error(t('qrcode.companyRequired'))
     return
   }
   try {

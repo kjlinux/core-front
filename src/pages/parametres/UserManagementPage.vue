@@ -3,10 +3,12 @@ import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { usePermissions } from '@/composables/usePermissions'
 import { useToast } from '@/composables/useToast'
+import { useServerTable } from '@/composables/useServerTable'
 import { useAuthStore } from '@/stores/auth.store'
 import { useCompanyStore } from '@/stores/company.store'
 import { userApi } from '@/services/api/user.api'
 import type { UserData } from '@/services/api/user.api'
+import type { PaginatedResponse } from '@/types'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppModal from '@/components/ui/AppModal.vue'
@@ -14,8 +16,14 @@ import AppInput from '@/components/ui/AppInput.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import DataTable from '@/components/data-display/DataTable.vue'
-import { PencilIcon, EyeIcon, EyeSlashIcon, KeyIcon, UserPlusIcon } from '@heroicons/vue/24/outline'
-import { sortByRecent } from '@/utils/sort'
+import {
+  PencilIcon,
+  EyeIcon,
+  EyeSlashIcon,
+  KeyIcon,
+  UserPlusIcon,
+  TrashIcon,
+} from '@heroicons/vue/24/outline'
 
 const { t } = useI18n()
 const permissions = usePermissions()
@@ -23,11 +31,17 @@ const toast = useToast()
 const authStore = useAuthStore()
 const companyStore = useCompanyStore()
 
+// Seul le super_admin peut réellement supprimer un compte (le reste désactive).
+const isSuperAdmin = permissions.isSuperAdmin
+
 const isLoading = ref(false)
 const showCreateModal = ref(false)
 const showEditModal = ref(false)
 const editingUser = ref<UserData | null>(null)
 const isSaving = ref(false)
+const showDeleteModal = ref(false)
+const deletingUser = ref<UserData | null>(null)
+const isDeleting = ref(false)
 
 const createForm = ref({
   firstName: '',
@@ -40,20 +54,37 @@ const createForm = ref({
 })
 
 const users = ref<UserData[]>([])
-const currentPage = ref(1)
-const perPage = ref(15)
+const pagination = ref<PaginatedResponse<UserData>['meta'] | null>(null)
 
-const pagedUsers = computed(() => {
-  const start = (currentPage.value - 1) * perPage.value
-  return sortByRecent(users.value).slice(start, start + perPage.value)
+const { filters, search, applyFilters, handlePageChange, reload } = useServerTable({
+  initialFilters: {
+    role: '',
+    companyId: '',
+    status: '' as '' | 'active' | 'inactive',
+  },
+  fetcher: async (p) => {
+    isLoading.value = true
+    try {
+      const r = await userApi.getAll({
+        page: p.page,
+        perPage: p.perPage,
+        search: p.search || undefined,
+        role: p.role || undefined,
+        companyId: p.companyId || undefined,
+        isActive: p.status === '' ? undefined : p.status === 'active',
+      })
+      // Le technicien ne doit jamais voir les comptes super_admin (filtre defensif)
+      users.value = permissions.isTechnicien.value
+        ? r.data.filter((u) => u.role !== 'super_admin')
+        : r.data
+      pagination.value = r.meta
+    } catch {
+      toast.showError(t('parametres.userCreateError'))
+    } finally {
+      isLoading.value = false
+    }
+  },
 })
-
-const paginationObj = computed(() => {
-  const total = users.value.length
-  return { currentPage: currentPage.value, totalPages: Math.ceil(total / perPage.value) || 1, perPage: perPage.value, total }
-})
-
-const handlePageChange = (page: number) => { currentPage.value = page }
 
 const columns = computed(() => [
   { key: 'fullName', label: t('common.name') },
@@ -112,23 +143,42 @@ const companyOptions = computed(() => {
   ]
 })
 
+// Options du filtre rôle (toolbar) : tous les rôles, indépendant des permissions de création.
+const roleFilterOptions = computed(() => [
+  { label: t('parametres.allRoles') || 'Tous les rôles', value: '' },
+  { label: t('roles.super_admin'), value: 'super_admin' },
+  { label: t('roles.admin_enterprise'), value: 'admin_enterprise' },
+  { label: t('roles.manager'), value: 'manager' },
+  { label: t('roles.technicien'), value: 'technicien' },
+])
+
+// Options du filtre entreprise (toolbar).
+const companyFilterOptions = computed(() => [
+  { label: t('companies.allCompanies') || 'Toutes les entreprises', value: '' },
+  ...companyStore.companies.map((c) => ({
+    label: c.name,
+    value: c.id,
+  })),
+])
+
+const statusFilterOptions = computed(() => [
+  { label: t('companies.allStatuses') || 'Tous les statuts', value: '' },
+  { label: t('common.active'), value: 'active' },
+  { label: t('common.inactive'), value: 'inactive' },
+])
+
+// Seuls admin_enterprise et manager sont rattaches a une entreprise.
+// super_admin et technicien interviennent sans entreprise fixe.
+const requiresCompany = computed(
+  () =>
+    permissions.isSuperAdmin.value &&
+    !!createForm.value.role &&
+    createForm.value.role !== 'super_admin' &&
+    createForm.value.role !== 'technicien',
+)
+
 function formatDate(date: string) {
   return new Date(date).toLocaleDateString('fr-FR')
-}
-
-async function fetchUsers() {
-  isLoading.value = true
-  try {
-    const all = await userApi.getAll({ perPage: 1000 })
-    // Le technicien ne doit jamais voir les comptes super_admin (filtre defensif)
-    users.value = permissions.isTechnicien.value
-      ? all.filter((u) => u.role !== 'super_admin')
-      : all
-  } catch {
-    toast.showError(t('parametres.userCreateError'))
-  } finally {
-    isLoading.value = false
-  }
 }
 
 function openEditModal(user: UserData) {
@@ -139,11 +189,10 @@ function openEditModal(user: UserData) {
 async function toggleActive(user: UserData) {
   try {
     const updated = await userApi.toggleActive(user.id)
-    const index = users.value.findIndex((u) => u.id === user.id)
-    if (index !== -1) {
-      users.value[index] = updated
-    }
-    toast.showSuccess(updated.isActive ? t('parametres.userActivated') : t('parametres.userDeactivated'))
+    toast.showSuccess(
+      updated.isActive ? t('parametres.userActivated') : t('parametres.userDeactivated'),
+    )
+    await reload()
   } catch {
     toast.showError(t('parametres.statusChangeError'))
   }
@@ -158,8 +207,34 @@ async function resetPassword(user: UserData) {
   }
 }
 
+function openDeleteModal(user: UserData) {
+  deletingUser.value = user
+  showDeleteModal.value = true
+}
+
+async function confirmDelete() {
+  if (!deletingUser.value) return
+  isDeleting.value = true
+  try {
+    await userApi.remove(deletingUser.value.id)
+    toast.showSuccess(t('parametres.userDeleted'))
+    showDeleteModal.value = false
+    deletingUser.value = null
+    await reload()
+  } catch {
+    toast.showError(t('parametres.userDeleteError'))
+  } finally {
+    isDeleting.value = false
+  }
+}
+
 async function handleCreate() {
-  if (!createForm.value.firstName || !createForm.value.email || !createForm.value.role) {
+  if (
+    !createForm.value.firstName ||
+    !createForm.value.lastName ||
+    !createForm.value.email ||
+    !createForm.value.role
+  ) {
     toast.showError(t('parametres.fillRequired'))
     return
   }
@@ -171,28 +246,37 @@ async function handleCreate() {
     toast.showError(t('parametres.passwordMismatch'))
     return
   }
-  // super_admin doit choisir une entreprise pour les roles non-super_admin
-  if (permissions.isSuperAdmin.value && createForm.value.role !== 'super_admin' && !createForm.value.companyId) {
+  // super_admin doit choisir une entreprise pour admin_enterprise et manager
+  // (pas pour super_admin ni technicien, qui n'ont pas d'entreprise fixe)
+  if (requiresCompany.value && !createForm.value.companyId) {
     toast.showError(t('parametres.companyRequired'))
     return
   }
 
   isSaving.value = true
   try {
-    const created = await userApi.create({
+    await userApi.create({
       first_name: createForm.value.firstName,
       last_name: createForm.value.lastName,
       email: createForm.value.email,
       role: createForm.value.role,
-      company_id: permissions.isSuperAdmin.value ? createForm.value.companyId || undefined : undefined,
+      company_id: requiresCompany.value ? createForm.value.companyId || undefined : undefined,
       password: createForm.value.password,
       password_confirmation: createForm.value.confirmPassword,
       is_active: true,
     })
-    users.value.unshift({ ...created, isActive: true })
     toast.showSuccess(t('parametres.userCreated'))
     showCreateModal.value = false
-    createForm.value = { firstName: '', lastName: '', email: '', role: '', companyId: '', password: '', confirmPassword: '' }
+    await reload()
+    createForm.value = {
+      firstName: '',
+      lastName: '',
+      email: '',
+      role: '',
+      companyId: '',
+      password: '',
+      confirmPassword: '',
+    }
   } catch {
     toast.showError(t('parametres.userCreateError'))
   } finally {
@@ -204,18 +288,15 @@ async function handleEditSave() {
   if (!editingUser.value) return
   isSaving.value = true
   try {
-    const updated = await userApi.update(editingUser.value.id, {
+    await userApi.update(editingUser.value.id, {
       first_name: editingUser.value.firstName,
       last_name: editingUser.value.lastName,
       email: editingUser.value.email,
       role: editingUser.value.role,
     })
-    const index = users.value.findIndex((u) => u.id === updated.id)
-    if (index !== -1) {
-      users.value[index] = updated
-    }
     toast.showSuccess(t('parametres.userUpdated'))
     showEditModal.value = false
+    await reload()
   } catch {
     toast.showError(t('parametres.userUpdateError'))
   } finally {
@@ -224,10 +305,10 @@ async function handleEditSave() {
 }
 
 onMounted(async () => {
-  await fetchUsers()
   if (permissions.isSuperAdmin.value) {
-    await companyStore.fetchCompanies()
+    await companyStore.fetchCompanies({ perPage: 200 })
   }
+  await reload()
 })
 </script>
 
@@ -236,7 +317,9 @@ onMounted(async () => {
     <div class="flex items-center justify-between">
       <div>
         <h1 class="text-2xl font-bold text-gray-900">{{ t('parametres.usersTitle') }}</h1>
-        <p class="text-sm text-gray-500 mt-1">{{ users.length }} {{ t('parametres.usersCount') }}</p>
+        <p class="text-sm text-gray-500 mt-1">
+          {{ pagination?.total ?? 0 }} {{ t('parametres.usersCount') }}
+        </p>
       </div>
       <AppButton variant="primary" @click="showCreateModal = true">
         <UserPlusIcon class="w-4 h-4 mr-1" />
@@ -244,16 +327,41 @@ onMounted(async () => {
       </AppButton>
     </div>
 
-    <div v-if="isLoading" class="flex justify-center py-12">
-      <div class="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-    </div>
+    <AppCard class="mb-6">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <AppInput
+          v-model="search"
+          :placeholder="t('common.search') || 'Rechercher...'"
+          :label="t('common.search') || 'Rechercher'"
+        />
+        <AppSelect
+          v-model="filters.role"
+          :options="roleFilterOptions"
+          :label="t('parametres.role')"
+          @update:model-value="applyFilters"
+        />
+        <AppSelect
+          v-if="isSuperAdmin"
+          v-model="filters.companyId"
+          :options="companyFilterOptions"
+          :label="t('companies.title')"
+          @update:model-value="applyFilters"
+        />
+        <AppSelect
+          v-model="filters.status"
+          :options="statusFilterOptions"
+          :label="t('common.status')"
+          @update:model-value="applyFilters"
+        />
+      </div>
+    </AppCard>
 
-    <AppCard v-else>
+    <AppCard>
       <DataTable
         :columns="columns"
-        :data="pagedUsers"
+        :data="users"
         :loading="isLoading"
-        :pagination="paginationObj"
+        :pagination="pagination ?? undefined"
         :empty-message="t('parametres.noUser')"
         @page-change="handlePageChange"
       >
@@ -261,7 +369,9 @@ onMounted(async () => {
           <span class="font-medium text-gray-900">{{ row.firstName }} {{ row.lastName }}</span>
         </template>
         <template #role="{ row }">
-          <AppBadge :variant="(roleBadgeVariant[row.role] as any) ?? 'info'">{{ roleLabels[row.role] ?? row.role }}</AppBadge>
+          <AppBadge :variant="(roleBadgeVariant[row.role] as any) ?? 'info'">{{
+            roleLabels[row.role] ?? row.role
+          }}</AppBadge>
         </template>
         <template #companyName="{ row }">
           {{ row.companyName ?? '-' }}
@@ -276,13 +386,22 @@ onMounted(async () => {
         </template>
         <template #actions="{ row }">
           <div class="flex gap-1">
-            <AppButton size="sm" variant="ghost" @click.stop="openEditModal(row)" :title="t('parametres.edit')">
+            <AppButton
+              size="sm"
+              variant="ghost"
+              @click.stop="openEditModal(row)"
+              :title="t('parametres.edit')"
+            >
               <PencilIcon class="w-4 h-4" />
             </AppButton>
             <AppButton
               size="sm"
               variant="ghost"
-              :class="row.isActive ? 'text-red-600 hover:text-red-700' : 'text-green-600 hover:text-green-700'"
+              :class="
+                row.isActive
+                  ? 'text-red-600 hover:text-red-700'
+                  : 'text-green-600 hover:text-green-700'
+              "
               @click.stop="toggleActive(row)"
               :title="row.isActive ? t('parametres.deactivate') : t('parametres.activate')"
               :disabled="row.id === authStore.user?.id"
@@ -290,8 +409,24 @@ onMounted(async () => {
               <EyeSlashIcon v-if="row.isActive" class="w-4 h-4" />
               <EyeIcon v-else class="w-4 h-4" />
             </AppButton>
-            <AppButton size="sm" variant="ghost" @click.stop="resetPassword(row)" :title="t('parametres.resetPassword')">
+            <AppButton
+              size="sm"
+              variant="ghost"
+              @click.stop="resetPassword(row)"
+              :title="t('parametres.resetPassword')"
+            >
               <KeyIcon class="w-4 h-4" />
+            </AppButton>
+            <AppButton
+              v-if="isSuperAdmin"
+              size="sm"
+              variant="ghost"
+              class="text-red-600 hover:text-red-700"
+              @click.stop="openDeleteModal(row)"
+              :title="t('parametres.deleteUser')"
+              :disabled="row.id === authStore.user?.id"
+            >
+              <TrashIcon class="w-4 h-4" />
             </AppButton>
           </div>
         </template>
@@ -302,45 +437,107 @@ onMounted(async () => {
     <AppModal v-model="showCreateModal" :title="t('parametres.createUserTitle')" size="lg">
       <div class="space-y-4">
         <div class="grid grid-cols-2 gap-4">
-          <AppInput v-model="createForm.firstName" :label="t('parametres.firstNameLabel')" />
-          <AppInput v-model="createForm.lastName" :label="t('parametres.lastNameLabel')" />
+          <AppInput
+            v-model="createForm.firstName"
+            :label="t('parametres.firstNameLabel')"
+            :required="true"
+          />
+          <AppInput
+            v-model="createForm.lastName"
+            :label="t('parametres.lastNameLabel')"
+            :required="true"
+          />
         </div>
         <AppInput v-model="createForm.email" :label="t('parametres.emailLabel')" type="email" />
-        <AppSelect v-model="createForm.role" :label="t('parametres.roleLabel')" :options="roleOptions" />
         <AppSelect
-          v-if="permissions.isSuperAdmin.value && createForm.role && createForm.role !== 'super_admin'"
+          v-model="createForm.role"
+          :label="t('parametres.roleLabel')"
+          :options="roleOptions"
+        />
+        <AppSelect
+          v-if="requiresCompany"
           v-model="createForm.companyId"
           :label="t('companies.title')"
           :options="companyOptions"
         />
-        <AppInput v-model="createForm.password" :label="t('parametres.passwordLabel')" type="password" />
-        <AppInput v-model="createForm.confirmPassword" :label="t('parametres.confirmPasswordLabel')" type="password" />
+        <AppInput
+          v-model="createForm.password"
+          :label="t('parametres.passwordLabel')"
+          type="password"
+        />
+        <AppInput
+          v-model="createForm.confirmPassword"
+          :label="t('parametres.confirmPasswordLabel')"
+          type="password"
+        />
       </div>
       <template #footer>
         <div class="flex justify-end gap-3">
-          <AppButton variant="secondary" @click="showCreateModal = false">{{ t('common.cancel') }}</AppButton>
-          <AppButton variant="primary" :loading="isSaving" @click="handleCreate">{{ t('common.create') }}</AppButton>
+          <AppButton variant="secondary" @click="showCreateModal = false">{{
+            t('common.cancel')
+          }}</AppButton>
+          <AppButton variant="primary" :loading="isSaving" @click="handleCreate">{{
+            t('common.create')
+          }}</AppButton>
         </div>
       </template>
     </AppModal>
 
     <!-- Edit User Modal -->
-    <AppModal v-if="editingUser" v-model="showEditModal" :title="t('parametres.editUserTitle')" size="lg">
+    <AppModal
+      v-if="editingUser"
+      v-model="showEditModal"
+      :title="t('parametres.editUserTitle')"
+      size="lg"
+    >
       <div class="space-y-4">
         <div class="grid grid-cols-2 gap-4">
           <AppInput v-model="editingUser.firstName" :label="t('parametres.firstName')" />
           <AppInput v-model="editingUser.lastName" :label="t('parametres.lastName')" />
         </div>
         <AppInput v-model="editingUser.email" :label="t('common.email')" type="email" />
-        <AppSelect v-model="editingUser.role" :label="t('parametres.role')" :options="roleOptions" />
+        <AppSelect
+          v-model="editingUser.role"
+          :label="t('parametres.role')"
+          :options="roleOptions"
+        />
       </div>
       <template #footer>
         <div class="flex justify-end gap-3">
-          <AppButton variant="secondary" @click="showEditModal = false">{{ t('common.cancel') }}</AppButton>
-          <AppButton variant="primary" :loading="isSaving" @click="handleEditSave">{{ t('common.save') }}</AppButton>
+          <AppButton variant="secondary" @click="showEditModal = false">{{
+            t('common.cancel')
+          }}</AppButton>
+          <AppButton variant="primary" :loading="isSaving" @click="handleEditSave">{{
+            t('common.save')
+          }}</AppButton>
         </div>
       </template>
     </AppModal>
 
+    <!-- Delete User Modal (super_admin only) -->
+    <AppModal
+      v-if="deletingUser"
+      v-model="showDeleteModal"
+      :title="t('parametres.deleteUserTitle')"
+      size="md"
+    >
+      <p class="text-sm text-gray-600">
+        {{
+          t('parametres.deleteUserConfirm', {
+            name: `${deletingUser.firstName} ${deletingUser.lastName}`,
+          })
+        }}
+      </p>
+      <template #footer>
+        <div class="flex justify-end gap-3">
+          <AppButton variant="secondary" @click="showDeleteModal = false">{{
+            t('common.cancel')
+          }}</AppButton>
+          <AppButton variant="danger" :loading="isDeleting" @click="confirmDelete">{{
+            t('common.delete')
+          }}</AppButton>
+        </div>
+      </template>
+    </AppModal>
   </div>
 </template>

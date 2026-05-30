@@ -39,6 +39,7 @@ import { useCompanyStore } from '@/stores/company.store'
 import { useRfidDeviceStore } from '@/stores/rfid-device.store'
 import { useToast } from '@/composables/useToast'
 import { mqttApi } from '@/services/api/mqtt.api'
+import { extractApiErrorMessage } from '@/utils/api-error'
 import { getEcho } from '@/services/echo'
 import { ArrowLeftIcon } from '@heroicons/vue/24/outline'
 import type { RfidCard } from '@/types'
@@ -74,7 +75,7 @@ async function handleToggleDeviceOnline(deviceId: string) {
 onMounted(async () => {
   await Promise.all([
     companyStore.fetchCompanies({ perPage: 100 }),
-    deviceStore.fetchDevices(),
+    deviceStore.fetchDevices({ perPage: 200 }),
   ])
 })
 
@@ -134,7 +135,7 @@ const handleSubmit = async () => {
     toast.success(t('common.success'), t('cards.registeredSuccess'))
     router.push('/pointage-rfid/cards')
   } catch (error: any) {
-    toast.error(t('common.error'), error.message || t('cards.registerError'))
+    toast.error(t('common.error'), extractApiErrorMessage(error, t('cards.registerError')))
   } finally {
     loading.value = false
   }

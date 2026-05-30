@@ -127,6 +127,7 @@ import { useDepartmentStore } from '@/stores/department.store'
 import { useEmployeeStore } from '@/stores/employee.store'
 import { usePermissions } from '@/composables/usePermissions'
 import { useToast } from '@/composables/useToast'
+import { extractApiErrorMessage } from '@/utils/api-error'
 import DataTable from '@/components/data-display/DataTable.vue'
 import StatCard from '@/components/data-display/StatCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
@@ -257,7 +258,7 @@ async function handleCreateDepartment() {
     closeCreateDepartmentModal()
     await siteStore.fetchSite(siteId.value)
   } catch (error: unknown) {
-    toast.error(t('common.error'), (error as Error)?.message || t('sites.deptCreateError'))
+    toast.error(t('common.error'), extractApiErrorMessage(error, t('sites.deptCreateError')))
   } finally {
     isSubmitting.value = false
   }

@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useSubscriptionStore } from '@/stores/subscription.store'
 import { useToast } from '@/composables/useToast'
 import { formatCurrency } from '@/utils/format'
+import { extractApiErrorMessage } from '@/utils/api-error'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import AppSearchInput from '@/components/ui/AppSearchInput.vue'
@@ -11,6 +13,7 @@ import type { TableColumn } from '@/types/common'
 
 const store = useSubscriptionStore()
 const toast = useToast()
+const { t } = useI18n()
 
 const search = ref('')
 const currentPage = ref(1)
@@ -56,7 +59,7 @@ onMounted(async () => {
   try {
     await store.fetchHistory()
   } catch (e) {
-    toast.error("Impossible de charger l'historique", String((e as Error).message))
+    toast.error(t('toast.abonnement.loadHistoryError'), extractApiErrorMessage(e, t('common.genericError')))
   }
 })
 </script>

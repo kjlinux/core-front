@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { qrcodeApi } from '@/services/api/qrcode.api'
-import type { QrCode, QrAttendanceRecord, QrCodeStats, QrScanPayload } from '@/types'
+import type { QrCode, QrAttendanceRecord, QrCodeStats, QrScanPayload, QrCodeFilters } from '@/types'
 
 export const useQrcodeStore = defineStore('qrcode', () => {
   const qrCodes = ref<QrCode[]>([])
@@ -11,7 +11,7 @@ export const useQrcodeStore = defineStore('qrcode', () => {
   const isLoading = ref(false)
   const pagination = ref({ currentPage: 1, perPage: 15, total: 0, totalPages: 0 })
 
-  async function fetchQrCodes(params?: Record<string, unknown>) {
+  async function fetchQrCodes(params?: Partial<QrCodeFilters>) {
     isLoading.value = true
     try {
       const response = await qrcodeApi.getAll(params)

@@ -1,18 +1,32 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
-import { feelbackDeviceApi } from '@/services/api/feelback-device.api'
+import { feelbackDeviceApi, type FeelbackDeviceFilters } from '@/services/api/feelback-device.api'
 import type { FeelbackDevice } from '@/types'
 
 export const useFeelbackDeviceStore = defineStore('feelback-device', () => {
   const devices = ref<FeelbackDevice[]>([])
   const currentDevice = ref<FeelbackDevice | null>(null)
   const isLoading = ref(false)
+  const filters = ref<FeelbackDeviceFilters>({
+    page: 1,
+    perPage: 15,
+  })
+  const pagination = ref({
+    currentPage: 1,
+    perPage: 15,
+    total: 0,
+    totalPages: 0,
+  })
 
-  async function fetchDevices() {
+  async function fetchDevices(newFilters?: Partial<FeelbackDeviceFilters>) {
+    if (newFilters) {
+      filters.value = { page: 1, perPage: filters.value.perPage, ...newFilters }
+    }
     isLoading.value = true
     try {
-      const response = await feelbackDeviceApi.getAll()
+      const response = await feelbackDeviceApi.getAll(filters.value)
       devices.value = response.data
+      pagination.value = response.meta
     } finally {
       isLoading.value = false
     }
@@ -94,6 +108,8 @@ export const useFeelbackDeviceStore = defineStore('feelback-device', () => {
     devices,
     currentDevice,
     isLoading,
+    filters,
+    pagination,
     fetchDevices,
     fetchDevice,
     registerDevice,

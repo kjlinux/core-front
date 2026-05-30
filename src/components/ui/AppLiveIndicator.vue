@@ -8,7 +8,7 @@ interface Props {
 }
 
 withDefaults(defineProps<Props>(), {
-  label: 'Temps reel',
+  label: '',
   showLabel: true,
 })
 
@@ -19,7 +19,10 @@ let pollId: ReturnType<typeof setInterval> | null = null
 
 function readState() {
   const echo = getEcho()
-  if (!echo) { state.value = 'disconnected'; return }
+  if (!echo) {
+    state.value = 'disconnected'
+    return
+  }
   const pusher: any = (echo.connector as any)?.pusher
   const s: string | undefined = pusher?.connection?.state
   if (s === 'connected') state.value = 'connected'
@@ -43,7 +46,7 @@ const dotClass = {
 } as const
 
 const tooltip = {
-  connected: 'Connexion temps reel active',
+  connected: 'Connexion temps réel active',
   connecting: 'Connexion en cours...',
   disconnected: 'Hors ligne',
 } as const

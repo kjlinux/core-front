@@ -2,7 +2,9 @@
 import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useSupportStore } from '@/stores/support.store'
+import { useI18n } from 'vue-i18n'
 import { useToast } from '@/composables/useToast'
+import { extractApiErrorMessage } from '@/utils/api-error'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import AppButton from '@/components/ui/AppButton.vue'
@@ -11,6 +13,7 @@ import type { SupportCompanyRow } from '@/services/api/support.api'
 
 const store = useSupportStore()
 const toast = useToast()
+const { t } = useI18n()
 const router = useRouter()
 
 // Tri : compagnies les plus en difficulté en premier (offline puis alertes).
@@ -47,7 +50,7 @@ onMounted(async () => {
   try {
     await store.fetchCompanies()
   } catch (e) {
-    toast.error('Erreur de chargement', String((e as Error).message))
+    toast.error(t('toast.support.loadError'), extractApiErrorMessage(e, t('common.genericError')))
   }
 })
 </script>

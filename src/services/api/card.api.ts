@@ -1,9 +1,28 @@
 import apiClient from './client'
-import type { RfidCard, CardHistoryEntry } from '@/types'
+import type { RfidCard, CardHistoryEntry, PaginatedResponse } from '@/types'
+
+export interface CardFilters {
+  companyId?: string
+  status?: string
+  search?: string
+  page?: number
+  perPage?: number
+}
+
+function toSnakeFilters(params?: CardFilters): Record<string, unknown> | undefined {
+  if (!params) return undefined
+  const result: Record<string, unknown> = {}
+  if (params.companyId !== undefined) result.company_id = params.companyId
+  if (params.status !== undefined) result.status = params.status
+  if (params.search !== undefined) result.search = params.search
+  if (params.page !== undefined) result.page = params.page
+  if (params.perPage !== undefined) result.per_page = params.perPage
+  return result
+}
 
 export const cardApi = {
-  getAll(params?: Record<string, unknown>): Promise<RfidCard[]> {
-    return apiClient.get('/cards', { params }).then((r) => r.data)
+  getAll(params?: CardFilters): Promise<PaginatedResponse<RfidCard>> {
+    return apiClient.get('/cards', { params: toSnakeFilters(params) }).then((r) => r.data)
   },
 
   getById(id: string): Promise<RfidCard> {

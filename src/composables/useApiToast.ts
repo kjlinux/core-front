@@ -1,4 +1,6 @@
 import { useToast } from './useToast';
+import { i18n } from '@/plugins/i18n';
+import { extractApiErrorMessage } from '@/utils/api-error';
 
 interface RunOptions {
   success?: string;
@@ -9,13 +11,8 @@ interface RunOptions {
 function extractMessage(err: unknown, fallback: string): string {
   if (!err) return fallback;
   if (typeof err === 'string') return err;
-  const e = err as { response?: { data?: { message?: string; error?: string } }; message?: string };
-  return (
-    e.response?.data?.message ||
-    e.response?.data?.error ||
-    e.message ||
-    fallback
-  );
+  // Délègue au helper partagé (gère le flattening des 422 et la garde Blob).
+  return extractApiErrorMessage(err, fallback);
 }
 
 export function useApiToast() {
@@ -28,13 +25,13 @@ export function useApiToast() {
       return result;
     } catch (err) {
       if (!opts.silent) {
-        toast.error(extractMessage(err, opts.error || 'Une erreur est survenue'));
+        toast.error(extractMessage(err, opts.error || i18n.global.t('common.genericError')));
       }
       return undefined;
     }
   }
 
-  function toastError(err: unknown, fallback = 'Une erreur est survenue') {
+  function toastError(err: unknown, fallback = i18n.global.t('common.genericError')) {
     toast.error(extractMessage(err, fallback));
   }
 

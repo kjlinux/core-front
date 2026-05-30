@@ -71,10 +71,10 @@ const permissionMatrix: Record<Module, Record<Action, UserRole[]>> = {
     export: adminRoles,
   },
   firmware: {
-    view: setupRoles,
-    create: superAndTech,
-    edit: superAndTech,
-    delete: superAndTech,
+    view: superOnly,
+    create: superOnly,
+    edit: superOnly,
+    delete: superOnly,
     export: none,
   },
 }

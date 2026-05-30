@@ -1,11 +1,10 @@
 <template>
-  <AppModal :model-value="modelValue" @update:model-value="$emit('update:modelValue', $event)" size="lg">
-    <template #header>
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-        {{ existingVersion ? 'Modifier le firmware' : 'Ajouter un firmware' }}
-      </h3>
-    </template>
-
+  <AppModal
+    :model-value="modelValue"
+    @update:model-value="$emit('update:modelValue', $event)"
+    size="lg"
+    :title="existingVersion ? 'Modifier le firmware' : 'Ajouter un firmware'"
+  >
     <form @submit.prevent="handleSubmit" class="space-y-4">
       <div>
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -47,7 +46,7 @@
 
       <div class="flex items-center gap-2">
         <AppToggle v-model="form.isAutoUpdate" />
-        <span class="text-sm text-gray-700 dark:text-gray-300">Activer la mise a jour automatique</span>
+        <span class="text-sm text-gray-700 dark:text-gray-300">Activer la mise à jour automatique</span>
       </div>
     </form>
 
@@ -55,7 +54,7 @@
       <div class="flex justify-end gap-3">
         <AppButton variant="secondary" @click="$emit('update:modelValue', false)">Annuler</AppButton>
         <AppButton variant="primary" :loading="loading" @click="handleSubmit">
-          {{ existingVersion ? 'Mettre a jour' : 'Ajouter' }}
+          {{ existingVersion ? 'Mettre à jour' : 'Ajouter' }}
         </AppButton>
       </div>
     </template>
@@ -69,12 +68,15 @@ import AppInput from '@/components/ui/AppInput.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppToggle from '@/components/ui/AppToggle.vue'
+import { useI18n } from 'vue-i18n'
 import { useToast } from '@/composables/useToast'
 import { useFirmwareStore } from '@/stores/firmware.store'
+import { extractApiErrorMessage } from '@/utils/api-error'
+import type { FirmwareVersion } from '@/types'
 
 const props = defineProps<{
   modelValue: boolean
-  existingVersion?: any
+  existingVersion?: FirmwareVersion
 }>()
 
 const emit = defineEmits<{
@@ -83,13 +85,14 @@ const emit = defineEmits<{
 }>()
 
 const toast = useToast()
+const { t } = useI18n()
 const firmwareStore = useFirmwareStore()
 
 const loading = ref(false)
 
 const deviceKindOptions = [
   { value: 'rfid', label: 'RFID' },
-  { value: 'biometric', label: 'Biometrique' },
+  { value: 'biometric', label: 'Biométrique' },
 ]
 
 const form = reactive({
@@ -115,19 +118,26 @@ watch(
 
 const handleFileChange = (event: Event) => {
   const target = event.target as HTMLInputElement
-  if (target.files && target.files.length > 0) {
-    form.file = target.files[0]
+  const selected = target.files?.[0]
+  if (selected) {
+    form.file = selected
   }
 }
 
 const handleSubmit = async () => {
   if (!form.version || !form.deviceKind) {
-    toast.showError('Veuillez remplir tous les champs obligatoires')
+    toast.showError(t('toast.firmware.fillRequired'))
+    return
+  }
+
+  const trimmedVersion = form.version.trim()
+  if (trimmedVersion.length > 20 || !/^[vV]?\d+(\.\d+){0,3}([-.][0-9A-Za-z]+)*$/.test(trimmedVersion)) {
+    toast.showError(t('toast.firmware.versionFormat'))
     return
   }
 
   if (!props.existingVersion && !form.file) {
-    toast.showError('Veuillez selectionner un fichier firmware')
+    toast.showError(t('toast.firmware.selectFile'))
     return
   }
 
@@ -143,11 +153,11 @@ const handleSubmit = async () => {
     }
 
     await firmwareStore.uploadVersion(formData)
-    toast.showSuccess('Firmware ajoute avec succes')
+    toast.showSuccess(t('toast.firmware.addedSuccess'))
     emit('saved')
     emit('update:modelValue', false)
-  } catch (error: any) {
-    toast.showError(error.response?.data?.message || 'Erreur lors de l\'ajout du firmware')
+  } catch (error: unknown) {
+    toast.showError(extractApiErrorMessage(error, t('toast.firmware.uploadError')))
     return
   } finally {
     loading.value = false

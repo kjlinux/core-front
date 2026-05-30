@@ -4,10 +4,10 @@
       <AppButton variant="secondary" @click="navigateBack">
         {{ t('common.back') }}
       </AppButton>
-      <h1>{{ t('cards.history', { uid: card?.uid || '' }) }}</h1>
+      <h1 class="text-gray-900">{{ t('cards.history', { uid: card?.uid || '' }) }}</h1>
     </div>
 
-    <div v-if="loading" class="loading">
+    <div v-if="loading" class="loading text-gray-500">
       {{ t('common.loading') }}
     </div>
 
@@ -15,29 +15,29 @@
       <AppCard>
         <div class="card-summary">
           <div class="summary-item">
-            <label>{{ t('cards.uid') }}</label>
-            <span class="uid">{{ card.uid }}</span>
+            <label class="text-gray-500">{{ t('cards.uid') }}</label>
+            <span class="uid text-gray-900">{{ card.uid }}</span>
           </div>
           <div class="summary-item">
-            <label>{{ t('cards.currentStatus') }}</label>
+            <label class="text-gray-500">{{ t('cards.currentStatus') }}</label>
             <AppBadge :variant="getStatusVariant(card.status)">
               {{ getStatusLabel(card.status) }}
             </AppBadge>
           </div>
           <div class="summary-item">
-            <label>{{ t('cards.employee') }}</label>
-            <span v-if="card.employee">
+            <label class="text-gray-500">{{ t('cards.employee') }}</label>
+            <span v-if="card.employee" class="text-gray-900">
               {{ card.employee.firstName }} {{ card.employee.lastName }}
             </span>
-            <span v-else class="unassigned">{{ t('cards.notUnassigned') }}</span>
+            <span v-else class="unassigned text-gray-500">{{ t('cards.notUnassigned') }}</span>
           </div>
         </div>
       </AppCard>
 
       <AppCard class="timeline-card">
-        <h2>{{ t('cards.historyTitle') }}</h2>
+        <h2 class="text-gray-900">{{ t('cards.historyTitle') }}</h2>
 
-        <div v-if="history.length === 0" class="no-history">
+        <div v-if="history.length === 0" class="no-history text-gray-500">
           {{ t('cards.noHistory') }}
         </div>
 
@@ -50,25 +50,25 @@
             <div class="timeline-marker" :class="getActionClass(action.type)">
               <div class="marker-dot"></div>
             </div>
-            <div class="timeline-content">
+            <div class="timeline-content bg-gray-50 border border-gray-200">
               <div class="action-header">
-                <h3>{{ getActionLabel(action.type) }}</h3>
-                <span class="action-time">{{ formatDateTime(action.timestamp) }}</span>
+                <h3 class="text-gray-900">{{ getActionLabel(action.type) }}</h3>
+                <span class="action-time text-gray-500">{{ formatDateTime(action.timestamp) }}</span>
               </div>
               <div class="action-details">
-                <p v-if="action.performedBy" class="performed-by">
+                <p v-if="action.performedBy" class="performed-by text-gray-500">
                   {{ t('cards.actionBy', { name: `${action.performedBy.firstName} ${action.performedBy.lastName}` }) }}
                 </p>
-                <p v-if="action.details" class="action-description">
+                <p v-if="action.details" class="action-description text-gray-700">
                   {{ action.details }}
                 </p>
-                <div v-if="action.reason" class="action-reason">
-                  <label>{{ t('cards.reason') }}</label>
-                  <p>{{ action.reason }}</p>
+                <div v-if="action.reason" class="action-reason bg-white border border-gray-200">
+                  <label class="text-gray-500">{{ t('cards.reason') }}</label>
+                  <p class="text-gray-900">{{ action.reason }}</p>
                 </div>
-                <div v-if="action.employee" class="action-employee">
-                  <label>{{ t('cards.employee') }}</label>
-                  <p>{{ action.employee.firstName }} {{ action.employee.lastName }}</p>
+                <div v-if="action.employee" class="action-employee bg-white border border-gray-200">
+                  <label class="text-gray-500">{{ t('cards.employee') }}</label>
+                  <p class="text-gray-900">{{ action.employee.firstName }} {{ action.employee.lastName }}</p>
                 </div>
               </div>
             </div>
@@ -77,7 +77,7 @@
       </AppCard>
     </div>
 
-    <div v-else class="error">
+    <div v-else class="error text-red-500">
       {{ t('cards.notFound') }}
     </div>
   </div>
@@ -225,7 +225,6 @@ onMounted(async () => {
 .page-header h1 {
   font-size: 2rem;
   font-weight: 600;
-  color: #1f2937;
   margin: 0;
 }
 
@@ -233,12 +232,7 @@ onMounted(async () => {
 .error {
   text-align: center;
   padding: 3rem;
-  color: #6b7280;
   font-size: 1.125rem;
-}
-
-.error {
-  color: #ef4444;
 }
 
 .history-content {
@@ -263,13 +257,11 @@ onMounted(async () => {
 .summary-item label {
   font-size: 0.875rem;
   font-weight: 500;
-  color: #6b7280;
 }
 
 .summary-item span,
 .summary-item .uid {
   font-size: 1rem;
-  color: #1f2937;
 }
 
 .uid {
@@ -279,21 +271,18 @@ onMounted(async () => {
 }
 
 .unassigned {
-  color: #6b7280;
   font-style: italic;
 }
 
 .timeline-card h2 {
   font-size: 1.5rem;
   font-weight: 600;
-  color: #1f2937;
   margin: 0 0 2rem 0;
 }
 
 .no-history {
   text-align: center;
   padding: 3rem;
-  color: #6b7280;
   font-style: italic;
 }
 
@@ -372,10 +361,8 @@ onMounted(async () => {
 
 .timeline-content {
   flex: 1;
-  background: #f9fafb;
   border-radius: 0.5rem;
   padding: 1.25rem;
-  border: 1px solid #e5e7eb;
 }
 
 .action-header {
@@ -390,13 +377,11 @@ onMounted(async () => {
 .action-header h3 {
   font-size: 1.125rem;
   font-weight: 600;
-  color: #1f2937;
   margin: 0;
 }
 
 .action-time {
   font-size: 0.875rem;
-  color: #6b7280;
 }
 
 .action-details {
@@ -408,28 +393,13 @@ onMounted(async () => {
 .action-details p {
   margin: 0;
   font-size: 0.875rem;
-  color: #374151;
-}
-
-.performed-by {
-  color: #6b7280;
-}
-
-.performed-by strong {
-  color: #1f2937;
-}
-
-.action-description {
-  color: #374151;
 }
 
 .action-reason,
 .action-employee {
   margin-top: 0.5rem;
   padding: 0.75rem;
-  background: white;
   border-radius: 0.375rem;
-  border: 1px solid #e5e7eb;
 }
 
 .action-reason label,
@@ -437,7 +407,6 @@ onMounted(async () => {
   display: block;
   font-size: 0.75rem;
   font-weight: 600;
-  color: #6b7280;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin-bottom: 0.25rem;
@@ -447,6 +416,23 @@ onMounted(async () => {
 .action-employee p {
   margin: 0;
   font-size: 0.875rem;
-  color: #1f2937;
+}
+
+/* Dark mode: éléments décoratifs non ciblables par utilitaires (pseudo-élément + classes dynamiques getActionClass) — aligne sur le retrofit de main.css */
+.dark .timeline::before {
+  background: #4b5563;
+}
+
+.dark .marker-dot {
+  border-color: #1f2937;
+}
+
+.dark .action-unassigned .marker-dot,
+.dark .action-default .marker-dot {
+  background: #9ca3af;
+}
+
+.dark .action-deactivated .marker-dot {
+  background: #d1d5db;
 }
 </style>

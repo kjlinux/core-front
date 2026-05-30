@@ -75,6 +75,7 @@ import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { authApi } from '@/services/api/auth.api'
+import { extractApiErrorMessage } from '@/utils/api-error'
 import AppInput from '@/components/ui/AppInput.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 
@@ -136,7 +137,7 @@ async function handleSubmit() {
     })
     successMessage.value = t('auth.passwordResetSuccess')
   } catch (err: any) {
-    errorMessage.value = err?.response?.data?.message ?? t('auth.invalidLinkFallback')
+    errorMessage.value = extractApiErrorMessage(err, t('auth.invalidLinkFallback'))
   } finally {
     isLoading.value = false
   }

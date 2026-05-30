@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
-import { orderApi } from '@/services/api/order.api'
+import { orderApi, type OrderFilters } from '@/services/api/order.api'
 import { useAuthStore } from '@/stores/auth.store'
 import type { Order, CreateOrderPayload } from '@/types'
 import type { PaymentMethod } from '@/types/enums'
@@ -9,6 +9,12 @@ export const useOrderStore = defineStore('order', () => {
   const orders = ref<Order[]>([])
   const currentOrder = ref<Order | null>(null)
   const isLoading = ref(false)
+  const adminPagination = ref({
+    currentPage: 1,
+    perPage: 15,
+    total: 0,
+    totalPages: 0,
+  })
 
   async function createOrder(data: CreateOrderPayload) {
     isLoading.value = true
@@ -69,15 +75,16 @@ export const useOrderStore = defineStore('order', () => {
     }
   }
 
-  async function fetchAllOrders() {
+  async function fetchAllOrders(params?: OrderFilters) {
     isLoading.value = true
     try {
-      const response = await orderApi.getAllAdmin()
+      const response = await orderApi.getAllAdmin(params)
       orders.value = response.data
+      adminPagination.value = response.meta
     } finally {
       isLoading.value = false
     }
   }
 
-  return { orders, currentOrder, isLoading, createOrder, fetchOrders, fetchOrder, cancelOrder, initiatePayment, fetchAllOrders }
+  return { orders, currentOrder, isLoading, adminPagination, createOrder, fetchOrders, fetchOrder, cancelOrder, initiatePayment, fetchAllOrders }
 })

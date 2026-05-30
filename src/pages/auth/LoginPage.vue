@@ -69,6 +69,7 @@ import { ref, reactive, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth.store'
+import { extractApiErrorMessage } from '@/utils/api-error'
 import AppInput from '@/components/ui/AppInput.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 
@@ -129,7 +130,7 @@ async function handleLogin() {
     const redirect = route.query.redirect as string
     router.push(redirect || '/')
   } catch (error: any) {
-    errorMessage.value = error.response?.data?.message || error.message || t('auth.loginErrorFallback')
+    errorMessage.value = extractApiErrorMessage(error, t('auth.loginErrorFallback'))
   }
 }
 </script>

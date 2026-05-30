@@ -8,6 +8,7 @@ import { useSiteStore } from '@/stores/site.store'
 import { useDepartmentStore } from '@/stores/department.store'
 import { useScheduleStore } from '@/stores/schedule.store'
 import { useToast } from '@/composables/useToast'
+import { extractApiErrorMessage } from '@/utils/api-error'
 import type { Employee } from '@/types'
 import EmployeeForm from '@/components/forms/EmployeeForm.vue'
 import AppCard from '@/components/ui/AppCard.vue'
@@ -55,7 +56,7 @@ const handleSubmit = async () => {
     toast.success(t('common.success'), t('employees.updatedSuccess'))
     router.push({ name: 'rfid-employee-detail', params: { id: employeeId } })
   } catch (error: any) {
-    toast.error(t('common.error'), error.message || t('employees.updateError'))
+    toast.error(t('common.error'), extractApiErrorMessage(error, t('employees.updateError')))
   }
 }
 

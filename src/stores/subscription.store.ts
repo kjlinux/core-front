@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { subscriptionApi } from '@/services/api/subscription.api'
 import { useToast } from '@/composables/useToast'
+import { i18n } from '@/plugins/i18n'
 import { PLAN_PRICES_XOF } from '@/config/plan-features'
 import type {
   PlanCode,
@@ -22,7 +23,7 @@ export const useSubscriptionStore = defineStore('subscription', () => {
       plans.value = await subscriptionApi.plans()
     } catch (e) {
       console.error('fetchPlans failed', e)
-      useToast().error('Erreur', 'Impossible de charger les abonnements disponibles')
+      useToast().error(i18n.global.t('common.error'), i18n.global.t('toast.abonnement.loadPlansError'))
     }
   }
 

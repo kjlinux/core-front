@@ -1,20 +1,38 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
 import { usePayrollStore } from '@/stores/payroll.store'
+import { useCompanyStore } from '@/stores/company.store'
+import { useI18n } from 'vue-i18n'
 import { useToast } from '@/composables/useToast'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppInput from '@/components/ui/AppInput.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
 import AppToggle from '@/components/ui/AppToggle.vue'
+import { QuestionMarkCircleIcon } from '@heroicons/vue/24/outline'
 import type { LatenessRule } from '@/types/payroll'
 
 const authStore = useAuthStore()
 const payrollStore = usePayrollStore()
+const companyStore = useCompanyStore()
 const toast = useToast()
+const { t } = useI18n()
+const router = useRouter()
 
-const companyId = computed(() => authStore.user?.companyId ?? '')
+const isSuperAdmin = computed(() => authStore.user?.role === 'super_admin')
+const selectedCompanyId = ref('')
+const companyId = computed(() => authStore.user?.companyId || selectedCompanyId.value || '')
+
+const companyOptions = computed(() => [
+  { label: 'Sélectionner une entreprise...', value: '' },
+  ...companyStore.companies.map((c) => ({ label: c.name, value: c.id })),
+])
+
+function openHelp() {
+  router.push({ name: 'paie-help' })
+}
 
 const form = ref({
   defaultPaymentMode: 'monthly' as string,
@@ -72,9 +90,9 @@ async function saveConfig() {
       overtimeEnabled: form.value.overtimeEnabled,
       overtimeRate: form.value.overtimeRate,
     })
-    toast.showSuccess('Configuration de paie enregistrée')
+    toast.showSuccess(t('toast.payroll.configSaved'))
   } catch {
-    toast.showError('Erreur lors de l\'enregistrement')
+    toast.showError(t('toast.payroll.saveError'))
   }
 }
 
@@ -85,13 +103,13 @@ async function saveRules() {
       latenessDeductionEnabled: form.value.latenessDeductionEnabled,
     })
     await payrollStore.saveLatenessRules(companyId.value, latenessRules.value)
-    toast.showSuccess('Règles de pénalité enregistrées')
+    toast.showSuccess(t('toast.payroll.penaltyRulesSaved'))
   } catch {
-    toast.showError('Erreur lors de l\'enregistrement des règles')
+    toast.showError(t('toast.payroll.penaltyRulesSaveError'))
   }
 }
 
-onMounted(async () => {
+async function loadConfig() {
   if (!companyId.value) return
   await payrollStore.fetchConfig(companyId.value)
   const config = payrollStore.config
@@ -111,19 +129,47 @@ onMounted(async () => {
       applyPer: r.applyPer,
     }))
   }
+}
+
+watch(companyId, loadConfig)
+
+onMounted(async () => {
+  if (isSuperAdmin.value) {
+    await companyStore.fetchCompanies({ perPage: 200 })
+  }
+  await loadConfig()
 })
 </script>
 
 <template>
   <div class="space-y-6">
-    <div>
-      <h1 class="text-2xl font-bold text-gray-900">Configuration de la paie</h1>
-      <p class="text-sm text-gray-500 mt-1">
-        Définissez les paramètres de rémunération et les règles de pénalité retard
-      </p>
+    <div class="flex items-start justify-between gap-4">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">Configuration de la paie</h1>
+        <p class="text-sm text-gray-500 mt-1">
+          Définissez les paramètres de rémunération et les règles de pénalité retard
+        </p>
+      </div>
+      <AppButton variant="ghost" size="sm" @click="openHelp">
+        <QuestionMarkCircleIcon class="w-4 h-4 mr-1" />
+        Aide
+      </AppButton>
     </div>
 
-    <div v-if="payrollStore.isLoading" class="flex justify-center py-12">
+    <!-- Selecteur entreprise (super_admin) -->
+    <AppCard v-if="isSuperAdmin">
+      <label class="mb-1 block text-sm font-medium text-gray-700">Entreprise</label>
+      <AppSelect v-model="selectedCompanyId" :options="companyOptions" />
+    </AppCard>
+
+    <div
+      v-if="isSuperAdmin && !companyId"
+      class="rounded-lg border border-dashed border-gray-300 py-12 text-center text-sm text-gray-500"
+    >
+      Sélectionnez une entreprise pour configurer sa paie.
+    </div>
+
+    <div v-else-if="payrollStore.isLoading" class="flex justify-center py-12">
       <div class="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
     </div>
 
@@ -196,7 +242,7 @@ onMounted(async () => {
 
           <div v-if="form.latenessDeductionEnabled" class="space-y-4">
             <p class="text-xs text-gray-500">
-              Chaque règle definit : au-dela de X minutes de retard cumulé, deduire Y FCFA ou Y% du salaire.
+              Chaque règle définit : au-delà de X minutes de retard cumulé, déduire Y FCFA ou Y% du salaire.
             </p>
 
             <!-- Tableau des regles -->
@@ -204,9 +250,9 @@ onMounted(async () => {
               <table class="min-w-full divide-y divide-gray-200 text-sm">
                 <thead class="bg-gray-50">
                   <tr>
-                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Tolerance (min)</th>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Tolérance (min)</th>
                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Seuil (min)</th>
-                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Penalite</th>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Pénalité</th>
                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Appliquer</th>
                     <th class="px-3 py-2"></th>

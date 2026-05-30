@@ -10,7 +10,6 @@ import AppBadge from '@/components/ui/AppBadge.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
 import DataTable from '@/components/data-display/DataTable.vue'
 import type { DeviceFirmwareStatus, FirmwareDeviceKind } from '@/types'
-import { sortByRecent } from '@/utils/sort'
 import { ArrowPathIcon } from '@heroicons/vue/24/outline'
 
 const { t } = useI18n()
@@ -64,7 +63,7 @@ const perPage = ref(15)
 
 const pagedStatuses = computed(() => {
   const start = (currentPage.value - 1) * perPage.value
-  return sortByRecent(filteredStatuses.value).slice(start, start + perPage.value)
+  return filteredStatuses.value.slice(start, start + perPage.value)
 })
 
 const paginationObj = computed(() => {
@@ -140,8 +139,7 @@ const progressPercent = computed(() => {
 const activeCompanyProgress = computed(() => store.companyUpdateProgress)
 
 async function retryAllFailed() {
-  const versionId = activeCompanyProgress.value?.devices?.[0]?.firmwareVersionId
-    ?? store.latestPublishedVersion?.id
+  const versionId = store.latestPublishedVersion?.id
   if (!versionId) {
     toast.error(t('firmware.triggerError'))
     return
@@ -187,9 +185,9 @@ function formatDate(d?: string) {
       <div class="space-y-4">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p class="text-sm text-gray-500 dark:text-gray-400">Etat global du parc</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400">État global du parc</p>
             <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-              {{ progressPercent }}% a jour
+              {{ progressPercent }}% à jour
               <span class="ml-1 text-sm font-medium text-gray-500 dark:text-gray-400">({{ statusCounts.success }} / {{ totalDevices }})</span>
             </p>
           </div>
@@ -201,7 +199,7 @@ function formatDate(d?: string) {
               @click="retryAllFailed"
             >
               <ArrowPathIcon class="mr-1 h-4 w-4" />
-              Reessayer les echecs ({{ statusCounts.failed }})
+              Réessayer les échecs ({{ statusCounts.failed }})
             </AppButton>
           </div>
         </div>
@@ -263,7 +261,7 @@ function formatDate(d?: string) {
         >
           <div class="flex items-center justify-between">
             <span class="font-medium text-blue-700 dark:text-blue-300">
-              Mise a jour en masse en cours
+              Mise à jour en masse en cours
             </span>
             <span class="font-mono text-blue-700 dark:text-blue-200">
               {{ activeCompanyProgress.success }} / {{ activeCompanyProgress.total }}

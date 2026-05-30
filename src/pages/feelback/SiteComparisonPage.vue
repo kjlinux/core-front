@@ -85,7 +85,7 @@ function pct(val: number, total: number) {
 onMounted(async () => {
   await Promise.all([
     load(),
-    isSuperAdmin.value ? companyStore.fetchCompanies() : Promise.resolve(),
+    isSuperAdmin.value ? companyStore.fetchCompanies({ perPage: 200 }) : Promise.resolve(),
   ])
 })
 </script>

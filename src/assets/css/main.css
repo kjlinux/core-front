@@ -47,3 +47,123 @@
     @apply bg-gray-900 text-gray-100;
   }
 }
+
+/*
+ * Dark mode retrofit layer.
+ *
+ * L'application a ete construite avec des utilitaires de couleur neutres en dur
+ * (bg-white, text-gray-900, border-gray-200, ...) sans variantes `dark:`.
+ * Plutot que d'editer 160 fichiers, on remappe ici ces utilitaires neutres vers
+ * des equivalents sombres lorsque <html> porte la classe `.dark`.
+ *
+ * Ces regles sont volontairement HORS @layer pour passer devant les utilitaires
+ * Tailwind (couche `utilities`) quelle que soit leur specificite. Les accents
+ * colores (bg-blue-600, text-green-800, bg-primary-*, ...) ne sont pas touches
+ * et restent donc visibles.
+ */
+html.dark {
+  color-scheme: dark;
+}
+
+/* ---- Surfaces ---- */
+.dark .bg-white { background-color: #1f2937; }   /* gray-800 : cartes, panneaux, en-tete */
+.dark .bg-gray-50 { background-color: #111827; }  /* gray-900 : zones en creux, en-tetes de table */
+.dark .bg-gray-100 { background-color: #374151; } /* gray-700 : puces, survols, etats */
+.dark .bg-gray-200 { background-color: #374151; } /* gray-700 : pistes d'interrupteur, separateurs */
+
+/* ---- Texte ---- */
+.dark .text-gray-900 { color: #f9fafb; } /* gray-50 : texte principal */
+.dark .text-gray-800 { color: #f3f4f6; } /* gray-100 */
+.dark .text-gray-700 { color: #e5e7eb; } /* gray-200 : texte courant */
+.dark .text-gray-600 { color: #d1d5db; } /* gray-300 */
+.dark .text-gray-500 { color: #9ca3af; } /* gray-400 : texte attenue */
+.dark .text-gray-400 { color: #9ca3af; } /* gray-400 : icones / tres attenue */
+
+/* ---- Bordures ---- */
+.dark .border-gray-100 { border-color: #374151; } /* gray-700 */
+.dark .border-gray-200 { border-color: #374151; } /* gray-700 */
+.dark .border-gray-300 { border-color: #4b5563; } /* gray-600 */
+
+/* ---- Separateurs (divide-*) ---- */
+.dark .divide-gray-100 > :not([hidden]) ~ :not([hidden]) { border-color: #374151; }
+.dark .divide-gray-200 > :not([hidden]) ~ :not([hidden]) { border-color: #374151; }
+.dark .divide-gray-300 > :not([hidden]) ~ :not([hidden]) { border-color: #4b5563; }
+
+/* ---- Survols ---- */
+.dark .hover\:bg-gray-50:hover { background-color: #374151; }
+.dark .hover\:bg-gray-100:hover { background-color: #374151; }
+.dark .hover\:bg-gray-200:hover { background-color: #4b5563; }
+.dark .hover\:text-gray-700:hover { color: #f3f4f6; }
+.dark .hover\:text-gray-900:hover { color: #f9fafb; }
+
+/* ---- Champs de formulaire ---- */
+.dark .placeholder-gray-400::placeholder { color: #6b7280; } /* gray-500 */
+.dark .disabled\:bg-gray-100:disabled { background-color: #1f2937; }
+
+/* ---- Anneaux / ombres ---- */
+.dark .ring-black { --tw-ring-color: rgb(255 255 255 / 0.1); }
+
+/*
+ * Badges / alertes colores.
+ *
+ * Motif clair : bg-{c}-50/100 + text-{c}-700/800 + border-{c}-200.
+ * En sombre on remplace par un fond colore translucide profond + texte clair,
+ * lisible sur les surfaces gray-800/900. Les fonds solides (bg-{c}-500/600 avec
+ * text-white) et les accents -600 (tendances, liens) ne sont PAS touches.
+ */
+
+/* Fonds translucides (-50 plus discret, -100 plus marque) */
+.dark .bg-red-50     { background-color: rgb(239 68 68 / 0.12); }
+.dark .bg-red-100    { background-color: rgb(239 68 68 / 0.18); }
+.dark .bg-green-50   { background-color: rgb(34 197 94 / 0.12); }
+.dark .bg-green-100  { background-color: rgb(34 197 94 / 0.18); }
+.dark .bg-emerald-100{ background-color: rgb(16 185 129 / 0.18); }
+.dark .bg-yellow-50  { background-color: rgb(234 179 8 / 0.12); }
+.dark .bg-yellow-100 { background-color: rgb(234 179 8 / 0.18); }
+.dark .bg-amber-50   { background-color: rgb(245 158 11 / 0.12); }
+.dark .bg-amber-100  { background-color: rgb(245 158 11 / 0.18); }
+.dark .bg-orange-50  { background-color: rgb(249 115 22 / 0.12); }
+.dark .bg-orange-100 { background-color: rgb(249 115 22 / 0.18); }
+.dark .bg-blue-50    { background-color: rgb(59 130 246 / 0.12); }
+.dark .bg-blue-100   { background-color: rgb(59 130 246 / 0.18); }
+.dark .bg-indigo-100 { background-color: rgb(99 102 241 / 0.18); }
+.dark .bg-purple-100 { background-color: rgb(168 85 247 / 0.18); }
+.dark .bg-teal-100   { background-color: rgb(20 184 166 / 0.18); }
+.dark .bg-pink-100   { background-color: rgb(236 72 153 / 0.18); }
+.dark .bg-sky-100    { background-color: rgb(14 165 233 / 0.18); }
+.dark .bg-rose-100   { background-color: rgb(244 63 94 / 0.18); }
+
+/* Texte clair (-700 et -800 -> teinte -300) */
+.dark .text-red-700,    .dark .text-red-800    { color: #fca5a5; }
+.dark .text-green-700,  .dark .text-green-800  { color: #86efac; }
+.dark .text-emerald-700,.dark .text-emerald-800{ color: #6ee7b7; }
+.dark .text-yellow-700, .dark .text-yellow-800 { color: #fde047; }
+.dark .text-amber-700,  .dark .text-amber-800  { color: #fcd34d; }
+.dark .text-orange-700, .dark .text-orange-800 { color: #fdba74; }
+.dark .text-blue-700,   .dark .text-blue-800   { color: #93c5fd; }
+.dark .text-indigo-700, .dark .text-indigo-800 { color: #a5b4fc; }
+.dark .text-purple-700, .dark .text-purple-800 { color: #d8b4fe; }
+.dark .text-teal-700,   .dark .text-teal-800   { color: #5eead4; }
+.dark .text-pink-700,   .dark .text-pink-800   { color: #f9a8d4; }
+.dark .text-sky-700,    .dark .text-sky-800    { color: #7dd3fc; }
+.dark .text-rose-700,   .dark .text-rose-800   { color: #fda4af; }
+
+/* Bordures colorees (-200 -> teinte translucide du -500) */
+.dark .border-red-200    { border-color: rgb(239 68 68 / 0.35); }
+.dark .border-green-200  { border-color: rgb(34 197 94 / 0.35); }
+.dark .border-yellow-200 { border-color: rgb(234 179 8 / 0.35); }
+.dark .border-amber-200  { border-color: rgb(245 158 11 / 0.35); }
+.dark .border-orange-200 { border-color: rgb(249 115 22 / 0.35); }
+.dark .border-blue-200   { border-color: rgb(59 130 246 / 0.35); }
+.dark .border-indigo-200 { border-color: rgb(99 102 241 / 0.35); }
+
+/* Palette primary (slate) utilisee comme puce/badge + slate-100 neutre.
+   text-primary-600 (slate fonce) est eclairci car invisible sur fond sombre,
+   contrairement aux -600 colores satures qui restent lisibles. */
+.dark .bg-primary-50  { background-color: rgb(100 116 139 / 0.12); }
+.dark .bg-primary-100 { background-color: rgb(100 116 139 / 0.18); }
+.dark .bg-slate-100   { background-color: #374151; }
+.dark .text-primary-500 { color: #94a3b8; } /* slate-400 : sous-titres attenues (login) */
+.dark .text-primary-600 { color: #94a3b8; } /* primary-400 */
+.dark .text-primary-700, .dark .text-primary-800 { color: #cbd5e1; } /* primary-300 */
+.dark .text-primary-900 { color: #f9fafb; } /* gray-50 : titres (login) */

@@ -2,6 +2,7 @@ import axios from 'axios'
 import router from '@/router'
 import { useAuthStore } from '@/stores/auth.store'
 import { disconnectEcho } from '@/services/echo'
+import { extractApiErrorMessage } from '@/utils/api-error'
 
 /**
  * Convert camelCase keys to snake_case recursively for API requests.
@@ -99,6 +100,13 @@ apiClient.interceptors.response.use(
         disconnectEcho()
       }
       router.push({ name: 'login' })
+    }
+
+    // Normaliser error.message avec le vrai message serveur pour que tous les
+    // catch blocks qui lisent error.message affichent l'erreur réelle plutôt
+    // que "Request failed with status code XXX".
+    if (axios.isAxiosError(error) && error.response) {
+      error.message = extractApiErrorMessage(error, error.message)
     }
 
     return Promise.reject(error)

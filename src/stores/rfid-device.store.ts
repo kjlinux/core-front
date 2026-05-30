@@ -1,18 +1,32 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
-import { rfidDeviceApi } from '@/services/api/rfid-device.api'
+import { rfidDeviceApi, type RfidDeviceFilters } from '@/services/api/rfid-device.api'
 import type { RfidDevice } from '@/types'
 
 export const useRfidDeviceStore = defineStore('rfid-device', () => {
   const devices = ref<RfidDevice[]>([])
   const currentDevice = ref<RfidDevice | null>(null)
   const isLoading = ref(false)
+  const filters = ref<RfidDeviceFilters>({
+    page: 1,
+    perPage: 15,
+  })
+  const pagination = ref({
+    currentPage: 1,
+    perPage: 15,
+    total: 0,
+    totalPages: 0,
+  })
 
-  async function fetchDevices() {
+  async function fetchDevices(newFilters?: Partial<RfidDeviceFilters>) {
+    if (newFilters) {
+      filters.value = { page: 1, perPage: filters.value.perPage, ...newFilters }
+    }
     isLoading.value = true
     try {
-      const response = await rfidDeviceApi.getAll()
+      const response = await rfidDeviceApi.getAll(filters.value)
       devices.value = response.data
+      pagination.value = response.meta
     } finally {
       isLoading.value = false
     }
@@ -90,6 +104,8 @@ export const useRfidDeviceStore = defineStore('rfid-device', () => {
     devices,
     currentDevice,
     isLoading,
+    filters,
+    pagination,
     fetchDevices,
     fetchDevice,
     registerDevice,

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth.store'
 import { usePayrollStore } from '@/stores/payroll.store'
 import { useAbsenceStore } from '@/stores/absence.store'
@@ -20,6 +21,7 @@ const payrollStore = usePayrollStore()
 const absenceStore = useAbsenceStore()
 const attendanceStore = useAttendanceStore()
 const toast = useToast()
+const { t } = useI18n()
 const { generatePayslipPdf } = usePayrollPdf()
 
 const activeTab = ref<'presences' | 'fiches' | 'absences'>('presences')
@@ -117,7 +119,11 @@ function handleFileChange(event: Event) {
 
 async function submitAbsence() {
   if (!absenceForm.value.dateStart || !absenceForm.value.dateEnd || !absenceForm.value.reason.trim()) {
-    toast.showError('Veuillez remplir tous les champs obligatoires')
+    toast.showError(t('toast.employeePortal.fillRequired'))
+    return
+  }
+  if (absenceForm.value.dateEnd < absenceForm.value.dateStart) {
+    toast.showError(t('toast.employeePortal.endAfterStart'))
     return
   }
   try {
@@ -128,17 +134,17 @@ async function submitAbsence() {
       reason: absenceForm.value.reason,
       justificatif: absenceForm.value.justificatif,
     })
-    toast.showSuccess('Demande d\'absence envoyée')
+    toast.showSuccess(t('toast.employeePortal.absenceSent'))
     showAbsenceModal.value = false
     absenceForm.value = { dateStart: '', dateEnd: '', reason: '', justificatif: null }
   } catch {
-    toast.showError('Une erreur est survenue lors de l\'envoi')
+    toast.showError(t('toast.employeePortal.sendError'))
   }
 }
 
 onMounted(async () => {
   if (!employeeId.value) {
-    toast.showError('Votre compte utilisateur n\'est pas lie a un employe. Contactez votre administrateur.')
+    toast.showError(t('toast.employeePortal.noEmployeeLink'))
     return
   }
   await Promise.all([
@@ -210,9 +216,9 @@ onMounted(async () => {
             <thead class="bg-gray-50">
               <tr>
                 <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Date</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Entree</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Entrée</th>
                 <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Sortie</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Presence</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Présence</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-200 bg-white">
@@ -353,7 +359,7 @@ onMounted(async () => {
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Date de fin <span class="text-red-500">*</span></label>
-          <AppInput v-model="absenceForm.dateEnd" type="date" />
+          <AppInput v-model="absenceForm.dateEnd" type="date" :min="absenceForm.dateStart" />
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Motif <span class="text-red-500">*</span></label>

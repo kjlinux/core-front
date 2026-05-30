@@ -5,7 +5,7 @@
         <AppButton variant="ghost" @click="goBack">
           {{ t('common.back') }}
         </AppButton>
-        <h1>{{ t('attendance.byDeptTitle', { departmentName }) }}</h1>
+        <h1 class="text-gray-900">{{ t('attendance.byDeptTitle', { departmentName }) }}</h1>
       </div>
       <div class="header-actions">
         <AppButton @click="handleExport">
@@ -27,7 +27,7 @@
               type="date"
               :placeholder="t('attendance.startDate')"
             />
-            <span class="separator">-</span>
+            <span class="separator text-gray-500">-</span>
             <AppInput
               v-model="endDate"
               type="date"
@@ -68,7 +68,7 @@
       </div>
 
       <AppCard>
-        <h3>{{ t('attendance.deptEmployees') }}</h3>
+        <h3 class="text-gray-900">{{ t('attendance.deptEmployees') }}</h3>
         <DataTable
           :columns="columns"
           :data="employeeRecords"
@@ -83,7 +83,7 @@
             </span>
           </template>
           <template #cell-name="{ row }">
-            <button class="employee-link" @click="viewEmployee(row.employeeId)">
+            <button class="employee-link text-blue-600" @click="viewEmployee(row.employeeId)">
               {{ row.name }}
             </button>
           </template>
@@ -233,7 +233,6 @@ onMounted(() => {
 .page-header h1 {
   font-size: 28px;
   font-weight: 600;
-  color: #1f2937;
   margin: 0;
 }
 
@@ -275,7 +274,6 @@ onMounted(() => {
 }
 
 .separator {
-  color: #6b7280;
   font-weight: 500;
 }
 
@@ -289,7 +287,6 @@ onMounted(() => {
 h3 {
   font-size: 18px;
   font-weight: 600;
-  color: #1f2937;
   margin: 0 0 16px 0;
 }
 
@@ -319,7 +316,6 @@ h3 {
 .employee-link {
   background: none;
   border: none;
-  color: #2563eb;
   cursor: pointer;
   text-decoration: none;
   font-weight: 500;
@@ -330,4 +326,8 @@ h3 {
 .employee-link:hover {
   text-decoration: underline;
 }
+
+.dark .rate-high   { background-color: rgb(34 197 94 / 0.18); color: #86efac; }
+.dark .rate-medium { background-color: rgb(249 115 22 / 0.18); color: #fdba74; }
+.dark .rate-low    { background-color: rgb(239 68 68 / 0.18); color: #fca5a5; }
 </style>

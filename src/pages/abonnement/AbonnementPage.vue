@@ -8,6 +8,7 @@ import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import { formatCurrency } from '@/utils/format'
+import { extractApiErrorMessage } from '@/utils/api-error'
 import type { PlanCode } from '@/types/subscription'
 
 const router = useRouter()
@@ -21,7 +22,7 @@ async function handlePayNext() {
     const r = await store.payNextPeriod()
     if (r.payment_url) window.location.href = r.payment_url
   } catch (e: any) {
-    toast.error(e.response?.data?.message ?? e.message)
+    toast.error(extractApiErrorMessage(e))
   }
 }
 </script>
@@ -45,7 +46,7 @@ async function handlePayNext() {
       </div>
 
       <div v-if="store.state.expires_at" class="text-sm text-gray-600 mb-2">
-        Echéance : <strong>{{ new Date(store.state.expires_at).toLocaleDateString('fr-FR') }}</strong>
+        Échéance : <strong>{{ new Date(store.state.expires_at).toLocaleDateString('fr-FR') }}</strong>
       </div>
       <div v-if="store.state.next_period_paid && store.state.next_expires_at" class="text-sm text-green-700 mb-2">
         ✓ Mois suivant payé - couvert jusqu'au <strong>{{ new Date(store.state.next_expires_at).toLocaleDateString('fr-FR') }}</strong>

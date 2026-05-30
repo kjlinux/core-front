@@ -3,16 +3,21 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useCompanyStore } from '@/stores/company.store'
+import { useActiveCompanyStore } from '@/stores/active-company.store'
+import { usePermissions } from '@/composables/usePermissions'
 import { useToast } from '@/composables/useToast'
 import type { Company } from '@/types'
 import CompanyForm from '@/components/forms/CompanyForm.vue'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
+import { extractApiErrorMessage } from '@/utils/api-error'
 import { ArrowLeftIcon } from '@heroicons/vue/24/outline'
 
 const { t } = useI18n()
 const router = useRouter()
 const companyStore = useCompanyStore()
+const activeCompanyStore = useActiveCompanyStore()
+const { isTechnicien } = usePermissions()
 const toast = useToast()
 
 const formData = ref<Partial<Company>>({
@@ -26,11 +31,15 @@ const formData = ref<Partial<Company>>({
 
 async function handleSubmit() {
   try {
-    await companyStore.createCompany(formData.value)
+    const created = await companyStore.createCompany(formData.value)
+    // Le technicien bascule automatiquement sur la nouvelle entreprise creee.
+    if (isTechnicien.value && created?.id) {
+      await activeCompanyStore.selectCompany(created.id, created.name)
+    }
     toast.success(t('common.success'), t('companies.createdSuccess'))
     router.push({ name: 'rfid-companies' })
   } catch (error: any) {
-    toast.error(t('common.error'), error.message || t('companies.createError'))
+    toast.error(t('common.error'), extractApiErrorMessage(error, t('companies.createError')))
   }
 }
 

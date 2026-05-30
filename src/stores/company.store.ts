@@ -1,23 +1,32 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
-import { companyApi } from '@/services/api/company.api'
+import { companyApi, type CompanyFilters } from '@/services/api/company.api'
 import type { Company } from '@/types'
 
 export const useCompanyStore = defineStore('company', () => {
   const companies = ref<Company[]>([])
   const currentCompany = ref<Company | null>(null)
   const isLoading = ref(false)
+  const filters = ref<CompanyFilters>({
+    page: 1,
+    perPage: 15,
+  })
   const pagination = ref({
     currentPage: 1,
-    perPage: 10,
+    perPage: 15,
     total: 0,
     totalPages: 0,
   })
 
-  async function fetchCompanies(params?: Record<string, unknown>) {
+  async function fetchCompanies(newFilters?: Partial<CompanyFilters>) {
+    if (newFilters) {
+      filters.value = { page: 1, perPage: filters.value.perPage, ...newFilters }
+    }
     isLoading.value = true
     try {
-      companies.value = await companyApi.getAll(params)
+      const response = await companyApi.getAll(filters.value)
+      companies.value = response.data
+      pagination.value = response.meta
     } finally {
       isLoading.value = false
     }
@@ -77,5 +86,5 @@ export const useCompanyStore = defineStore('company', () => {
     }
   }
 
-  return { companies, currentCompany, isLoading, pagination, fetchCompanies, fetchCompany, createCompany, updateCompany, toggleActive }
+  return { companies, currentCompany, isLoading, filters, pagination, fetchCompanies, fetchCompany, createCompany, updateCompany, toggleActive }
 })

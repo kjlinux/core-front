@@ -8,7 +8,7 @@ const firmwareRoutes: RouteRecordRaw[] = [
       requiresAuth: true,
       layout: 'dashboard',
       module: 'firmware',
-      roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE, UserRole.TECHNICIEN],
+      roles: [UserRole.SUPER_ADMIN],
     },
     children: [
       {
@@ -17,7 +17,7 @@ const firmwareRoutes: RouteRecordRaw[] = [
         component: () => import('@/pages/firmware/FirmwareVersionListPage.vue'),
         meta: {
           title: 'Versions firmware',
-          roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE, UserRole.TECHNICIEN],
+          roles: [UserRole.SUPER_ADMIN],
         },
       },
       {
@@ -25,8 +25,8 @@ const firmwareRoutes: RouteRecordRaw[] = [
         name: 'firmware-upload',
         component: () => import('@/pages/firmware/FirmwareUploadPage.vue'),
         meta: {
-          title: 'Telecharger firmware',
-          roles: [UserRole.SUPER_ADMIN, UserRole.TECHNICIEN],
+          title: 'Télécharger firmware',
+          roles: [UserRole.SUPER_ADMIN],
         },
       },
       {
@@ -34,8 +34,8 @@ const firmwareRoutes: RouteRecordRaw[] = [
         name: 'firmware-device-status',
         component: () => import('@/pages/firmware/FirmwareDeviceStatusPage.vue'),
         meta: {
-          title: 'Etat firmware des terminaux',
-          roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE, UserRole.TECHNICIEN],
+          title: 'État firmware des terminaux',
+          roles: [UserRole.SUPER_ADMIN],
         },
       },
       {
@@ -43,8 +43,8 @@ const firmwareRoutes: RouteRecordRaw[] = [
         name: 'firmware-logs',
         component: () => import('@/pages/firmware/FirmwareUpdateLogsPage.vue'),
         meta: {
-          title: 'Historique mises a jour',
-          roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE, UserRole.TECHNICIEN],
+          title: 'Historique mises à jour',
+          roles: [UserRole.SUPER_ADMIN],
         },
       },
     ],

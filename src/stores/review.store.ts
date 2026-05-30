@@ -2,6 +2,7 @@ import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { reviewApi } from '@/services/api/review.api'
 import { useToast } from '@/composables/useToast'
+import { i18n } from '@/plugins/i18n'
 import type { SaveReviewConfigPayload } from '@/services/api/review.api'
 import type { ReviewConfig, ReviewStats, SubmissionListItem } from '@/types/review'
 
@@ -54,7 +55,7 @@ export const useReviewStore = defineStore('review', () => {
       submissions.value = response.data
     } catch (e) {
       console.error('fetchSubmissions failed', e)
-      useToast().error('Erreur', 'Impossible de charger les soumissions')
+      useToast().error(i18n.global.t('common.error'), i18n.global.t('toast.review.loadSubmissionsError'))
     }
   }
 

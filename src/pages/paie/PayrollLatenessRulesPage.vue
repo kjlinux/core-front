@@ -3,8 +3,10 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { payrollApi } from '@/services/api/payroll.api'
 import { useAuthStore } from '@/stores/auth.store'
 import { useCompanyStore } from '@/stores/company.store'
+import { useI18n } from 'vue-i18n'
 import { useToast } from '@/composables/useToast'
 import { formatCurrency } from '@/utils/format'
+import { extractApiErrorMessage } from '@/utils/api-error'
 import type { LatenessRule } from '@/types/payroll'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
@@ -18,6 +20,7 @@ type DraftRule = Pick<LatenessRule, 'toleranceMinutes' | 'minutesThreshold' | 'p
 const auth = useAuthStore()
 const companyStore = useCompanyStore()
 const toast = useToast()
+const { t } = useI18n()
 
 const isLoading = ref(true)
 const isSaving = ref(false)
@@ -63,7 +66,7 @@ const simulationBreakdown = computed(() => {
         : (witnessSalary.value * r.penaltyValue * tranches) / 100
     }
     lines.push({
-      label: `Retard >= ${r.minutesThreshold}min (tolerance ${r.toleranceMinutes}min)`,
+      label: `Retard >= ${r.minutesThreshold}min (tolérance ${r.toleranceMinutes}min)`,
       minutes: effective,
       deduction: Math.round(amount),
     })
@@ -92,7 +95,7 @@ async function load() {
       applyPer: r.applyPer,
     }))
   } catch (e) {
-    toast.error('Impossible de charger la configuration', String((e as Error).message))
+    toast.error(t('toast.payroll.loadConfigError'), extractApiErrorMessage(e, t('common.genericError')))
   } finally {
     isLoading.value = false
   }
@@ -114,16 +117,16 @@ function removeRule(idx: number) {
 
 async function save() {
   if (!selectedCompanyId.value) {
-    toast.error('Selectionnez une entreprise')
+    toast.error(t('toast.payroll.selectCompany'))
     return
   }
   isSaving.value = true
   try {
     await payrollApi.saveLatenessRules(selectedCompanyId.value, rules.value)
-    toast.success('Regles de retard enregistrees')
+    toast.success(t('toast.payroll.latenessRulesSaved'))
     await load()
   } catch (e) {
-    toast.error('Echec sauvegarde', String((e as Error).message))
+    toast.error(t('toast.payroll.saveFailed'), extractApiErrorMessage(e, t('common.genericError')))
   } finally {
     isSaving.value = false
   }
@@ -148,9 +151,9 @@ onMounted(async () => {
   <div class="space-y-6">
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Regles de retard</h1>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Règles de retard</h1>
         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          Configurez les penalites appliquees aux fiches de paie selon les seuils de retard
+          Configurez les pénalités appliquées aux fiches de paie selon les seuils de retard
         </p>
       </div>
     </div>
@@ -160,7 +163,7 @@ onMounted(async () => {
       <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Entreprise</label>
       <AppSelect
         v-model="selectedCompanyId"
-        :options="[{ label: 'Selectionner une entreprise...', value: '' }, ...companyOptions]"
+        :options="[{ label: 'Sélectionner une entreprise...', value: '' }, ...companyOptions]"
       />
     </AppCard>
 
@@ -168,9 +171,9 @@ onMounted(async () => {
       <!-- Liste des regles -->
       <AppCard class="lg:col-span-2">
         <div class="mb-4 flex items-center justify-between">
-          <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-200">Regles configurees</h3>
+          <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-200">Règles configurées</h3>
           <AppButton variant="ghost" size="sm" :disabled="!selectedCompanyId" @click="addRule">
-            <PlusIcon class="mr-1 h-4 w-4" /> Ajouter une regle
+            <PlusIcon class="mr-1 h-4 w-4" /> Ajouter une règle
           </AppButton>
         </div>
 
@@ -182,14 +185,14 @@ onMounted(async () => {
           v-else-if="!selectedCompanyId"
           class="py-8 text-center text-sm text-gray-500 dark:text-gray-400"
         >
-          Selectionnez une entreprise pour configurer ses regles
+          Sélectionnez une entreprise pour configurer ses règles
         </div>
 
         <div
           v-else-if="rules.length === 0"
           class="rounded-lg border border-dashed border-gray-300 py-8 text-center text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400"
         >
-          Aucune regle definie. Ajoutez-en une pour commencer.
+          Aucune règle définie. Ajoutez-en une pour commencer.
         </div>
 
         <ul v-else class="space-y-3">
@@ -200,7 +203,7 @@ onMounted(async () => {
           >
             <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
               <div>
-                <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Tolerance (min)</label>
+                <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Tolérance (min)</label>
                 <AppInput v-model.number="r.toleranceMinutes" type="number" min="0" />
               </div>
               <div>
@@ -208,7 +211,7 @@ onMounted(async () => {
                 <AppInput v-model.number="r.minutesThreshold" type="number" min="1" />
               </div>
               <div>
-                <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Penalite</label>
+                <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Pénalité</label>
                 <AppInput v-model.number="r.penaltyValue" type="number" min="0" />
               </div>
               <div>
@@ -222,7 +225,7 @@ onMounted(async () => {
                   <button
                     type="button"
                     class="rounded-md p-2 text-gray-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/30"
-                    aria-label="Supprimer la regle"
+                    aria-label="Supprimer la règle"
                     @click="removeRule(i)"
                   >
                     <TrashIcon class="h-4 w-4" />
@@ -235,7 +238,7 @@ onMounted(async () => {
 
         <div v-if="selectedCompanyId" class="mt-4 flex justify-end">
           <AppButton variant="primary" :loading="isSaving" @click="save">
-            Enregistrer les regles
+            Enregistrer les règles
           </AppButton>
         </div>
       </AppCard>
@@ -244,7 +247,7 @@ onMounted(async () => {
       <AppCard>
         <div class="mb-3 flex items-center gap-2">
           <ClockIcon class="h-5 w-5 text-primary-700" />
-          <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-200">Simulation employe temoin</h3>
+          <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-200">Simulation employé témoin</h3>
         </div>
 
         <div class="space-y-3">
@@ -253,13 +256,13 @@ onMounted(async () => {
             <AppInput v-model.number="witnessSalary" type="number" min="0" />
           </div>
           <div>
-            <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Retard simule (minutes)</label>
+            <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Retard simulé (minutes)</label>
             <AppInput v-model.number="witnessLatenessMinutes" type="number" min="0" />
           </div>
         </div>
 
         <div class="mt-4 border-t border-gray-200 pt-4 dark:border-gray-700">
-          <p class="text-xs uppercase text-gray-500 dark:text-gray-400">Deduction totale</p>
+          <p class="text-xs uppercase text-gray-500 dark:text-gray-400">Déduction totale</p>
           <p class="mt-1 text-2xl font-bold text-red-600">
             -{{ formatCurrency(simulationTotal) }}
           </p>
@@ -273,7 +276,7 @@ onMounted(async () => {
             v-else-if="rules.length > 0"
             class="mt-2 text-xs text-gray-400"
           >
-            Aucune regle ne s'applique a ce cas
+            Aucune règle ne s'applique à ce cas
           </p>
         </div>
       </AppCard>

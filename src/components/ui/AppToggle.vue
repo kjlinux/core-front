@@ -22,7 +22,7 @@ defineEmits<{
       @click="!disabled && $emit('update:modelValue', !modelValue)"
     >
       <span
-        class="inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform"
+        class="inline-block h-4 w-4 transform rounded-full bg-white! shadow-sm transition-transform"
         :class="modelValue ? 'translate-x-6' : 'translate-x-1'"
       />
     </button>

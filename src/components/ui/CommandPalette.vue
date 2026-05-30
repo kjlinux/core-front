@@ -82,7 +82,7 @@ async function searchEmployees(q: string) {
       kind: 'employee' as const,
       label: `${e.firstName} ${e.lastName}`,
       subtitle: e.employeeNumber ? `#${e.employeeNumber}` : (e.email ?? ''),
-      path: `/pointage-rfid/employees/${e.id}`,
+      path: `/organisation/employees/${e.id}`,
     }))
   } catch {
     employeeResults.value = []
@@ -159,7 +159,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
               v-model="query"
               type="text"
               class="flex-1 bg-transparent text-sm text-gray-900 placeholder-gray-400 focus:outline-none dark:text-gray-100"
-              placeholder="Rechercher pages, employes..."
+              placeholder="Rechercher pages, employés..."
               aria-label="Recherche"
             />
             <kbd class="rounded border border-gray-300 px-1.5 py-0.5 text-xs text-gray-500 dark:border-gray-600 dark:text-gray-400">
@@ -194,7 +194,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
           </ul>
 
           <div v-else class="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
-            Aucun resultat
+            Aucun résultat
           </div>
 
           <div class="flex items-center justify-between border-t border-gray-200 bg-gray-50 px-4 py-2 text-xs text-gray-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400">

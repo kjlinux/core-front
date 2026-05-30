@@ -1,0 +1,447 @@
+<script setup lang="ts">
+import { ref, computed, watch, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
+import AppCard from '@/components/ui/AppCard.vue'
+import AppSelect from '@/components/ui/AppSelect.vue'
+import AppButton from '@/components/ui/AppButton.vue'
+import AppInput from '@/components/ui/AppInput.vue'
+import DataTable from '@/components/data-display/DataTable.vue'
+import StatCard from '@/components/data-display/StatCard.vue'
+import { useToast } from '@/composables/useToast'
+import { useAuthStore } from '@/stores/auth.store'
+import { attendanceReportApi, type AttendanceReportData, type AttendanceReportParams } from '@/services/api/attendance-report.api'
+import { exportToPdf, exportToExcel } from '@/utils/export-helpers'
+import { usePeriodSelector, type PeriodMode } from '@/composables/usePeriodSelector'
+import { companyApi } from '@/services/api/company.api'
+import type { TableColumn } from '@/types/common'
+import { formatPercent } from '@/utils/format'
+import type { Company, Site, Department } from '@/types'
+
+// Rapport identique au rapport RFID/QR mais filtre sur le canal biometrique.
+const SOURCE = 'biometric' as const
+
+const { t } = useI18n()
+const { success, error } = useToast()
+const authStore = useAuthStore()
+
+// ---------- State ----------
+// La période est auto-couplée au type via le composable : choisir « Mensuel »
+// contraint start/end au mois civil, « Journalier » à un jour, etc.
+const { periodMode, day, month, weekDay, customStart, customEnd, startDate, endDate } =
+  usePeriodSelector('monthly')
+const focus = ref<'all' | 'late' | 'absence'>('all')
+const exportFormat = ref('pdf')
+const selectedCompany = ref('')
+const selectedSite = ref('')
+const selectedDepartment = ref('')
+const loading = ref(false)
+const exporting = ref(false)
+const reportGenerated = ref(false)
+const report = ref<AttendanceReportData | null>(null)
+
+// Filter lists
+const companies = ref<Company[]>([])
+const sites = ref<Site[]>([])
+const departments = ref<Department[]>([])
+
+const isSuperAdmin = computed(() => authStore.userRole === 'super_admin')
+
+// ---------- Période & focus ----------
+const periodModeOptions = computed(() => [
+  { label: t('reports.pmDaily'), value: 'daily' },
+  { label: t('reports.pmWeekly'), value: 'weekly' },
+  { label: t('reports.pmMonthly'), value: 'monthly' },
+  { label: t('reports.pmCustom'), value: 'custom' },
+])
+
+const focusOptions = computed(() => [
+  { label: t('reports.focusAll'), value: 'all' },
+  { label: t('reports.focusLate'), value: 'late' },
+  { label: t('reports.focusAbsence'), value: 'absence' },
+])
+
+// Le backend n'expose qu'un paramètre `type` : le focus prime (late/absence),
+// sinon la granularité de période (indicative côté serveur, daily/monthly).
+const backendType = computed<NonNullable<AttendanceReportParams['type']>>(() =>
+  focus.value !== 'all' ? focus.value : periodMode.value === 'monthly' ? 'monthly' : 'daily',
+)
+
+const exportFormatOptions = [
+  { label: 'PDF', value: 'pdf' },
+  { label: 'Excel', value: 'excel' },
+  { label: 'CSV (serveur)', value: 'csv' },
+  { label: 'PDF (serveur)', value: 'pdf-server' },
+]
+
+// ---------- Dynamic columns per report type ----------
+const columnsByType = computed<Record<string, TableColumn[]>>(() => ({
+  daily: [
+    { key: 'employee', label: t('reports.employee') },
+    { key: 'department', label: t('reports.dept') },
+    { key: 'site', label: t('reports.site') },
+    { key: 'present', label: t('reports.presentCount'), align: 'center' },
+    { key: 'absent', label: t('reports.absentCount'), align: 'center' },
+    { key: 'late', label: t('reports.lateCount'), align: 'center' },
+    { key: 'leave', label: t('reports.leave'), align: 'center' },
+    { key: 'overtime', label: t('reports.overtime'), align: 'center' },
+    { key: 'rate', label: t('reports.attendanceRate'), align: 'center', render: (v: unknown) => formatPercent(typeof v === 'number' ? v : 0) },
+  ],
+  monthly: [
+    { key: 'employee', label: t('reports.employee') },
+    { key: 'department', label: t('reports.dept') },
+    { key: 'site', label: t('reports.site') },
+    { key: 'present', label: t('reports.presentDays'), align: 'center' },
+    { key: 'absent', label: t('reports.absencesCount'), align: 'center' },
+    { key: 'late', label: t('reports.lateCount'), align: 'center' },
+    { key: 'leave', label: t('reports.leave'), align: 'center' },
+    { key: 'overtime', label: t('reports.overtime'), align: 'center' },
+    { key: 'rate', label: t('reports.attendanceRate'), align: 'center', render: (v: unknown) => formatPercent(typeof v === 'number' ? v : 0) },
+  ],
+  late: [
+    { key: 'employee', label: t('reports.employee') },
+    { key: 'department', label: t('reports.dept') },
+    { key: 'site', label: t('reports.site') },
+    { key: 'late', label: t('reports.lateNumber'), align: 'center' },
+    { key: 'overtime', label: t('reports.overtime'), align: 'center' },
+    { key: 'rate', label: t('reports.attendanceRate'), align: 'center', render: (v: unknown) => formatPercent(typeof v === 'number' ? v : 0) },
+  ],
+  absence: [
+    { key: 'employee', label: t('reports.employee') },
+    { key: 'department', label: t('reports.dept') },
+    { key: 'site', label: t('reports.site') },
+    { key: 'absent', label: t('reports.absencesCount'), align: 'center' },
+    { key: 'rate', label: t('reports.attendanceRate'), align: 'center', render: (v: unknown) => formatPercent(typeof v === 'number' ? v : 0) },
+  ],
+}))
+
+const currentColumns = computed<TableColumn[]>(() => columnsByType.value[backendType.value] ?? columnsByType.value.daily!)
+
+const currentReportLabel = computed(() => {
+  if (focus.value === 'late') return t('reports.lates')
+  if (focus.value === 'absence') return t('reports.absences')
+  return periodModeOptions.value.find((o) => o.value === periodMode.value)?.label ?? t('reports.title')
+})
+
+const periodLabel = computed(() => {
+  if (startDate.value && endDate.value) return t('reports.period', { start: startDate.value, end: endDate.value })
+  return ''
+})
+
+// ---------- Summary stats (dynamic per focus) ----------
+const summaryStats = computed(() => {
+  if (!report.value) return []
+  const r = report.value
+  const base: { title: string; value: number | string }[] = [
+    { title: t('reports.employeesTotal'), value: r.totalEmployees },
+  ]
+  if (focus.value === 'late') {
+    base.push({ title: t('reports.totalLates'), value: r.totalLate })
+    return base
+  }
+  if (focus.value === 'absence') {
+    base.push({ title: t('reports.totalAbsences'), value: r.totalAbsent })
+    return base
+  }
+  base.push(
+    { title: t('reports.presentDays'), value: r.totalPresent },
+    { title: t('reports.absencesCount'), value: r.totalAbsent },
+    { title: t('reports.lateCount'), value: r.totalLate },
+  )
+  if (typeof r.totalLeave === 'number') {
+    base.push({ title: t('reports.leave'), value: r.totalLeave })
+  }
+  if (typeof r.globalRate === 'number') {
+    base.push({ title: t('reports.globalRate'), value: formatPercent(r.globalRate) })
+  }
+  return base
+})
+
+// ---------- Load filter data ----------
+onMounted(async () => {
+  if (isSuperAdmin.value) {
+    try {
+      companies.value = (await companyApi.getAll({ perPage: 1000 })).data
+    } catch {
+      // silent
+    }
+  }
+})
+
+watch(selectedCompany, async (companyId) => {
+  selectedSite.value = ''
+  selectedDepartment.value = ''
+  sites.value = []
+  departments.value = []
+  if (companyId) {
+    try {
+      sites.value = await companyApi.getSites(companyId)
+    } catch {
+      // silent
+    }
+  }
+})
+
+watch(selectedSite, async (siteId) => {
+  selectedDepartment.value = ''
+  departments.value = []
+  if (siteId) {
+    try {
+      departments.value = await companyApi.getDepartments(siteId)
+    } catch {
+      // silent
+    }
+  }
+})
+
+// Reset report when the effective report shape (période/focus) changes
+watch(backendType, () => {
+  reportGenerated.value = false
+  report.value = null
+  currentPage.value = 1
+})
+
+const currentPage = ref(1)
+const perPage = ref(20)
+
+const pagedRows = computed(() => {
+  if (!report.value) return []
+  const start = (currentPage.value - 1) * perPage.value
+  return report.value.rows.slice(start, start + perPage.value)
+})
+
+const paginationObj = computed(() => {
+  const total = report.value?.rows.length ?? 0
+  return { currentPage: currentPage.value, totalPages: Math.ceil(total / perPage.value) || 1, perPage: perPage.value, total }
+})
+
+const handlePageChange = (page: number) => { currentPage.value = page }
+
+// ---------- Generate report ----------
+const generateReport = async () => {
+  if (!startDate.value || !endDate.value) {
+    error(t('reports.requiredFields'), t('reports.periodRequired'))
+    return
+  }
+  if (isSuperAdmin.value && !selectedCompany.value) {
+    error(t('reports.requiredFields'), t('reports.companyRequired'))
+    return
+  }
+  loading.value = true
+  try {
+    const params: AttendanceReportParams = {
+      start_date: startDate.value,
+      end_date: endDate.value,
+      type: backendType.value,
+      source: SOURCE,
+    }
+    if (selectedCompany.value) params.company_id = selectedCompany.value
+    if (selectedSite.value) params.site_id = selectedSite.value
+    if (selectedDepartment.value) params.department_id = selectedDepartment.value
+
+    report.value = await attendanceReportApi.getReport(params)
+    reportGenerated.value = true
+    success(t('reports.generated'), t('reports.generatedMsg'))
+  } catch {
+    error(t('common.error'), t('reports.generateError'))
+  } finally {
+    loading.value = false
+  }
+}
+
+// ---------- Export helpers ----------
+function buildExportColumns() {
+  return currentColumns.value.map((c) => ({
+    header: c.label,
+    key: c.key,
+    width: c.key === 'employee' ? 22 : 16,
+  }))
+}
+
+function buildSummaryRows() {
+  return summaryStats.value.map((s) => ({ label: s.title, value: s.value }))
+}
+
+const handleExport = async () => {
+  if (!report.value || report.value.rows.length === 0) {
+    error(t('reports.exportImpossible'), t('reports.noDataExport'))
+    return
+  }
+
+  exporting.value = true
+  try {
+    const baseFilename = `pointage-biometrique-${backendType.value}-${startDate.value}`
+    const title = `${t('reports.title')} - ${currentReportLabel.value}`
+
+    if (exportFormat.value === 'csv' || exportFormat.value === 'pdf-server') {
+      const params: AttendanceReportParams = {
+        start_date: startDate.value,
+        end_date: endDate.value,
+        type: backendType.value,
+        source: SOURCE,
+      }
+      if (selectedCompany.value) params.company_id = selectedCompany.value
+      if (exportFormat.value === 'csv') {
+        await attendanceReportApi.downloadCsv(params)
+      } else {
+        await attendanceReportApi.downloadPdf(params)
+      }
+      success(t('reports.excelTitle'), t('reports.excelExported'))
+      return
+    }
+
+    const exportRows = report.value.rows.map((r) => ({
+      ...r,
+      rate: formatPercent(typeof r.rate === 'number' ? r.rate : 0),
+    })) as Record<string, unknown>[]
+
+    if (exportFormat.value === 'pdf') {
+      await exportToPdf({
+        filename: baseFilename,
+        title,
+        subtitle: periodLabel.value,
+        summaryRows: buildSummaryRows(),
+        columns: buildExportColumns(),
+        data: exportRows,
+      })
+      success(t('reports.pdfTitle'), t('reports.pdfExported'))
+    } else {
+      await exportToExcel({
+        filename: baseFilename,
+        title,
+        subtitle: periodLabel.value,
+        summaryRows: buildSummaryRows(),
+        columns: buildExportColumns(),
+        data: exportRows,
+      })
+      success(t('reports.excelTitle'), t('reports.excelExported'))
+    }
+  } catch {
+    error(t('reports.exportErrorTitle'), t('reports.exportError'))
+  } finally {
+    exporting.value = false
+  }
+}
+</script>
+
+<template>
+  <div class="space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <h1 class="text-2xl font-bold text-gray-900">{{ t('reports.title') }}</h1>
+    </div>
+
+    <!-- Filters -->
+    <AppCard :title="t('reports.params')">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('reports.periodMode') }}</label>
+          <AppSelect
+            :model-value="periodMode"
+            :options="periodModeOptions"
+            @update:model-value="(v) => (periodMode = v as PeriodMode)"
+          />
+        </div>
+
+        <!-- Dates auto-couplées au type de période -->
+        <div v-if="periodMode === 'daily'">
+          <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('reports.selectDay') }}</label>
+          <AppInput v-model="day" type="date" />
+        </div>
+        <div v-else-if="periodMode === 'monthly'">
+          <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('reports.selectMonth') }}</label>
+          <input
+            v-model="month"
+            type="month"
+            class="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-700"
+          />
+        </div>
+        <div v-else-if="periodMode === 'weekly'">
+          <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('reports.selectWeek') }}</label>
+          <AppInput v-model="weekDay" type="date" />
+          <p class="mt-1 text-xs text-gray-500">{{ t('reports.period', { start: startDate, end: endDate }) }}</p>
+        </div>
+        <template v-else>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('reports.startDate') }}</label>
+            <AppInput v-model="customStart" type="date" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('reports.endDate') }}</label>
+            <AppInput v-model="customEnd" type="date" />
+          </div>
+        </template>
+
+        <!-- Focus : tous / retards / absences -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('reports.focus') }}</label>
+          <AppSelect
+            :model-value="focus"
+            :options="focusOptions"
+            @update:model-value="(v) => (focus = v as 'all' | 'late' | 'absence')"
+          />
+        </div>
+
+        <!-- Location filters -->
+        <div v-if="isSuperAdmin">
+          <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('reports.company') }}</label>
+          <AppSelect
+            v-model="selectedCompany"
+            :options="companies.map(c => ({ label: c.name, value: c.id }))"
+            :placeholder="t('reports.selectCompany')"
+          />
+        </div>
+        <div v-if="sites.length > 0">
+          <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('reports.site') }}</label>
+          <AppSelect
+            v-model="selectedSite"
+            :options="sites.map(s => ({ label: s.name, value: s.id }))"
+            :placeholder="t('reports.allSites')"
+          />
+        </div>
+        <div v-if="departments.length > 0">
+          <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('reports.department') }}</label>
+          <AppSelect
+            v-model="selectedDepartment"
+            :options="departments.map(d => ({ label: d.name, value: d.id }))"
+            :placeholder="t('reports.allDepts')"
+          />
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-end gap-3 mt-4">
+        <AppButton :loading="loading" @click="generateReport">
+          {{ t('reports.generate') }}
+        </AppButton>
+      </div>
+    </AppCard>
+
+    <!-- Results -->
+    <template v-if="reportGenerated && report">
+      <!-- Summary Stats -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard
+          v-for="stat in summaryStats"
+          :key="stat.title"
+          :title="stat.title"
+          :value="stat.value"
+        />
+      </div>
+
+      <!-- Data Table -->
+      <AppCard :title="currentReportLabel">
+        <template #actions>
+          <div class="flex items-center gap-2">
+            <AppSelect
+              v-model="exportFormat"
+              :options="exportFormatOptions"
+              class="w-28"
+            />
+            <AppButton variant="outline" size="sm" :loading="exporting" @click="handleExport">
+              {{ t('reports.download') }}
+            </AppButton>
+          </div>
+        </template>
+        <DataTable :columns="currentColumns" :data="pagedRows" :loading="loading" :pagination="paginationObj" @page-change="handlePageChange" />
+      </AppCard>
+    </template>
+  </div>
+</template>

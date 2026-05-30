@@ -1,9 +1,13 @@
 <template>
   <div>
-    <div class="mb-6">
+    <div class="mb-6 flex items-center justify-between">
       <AppButton variant="outline" size="sm" @click="handleCancel">
         <ArrowLeftIcon class="h-4 w-4 mr-2 inline" />
         {{ t('common.back') }}
+      </AppButton>
+      <AppButton variant="ghost" size="sm" @click="openHelp">
+        <QuestionMarkCircleIcon class="h-4 w-4" />
+        {{ t('schedules.help') }}
       </AppButton>
     </div>
 
@@ -35,7 +39,8 @@ import { useScheduleStore } from '@/stores/schedule.store'
 import { useCompanyStore } from '@/stores/company.store'
 import { useDepartmentStore } from '@/stores/department.store'
 import { useToast } from '@/composables/useToast'
-import { ArrowLeftIcon } from '@heroicons/vue/24/outline'
+import { extractApiErrorMessage } from '@/utils/api-error'
+import { ArrowLeftIcon, QuestionMarkCircleIcon } from '@heroicons/vue/24/outline'
 import type { Schedule } from '@/types'
 
 const { t } = useI18n()
@@ -57,15 +62,19 @@ const handleSubmit = async (data: Partial<Schedule>) => {
   try {
     await scheduleStore.createSchedule(data)
     toast.success(t('common.success'), t('schedules.createdSuccess'))
-    router.push('/pointage-rfid/schedules')
+    router.push('/organisation/schedules')
   } catch (error: any) {
-    toast.error(t('common.error'), error.message || t('schedules.createError'))
+    toast.error(t('common.error'), extractApiErrorMessage(error, t('schedules.createError')))
   } finally {
     loading.value = false
   }
 }
 
 const handleCancel = () => {
-  router.push('/pointage-rfid/schedules')
+  router.push('/organisation/schedules')
+}
+
+const openHelp = () => {
+  router.push('/organisation/schedules/help')
 }
 </script>

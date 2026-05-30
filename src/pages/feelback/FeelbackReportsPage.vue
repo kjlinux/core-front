@@ -11,6 +11,7 @@ import {
 import { companyApi } from '@/services/api/company.api'
 import { exportToPdf, exportToExcel } from '@/utils/export-helpers'
 import { formatPercent } from '@/utils/format'
+import { usePeriodSelector, type PeriodMode } from '@/composables/usePeriodSelector'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppInput from '@/components/ui/AppInput.vue'
@@ -57,6 +58,31 @@ const granularityOptions = computed(() => [
   { label: t('feelback.byMonth'), value: 'month' },
 ])
 
+// Période auto-couplée : « custom » par défaut (dates libres comme avant) ;
+// choisir un mode rapide remplit automatiquement start/end.
+const {
+  periodMode,
+  day: pDay,
+  month: pMonth,
+  weekDay: pWeekDay,
+  startDate: pComputedStart,
+  endDate: pComputedEnd,
+} = usePeriodSelector('custom')
+
+const periodModeOptions = computed(() => [
+  { label: t('reports.pmDaily'), value: 'daily' },
+  { label: t('reports.pmWeekly'), value: 'weekly' },
+  { label: t('reports.pmMonthly'), value: 'monthly' },
+  { label: t('reports.pmCustom'), value: 'custom' },
+])
+
+watch([pComputedStart, pComputedEnd, periodMode], () => {
+  if (periodMode.value !== 'custom') {
+    startDate.value = pComputedStart.value
+    endDate.value = pComputedEnd.value
+  }
+})
+
 const showSiteFilter = computed(() =>
   reportType.value === 'site' || reportType.value === 'department',
 )
@@ -67,7 +93,7 @@ async function loadCompanies() {
   if (!isSuperAdmin.value) return
   loadingCompanies.value = true
   try {
-    const companies = await companyApi.getAll()
+    const companies = (await companyApi.getAll({ perPage: 1000 })).data
     companyOptions.value = companies.map((c) => ({ label: c.name, value: c.id }))
   } catch {
     // silencieux
@@ -108,7 +134,7 @@ async function loadDepartments() {
   try {
     const departments = await companyApi.getDepartments(selectedSite.value)
     departmentOptions.value = [
-      { label: 'Tous les departements', value: '' },
+      { label: 'Tous les départements', value: '' },
       ...departments.map((d) => ({ label: d.name, value: d.id })),
     ]
   } catch {
@@ -369,6 +395,25 @@ async function handleExportPdfServer() {
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <AppSelect
+            :model-value="periodMode"
+            :options="periodModeOptions"
+            :label="t('reports.periodMode')"
+            @update:model-value="(v) => (periodMode = v as PeriodMode)"
+          />
+          <AppInput v-if="periodMode === 'daily'" v-model="pDay" :label="t('reports.selectDay')" type="date" />
+          <div v-else-if="periodMode === 'monthly'">
+            <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('reports.selectMonth') }}</label>
+            <input
+              v-model="pMonth"
+              type="month"
+              class="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-700"
+            />
+          </div>
+          <AppInput v-else-if="periodMode === 'weekly'" v-model="pWeekDay" :label="t('reports.selectWeek')" type="date" />
+        </div>
+
+        <div v-if="periodMode === 'custom'" class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <AppInput v-model="startDate" :label="t('feelback.startDate')" type="date" />
           <AppInput v-model="endDate" :label="t('feelback.endDate')" type="date" />
         </div>

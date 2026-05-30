@@ -1,18 +1,25 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
-import { marketplaceApi } from '@/services/api/marketplace.api'
+import { marketplaceApi, type ProductFilters } from '@/services/api/marketplace.api'
 import type { Product } from '@/types'
 
 export const useMarketplaceStore = defineStore('marketplace', () => {
   const products = ref<Product[]>([])
   const currentProduct = ref<Product | null>(null)
   const isLoading = ref(false)
+  const pagination = ref({
+    currentPage: 1,
+    perPage: 15,
+    total: 0,
+    totalPages: 0,
+  })
 
-  async function fetchProducts(params?: Record<string, unknown>) {
+  async function fetchProducts(params?: ProductFilters) {
     isLoading.value = true
     try {
       const response = await marketplaceApi.getProducts(params)
       products.value = response.data
+      pagination.value = response.meta
     } finally {
       isLoading.value = false
     }
@@ -85,5 +92,5 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
     }
   }
 
-  return { products, currentProduct, isLoading, fetchProducts, fetchProduct, createProduct, updateProduct, updateStock, deleteProduct }
+  return { products, currentProduct, isLoading, pagination, fetchProducts, fetchProduct, createProduct, updateProduct, updateStock, deleteProduct }
 })

@@ -59,8 +59,8 @@ export function useRealtimeSubscriptions() {
       }) => {
         attendanceStore.handleRealtimeAttendance(data)
 
-        const sourceName = data.source === 'rfid' ? 'RFID' : 'Biometrique'
-        const action = data.exitTime ? 'Sortie' : 'Entree'
+        const sourceName = data.source === 'rfid' ? 'RFID' : 'Biométrique'
+        const action = data.exitTime ? 'Sortie' : 'Entrée'
         const title = `Pointage ${sourceName} - ${action}`
         const message = data.employeeName
 

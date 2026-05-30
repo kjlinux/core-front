@@ -27,13 +27,15 @@ const feelbackRoutes: RouteRecordRaw[] = [
         path: 'data',
         name: 'feelback-data',
         component: () => import('@/pages/feelback/FeelbackRawDataPage.vue'),
-        meta: { title: 'Donnees brutes' },
+        meta: { title: 'Données brutes' },
       },
       {
         path: 'devices',
         name: 'feelback-devices',
         component: () => import('@/pages/feelback/DeviceManagementPage.vue'),
-        meta: { title: 'Terminaux Feelback', roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE] },
+        // Le technicien accede uniquement a cette page Feelback (gestion des dispositifs).
+        // Les autres routes Feelback restent bloquees pour lui via les roles du parent.
+        meta: { title: 'Terminaux Feelback', roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE, UserRole.TECHNICIEN] },
       },
       {
         path: 'alerts',

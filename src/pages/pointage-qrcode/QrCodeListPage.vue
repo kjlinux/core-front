@@ -1,22 +1,27 @@
 <script setup lang="ts">
-import { onMounted, ref, computed, watch } from 'vue'
+import { onMounted, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import QRCode from 'qrcode'
 import { useQrcodeStore } from '@/stores/qrcode.store'
+import { useSiteStore } from '@/stores/site.store'
 import { usePermissions } from '@/composables/usePermissions'
+import { useServerTable } from '@/composables/useServerTable'
 import { useToast } from '@/composables/useToast'
 import type { QrCode } from '@/types'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import AppModal from '@/components/ui/AppModal.vue'
+import AppInput from '@/components/ui/AppInput.vue'
+import AppSelect from '@/components/ui/AppSelect.vue'
 import DataTable from '@/components/data-display/DataTable.vue'
 import { PlusIcon, TrashIcon, ArrowDownTrayIcon, PrinterIcon } from '@heroicons/vue/24/outline'
 import { sortByRecent } from '@/utils/sort'
 
 const { t } = useI18n()
 const store = useQrcodeStore()
+const siteStore = useSiteStore()
 const router = useRouter()
 const permissions = usePermissions()
 const toast = useToast()
@@ -24,6 +29,29 @@ const toast = useToast()
 const confirmRevokeId = ref<string | null>(null)
 const viewingQr = ref<QrCode | null>(null)
 const qrDataUrl = ref<string | null>(null)
+
+const { filters, search, applyFilters, handlePageChange, reload } = useServerTable({
+  initialFilters: { status: '' as '' | 'active' | 'revoked', siteId: '' },
+  fetcher: (p) =>
+    store.fetchQrCodes({
+      page: p.page,
+      perPage: p.perPage,
+      siteId: p.siteId || undefined,
+      isActive: p.status ? p.status === 'active' : undefined,
+      search: p.search || undefined,
+    }),
+})
+
+const statusOptions = computed(() => [
+  { value: '', label: t('qrcode.allStatuses') || 'Tous les statuts' },
+  { value: 'active', label: t('qrcode.active') },
+  { value: 'revoked', label: t('qrcode.revoked') },
+])
+
+const siteOptions = computed(() => [
+  { value: '', label: t('qrcode.allSites') || 'Tous les sites' },
+  ...siteStore.sites.map((s) => ({ value: s.id, label: s.name })),
+])
 
 const columns = computed(() => [
   { key: 'siteName', label: 'Site' },
@@ -34,22 +62,12 @@ const columns = computed(() => [
   { key: 'actions', label: t('common.actions') },
 ])
 
-const currentPage = ref(1)
-const perPage = ref(15)
+const pagedQrCodes = computed(() => sortByRecent(store.qrCodes))
 
-const pagedQrCodes = computed(() => {
-  const start = (currentPage.value - 1) * perPage.value
-  return sortByRecent(store.qrCodes).slice(start, start + perPage.value)
+onMounted(async () => {
+  await siteStore.fetchSites({ perPage: 200 })
+  await reload()
 })
-
-const paginationObj = computed(() => {
-  const total = store.qrCodes.length
-  return { currentPage: currentPage.value, totalPages: Math.ceil(total / perPage.value) || 1, perPage: perPage.value, total }
-})
-
-const handlePageChange = (page: number) => { currentPage.value = page }
-
-onMounted(() => store.fetchQrCodes({ perPage: 1000 }))
 
 function formatDate(d: string) {
   return new Date(d).toLocaleDateString('fr-FR')
@@ -96,6 +114,7 @@ async function handleRevoke(id: string) {
   try {
     await store.revokeQrCode(id)
     toast.success(t('qrcode.revokedSuccess'))
+    await reload()
     confirmRevokeId.value = null
   } catch {
     toast.error(t('qrcode.revokeError'))
@@ -123,7 +142,27 @@ async function handleRevoke(id: string) {
     </div>
 
     <AppCard>
-      <DataTable :columns="columns" :data="pagedQrCodes" :loading="store.isLoading" :pagination="paginationObj" @page-change="handlePageChange" @row-click="handleRowClick">
+      <div class="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <AppInput
+          v-model="search"
+          :label="t('common.search') || 'Rechercher'"
+          :placeholder="t('common.search') || 'Rechercher...'"
+        />
+        <AppSelect
+          v-model="filters.siteId"
+          :options="siteOptions"
+          :label="'Site'"
+          @update:model-value="applyFilters"
+        />
+        <AppSelect
+          v-model="filters.status"
+          :options="statusOptions"
+          :label="t('qrcode.status')"
+          @update:model-value="applyFilters"
+        />
+      </div>
+
+      <DataTable :columns="columns" :data="pagedQrCodes" :loading="store.isLoading" :pagination="store.pagination" @page-change="handlePageChange" @row-click="handleRowClick">
         <template #siteName="{ row }">
           <span class="font-medium text-gray-900">{{ row.siteName ?? '-' }}</span>
         </template>

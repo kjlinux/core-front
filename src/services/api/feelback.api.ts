@@ -8,6 +8,27 @@ export interface FeelbackParams extends PaginationParams {
   deviceId?: string
 }
 
+export interface FeelbackAlertFilters {
+  siteId?: string
+  type?: string
+  isRead?: boolean
+  search?: string
+  page?: number
+  perPage?: number
+}
+
+function toSnakeAlertFilters(params?: FeelbackAlertFilters): Record<string, unknown> | undefined {
+  if (!params) return undefined
+  const result: Record<string, unknown> = {}
+  if (params.siteId !== undefined) result.site_id = params.siteId
+  if (params.type !== undefined) result.type = params.type
+  if (params.isRead !== undefined) result.is_read = params.isRead
+  if (params.search !== undefined) result.search = params.search
+  if (params.page !== undefined) result.page = params.page
+  if (params.perPage !== undefined) result.per_page = params.perPage
+  return result
+}
+
 export const feelbackApi = {
   getStats(params?: FeelbackParams): Promise<SatisfactionStats> {
     return apiClient.get('/feelback/stats', { params }).then((r) => r.data)
@@ -29,8 +50,8 @@ export const feelbackApi = {
     return apiClient.post('/feelback/devices', data).then((r) => r.data)
   },
 
-  getAlerts(params?: PaginationParams): Promise<PaginatedResponse<FeelbackAlert>> {
-    return apiClient.get('/feelback/alerts', { params }).then((r) => r.data)
+  getAlerts(params?: FeelbackAlertFilters): Promise<PaginatedResponse<FeelbackAlert>> {
+    return apiClient.get('/feelback/alerts', { params: toSnakeAlertFilters(params) }).then((r) => r.data)
   },
 
   updateAlertSettings(data: Record<string, unknown>): Promise<void> {

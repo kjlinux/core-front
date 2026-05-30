@@ -21,7 +21,7 @@ const marketplaceRoutes: RouteRecordRaw[] = [
         path: 'products/:id',
         name: 'marketplace-product-detail',
         component: () => import('@/pages/marketplace/ProductDetailPage.vue'),
-        meta: { title: 'Detail produit' },
+        meta: { title: 'Détail produit' },
       },
       {
         path: 'cart',
@@ -45,7 +45,7 @@ const marketplaceRoutes: RouteRecordRaw[] = [
         path: 'orders/:id',
         name: 'marketplace-order-detail',
         component: () => import('@/pages/marketplace/OrderDetailPage.vue'),
-        meta: { title: 'Detail commande' },
+        meta: { title: 'Détail commande' },
       },
       {
         path: 'payment/callback',
@@ -82,7 +82,7 @@ const marketplaceRoutes: RouteRecordRaw[] = [
         path: 'admin/orders/:id',
         name: 'marketplace-admin-order-detail',
         component: () => import('@/pages/marketplace/admin/AdminOrderDetailPage.vue'),
-        meta: { title: 'Detail commande admin', roles: [UserRole.SUPER_ADMIN] },
+        meta: { title: 'Détail commande admin', roles: [UserRole.SUPER_ADMIN] },
       },
       {
         path: 'admin/reports',

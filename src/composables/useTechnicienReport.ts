@@ -60,11 +60,11 @@ export function useTechnicienReport() {
       departmentStore.fetchDepartments({ perPage: 200 }),
       employeeStore.fetchEmployees({ perPage: 200 }),
       cardStore.fetchCards({ perPage: 200 }),
-      rfidStore.fetchDevices(),
-      biometricStore.fetchDevices(),
-      biometricStore.fetchEnrollments(),
+      rfidStore.fetchDevices({ perPage: 200 }),
+      biometricStore.fetchDevices({ perPage: 200 }),
+      biometricStore.fetchEnrollments({ perPage: 200 }),
       qrcodeStore.fetchQrCodes({ perPage: 200 }),
-      firmwareStore.fetchVersions({}),
+      firmwareStore.fetchVersions({ perPage: 200 }),
       firmwareStore.fetchDeviceStatuses(),
     ])
 
@@ -420,7 +420,7 @@ export function useTechnicienReport() {
     doc.setTextColor(...C.primary400)
     doc.text(`Technicien : ${data.technicienName}`, marginX, 22)
     doc.text(`Entreprise : ${data.companyName}`, marginX, 28)
-    doc.text(`Genere le : ${data.generatedAt}`, marginX, 34)
+    doc.text(`Généré le : ${data.generatedAt}`, marginX, 34)
 
     y = 46
 
@@ -448,19 +448,19 @@ export function useTechnicienReport() {
     doc.setTextColor(...C.text)
     doc.setFontSize(11)
     doc.setFont('helvetica', 'bold')
-    doc.text('Recapitulatif', marginX, y)
+    doc.text('Récapitulatif', marginX, y)
     y += 5
 
     const summaryRows = data.sections.map((s) => [
       s.title,
       s.total > 0 ? `${s.done} / ${s.total}` : '-',
-      s.status === 'ok' ? 'OK' : s.status === 'warning' ? 'Incomplet' : 'Probleme',
+      s.status === 'ok' ? 'OK' : s.status === 'warning' ? 'Incomplet' : 'Problème',
       s.issues.length === 0 ? '-' : `${s.issues.length} point(s)`,
     ])
 
     autoTable(doc, {
       startY: y,
-      head: [['Section', 'Realise', 'Statut', "Points d'attention"]],
+      head: [['Section', 'Réalisé', 'Statut', "Points d'attention"]],
       body: summaryRows,
       theme: 'grid',
       headStyles: { fillColor: C.primary, textColor: C.white, fontStyle: 'bold', fontSize: 9 },
@@ -490,7 +490,7 @@ export function useTechnicienReport() {
     doc.setFontSize(11)
     doc.setFont('helvetica', 'bold')
     doc.setTextColor(...C.text)
-    doc.text('Detail par section', marginX, y)
+    doc.text('Détail par section', marginX, y)
     y += 6
 
     for (const section of data.sections) {
@@ -504,7 +504,7 @@ export function useTechnicienReport() {
       const accentColor =
         section.status === 'ok' ? C.ok : section.status === 'warning' ? C.warning : C.error
       const statusLabel =
-        section.status === 'ok' ? 'OK' : section.status === 'warning' ? 'Incomplet' : 'Probleme'
+        section.status === 'ok' ? 'OK' : section.status === 'warning' ? 'Incomplet' : 'Problème'
 
       // Bande titre section
       doc.setFillColor(...bgColor)
@@ -537,14 +537,14 @@ export function useTechnicienReport() {
           doc.setTextColor(...C.ok)
           doc.setFontSize(8.5)
           doc.setFont('helvetica', 'italic')
-          doc.text("Configuration complete - aucun point d'attention.", marginX + 5, y)
+          doc.text("Configuration complète - aucun point d'attention.", marginX + 5, y)
           y += 7
         } else {
           // Statut warning/error sans issues explicites (ex: 0 appareils)
           const fallbackMsg =
             section.status === 'warning'
-              ? 'Configuration incomplète - verifiez cette section.'
-              : 'Probleme detecte - action requise.'
+              ? 'Configuration incomplète - vérifiez cette section.'
+              : 'Problème détecté - action requise.'
           doc.setTextColor(...accentColor)
           doc.setFontSize(8.5)
           doc.setFont('helvetica', 'italic')
@@ -577,7 +577,7 @@ export function useTechnicienReport() {
       doc.setTextColor(...C.primary400)
       doc.setFont('helvetica', 'normal')
       doc.text(
-        `Page ${i} / ${pageCount} - Rapport genere automatiquement par le systeme`,
+        `Page ${i} / ${pageCount} - Rapport généré automatiquement par le système`,
         pageWidth / 2,
         pageH - 11,
         { align: 'center' },
@@ -587,7 +587,7 @@ export function useTechnicienReport() {
         const shortSig = signature.signature.slice(0, 16)
         doc.setFontSize(6.5)
         doc.text(
-          `ID: ${signature.id} | Signe: ${signature.signedAt} | HMAC-SHA256: ${shortSig}... | Verifier: ${signature.verifyUrl}`,
+          `ID: ${signature.id} | Signé: ${signature.signedAt} | HMAC-SHA256: ${shortSig}... | Vérifier: ${signature.verifyUrl}`,
           pageWidth / 2,
           pageH - 6,
           { align: 'center' },

@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
-import { cardApi } from '@/services/api/card.api'
+import { cardApi, type CardFilters } from '@/services/api/card.api'
 import type { RfidCard, CardHistoryEntry } from '@/types'
 
 export const useCardStore = defineStore('card', () => {
@@ -8,11 +8,19 @@ export const useCardStore = defineStore('card', () => {
   const currentCard = ref<RfidCard | null>(null)
   const cardHistory = ref<CardHistoryEntry[]>([])
   const isLoading = ref(false)
+  const pagination = ref({
+    currentPage: 1,
+    perPage: 15,
+    total: 0,
+    totalPages: 0,
+  })
 
-  async function fetchCards(params?: Record<string, unknown>) {
+  async function fetchCards(params?: CardFilters) {
     isLoading.value = true
     try {
-      cards.value = await cardApi.getAll(params)
+      const response = await cardApi.getAll(params)
+      cards.value = response.data
+      pagination.value = response.meta
     } finally {
       isLoading.value = false
     }
@@ -115,5 +123,5 @@ export const useCardStore = defineStore('card', () => {
     }
   }
 
-  return { cards, currentCard, cardHistory, isLoading, fetchCards, fetchCard, registerCard, assignCard, unassignCard, blockCard, unblockCard, fetchHistory }
+  return { cards, currentCard, cardHistory, isLoading, pagination, fetchCards, fetchCard, registerCard, assignCard, unassignCard, blockCard, unblockCard, fetchHistory }
 })

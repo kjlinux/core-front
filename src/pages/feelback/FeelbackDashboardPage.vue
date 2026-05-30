@@ -113,9 +113,9 @@ function formatDate(date: string) {
 onMounted(async () => {
   await Promise.allSettled([
     store.fetchStats(buildParams()),
-    store.fetchAlerts(),
+    store.fetchAlerts({ perPage: 200 }),
     store.fetchComparison(buildParams()),
-    companyStore.fetchCompanies(),
+    companyStore.fetchCompanies({ perPage: 200 }),
   ])
 })
 </script>

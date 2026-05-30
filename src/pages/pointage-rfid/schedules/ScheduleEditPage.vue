@@ -2,14 +2,20 @@
   <div class="schedule-edit-page">
     <div class="flex justify-between items-center mb-6">
       <h1 class="text-2xl font-bold">{{ t('schedules.editTitle') }}</h1>
-      <AppButton
-        v-if="canDelete && schedule"
-        @click="showDeleteModal = true"
-        variant="danger"
-      >
-        <TrashIcon class="w-4 h-4 mr-1" />
-        {{ t('schedules.deleteBtn') }}
-      </AppButton>
+      <div class="flex items-center gap-2">
+        <AppButton variant="ghost" size="sm" @click="openHelp">
+          <QuestionMarkCircleIcon class="w-4 h-4" />
+          {{ t('schedules.help') }}
+        </AppButton>
+        <AppButton
+          v-if="canDelete && schedule"
+          @click="showDeleteModal = true"
+          variant="danger"
+        >
+          <TrashIcon class="w-4 h-4 mr-1" />
+          {{ t('schedules.deleteBtn') }}
+        </AppButton>
+      </div>
     </div>
 
     <AppCard>
@@ -56,8 +62,9 @@ import { useCompanyStore } from '@/stores/company.store'
 import { useDepartmentStore } from '@/stores/department.store'
 import { usePermissions } from '@/composables/usePermissions'
 import { useToast } from '@/composables/useToast'
+import { extractApiErrorMessage } from '@/utils/api-error'
 import type { Schedule } from '@/types/schedule'
-import { TrashIcon } from '@heroicons/vue/24/outline'
+import { TrashIcon, QuestionMarkCircleIcon } from '@heroicons/vue/24/outline'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -83,9 +90,9 @@ const handleSubmit = async (data: Partial<Schedule>) => {
   try {
     await scheduleStore.updateSchedule(scheduleId.value, data)
     toast.success(t('common.success'), t('schedules.updatedSuccess'))
-    router.push('/pointage-rfid/schedules')
+    router.push('/organisation/schedules')
   } catch (error: any) {
-    toast.error(t('common.error'), error.message || t('schedules.updateError'))
+    toast.error(t('common.error'), extractApiErrorMessage(error, t('schedules.updateError')))
   } finally {
     loading.value = false
   }
@@ -95,13 +102,17 @@ const handleCancel = () => {
   router.back()
 }
 
+const openHelp = () => {
+  router.push('/organisation/schedules/help')
+}
+
 const handleDelete = async () => {
   try {
     await scheduleStore.deleteSchedule(scheduleId.value)
     showDeleteModal.value = false
-    router.push('/pointage-rfid/schedules')
+    router.push('/organisation/schedules')
   } catch (error: any) {
-    toast.error(t('common.error'), error.message || t('schedules.deleteError'))
+    toast.error(t('common.error'), extractApiErrorMessage(error, t('schedules.deleteError')))
   }
 }
 

@@ -7,7 +7,7 @@ export const abonnementRoutes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       layout: 'dashboard',
-      roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE],
+      roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE, UserRole.MANAGER],
     },
     children: [
       {

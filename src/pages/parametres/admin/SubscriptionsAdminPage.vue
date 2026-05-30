@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { subscriptionApi } from '@/services/api/subscription.api'
+import { extractApiErrorMessage } from '@/utils/api-error'
 import { PLAN_LABELS } from '@/config/plan-features'
 import { useToast } from '@/composables/useToast'
 import AppCard from '@/components/ui/AppCard.vue'
@@ -15,6 +17,7 @@ import type { PlanCode } from '@/types/subscription'
 import type { TableColumn } from '@/types/common'
 
 const toast = useToast()
+const { t } = useI18n()
 
 const companies = ref<any[]>([])
 const analytics = ref<any>(null)
@@ -33,7 +36,7 @@ const planOptions = (Object.keys(PLAN_LABELS) as PlanCode[]).map((c) => ({ value
 const columns: TableColumn[] = [
   { key: 'name', label: 'Compagnie' },
   { key: 'subscription', label: 'Plan' },
-  { key: 'expires', label: 'Echéance' },
+  { key: 'expires', label: 'Échéance' },
   { key: 'next', label: 'Mois suivant' },
   { key: 'warranty', label: 'Garantie' },
   { key: 'actions', label: '', sortable: false, align: 'right' },
@@ -73,7 +76,7 @@ async function load() {
     companies.value = list.data
     analytics.value = ana
   } catch (e) {
-    toast.error('Impossible de charger les abonnements', String((e as Error).message))
+    toast.error(t('toast.abonnement.loadError'), extractApiErrorMessage(e, t('common.genericError')))
   } finally {
     isLoading.value = false
   }
@@ -93,11 +96,11 @@ async function save() {
       expires_at: editExpiresAt.value || null,
       warranty_ends_at: editWarrantyEndsAt.value || null,
     })
-    toast.success('Plan mis à jour')
+    toast.success(t('toast.abonnement.planUpdated'))
     editing.value = null
     await load()
   } catch (e) {
-    toast.error('Échec de la mise à jour', String((e as Error).message))
+    toast.error(t('toast.abonnement.updateError'), extractApiErrorMessage(e, t('common.genericError')))
   }
 }
 

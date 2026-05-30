@@ -157,7 +157,7 @@ export async function exportToExcel(options: ExcelExportOptions): Promise<void> 
 
   // --- Footer ---
   sheet.addRow([])
-  const footerRow = sheet.addRow([`Genere le ${dayjs().format('DD/MM/YYYY')} a ${dayjs().format('HH:mm')}`])
+  const footerRow = sheet.addRow([`Généré le ${dayjs().format('DD/MM/YYYY')} à ${dayjs().format('HH:mm')}`])
   footerRow.getCell(1).font = { italic: true, size: 8, color: { argb: BRAND.primaryMid } }
 
   // --- Generate and download ---
@@ -270,7 +270,7 @@ export async function exportToPdf(options: PdfExportOptions): Promise<void> {
       doc.setTextColor(100, 116, 139)
       doc.setFont('helvetica', 'italic')
       doc.text(
-        `Page ${currentPage}/${pageCount} - Genere le ${dayjs().format('DD/MM/YYYY')} a ${dayjs().format('HH:mm')}`,
+        `Page ${currentPage}/${pageCount} - Généré le ${dayjs().format('DD/MM/YYYY')} à ${dayjs().format('HH:mm')}`,
         pageWidth - 14,
         pageHeight - 8,
         { align: 'right' },

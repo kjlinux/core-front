@@ -15,24 +15,25 @@
     <AppCard class="mb-6">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <AppInput
-          v-model="searchQuery"
+          v-model="search"
           :placeholder="t('common.search') || 'Rechercher...'"
           :label="t('common.search') || 'Rechercher'"
         />
         <AppSelect
-          v-model="filterCompanyId"
+          v-model="filters.companyId"
           :options="companyOptions"
           :label="t('schedules.company')"
+          @update:model-value="applyFilters"
         />
       </div>
     </AppCard>
 
     <AppCard>
       <DataTable
-        :data="pagedSchedules"
+        :data="tableData"
         :columns="columns"
-        :loading="loading"
-        :pagination="paginationObj"
+        :loading="scheduleStore.isLoading"
+        :pagination="scheduleStore.pagination"
         default-sort-column="name"
         default-sort-direction="desc"
         @page-change="handlePageChange"
@@ -51,7 +52,7 @@
         <template #workedDays="{ row }">
           <div class="flex gap-1">
             <AppBadge
-              v-for="day in getWorkedDayBadges(row)"
+              v-for="day in getWorkedDayBadges(row._raw)"
               :key="day"
               variant="neutral"
               size="sm"
@@ -66,7 +67,7 @@
         </template>
 
         <template #departmentCount="{ row }">
-          {{ row.assignedDepartments?.length || 0 }}
+          {{ row.departmentCount }}
         </template>
 
         <template #actions="{ row }">
@@ -74,12 +75,12 @@
             <AppButton v-if="canEdit" @click="navigateToEdit(row.id)" variant="ghost" size="sm" :title="t('common.edit')">
               <PencilIcon class="w-4 h-4" />
             </AppButton>
-            <AppButton v-if="canCreate" @click="handleDuplicate(row)" variant="ghost" size="sm" :title="t('schedules.duplicate')">
+            <AppButton v-if="canCreate" @click="handleDuplicate(row._raw)" variant="ghost" size="sm" :title="t('schedules.duplicate')">
               <DocumentDuplicateIcon class="w-4 h-4" />
             </AppButton>
             <AppButton
               v-if="canDelete"
-              @click="handleDelete(row)"
+              @click="handleDelete(row._raw)"
               variant="ghost"
               size="sm"
               class="text-red-600 hover:text-red-700"
@@ -104,7 +105,7 @@
 
 <script setup lang="ts">
 // @ts-nocheck
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import DataTable from '@/components/data-display/DataTable.vue'
@@ -116,69 +117,55 @@ import AppInput from '@/components/ui/AppInput.vue'
 import AppConfirmDialog from '@/components/ui/AppConfirmDialog.vue'
 import { useScheduleStore } from '@/stores/schedule.store'
 import { useCompanyStore } from '@/stores/company.store'
+import { useServerTable } from '@/composables/useServerTable'
 import { usePermissions } from '@/composables/usePermissions'
 import { useToast } from '@/composables/useToast'
 import type { Schedule } from '@/types/schedule'
 import { PencilIcon, DocumentDuplicateIcon, TrashIcon, PlusIcon } from '@heroicons/vue/24/outline'
 import { sortByRecent } from '@/utils/sort'
+import { extractApiErrorMessage } from '@/utils/api-error'
 
 const { t } = useI18n()
 const router = useRouter()
 const scheduleStore = useScheduleStore()
 const companyStore = useCompanyStore()
 const permissions = usePermissions()
-const { isSuperAdmin, isAdminEnterprise } = permissions
 const toast = useToast()
 
-const loading = ref(false)
 const deleteModalVisible = ref(false)
 const scheduleToDelete = ref<Schedule | null>(null)
-const filterCompanyId = ref('')
-const searchQuery = ref('')
 
 const canCreate = computed(() => permissions.isAdminOrSuperOrTech.value)
 const canEdit = computed(() => permissions.isAdminOrSuperOrTech.value)
 const canDelete = computed(() => permissions.isAdminOrSuperOrTech.value)
+
+const { filters, search, applyFilters, handlePageChange, reload } = useServerTable({
+  initialFilters: { companyId: '' as string },
+  fetcher: (p) =>
+    scheduleStore.fetchSchedules({
+      page: p.page,
+      perPage: p.perPage,
+      search: p.search || undefined,
+      companyId: p.companyId || undefined,
+    }),
+})
 
 const companyOptions = computed(() => [
   { value: '', label: t('schedules.allCompanies') },
   ...companyStore.companies.map(c => ({ value: c.id, label: c.name })),
 ])
 
-const filteredSchedules = computed(() => {
-  const list = scheduleStore.schedules.map(s => ({
-    ...s,
+const tableData = computed(() =>
+  sortByRecent(scheduleStore.schedules).map(s => ({
+    id: s.id,
+    name: s.name,
+    type: s.type,
+    defaultLateTolerance: s.defaultLateTolerance,
     companyName: companyStore.companies.find(c => c.id === s.companyId)?.name || '-',
-  }))
-  let filtered = filterCompanyId.value
-    ? list.filter(s => s.companyId === filterCompanyId.value)
-    : list
-  const q = searchQuery.value.trim().toLowerCase()
-  if (q) {
-    filtered = filtered.filter(s =>
-      (s.name || '').toLowerCase().includes(q) ||
-      (s.companyName || '').toLowerCase().includes(q)
-    )
-  }
-  return filtered
-})
-
-const currentPage = ref(1)
-const perPage = ref(15)
-
-const pagedSchedules = computed(() => {
-  const start = (currentPage.value - 1) * perPage.value
-  return sortByRecent(filteredSchedules.value).slice(start, start + perPage.value)
-})
-
-const paginationObj = computed(() => {
-  const total = filteredSchedules.value.length
-  return { currentPage: currentPage.value, totalPages: Math.ceil(total / perPage.value) || 1, perPage: perPage.value, total }
-})
-
-const handlePageChange = (page: number) => { currentPage.value = page }
-
-watch([filterCompanyId, searchQuery], () => { currentPage.value = 1 })
+    departmentCount: s.assignedDepartments?.length || 0,
+    _raw: s,
+  })),
+)
 
 const columns = computed(() => [
   { key: 'name', label: t('common.name'), sortable: true },
@@ -218,15 +205,15 @@ const getWorkedDayBadges = (row: Schedule): string[] => {
 }
 
 const navigateToCreate = () => {
-  router.push('/pointage-rfid/schedules/create')
+  router.push('/organisation/schedules/create')
 }
 
 const navigateToEdit = (id: string) => {
-  router.push(`/pointage-rfid/schedules/${id}/edit`)
+  router.push(`/organisation/schedules/${id}/edit`)
 }
 
-const handleRowClick = (schedule: Schedule) => {
-  navigateToEdit(schedule.id)
+const handleRowClick = (row: { id: string }) => {
+  navigateToEdit(row.id)
 }
 
 const handleDuplicate = async (schedule: Schedule) => {
@@ -238,8 +225,9 @@ const handleDuplicate = async (schedule: Schedule) => {
     }
     await scheduleStore.createSchedule(duplicatedData)
     toast.success(t('common.success'), t('schedules.duplicatedSuccess'))
+    await reload()
   } catch (error: any) {
-    toast.error(t('common.error'), error.message || t('schedules.duplicateError'))
+    toast.error(t('common.error'), extractApiErrorMessage(error, t('schedules.duplicateError')))
   }
 }
 
@@ -254,22 +242,16 @@ const confirmDelete = async () => {
       await scheduleStore.deleteSchedule(scheduleToDelete.value.id)
       deleteModalVisible.value = false
       scheduleToDelete.value = null
+      await reload()
     } catch (error: any) {
-      toast.error(t('common.error'), error.message || t('schedules.deleteError'))
+      toast.error(t('common.error'), extractApiErrorMessage(error, t('schedules.deleteError')))
     }
   }
 }
 
 onMounted(async () => {
-  loading.value = true
-  try {
-    await Promise.all([
-      scheduleStore.fetchSchedules(),
-      companyStore.fetchCompanies({ perPage: 100 }),
-    ])
-  } finally {
-    loading.value = false
-  }
+  await companyStore.fetchCompanies({ perPage: 100 })
+  await reload()
 })
 </script>
 

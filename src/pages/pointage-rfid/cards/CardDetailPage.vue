@@ -5,30 +5,30 @@
         <ArrowLeftIcon class="w-4 h-4 mr-1" />
         {{ t('common.back') }}
       </AppButton>
-      <h1>{{ t('cards.details') }}</h1>
+      <h1 class="text-gray-900">{{ t('cards.details') }}</h1>
     </div>
 
-    <div v-if="loading" class="loading">
+    <div v-if="loading" class="loading text-gray-500">
       {{ t('common.loading') }}
     </div>
 
     <div v-else-if="card" class="card-content">
       <AppCard>
         <div class="card-info">
-          <div class="uid-section">
-            <label>{{ t('cards.uid') }}</label>
-            <div class="uid-value">{{ card.uid }}</div>
+          <div class="uid-section border-b-2 border-gray-200">
+            <label class="text-gray-500">{{ t('cards.uid') }}</label>
+            <div class="uid-value text-gray-900">{{ card.uid }}</div>
           </div>
 
-          <div class="info-row">
-            <label>{{ t('cards.currentStatus') }}</label>
+          <div class="info-row border-b border-gray-100">
+            <label class="text-gray-500">{{ t('cards.currentStatus') }}</label>
             <AppBadge :variant="getStatusVariant(card.status)">
               {{ getStatusLabel(card.status) }}
             </AppBadge>
           </div>
 
-          <div v-if="card.employeeId" class="employee-section">
-            <h3>{{ t('cards.employeeInfo') }}</h3>
+          <div v-if="card.employeeId" class="employee-section bg-gray-50">
+            <h3 class="text-gray-900">{{ t('cards.employeeInfo') }}</h3>
             <div class="employee-info">
               <div class="employee-photo">
                 <div class="photo-placeholder">
@@ -36,9 +36,9 @@
                 </div>
               </div>
               <div class="employee-details">
-                <div class="info-row">
-                  <label>{{ t('cards.fullName') }}</label>
-                  <span>{{ card.employeeName || '-' }}</span>
+                <div class="info-row border-b border-gray-100">
+                  <label class="text-gray-500">{{ t('cards.fullName') }}</label>
+                  <span class="text-gray-900">{{ card.employeeName || '-' }}</span>
                 </div>
               </div>
             </div>
@@ -48,19 +48,19 @@
             <p class="unassigned-text">{{ t('cards.notAssigned') }}</p>
           </div>
 
-          <div class="info-row">
-            <label>{{ t('cards.assignedDate') }}</label>
-            <span>{{ card.assignedAt ? formatDate(card.assignedAt) : '-' }}</span>
+          <div class="info-row border-b border-gray-100">
+            <label class="text-gray-500">{{ t('cards.assignedDate') }}</label>
+            <span class="text-gray-900">{{ card.assignedAt ? formatDate(card.assignedAt) : '-' }}</span>
           </div>
 
-          <div class="info-row">
-            <label>{{ t('cards.company') }}</label>
-            <span>{{ companyStore.companies.find(c => c.id === card.companyId)?.name || card.companyId || '-' }}</span>
+          <div class="info-row border-b border-gray-100">
+            <label class="text-gray-500">{{ t('cards.company') }}</label>
+            <span class="text-gray-900">{{ companyStore.companies.find(c => c.id === card.companyId)?.name || card.companyId || '-' }}</span>
           </div>
 
-          <div class="info-row">
-            <label>{{ t('cards.createdAt') }}</label>
-            <span>{{ formatDate(card.createdAt) }}</span>
+          <div class="info-row border-b border-gray-100">
+            <label class="text-gray-500">{{ t('cards.createdAt') }}</label>
+            <span class="text-gray-900">{{ formatDate(card.createdAt) }}</span>
           </div>
         </div>
       </AppCard>
@@ -112,7 +112,7 @@
       </div>
     </div>
 
-    <div v-else class="error">
+    <div v-else class="error text-red-500">
       {{ t('cards.notFound') }}
     </div>
 
@@ -124,17 +124,17 @@
         <!-- Filtres entreprise+site : super admin seulement -->
         <template v-if="permissions.isSuperAdmin.value">
           <div class="form-group">
-            <label>{{ t('cards.allCompanies') }}</label>
+            <label class="text-gray-700">{{ t('cards.allCompanies') }}</label>
             <AppSelect v-model="assignFilterCompanyId" :options="assignCompanyOptions" @update:model-value="handleAssignCompanyChange" />
           </div>
           <div class="form-group">
-            <label>{{ t('cards.allSites') }}</label>
+            <label class="text-gray-700">{{ t('cards.allSites') }}</label>
             <AppSelect v-model="assignFilterSiteId" :disabled="!assignFilterCompanyId" :options="assignSiteSelectOptions" />
           </div>
         </template>
 
         <div class="form-group">
-          <label for="employee-select">{{ t('cards.selectEmployee') }}</label>
+          <label for="employee-select" class="text-gray-700">{{ t('cards.selectEmployee') }}</label>
           <AppSelect v-model="selectedEmployeeId" :options="employeeSelectOptions" :placeholder="t('cards.chooseEmployee')" />
           <p v-if="filteredAvailableEmployees.length === 0" class="mt-1 text-sm text-gray-500">
             {{ t('cards.noEmployeeAvailable', { suffix: assignFilterCompanyId ? ' pour cette selection' : '' }) }}
@@ -152,8 +152,8 @@
       :title="t('cards.unassignModal')"
     >
       <div class="modal-content">
-        <p>{{ t('cards.unassignConfirm') }}</p>
-        <p v-if="card?.employeeName">
+        <p class="text-gray-700">{{ t('cards.unassignConfirm') }}</p>
+        <p v-if="card?.employeeName" class="text-gray-700">
           {{ t('cards.currentEmployee', { name: card.employeeName }) }}
         </p>
       </div>
@@ -168,16 +168,15 @@
       :title="t('cards.blockModal')"
     >
       <div class="modal-content">
-        <p>{{ t('cards.blockConfirm') }}</p>
+        <p class="text-gray-700">{{ t('cards.blockConfirm') }}</p>
         <div class="form-group">
-          <label for="block-reason">{{ t('cards.blockReason') }}</label>
+          <label for="block-reason" class="text-gray-700">{{ t('cards.blockReason') }}</label>
           <textarea
             id="block-reason"
             v-model="blockReason"
-            class="form-textarea"
+            class="form-textarea border border-gray-300"
             rows="3"
             :placeholder="t('cards.blockReasonPlaceholder')"
-            required
           ></textarea>
         </div>
       </div>
@@ -192,7 +191,7 @@
       :title="t('cards.unblockModal')"
     >
       <div class="modal-content">
-        <p>{{ t('cards.unblockConfirm') }}</p>
+        <p class="text-gray-700">{{ t('cards.unblockConfirm') }}</p>
       </div>
       <template #footer>
         <AppButton variant="secondary" @click="cancelUnblock">{{ t('common.cancel') }}</AppButton>
@@ -220,6 +219,7 @@ import { useSiteStore } from '@/stores/site.store';
 import { usePermissions } from '@/composables/usePermissions';
 import { useToast } from '@/composables/useToast';
 import { CardStatus } from '@/types/enums';
+import { extractApiErrorMessage } from '@/utils/api-error';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -352,7 +352,7 @@ const confirmAssign = async () => {
     selectedEmployeeId.value = '';
     await cardStore.fetchCard(cardId.value);
   } catch (error: any) {
-    toast.showError(error.message || t('cards.assignError'));
+    toast.showError(extractApiErrorMessage(error, t('cards.assignError')));
   }
 };
 
@@ -372,7 +372,7 @@ const confirmUnassign = async () => {
     unassignModalVisible.value = false;
     await cardStore.fetchCard(cardId.value);
   } catch (error: any) {
-    toast.showError(error.message || t('cards.unassignError'));
+    toast.showError(extractApiErrorMessage(error, t('cards.unassignError')));
   }
 };
 
@@ -386,8 +386,6 @@ const openBlockModal = () => {
 };
 
 const confirmBlock = async () => {
-  if (!blockReason.value.trim()) return;
-
   try {
     await cardStore.blockCard(cardId.value, blockReason.value);
     toast.showSuccess(t('cards.blockedSuccess'));
@@ -395,7 +393,7 @@ const confirmBlock = async () => {
     blockReason.value = '';
     await cardStore.fetchCard(cardId.value);
   } catch (error: any) {
-    toast.showError(error.message || t('cards.blockError'));
+    toast.showError(extractApiErrorMessage(error, t('cards.blockError')));
   }
 };
 
@@ -415,7 +413,7 @@ const confirmUnblock = async () => {
     unblockModalVisible.value = false;
     await cardStore.fetchCard(cardId.value);
   } catch (error: any) {
-    toast.showError(error.message || t('cards.unblockError'));
+    toast.showError(extractApiErrorMessage(error, t('cards.unblockError')));
   }
 };
 
@@ -460,7 +458,6 @@ onMounted(async () => {
 .page-header h1 {
   font-size: 2rem;
   font-weight: 600;
-  color: #1f2937;
   margin: 0;
 }
 
@@ -468,12 +465,7 @@ onMounted(async () => {
 .error {
   text-align: center;
   padding: 3rem;
-  color: #6b7280;
   font-size: 1.125rem;
-}
-
-.error {
-  color: #ef4444;
 }
 
 .card-info {
@@ -483,7 +475,6 @@ onMounted(async () => {
 }
 
 .uid-section {
-  border-bottom: 2px solid #e5e7eb;
   padding-bottom: 1.5rem;
 }
 
@@ -491,7 +482,6 @@ onMounted(async () => {
   display: block;
   font-size: 0.875rem;
   font-weight: 500;
-  color: #6b7280;
   margin-bottom: 0.5rem;
 }
 
@@ -499,7 +489,6 @@ onMounted(async () => {
   font-size: 1.5rem;
   font-weight: 600;
   font-family: 'Courier New', monospace;
-  color: #1f2937;
   letter-spacing: 0.05em;
 }
 
@@ -508,22 +497,18 @@ onMounted(async () => {
   justify-content: space-between;
   align-items: center;
   padding: 0.75rem 0;
-  border-bottom: 1px solid #f3f4f6;
 }
 
 .info-row label {
   font-weight: 500;
-  color: #6b7280;
   font-size: 0.875rem;
 }
 
 .info-row span {
-  color: #1f2937;
   font-size: 0.875rem;
 }
 
 .employee-section {
-  background-color: #f9fafb;
   padding: 1.5rem;
   border-radius: 0.5rem;
 }
@@ -531,7 +516,6 @@ onMounted(async () => {
 .employee-section h3 {
   font-size: 1.125rem;
   font-weight: 600;
-  color: #1f2937;
   margin: 0 0 1rem 0;
 }
 
@@ -591,7 +575,6 @@ onMounted(async () => {
 
 .modal-content p {
   margin-bottom: 1rem;
-  color: #374151;
 }
 
 .form-group {
@@ -603,14 +586,12 @@ onMounted(async () => {
   margin-bottom: 0.5rem;
   font-size: 0.875rem;
   font-weight: 500;
-  color: #374151;
 }
 
 .form-select,
 .form-textarea {
   width: 100%;
   padding: 0.5rem 0.75rem;
-  border: 1px solid #d1d5db;
   border-radius: 0.375rem;
   font-size: 0.875rem;
   transition: border-color 0.2s;
