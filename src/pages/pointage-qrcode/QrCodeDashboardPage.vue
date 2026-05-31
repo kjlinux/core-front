@@ -6,7 +6,7 @@ import StatCard from '@/components/data-display/StatCard.vue'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
-import { QrCodeIcon, UsersIcon, ClockIcon, ChartBarIcon, DevicePhoneMobileIcon } from '@heroicons/vue/24/outline'
+import { QrCodeIcon, ClockIcon, ChartBarIcon, DevicePhoneMobileIcon } from '@heroicons/vue/24/outline'
 
 const { t } = useI18n()
 const store = useQrcodeStore()

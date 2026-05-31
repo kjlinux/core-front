@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useEmployeeStore } from '@/stores/employee.store'
@@ -68,6 +68,14 @@ const initials = computed(() => {
   const last = employee.value.lastName?.charAt(0) || ''
   return (first + last).toUpperCase()
 })
+
+const avatarError = ref(false)
+watch(
+  () => employee.value?.avatar,
+  () => {
+    avatarError.value = false
+  },
+)
 
 const formattedHireDate = computed(() => {
   if (!employee.value?.hireDate) return '-'
@@ -138,7 +146,7 @@ const handleConfirmAssignCard = async () => {
     toast.success(t('common.success'), t('employees.cardAssignedSuccess'))
     closeAssignCardModal()
     await employeeStore.fetchEmployee(employeeId)
-  } catch (error: any) {
+  } catch (error) {
     toast.error(t('common.error'), extractApiErrorMessage(error, t('employees.cardAssignError')))
   }
 }
@@ -153,7 +161,7 @@ async function handleToggleActive() {
   try {
     await employeeStore.toggleActive(employeeId)
     toast.success(t('common.success'), employee.value.isActive ? t('employees.deactivated') : t('employees.activated'))
-  } catch (error: any) {
+  } catch (error) {
     toast.error(t('common.error'), extractApiErrorMessage(error, t('common.error')))
   }
 }
@@ -195,8 +203,15 @@ async function handleToggleActive() {
     <div v-else class="space-y-6">
       <AppCard>
         <div class="flex items-start space-x-6">
-          <div class="flex h-24 w-24 items-center justify-center rounded-full bg-primary-100 text-3xl font-bold text-primary-700">
-            {{ initials }}
+          <div class="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-primary-100 text-3xl font-bold text-primary-700">
+            <img
+              v-if="employee.avatar && !avatarError"
+              :src="employee.avatar"
+              :alt="`${employee.firstName} ${employee.lastName}`"
+              class="h-full w-full object-cover"
+              @error="avatarError = true"
+            />
+            <template v-else>{{ initials }}</template>
           </div>
 
           <div class="flex-1">

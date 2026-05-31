@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { supportApi, type SupportCommand } from '@/services/api/support.api'
+import { supportApi, type SupportCommand, type SupportDeviceDetail } from '@/services/api/support.api'
 import { useSupportStore } from '@/stores/support.store'
 import { useI18n } from 'vue-i18n'
 import { useToast } from '@/composables/useToast'
@@ -12,20 +12,14 @@ import AppSelect from '@/components/ui/AppSelect.vue'
 import { ArrowLeftIcon, SignalIcon } from '@heroicons/vue/24/outline'
 import { extractApiErrorMessage } from '@/utils/api-error'
 import type { DeviceAlert, DeviceKind, SupportDevice } from '@/types'
-
-interface RawDevice {
-  name?: string
-  serial_number?: string
-  company_name?: string
-  company_id?: string
-  site_name?: string
-  site_id?: string
-  firmware_version?: string
-  last_ping_at?: string | null
-  last_sync_at?: string | null
-  is_online?: boolean
-  is_witness?: boolean
-}
+import {
+  alertSeverityLabel,
+  alertSeverityVariant,
+  alertStatusLabel,
+  alertStatusVariant,
+  labelOf,
+  variantOf,
+} from '@/utils/support-labels'
 
 const route = useRoute()
 const router = useRouter()
@@ -36,7 +30,7 @@ const { t } = useI18n()
 const kind = computed(() => route.params.kind as DeviceKind)
 const id = computed(() => route.params.id as string)
 
-const device = ref<RawDevice | null>(null)
+const device = ref<SupportDeviceDetail | null>(null)
 const alerts = ref<DeviceAlert[]>([])
 const loading = ref(false)
 const witnessId = ref<string>('')
@@ -164,8 +158,8 @@ onMounted(async () => {
             <p class="text-xs text-gray-500">{{ fmtDate(a.created_at) }}</p>
           </div>
           <div class="flex gap-2">
-            <AppBadge :variant="a.severity === 'critical' || a.severity === 'high' ? 'danger' : a.severity === 'medium' ? 'warning' : 'info'" size="sm">{{ a.severity }}</AppBadge>
-            <AppBadge :variant="a.status === 'resolved' ? 'success' : 'neutral'" size="sm">{{ a.status }}</AppBadge>
+            <AppBadge :variant="variantOf(alertSeverityVariant, a.severity)" size="sm">{{ labelOf(alertSeverityLabel, a.severity) }}</AppBadge>
+            <AppBadge :variant="variantOf(alertStatusVariant, a.status)" size="sm">{{ labelOf(alertStatusLabel, a.status) }}</AppBadge>
           </div>
         </div>
       </div>

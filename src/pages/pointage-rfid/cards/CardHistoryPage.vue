@@ -26,8 +26,8 @@
           </div>
           <div class="summary-item">
             <label class="text-gray-500">{{ t('cards.employee') }}</label>
-            <span v-if="card.employee" class="text-gray-900">
-              {{ card.employee.firstName }} {{ card.employee.lastName }}
+            <span v-if="card.employeeName" class="text-gray-900">
+              {{ card.employeeName }}
             </span>
             <span v-else class="unassigned text-gray-500">{{ t('cards.notUnassigned') }}</span>
           </div>
@@ -47,29 +47,21 @@
             :key="index"
             class="timeline-item"
           >
-            <div class="timeline-marker" :class="getActionClass(action.type)">
+            <div class="timeline-marker" :class="getActionClass(action.action)">
               <div class="marker-dot"></div>
             </div>
             <div class="timeline-content bg-gray-50 border border-gray-200">
               <div class="action-header">
-                <h3 class="text-gray-900">{{ getActionLabel(action.type) }}</h3>
+                <h3 class="text-gray-900">{{ getActionLabel(action.action) }}</h3>
                 <span class="action-time text-gray-500">{{ formatDateTime(action.timestamp) }}</span>
               </div>
               <div class="action-details">
                 <p v-if="action.performedBy" class="performed-by text-gray-500">
-                  {{ t('cards.actionBy', { name: `${action.performedBy.firstName} ${action.performedBy.lastName}` }) }}
+                  {{ t('cards.actionBy', { name: action.performedBy }) }}
                 </p>
                 <p v-if="action.details" class="action-description text-gray-700">
                   {{ action.details }}
                 </p>
-                <div v-if="action.reason" class="action-reason bg-white border border-gray-200">
-                  <label class="text-gray-500">{{ t('cards.reason') }}</label>
-                  <p class="text-gray-900">{{ action.reason }}</p>
-                </div>
-                <div v-if="action.employee" class="action-employee bg-white border border-gray-200">
-                  <label class="text-gray-500">{{ t('cards.employee') }}</label>
-                  <p class="text-gray-900">{{ action.employee.firstName }} {{ action.employee.lastName }}</p>
-                </div>
               </div>
             </div>
           </div>
@@ -84,7 +76,6 @@
 </template>
 
 <script setup lang="ts">
-// @ts-nocheck
 import { ref, computed, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
@@ -107,18 +98,18 @@ const cardId = computed(() => route.params.id as string);
 const card = computed(() => cardStore.currentCard);
 const history = computed(() => cardStore.cardHistory || []);
 
-const getStatusVariant = (status: CardStatus): string => {
+const getStatusVariant = (status: CardStatus): 'success' | 'warning' | 'info' | 'neutral' | 'danger' => {
   switch (status) {
     case CardStatus.ACTIVE:
       return 'success';
     case CardStatus.INACTIVE:
-      return 'secondary';
+      return 'neutral';
     case CardStatus.BLOCKED:
       return 'danger';
     case CardStatus.LOST:
       return 'warning';
     default:
-      return 'secondary';
+      return 'neutral';
   }
 };
 

@@ -34,8 +34,6 @@
         :data="tableData"
         :loading="siteStore.isLoading"
         :pagination="siteStore.pagination"
-        default-sort-column="name"
-        default-sort-direction="desc"
         @row-click="handleRowClick"
         @page-change="handlePageChange"
       >
@@ -319,7 +317,7 @@ function validateSiteForm(): boolean {
   return Object.keys(siteErrors.value).length === 0
 }
 
-function handleRowClick(row: any) {
+function handleRowClick(row: { id: string }) {
   router.push({ name: 'rfid-site-detail', params: { id: row.id } })
 }
 
@@ -338,7 +336,7 @@ async function handleCreateSite() {
     toast.success(t('common.success'), t('sites.createdSuccess'))
     closeCreateModal()
     await reload()
-  } catch (error: any) {
+  } catch (error) {
     toast.error(t('common.error'), extractApiErrorMessage(error, t('sites.createError')))
   } finally {
     isSubmitting.value = false
@@ -374,7 +372,7 @@ async function handleEditSite() {
     toast.success(t('common.success'), t('sites.updatedSuccess'))
     closeEditModal()
     await reload()
-  } catch (error: any) {
+  } catch (error) {
     toast.error(t('common.error'), extractApiErrorMessage(error, t('sites.updateError')))
   } finally {
     isSubmitting.value = false
@@ -394,7 +392,7 @@ async function confirmDeleteSite() {
     toast.success(t('common.success'), t('sites.deletedSuccess'))
     closeDeleteModal()
     await reload()
-  } catch (error: any) {
+  } catch (error) {
     toast.error(t('common.error'), extractApiErrorMessage(error, t('sites.deleteError')))
   } finally {
     isSubmitting.value = false

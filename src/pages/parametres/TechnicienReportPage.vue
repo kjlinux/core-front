@@ -52,7 +52,7 @@ async function activateWarranty() {
   try {
     warrantyCompany.value = await companyApi.activateWarranty(targetCompanyId.value)
     toast.success(t('common.success'), 'Garantie activée (12 mois, renouvellement automatique)')
-  } catch (e: any) {
+  } catch (e) {
     toast.error(t('common.error'), extractApiErrorMessage(e))
   } finally {
     warrantyLoading.value = false
@@ -65,7 +65,7 @@ async function stopWarranty() {
   try {
     warrantyCompany.value = await companyApi.stopWarranty(targetCompanyId.value)
     toast.success(t('common.success'), 'Garantie arrêtée')
-  } catch (e: any) {
+  } catch (e) {
     toast.error(t('common.error'), extractApiErrorMessage(e))
   } finally {
     warrantyLoading.value = false

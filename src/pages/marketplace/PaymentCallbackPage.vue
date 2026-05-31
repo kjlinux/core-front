@@ -20,7 +20,8 @@ onMounted(async () => {
   if (orderId.value) {
     try {
       const order = await orderApi.getById(orderId.value)
-      const ps = (order as any).paymentStatus ?? (order as any).payment_status
+      const o = order as { paymentStatus?: string; payment_status?: string }
+      const ps = o.paymentStatus ?? o.payment_status
       if (ps === 'paid') verifiedStatus.value = 'success'
       else if (ps === 'failed') verifiedStatus.value = 'failed'
       else if (route.query.status === 'cancelled') verifiedStatus.value = 'cancelled'

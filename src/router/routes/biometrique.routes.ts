@@ -26,7 +26,7 @@ const biometriqueRoutes: RouteRecordRaw[] = [
         name: 'bio-device-detail',
         component: () => import('@/pages/biometrique/DeviceDetailPage.vue'),
         meta: {
-          title: 'Détail terminal',
+          title: 'Détails terminal',
           roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE, UserRole.TECHNICIEN],
         },
       },

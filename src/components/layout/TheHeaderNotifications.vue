@@ -36,12 +36,18 @@ function formatTimeAgo(dateStr: string): string {
 function getTypeColor(notification: AppNotification): string {
   if (notification.type === 'feelback') return 'bg-amber-500'
   if (notification.type === 'attendance') return 'bg-primary-500'
+  if (notification.type === 'absence') return 'bg-emerald-500'
+  if (notification.type === 'payslip') return 'bg-indigo-500'
+  if (notification.type === 'account') return 'bg-sky-500'
   return 'bg-gray-500'
 }
 
 function getFlashAccent(notification: AppNotification): string {
   if (notification.type === 'feelback') return 'border-amber-400'
   if (notification.type === 'attendance') return 'border-primary-400'
+  if (notification.type === 'absence') return 'border-emerald-400'
+  if (notification.type === 'payslip') return 'border-indigo-400'
+  if (notification.type === 'account') return 'border-sky-400'
   return 'border-gray-400'
 }
 </script>
@@ -137,6 +143,7 @@ function getFlashAccent(notification: AppNotification): string {
           type="button"
           class="flex w-full gap-3 px-4 py-3 text-left transition-colors hover:bg-gray-50"
           :class="{ 'bg-primary-50/50': !notification.isRead }"
+          :title="`${notification.title}\n${notification.message}`"
           @click="notificationStore.markAsRead(notification.id)"
         >
           <span

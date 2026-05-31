@@ -5,7 +5,6 @@ import FormSection from './FormSection.vue'
 import FormRow from './FormRow.vue'
 import AppInput from '@/components/ui/AppInput.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
-import AppButton from '@/components/ui/AppButton.vue'
 import AppCheckbox from '@/components/ui/AppCheckbox.vue'
 
 const props = defineProps<{
@@ -39,12 +38,24 @@ const derivePrefix = (name: string): string => {
   return raw.replace(/[^a-zA-Z]/g, '').slice(0, 5).toUpperCase() || 'EMP'
 }
 
+// Apercu du matricule : on se base sur le plus grand suffixe deja attribue (et
+// non sur un comptage) pour rester coherent malgre les suppressions. La valeur
+// definitive reste generee cote serveur a la creation, qui garantit l'unicite.
 const generateMatricule = (companyId: string): string => {
   const company = props.companies.find((c) => c.id === companyId)
   if (!company) return ''
   const prefix = company.matriculePrefix?.trim() || derivePrefix(company.name)
-  const count = props.employees.filter((e) => e.companyId === companyId).length
-  return `${prefix}${String(count + 1).padStart(3, '0')}`
+  let max = 0
+  for (const employee of props.employees) {
+    if (employee.companyId !== companyId) continue
+    const number = employee.employeeNumber ?? ''
+    if (!number.startsWith(prefix)) continue
+    const suffix = number.slice(prefix.length)
+    if (/^\d+$/.test(suffix)) {
+      max = Math.max(max, parseInt(suffix, 10))
+    }
+  }
+  return `${prefix}${String(max + 1).padStart(3, '0')}`
 }
 
 watch(
@@ -60,8 +71,8 @@ watch(
   { immediate: true }
 )
 
-const updateField = (field: keyof Employee, value: any) => {
-  const updated = { ...localValue.value, [field]: value }
+const updateField = (field: keyof Employee, value: unknown) => {
+  const updated = { ...localValue.value, [field]: value } as Partial<Employee>
   if (field === 'companyId') {
     updated.siteId = ''
     updated.departmentId = ''
@@ -212,13 +223,13 @@ const handleSubmit = () => {
         label="Matricule"
         :required="true"
         :error="errors.employeeNumber"
-        :help="!isEdit ? 'Généré automatiquement selon le préfixe de l\'entreprise' : undefined"
+        :help="isEdit ? 'Le matricule n\'est pas modifiable.' : 'Généré automatiquement selon le préfixe de l\'entreprise'"
       >
         <AppInput
           :model-value="localValue.employeeNumber || ''"
           @update:model-value="updateField('employeeNumber', $event)"
           placeholder="Sélectionner d'abord une entreprise"
-          :disabled="loading || (!isEdit && !!localValue.companyId)"
+          :disabled="true"
         />
       </FormRow>
 

@@ -22,7 +22,7 @@ const organisationRoutes: RouteRecordRaw[] = [
         path: 'companies/:id',
         name: 'rfid-company-detail',
         component: () => import('@/pages/pointage-rfid/companies/CompanyDetailPage.vue'),
-        meta: { title: 'Détail entreprise', roles: [UserRole.SUPER_ADMIN, UserRole.TECHNICIEN] },
+        meta: { title: 'Détails entreprise', roles: [UserRole.SUPER_ADMIN, UserRole.TECHNICIEN] },
       },
       {
         path: 'companies/:id/edit',
@@ -40,7 +40,7 @@ const organisationRoutes: RouteRecordRaw[] = [
         path: 'sites/:id',
         name: 'rfid-site-detail',
         component: () => import('@/pages/pointage-rfid/sites/SiteDetailPage.vue'),
-        meta: { title: 'Détail site' },
+        meta: { title: 'Détails site' },
       },
       {
         path: 'departments',
@@ -52,7 +52,7 @@ const organisationRoutes: RouteRecordRaw[] = [
         path: 'departments/:id',
         name: 'rfid-department-detail',
         component: () => import('@/pages/pointage-rfid/departments/DepartmentDetailPage.vue'),
-        meta: { title: 'Détail département' },
+        meta: { title: 'Détails département' },
       },
       {
         path: 'employees',
@@ -73,7 +73,7 @@ const organisationRoutes: RouteRecordRaw[] = [
         path: 'employees/:id',
         name: 'rfid-employee-detail',
         component: () => import('@/pages/pointage-rfid/employees/EmployeeDetailPage.vue'),
-        meta: { title: 'Détail employé' },
+        meta: { title: 'Détails employé' },
       },
       {
         path: 'employees/:id/edit',

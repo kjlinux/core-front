@@ -121,7 +121,6 @@
 </template>
 
 <script setup lang="ts">
-// @ts-nocheck
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import DataTable from '@/components/data-display/DataTable.vue'

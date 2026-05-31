@@ -11,7 +11,9 @@ import AppButton from '@/components/ui/AppButton.vue'
 import AppInput from '@/components/ui/AppInput.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
 import AppToggle from '@/components/ui/AppToggle.vue'
+import FeatureLock from '@/components/ui/FeatureLock.vue'
 import { QuestionMarkCircleIcon } from '@heroicons/vue/24/outline'
+import { usePlan } from '@/composables/usePlan'
 import type { LatenessRule } from '@/types/payroll'
 
 const authStore = useAuthStore()
@@ -20,6 +22,7 @@ const companyStore = useCompanyStore()
 const toast = useToast()
 const { t } = useI18n()
 const router = useRouter()
+const { hasFeature } = usePlan()
 
 const isSuperAdmin = computed(() => authStore.user?.role === 'super_admin')
 const selectedCompanyId = ref('')
@@ -38,6 +41,7 @@ const form = ref({
   defaultPaymentMode: 'monthly' as string,
   standardDailyHours: 8,
   workingDaysPerMonth: 26,
+  workingDaysPerWeek: 5,
   paymentDay: 28,
   latenessDeductionEnabled: true,
   overtimeEnabled: false,
@@ -82,9 +86,10 @@ async function saveConfig() {
   if (!companyId.value) return
   try {
     await payrollStore.saveConfig(companyId.value, {
-      defaultPaymentMode: form.value.defaultPaymentMode as any,
+      defaultPaymentMode: form.value.defaultPaymentMode as Parameters<typeof payrollStore.saveConfig>[1]['defaultPaymentMode'],
       standardDailyHours: form.value.standardDailyHours,
       workingDaysPerMonth: form.value.workingDaysPerMonth,
+      workingDaysPerWeek: form.value.workingDaysPerWeek,
       paymentDay: form.value.paymentDay,
       latenessDeductionEnabled: form.value.latenessDeductionEnabled,
       overtimeEnabled: form.value.overtimeEnabled,
@@ -117,6 +122,7 @@ async function loadConfig() {
     form.value.defaultPaymentMode = config.defaultPaymentMode
     form.value.standardDailyHours = config.standardDailyHours
     form.value.workingDaysPerMonth = config.workingDaysPerMonth
+    form.value.workingDaysPerWeek = config.workingDaysPerWeek ?? 5
     form.value.paymentDay = config.paymentDay
     form.value.latenessDeductionEnabled = config.latenessDeductionEnabled
     form.value.overtimeEnabled = config.overtimeEnabled
@@ -134,6 +140,8 @@ async function loadConfig() {
 watch(companyId, loadConfig)
 
 onMounted(async () => {
+  // Pas de chargement si le plan n'inclut pas la paie : la page affiche le verrou.
+  if (!hasFeature('payroll')) return
   if (isSuperAdmin.value) {
     await companyStore.fetchCompanies({ perPage: 200 })
   }
@@ -142,6 +150,7 @@ onMounted(async () => {
 </script>
 
 <template>
+  <FeatureLock feature="payroll">
   <div class="space-y-6">
     <div class="flex items-start justify-between gap-4">
       <div>
@@ -198,6 +207,15 @@ onMounted(async () => {
               <label class="block text-sm font-medium text-gray-700 mb-1">Jours ouvrables / mois</label>
               <AppInput v-model.number="form.workingDaysPerMonth" type="number" :min="1" :max="31" />
             </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Jours travaillés / semaine</label>
+            <AppInput v-model.number="form.workingDaysPerWeek" type="number" :min="1" :max="7" />
+            <p class="text-xs text-gray-400 mt-1">
+              Mode hebdomadaire : le salaire de base est un taux par semaine ; le brut =
+              taux × (jours travaillés / jours par semaine)
+            </p>
           </div>
 
           <div>
@@ -339,4 +357,5 @@ onMounted(async () => {
       </AppCard>
     </template>
   </div>
+  </FeatureLock>
 </template>

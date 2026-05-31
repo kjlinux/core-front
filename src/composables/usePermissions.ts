@@ -32,10 +32,11 @@ export function usePermissions() {
     auth.user?.role === UserRole.ADMIN_ENTERPRISE ||
     auth.user?.role === UserRole.TECHNICIEN,
   )
-  // Support IT et Employe ont des menus courts : pas besoin de replier la sidebar,
-  // elle reste toujours dépliée pour eux.
-  const canCollapseSidebar = computed(() =>
-    auth.user?.role !== UserRole.SUPPORT_IT && auth.user?.role !== UserRole.EMPLOYE,
+  // Rôles à menu court (Support IT, Employe) : leurs groupes de menu restent dépliés
+  // (pas d'accordéon) quand la sidebar est ouverte. Le repli de la sidebar, lui, est
+  // disponible pour tous les rôles.
+  const isShortMenuRole = computed(() =>
+    auth.user?.role === UserRole.SUPPORT_IT || auth.user?.role === UserRole.EMPLOYE,
   )
 
   return {
@@ -47,6 +48,6 @@ export function usePermissions() {
     isAdminOrSuper,
     isSetupRole,
     isAdminOrSuperOrTech,
-    canCollapseSidebar,
+    isShortMenuRole,
   }
 }

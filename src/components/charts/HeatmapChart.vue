@@ -31,8 +31,8 @@ const option = computed<EChartsOption>(() => {
     title: props.title ? { text: props.title, left: 'center', textStyle: { fontSize: 14, fontWeight: 600 } } : undefined,
     tooltip: {
       position: 'top',
-      formatter: (p: any) => {
-        const [xi, yi, v] = p.value
+      formatter: (p: unknown) => {
+        const [xi, yi, v] = (p as { value: [number, number, number] }).value
         return `${props.yAxis[yi]} - ${props.xAxis[xi]}<br/><strong>${v}</strong>`
       },
     },

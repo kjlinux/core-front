@@ -2,14 +2,27 @@ import Echo from 'laravel-echo'
 import Pusher from 'pusher-js'
 
 // Pusher must be on window for Echo to use it
-;(window as any).Pusher = Pusher
+;(window as unknown as { Pusher: unknown }).Pusher = Pusher
 
 let echoInstance: Echo<'reverb'> | null = null
+let echoToken: string | null = null
 
 export function initEcho(): Echo<'reverb'> {
-  if (echoInstance) return echoInstance
-
   const token = localStorage.getItem('access_token')
+
+  // Ne reutiliser l'instance que si le token n'a pas change. Apres un login, un
+  // rafraichissement de token ou une (de)impersonation, le token differe : il faut
+  // reconstruire la connexion, sinon le temps reel reste authentifie avec l'ancien token.
+  if (echoInstance && echoToken === token) {
+    return echoInstance
+  }
+
+  if (echoInstance) {
+    echoInstance.disconnect()
+    echoInstance = null
+  }
+
+  echoToken = token
 
   echoInstance = new Echo({
     broadcaster: 'reverb',
@@ -40,4 +53,5 @@ export function disconnectEcho(): void {
     echoInstance.disconnect()
     echoInstance = null
   }
+  echoToken = null
 }

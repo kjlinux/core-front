@@ -37,7 +37,7 @@
 
       <!-- Footer -->
       <div class="relative z-10">
-        <p class="text-sm text-primary-500">&copy; 2026 TANGAFLOW. Tous droits reserves.</p>
+        <p class="text-sm text-primary-500">&copy; 2026 TANGAFLOW. Tous droits réservés.</p>
       </div>
     </div>
 

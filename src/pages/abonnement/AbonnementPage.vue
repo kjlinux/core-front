@@ -21,7 +21,7 @@ async function handlePayNext() {
   try {
     const r = await store.payNextPeriod()
     if (r.payment_url) window.location.href = r.payment_url
-  } catch (e: any) {
+  } catch (e) {
     toast.error(extractApiErrorMessage(e))
   }
 }

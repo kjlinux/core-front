@@ -39,26 +39,22 @@
         <StatCard
           :title="t('attendance.workedDays')"
           :value="stats.totalDays"
-          icon="calendar"
-          color="blue"
+          :icon="CalendarIcon"
         />
         <StatCard
           :title="t('attendance.presentDays')"
           :value="stats.presentDays"
-          icon="check-circle"
-          color="green"
+          :icon="CheckCircleIcon"
         />
         <StatCard
           :title="t('attendance.lateDays')"
           :value="stats.lateDays"
-          icon="clock"
-          color="orange"
+          :icon="ClockIcon"
         />
         <StatCard
           :title="t('attendance.punctuality')"
           :value="`${stats.onTimePercentage}%`"
-          icon="award"
-          color="purple"
+          :icon="TrophyIcon"
         />
       </div>
 
@@ -123,18 +119,17 @@
 </template>
 
 <script setup lang="ts">
-// @ts-nocheck
 import { ref, onMounted, computed, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useAttendanceStore } from '@/stores/attendance.store';
 import { useDateRange } from '@/composables/useDateRange';
-import { formatDate } from '@/utils/format';
 import DataTable from '@/components/data-display/DataTable.vue';
 import AppButton from '@/components/ui/AppButton.vue';
 import AppCard from '@/components/ui/AppCard.vue';
 import StatCard from '@/components/data-display/StatCard.vue';
 import AppInput from '@/components/ui/AppInput.vue';
+import { CalendarIcon, CheckCircleIcon, ClockIcon, TrophyIcon } from '@heroicons/vue/24/outline';
 
 const { t } = useI18n();
 const route = useRoute();

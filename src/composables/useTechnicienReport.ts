@@ -2,6 +2,7 @@ import { ref } from 'vue'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { i18n } from '@/plugins/i18n'
+import { sanitizePdfText } from '@/utils/format'
 import { useAuthStore } from '@/stores/auth.store'
 import {
   technicienReportApi,
@@ -76,24 +77,24 @@ export function useTechnicienReport() {
       status: activeCompanyStore.hasActiveCompany ? 'ok' : 'error',
       total: 1,
       done: activeCompanyStore.hasActiveCompany ? 1 : 0,
-      issues: activeCompanyStore.hasActiveCompany ? [] : [t('technicienReport.issue.noActiveCompany')],
+      issues: activeCompanyStore.hasActiveCompany
+        ? []
+        : [t('technicienReport.issue.noActiveCompany')],
     })
 
     // ─── Sites ───────────────────────────────────────────────────────────────
     // On utilise les departements charges separement pour verifier la couverture
-    const siteIds = siteStore.sites.map((s) => s.id)
     const siteIdsWithDept = new Set(departmentStore.departments.map((d) => d.siteId))
     const sitesWithDepts = siteStore.sites.filter((s) => siteIdsWithDept.has(s.id))
     const sitesWithoutDepts = siteStore.sites.filter((s) => !siteIdsWithDept.has(s.id))
 
-    const siteIssues: string[] = sitesWithoutDepts.map((s) => t('technicienReport.issue.siteNoDept', { name: s.name }))
+    const siteIssues: string[] = sitesWithoutDepts.map((s) =>
+      t('technicienReport.issue.siteNoDept', { name: s.name }),
+    )
     sections.push({
       title: t('technicienReport.section.sites'),
-      status: siteStore.sites.length === 0
-        ? 'error'
-        : sitesWithoutDepts.length > 0
-          ? 'warning'
-          : 'ok',
+      status:
+        siteStore.sites.length === 0 ? 'error' : sitesWithoutDepts.length > 0 ? 'warning' : 'ok',
       total: siteStore.sites.length,
       done: sitesWithDepts.length,
       issues: siteIssues,
@@ -102,14 +103,17 @@ export function useTechnicienReport() {
     // ─── Départements ────────────────────────────────────────────────────────
     const deptsWithManager = departmentStore.departments.filter((d) => !!d.managerId)
     const deptsWithoutManager = departmentStore.departments.filter((d) => !d.managerId)
-    const deptIssues: string[] = deptsWithoutManager.map((d) => t('technicienReport.issue.deptNoManager', { name: d.name }))
+    const deptIssues: string[] = deptsWithoutManager.map((d) =>
+      t('technicienReport.issue.deptNoManager', { name: d.name }),
+    )
     sections.push({
       title: t('technicienReport.section.departments'),
-      status: departmentStore.departments.length === 0
-        ? 'error'
-        : deptsWithoutManager.length > 0
-          ? 'warning'
-          : 'ok',
+      status:
+        departmentStore.departments.length === 0
+          ? 'error'
+          : deptsWithoutManager.length > 0
+            ? 'warning'
+            : 'ok',
       total: departmentStore.departments.length,
       done: deptsWithManager.length,
       issues: deptIssues,
@@ -125,8 +129,8 @@ export function useTechnicienReport() {
         : inactiveEmployees.length > 0
           ? 'warning'
           : 'ok'
-    const empIssues: string[] = inactiveEmployees.map(
-      (e) => t('technicienReport.issue.employeeInactive', {
+    const empIssues: string[] = inactiveEmployees.map((e) =>
+      t('technicienReport.issue.employeeInactive', {
         firstName: e.firstName,
         lastName: e.lastName,
         number: e.employeeNumber,
@@ -146,9 +150,7 @@ export function useTechnicienReport() {
     const blockedCards = cardStore.cards.filter((c) => c.status === 'blocked')
     // Employes actifs sans carte assignee
     const assignedEmployeeIds = new Set(assignedCards.map((c) => c.employeeId))
-    const activeEmployeesWithoutCard = activeEmployees.filter(
-      (e) => !assignedEmployeeIds.has(e.id),
-    )
+    const activeEmployeesWithoutCard = activeEmployees.filter((e) => !assignedEmployeeIds.has(e.id))
     const cardIssues: string[] = [
       ...unassignedCards.map((c) => t('technicienReport.issue.cardUnassigned', { uid: c.uid })),
       ...blockedCards.map((c) =>
@@ -157,20 +159,21 @@ export function useTechnicienReport() {
           : t('technicienReport.issue.cardBlocked', { uid: c.uid }),
       ),
       ...activeEmployeesWithoutCard.map((e) =>
-        t('technicienReport.issue.activeEmployeeNoCard', { firstName: e.firstName, lastName: e.lastName }),
+        t('technicienReport.issue.activeEmployeeNoCard', {
+          firstName: e.firstName,
+          lastName: e.lastName,
+        }),
       ),
     ]
     const cardStatus =
-      cardStore.cards.length === 0
-        ? 'error'
-        : cardIssues.length > 0
-          ? 'warning'
-          : 'ok'
+      cardStore.cards.length === 0 ? 'error' : cardIssues.length > 0 ? 'warning' : 'ok'
     sections.push({
       title: t('technicienReport.section.rfidCards'),
       status: cardStatus,
       total: activeEmployees.length,
-      done: assignedCards.length,
+      // Nombre d'employés actifs DISPOSANT d'une carte (et non le nombre de cartes,
+      // sinon « fait » pouvait dépasser « total » avec plusieurs cartes/employé).
+      done: activeEmployees.length - activeEmployeesWithoutCard.length,
       issues: cardIssues,
     })
 
@@ -182,11 +185,7 @@ export function useTechnicienReport() {
     )
     sections.push({
       title: t('technicienReport.section.rfidDevices'),
-      status: rfidStore.devices.length === 0
-        ? 'error'
-        : rfidOffline.length > 0
-          ? 'warning'
-          : 'ok',
+      status: rfidStore.devices.length === 0 ? 'error' : rfidOffline.length > 0 ? 'warning' : 'ok',
       total: rfidStore.devices.length,
       done: rfidOnline.length,
       issues: rfidIssues,
@@ -196,27 +195,21 @@ export function useTechnicienReport() {
     const bioOnline = biometricStore.devices.filter((d) => d.isOnline)
     const bioOffline = biometricStore.devices.filter((d) => !d.isOnline)
     const bioDeviceIssues: string[] = [
-      ...(biometricStore.devices.length === 0
-        ? [t('technicienReport.issue.noBioDevice')]
-        : []),
+      ...(biometricStore.devices.length === 0 ? [t('technicienReport.issue.noBioDevice')] : []),
       ...bioOffline.map((d) =>
         t('technicienReport.issue.bioDeviceOffline', { name: d.name, serial: d.serialNumber }),
       ),
     ]
     sections.push({
       title: t('technicienReport.section.bioDevices'),
-      status: biometricStore.devices.length === 0
-        ? 'warning'
-        : bioOffline.length > 0
-          ? 'warning'
-          : 'ok',
+      status:
+        biometricStore.devices.length === 0 ? 'warning' : bioOffline.length > 0 ? 'warning' : 'ok',
       total: biometricStore.devices.length,
       done: bioOnline.length,
       issues: bioDeviceIssues,
     })
 
     // ─── Enrôlements biométriques ─────────────────────────────────────────────
-    const enrolledOk = biometricStore.enrollments.filter((e) => e.status === 'enrolled')
     const enrolledFailed = biometricStore.enrollments.filter((e) => e.status === 'failed')
     const enrolledPending = biometricStore.enrollments.filter((e) => e.status === 'pending')
     // Employes actifs non enroles (biometricEnrolled = false ou absent)
@@ -229,10 +222,17 @@ export function useTechnicienReport() {
       enrollmentIssues.push(t('technicienReport.issue.noBioEnrollment'))
     } else {
       enrollmentIssues.push(
-        ...enrolledFailed.map((e) => t('technicienReport.issue.enrollmentFailed', { name: e.employeeName })),
-        ...enrolledPending.map((e) => t('technicienReport.issue.enrollmentPending', { name: e.employeeName })),
+        ...enrolledFailed.map((e) =>
+          t('technicienReport.issue.enrollmentFailed', { name: e.employeeName }),
+        ),
+        ...enrolledPending.map((e) =>
+          t('technicienReport.issue.enrollmentPending', { name: e.employeeName }),
+        ),
         ...employeesNotEnrolled.map((e) =>
-          t('technicienReport.issue.employeeNotEnrolled', { firstName: e.firstName, lastName: e.lastName }),
+          t('technicienReport.issue.employeeNotEnrolled', {
+            firstName: e.firstName,
+            lastName: e.lastName,
+          }),
         ),
       )
     }
@@ -253,7 +253,10 @@ export function useTechnicienReport() {
       title: t('technicienReport.section.bioEnrollments'),
       status: enrollStatus,
       total: activeEmployees.length,
-      done: enrolledOk.length,
+      // Nombre d'employés actifs ENRÔLÉS (cohérent avec « total » et la liste des
+      // non-enrôlés), et non le nombre d'enregistrements d'enrôlement qui pouvait
+      // dépasser le total si un employé avait plusieurs enrôlements.
+      done: activeEmployees.length - employeesNotEnrolled.length,
       issues: uniqueEnrollmentIssues,
     })
 
@@ -265,7 +268,9 @@ export function useTechnicienReport() {
     const sitesWithoutActiveQr = siteStore.sites.filter((s) => !activeQrSiteIds.has(s.id))
     const revokedQr = qrcodeStore.qrCodes.filter((q) => !q.isActive)
     const qrIssues: string[] = [
-      ...sitesWithoutActiveQr.map((s) => t('technicienReport.issue.siteNoActiveQr', { name: s.name })),
+      ...sitesWithoutActiveQr.map((s) =>
+        t('technicienReport.issue.siteNoActiveQr', { name: s.name }),
+      ),
       ...revokedQr.map((q) =>
         t('technicienReport.issue.qrRevoked', { label: q.label ?? q.siteName ?? q.id }),
       ),
@@ -337,14 +342,14 @@ export function useTechnicienReport() {
 
     // Score global : % de sections OK (on exclut les sections warning qui sont optionnelles)
     const okSections = sections.filter((s) => s.status === 'ok').length
-    const globalScore =
-      sections.length > 0 ? Math.round((okSections / sections.length) * 100) : 0
+    const globalScore = sections.length > 0 ? Math.round((okSections / sections.length) * 100) : 0
 
     const companyName =
       activeCompanyStore.activeCompanyName || auth.user?.companyName || 'Entreprise'
 
     return {
-      generatedAt: new Date().toLocaleString('fr-FR'),
+      // sanitizePdfText : toLocaleString peut insérer une espace insécable que jsPDF rend mal.
+      generatedAt: sanitizePdfText(new Date().toLocaleString('fr-FR')),
       technicienName: auth.fullName || 'Technicien',
       companyName,
       sections,
@@ -388,20 +393,20 @@ export function useTechnicienReport() {
     const marginX = 15
 
     const C = {
-      primary:    [30, 41, 59]    as [number, number, number],
-      primary600: [71, 85, 105]   as [number, number, number],
+      primary: [30, 41, 59] as [number, number, number],
+      primary600: [71, 85, 105] as [number, number, number],
       primary400: [148, 163, 184] as [number, number, number],
       primary100: [241, 245, 249] as [number, number, number],
-      white:      [255, 255, 255] as [number, number, number],
-      text:       [30, 41, 59]    as [number, number, number],
-      textMuted:  [100, 116, 139] as [number, number, number],
-      ok:         [22, 163, 74]   as [number, number, number],
-      warning:    [202, 138, 4]   as [number, number, number],
-      error:      [220, 38, 38]   as [number, number, number],
-      okBg:       [240, 253, 244] as [number, number, number],
-      warnBg:     [254, 249, 195] as [number, number, number],
-      errorBg:    [254, 242, 242] as [number, number, number],
-      border:     [226, 232, 240] as [number, number, number],
+      white: [255, 255, 255] as [number, number, number],
+      text: [30, 41, 59] as [number, number, number],
+      textMuted: [100, 116, 139] as [number, number, number],
+      ok: [22, 163, 74] as [number, number, number],
+      warning: [202, 138, 4] as [number, number, number],
+      error: [220, 38, 38] as [number, number, number],
+      okBg: [240, 253, 244] as [number, number, number],
+      warnBg: [254, 249, 195] as [number, number, number],
+      errorBg: [254, 242, 242] as [number, number, number],
+      border: [226, 232, 240] as [number, number, number],
     }
 
     let y = 20
@@ -486,11 +491,11 @@ export function useTechnicienReport() {
 
     y = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 10
 
-    // ── Détail par section ────────────────────────────────────────────────────
+    // ── Détails par section ────────────────────────────────────────────────────
     doc.setFontSize(11)
     doc.setFont('helvetica', 'bold')
     doc.setTextColor(...C.text)
-    doc.text('Détail par section', marginX, y)
+    doc.text('Détails par section', marginX, y)
     y += 6
 
     for (const section of data.sections) {
@@ -587,7 +592,9 @@ export function useTechnicienReport() {
         const shortSig = signature.signature.slice(0, 16)
         doc.setFontSize(6.5)
         doc.text(
-          `ID: ${signature.id} | Signé: ${signature.signedAt} | HMAC-SHA256: ${shortSig}... | Vérifier: ${signature.verifyUrl}`,
+          sanitizePdfText(
+            `ID: ${signature.id} | Signé: ${signature.signedAt} | HMAC-SHA256: ${shortSig}... | Vérifier: ${signature.verifyUrl}`,
+          ),
           pageWidth / 2,
           pageH - 6,
           { align: 'center' },

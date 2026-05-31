@@ -48,7 +48,7 @@ const report = ref<FeelbackReportData | null>(null)
 const reportTypes = computed(() => [
   { label: t('feelback.globalReport'), value: 'global' },
   { label: t('feelback.bySiteReport'), value: 'site' },
-  { label: t('feelback.byDeptReport'), value: 'department' },
+  // Pas de vue « par département » : le feedback n'est rattaché qu'au site.
   { label: t('feelback.byPeriodReport'), value: 'period' },
 ])
 
@@ -198,13 +198,6 @@ const activeColumns = computed<TableColumn[]>(() => {
   if (reportType.value === 'site') {
     return [{ key: 'site', label: t('feelback.siteLabel') }, ...common]
   }
-  if (reportType.value === 'department') {
-    return [
-      { key: 'department', label: t('feelback.deptLabel') },
-      { key: 'site', label: t('feelback.siteLabel') },
-      ...common,
-    ]
-  }
   if (reportType.value === 'period') {
     return [{ key: 'period', label: t('feelback.selectPeriod') }, ...common]
   }
@@ -215,9 +208,7 @@ const tableData = computed(() => {
   if (!report.value) return []
 
   let source: Record<string, unknown>[] = []
-  if (reportType.value === 'department') {
-    source = (report.value.byDepartment ?? []) as unknown as Record<string, unknown>[]
-  } else if (reportType.value === 'period') {
+  if (reportType.value === 'period') {
     source = (report.value.byPeriod ?? []) as unknown as Record<string, unknown>[]
   } else {
     source = (report.value.bySite ?? []) as unknown as Record<string, unknown>[]

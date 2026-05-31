@@ -28,7 +28,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import AppCard from '@/components/ui/AppCard.vue'
@@ -55,6 +55,7 @@ const loading = ref(false)
 const formData = ref<Partial<RfidCard>>({})
 const scanStatus = ref<'idle' | 'waiting' | 'received'>('idle')
 let scanTimeoutId: ReturnType<typeof setTimeout> | null = null
+let scanChannelName: string | null = null
 
 const togglingDeviceId = ref<string | null>(null)
 
@@ -89,17 +90,27 @@ function stopScanListener() {
     scanTimeoutId = null
   }
   const echo = getEcho()
-  if (echo) {
-    echo.channel('cards').stopListening('.card.scanned')
+  if (echo && scanChannelName) {
+    echo.private(scanChannelName).stopListening('.card.scanned')
+    echo.leave(scanChannelName)
   }
+  scanChannelName = null
   scanStatus.value = 'idle'
 }
 
 async function handleScanRequest(deviceId: string) {
+  const device = deviceStore.devices.find((d) => d.id === deviceId)
+  if (!device) {
+    toast.showError(t('cards.scanError'))
+    return
+  }
+
+  // Repartir propre si un scan precedent ecoutait encore un canal
+  stopScanListener()
   scanStatus.value = 'waiting'
 
   try {
-    await mqttApi.sendCommand(deviceId, 'rfid', 'SCAN')
+    await mqttApi.scanCard(deviceId)
   } catch {
     toast.showError(t('cards.scanError'))
     scanStatus.value = 'idle'
@@ -108,7 +119,10 @@ async function handleScanRequest(deviceId: string) {
 
   const echo = getEcho()
   if (echo) {
-    echo.channel('cards')
+    // Canal prive scope par entreprise : l'UID scanne n'est diffuse qu'aux membres
+    // de l'entreprise du capteur (cf. routes/channels.php cards.{companyId}).
+    scanChannelName = `cards.${device.companyId}`
+    echo.private(scanChannelName)
       .stopListening('.card.scanned')
       .listen('.card.scanned', (data: { uid: string; deviceId: string }) => {
         formData.value = { ...formData.value, uid: data.uid }
@@ -134,7 +148,7 @@ const handleSubmit = async () => {
     await cardStore.registerCard(formData.value)
     toast.success(t('common.success'), t('cards.registeredSuccess'))
     router.push('/pointage-rfid/cards')
-  } catch (error: any) {
+  } catch (error) {
     toast.error(t('common.error'), extractApiErrorMessage(error, t('cards.registerError')))
   } finally {
     loading.value = false

@@ -1,17 +1,23 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
-import { supportApi, type AlertsFilter, type DevicesFilter, type SupportCompanyRow, type SupportCompanyDetail } from '@/services/api/support.api'
+import { supportApi, type AlertsFilter, type CompaniesFilter, type DevicesFilter, type SupportCompanyRow, type SupportCompanyDetail, type WitnessFilter } from '@/services/api/support.api'
 import { getEcho } from '@/services/echo'
-import type { DeviceAlert, DeviceKind, DevicesOverview, SupportDevice, SystemHealth, DeviceStatusUpdatePayload } from '@/types'
+import type { DeviceAlert, DeviceKind, DevicesOverview, PaginatedResponse, SupportDevice, SystemHealth, DeviceStatusUpdatePayload } from '@/types'
+
+type PaginationMeta = PaginatedResponse<unknown>['meta']
 
 export const useSupportStore = defineStore('support', () => {
   const health = ref<SystemHealth | null>(null)
   const overview = ref<DevicesOverview | null>(null)
   const devices = ref<SupportDevice[]>([])
+  const devicesMeta = ref<PaginationMeta | null>(null)
   const witnesses = ref<SupportDevice[]>([])
+  const witnessesMeta = ref<PaginationMeta | null>(null)
   const alerts = ref<DeviceAlert[]>([])
   const alertsTotal = ref(0)
+  const alertsMeta = ref<PaginationMeta | null>(null)
   const companies = ref<SupportCompanyRow[]>([])
+  const companiesMeta = ref<PaginationMeta | null>(null)
   const companyDetail = ref<SupportCompanyDetail | null>(null)
   const isLoading = ref(false)
 
@@ -35,27 +41,31 @@ export const useSupportStore = defineStore('support', () => {
   async function fetchDevices(filter: DevicesFilter = {}) {
     isLoading.value = true
     try {
-      devices.value = await supportApi.getDevices(filter)
+      const res = await supportApi.getDevices(filter)
+      devices.value = res.data
+      devicesMeta.value = res.meta
     } finally {
       isLoading.value = false
     }
   }
 
-  async function fetchWitnesses() {
-    witnesses.value = await supportApi.listWitnesses()
+  async function fetchWitnesses(filter: WitnessFilter = {}) {
+    isLoading.value = true
+    try {
+      const res = await supportApi.listWitnesses(filter)
+      witnesses.value = res.data
+      witnessesMeta.value = res.meta
+    } finally {
+      isLoading.value = false
+    }
   }
 
   async function markWitness(kind: DeviceKind, id: string) {
     await supportApi.markWitness(kind, id)
-    const d = devices.value.find((x) => x.id === id && x.kind === kind)
-    if (d) d.isWitness = true
-    await fetchWitnesses()
   }
 
   async function unmarkWitness(kind: DeviceKind, id: string) {
     await supportApi.unmarkWitness(kind, id)
-    const d = devices.value.find((x) => x.id === id && x.kind === kind)
-    if (d) d.isWitness = false
     witnesses.value = witnesses.value.filter((w) => !(w.id === id && w.kind === kind))
   }
 
@@ -68,6 +78,7 @@ export const useSupportStore = defineStore('support', () => {
     try {
       const res = await supportApi.getAlerts(filter)
       alerts.value = res.data
+      alertsMeta.value = res.meta
       alertsTotal.value = res.meta?.total ?? res.data.length
     } finally {
       isLoading.value = false
@@ -86,10 +97,12 @@ export const useSupportStore = defineStore('support', () => {
     if (idx !== -1) alerts.value[idx] = updated
   }
 
-  async function fetchCompanies() {
+  async function fetchCompanies(filter: CompaniesFilter = {}) {
     isLoading.value = true
     try {
-      companies.value = await supportApi.getCompanies()
+      const res = await supportApi.getCompanies(filter)
+      companies.value = res.data
+      companiesMeta.value = res.meta
     } finally {
       isLoading.value = false
     }
@@ -97,6 +110,8 @@ export const useSupportStore = defineStore('support', () => {
 
   async function fetchCompanyDetail(id: string) {
     isLoading.value = true
+    // On vide l'ancienne entreprise immédiatement pour ne pas l'afficher pendant le chargement
+    companyDetail.value = null
     try {
       companyDetail.value = await supportApi.getCompanyDetail(id)
     } finally {
@@ -155,10 +170,14 @@ export const useSupportStore = defineStore('support', () => {
     health,
     overview,
     devices,
+    devicesMeta,
     witnesses,
+    witnessesMeta,
     alerts,
     alertsTotal,
+    alertsMeta,
     companies,
+    companiesMeta,
     companyDetail,
     isLoading,
     openAlertsCount,

@@ -115,6 +115,8 @@ html.dark {
 /* Fonds translucides (-50 plus discret, -100 plus marque) */
 .dark .bg-red-50     { background-color: rgb(239 68 68 / 0.12); }
 .dark .bg-red-100    { background-color: rgb(239 68 68 / 0.18); }
+.dark .bg-danger-50  { background-color: rgb(239 68 68 / 0.12); } /* palette danger ≈ red */
+.dark .bg-danger-100 { background-color: rgb(239 68 68 / 0.18); }
 .dark .bg-green-50   { background-color: rgb(34 197 94 / 0.12); }
 .dark .bg-green-100  { background-color: rgb(34 197 94 / 0.18); }
 .dark .bg-emerald-100{ background-color: rgb(16 185 129 / 0.18); }
@@ -135,6 +137,7 @@ html.dark {
 
 /* Texte clair (-700 et -800 -> teinte -300) */
 .dark .text-red-700,    .dark .text-red-800    { color: #fca5a5; }
+.dark .text-danger-700, .dark .text-danger-800 { color: #fca5a5; }
 .dark .text-green-700,  .dark .text-green-800  { color: #86efac; }
 .dark .text-emerald-700,.dark .text-emerald-800{ color: #6ee7b7; }
 .dark .text-yellow-700, .dark .text-yellow-800 { color: #fde047; }
@@ -150,6 +153,7 @@ html.dark {
 
 /* Bordures colorees (-200 -> teinte translucide du -500) */
 .dark .border-red-200    { border-color: rgb(239 68 68 / 0.35); }
+.dark .border-danger-200 { border-color: rgb(239 68 68 / 0.35); }
 .dark .border-green-200  { border-color: rgb(34 197 94 / 0.35); }
 .dark .border-yellow-200 { border-color: rgb(234 179 8 / 0.35); }
 .dark .border-amber-200  { border-color: rgb(245 158 11 / 0.35); }
@@ -161,9 +165,14 @@ html.dark {
    text-primary-600 (slate fonce) est eclairci car invisible sur fond sombre,
    contrairement aux -600 colores satures qui restent lisibles. */
 .dark .bg-primary-50  { background-color: rgb(100 116 139 / 0.12); }
+.dark .bg-primary-50\/50 { background-color: rgb(100 116 139 / 0.10); } /* surlignage non-lu (variant d'opacite /50) */
 .dark .bg-primary-100 { background-color: rgb(100 116 139 / 0.18); }
 .dark .bg-slate-100   { background-color: #374151; }
 .dark .text-primary-500 { color: #94a3b8; } /* slate-400 : sous-titres attenues (login) */
 .dark .text-primary-600 { color: #94a3b8; } /* primary-400 */
 .dark .text-primary-700, .dark .text-primary-800 { color: #cbd5e1; } /* primary-300 */
 .dark .text-primary-900 { color: #f9fafb; } /* gray-50 : titres (login) */
+/* Classes nues text-primary / border-primary (= primary-800, slate fonce) : invisibles
+   sur fond sombre. Utilisees notamment par l'onglet actif (border + texte) et les spinners. */
+.dark .text-primary { color: #cbd5e1; } /* primary-300 */
+.dark .border-primary { border-color: #cbd5e1; } /* primary-300 */

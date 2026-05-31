@@ -40,10 +40,6 @@ const sideClass = computed(() =>
   props.side === 'right' ? 'right-0' : 'left-0'
 )
 
-const enterFrom = computed(() =>
-  props.side === 'right' ? 'translate-x-full' : '-translate-x-full'
-)
-
 function handleClose() {
   emit('close')
   emit('update:modelValue', false)

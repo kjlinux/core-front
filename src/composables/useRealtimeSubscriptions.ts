@@ -34,6 +34,15 @@ export function useRealtimeSubscriptions() {
   const supportStore = useSupportStore()
   const ui = useUiStore()
 
+  // Nom du canal prive devices selon le role : les roles transverses ecoutent le flux
+  // global ; les autres uniquement le canal de leur entreprise. Null si indeterminable.
+  function deviceChannelName(): string | null {
+    if (authStore.isSupportIt || authStore.isSuperAdmin || authStore.userRole === 'technicien') {
+      return 'devices.all'
+    }
+    return authStore.userCompanyId ? `devices.${authStore.userCompanyId}` : null
+  }
+
   function subscribeAll() {
     if (!authStore.isAuthenticated) return
 
@@ -87,10 +96,13 @@ export function useRealtimeSubscriptions() {
         ui.addToast({ type: toastType, title, message })
       })
 
-    // Canal devices - dispatch selon deviceType + notification statut
-    echo.channel('devices')
-      .stopListening('.device.status.updated')
-      .listen('.device.status.updated', (data: DeviceStatusUpdatePayload) => {
+    // Canal devices PRIVE (cloisonnement multi-tenant) - dispatch + notification statut.
+    // Roles transverses : flux global 'devices.all' ; sinon le canal de sa propre entreprise.
+    const deviceChannel = deviceChannelName()
+    if (deviceChannel) {
+      echo.private(deviceChannel)
+        .stopListening('.device.status.updated')
+        .listen('.device.status.updated', (data: DeviceStatusUpdatePayload) => {
         const key = `${data.deviceType}:${data.deviceId}`
         const prev = recentDeviceStatus.get(key)
         const now = Date.now()
@@ -128,7 +140,8 @@ export function useRealtimeSubscriptions() {
         } else {
           ui.addToast({ type: 'success', title: 'Capteur en ligne', message: msg })
         }
-      })
+        })
+    }
 
     // Canal support - alertes systeme + sante (support_it / super_admin uniquement)
     if (authStore.isSupportIt || authStore.isSuperAdmin) {
@@ -143,7 +156,10 @@ export function useRealtimeSubscriptions() {
     notificationStore.unsubscribeRealtime()
     echo.leave('attendance')
     echo.leave('feelback')
-    echo.leave('devices')
+    const deviceChannel = deviceChannelName()
+    if (deviceChannel) {
+      echo.leave(deviceChannel)
+    }
     if (authStore.isSupportIt || authStore.isSuperAdmin) {
       supportStore.unsubscribeRealtime()
     }

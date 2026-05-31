@@ -44,26 +44,22 @@
         <StatCard
           :title="t('attendance.totalEmployees')"
           :value="stats.totalEmployees"
-          icon="users"
-          color="blue"
+          :icon="UsersIcon"
         />
         <StatCard
           :title="t('attendance.avgAttendanceRate')"
           :value="`${stats.averageAttendanceRate}%`"
-          icon="trending-up"
-          color="green"
+          :icon="ArrowTrendingUpIcon"
         />
         <StatCard
           :title="t('attendance.totalAbsences')"
           :value="stats.totalAbsences"
-          icon="x-circle"
-          color="red"
+          :icon="XCircleIcon"
         />
         <StatCard
           :title="t('attendance.totalLates')"
           :value="stats.totalLateInstances"
-          icon="clock"
-          color="orange"
+          :icon="ClockIcon"
         />
       </div>
 
@@ -94,7 +90,6 @@
 </template>
 
 <script setup lang="ts">
-// @ts-nocheck
 import { ref, onMounted, computed, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
@@ -106,13 +101,14 @@ import AppCard from '@/components/ui/AppCard.vue';
 import StatCard from '@/components/data-display/StatCard.vue';
 import AppInput from '@/components/ui/AppInput.vue';
 import { useToast } from '@/composables/useToast';
+import { UsersIcon, ArrowTrendingUpIcon, XCircleIcon, ClockIcon } from '@heroicons/vue/24/outline';
 
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const attendanceStore = useAttendanceStore();
 const { startDate, endDate, dateRange, setCurrentMonth: setCurrentMonthRange } = useDateRange();
-const { info, success, error } = useToast();
+const { info } = useToast();
 
 const loading = ref(false);
 const departmentId = ref(route.params.id as string);

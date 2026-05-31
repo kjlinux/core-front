@@ -93,7 +93,7 @@
           <AttendanceSegmentCell :record="row" />
         </template>
         <template #actions="{ row }">
-          <AppButton size="small" variant="ghost" @click="viewDetail(row)">
+          <AppButton size="sm" variant="ghost" @click="viewDetail(row)">
             {{ t('common.detail') }}
           </AppButton>
         </template>
@@ -103,7 +103,6 @@
 </template>
 
 <script setup lang="ts">
-// @ts-nocheck
 import { ref, onMounted, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';

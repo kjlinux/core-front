@@ -83,6 +83,7 @@ import StatCard from '@/components/data-display/StatCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppCard from '@/components/ui/AppCard.vue'
 import type { TableColumn } from '@/types/common'
+import { sortByRecent } from '@/utils/sort'
 import { UsersIcon, CheckCircleIcon, MapPinIcon } from '@heroicons/vue/24/outline'
 
 const { t } = useI18n()
@@ -129,8 +130,9 @@ const employeeColumns = computed<TableColumn[]>(() => [
 ])
 
 const employeeTableData = computed(() => {
-  return employeeStore.employees
-    .filter(emp => emp.departmentId === departmentId.value)
+  return sortByRecent(
+    employeeStore.employees.filter(emp => emp.departmentId === departmentId.value),
+  )
     .map(emp => ({
       id: emp.id,
       name: `${emp.firstName} ${emp.lastName}`,
@@ -158,7 +160,7 @@ onMounted(async () => {
   }
 })
 
-function handleEmployeeClick(row: any) {
+function handleEmployeeClick(row: { id: string }) {
   router.push({ name: 'rfid-employee-detail', params: { id: row.id } })
 }
 

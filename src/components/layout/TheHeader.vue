@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useUiStore } from '@/stores/ui.store'
 import { useAuthStore } from '@/stores/auth.store'
 import { useActiveCompanyStore } from '@/stores/active-company.store'
 import { useFirmwareStore } from '@/stores/firmware.store'
 import { usePlan } from '@/composables/usePlan'
-import { usePermissions } from '@/composables/usePermissions'
 import { UserRole } from '@/types/enums'
 import type { FirmwareVersion } from '@/types'
 import TheHeaderUserMenu from './TheHeaderUserMenu.vue'
@@ -15,8 +14,10 @@ import TheLanguageSwitcher from './TheLanguageSwitcher.vue'
 import TheCompanySwitcher from './TheCompanySwitcher.vue'
 import FirmwareCompanyUpdateModal from '@/components/firmware/FirmwareCompanyUpdateModal.vue'
 import AppLiveIndicator from '@/components/ui/AppLiveIndicator.vue'
-import { Bars3Icon, ChevronLeftIcon, SunIcon, MoonIcon } from '@heroicons/vue/24/outline'
+import { Bars3Icon, ChevronLeftIcon, SunIcon, MoonIcon, XMarkIcon, SparklesIcon } from '@heroicons/vue/24/outline'
 import { useDarkMode } from '@/composables/useDarkMode'
+import { APP_VERSION } from '@/config/whats-new'
+import { useWhatsNew } from '@/composables/useWhatsNew'
 
 const { isDark, toggle: toggleDark } = useDarkMode()
 
@@ -25,8 +26,16 @@ const auth = useAuthStore()
 const activeCompanyStore = useActiveCompanyStore()
 const firmwareStore = useFirmwareStore()
 const plan = usePlan()
-const { canCollapseSidebar } = usePermissions()
 const route = useRoute()
+const router = useRouter()
+
+// Bandeau "revoir la presentation" : visible une fois la presentation deja vue, tant
+// que l'utilisateur ne l'a pas refusee (cf. useWhatsNew). Filtre par role.
+const { showRevisitBanner, optOut } = useWhatsNew()
+
+function replayWhatsNew() {
+  router.push({ name: 'whats-new' })
+}
 
 const selectedFirmwareForUpdate = ref<FirmwareVersion | null>(null)
 
@@ -69,7 +78,7 @@ const formattedTime = computed(() => {
   })
 })
 
-const APP_VERSION = '2.9.8'
+// APP_VERSION : source unique dans src/config/whats-new.ts (affichee aussi en bas du menu).
 const APP_UPDATE_BANNER_KEY = 'app_update_banner_dismissed_version'
 const showAppUpdateBanner = ref(
   typeof window !== 'undefined' &&
@@ -107,9 +116,41 @@ const canSeeFirmwareBanner = computed(() => {
   )
 })
 
-// Une banniere par type d'appareil ayant une version publiee.
+// Bannieres firmware fermees par l'utilisateur (memorisees par id de version).
+// Une nouvelle version publiee a un id different : la banniere reapparait donc.
+const FIRMWARE_BANNER_DISMISSED_KEY = 'firmware_banner_dismissed_ids'
+
+function loadDismissedFirmwareIds(): string[] {
+  if (typeof window === 'undefined') return []
+  try {
+    const raw = window.localStorage?.getItem(FIRMWARE_BANNER_DISMISSED_KEY)
+    return raw ? (JSON.parse(raw) as string[]) : []
+  } catch {
+    return []
+  }
+}
+
+const dismissedFirmwareIds = ref<string[]>(loadDismissedFirmwareIds())
+
+function dismissFirmwareBanner(id: string) {
+  if (!dismissedFirmwareIds.value.includes(id)) {
+    dismissedFirmwareIds.value = [...dismissedFirmwareIds.value, id]
+  }
+  try {
+    window.localStorage?.setItem(
+      FIRMWARE_BANNER_DISMISSED_KEY,
+      JSON.stringify(dismissedFirmwareIds.value),
+    )
+  } catch {
+    // ignore localStorage indisponible
+  }
+}
+
+// Une banniere par type d'appareil ayant une version publiee, hors fermees.
 const firmwareBanners = computed(() =>
-  canSeeFirmwareBanner.value ? firmwareStore.publishedBanners : [],
+  canSeeFirmwareBanner.value
+    ? firmwareStore.publishedBanners.filter((b) => !dismissedFirmwareIds.value.includes(b.id))
+    : [],
 )
 
 onMounted(() => {
@@ -150,6 +191,34 @@ onUnmounted(() => {
       </button>
     </div>
 
+    <!-- Bandeau "revoir la présentation des nouveautés" -->
+    <div
+      v-if="showRevisitBanner"
+      class="flex flex-wrap items-center justify-between gap-3 bg-linear-to-r from-indigo-600 to-violet-600 px-6 py-2 text-sm text-white"
+    >
+      <span class="flex items-center gap-2 font-medium">
+        <SparklesIcon class="h-4 w-4 shrink-0" />
+        Envie de revoir les nouveautés de la version {{ APP_VERSION }} ? On vous remontre tout quand
+        vous voulez.
+      </span>
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          class="rounded-md bg-white px-3 py-1 text-xs font-semibold text-indigo-700 hover:bg-indigo-50 transition-colors"
+          @click="replayWhatsNew"
+        >
+          Revoir la présentation
+        </button>
+        <button
+          type="button"
+          class="rounded-md bg-white/20 px-3 py-1 text-xs font-semibold hover:bg-white/30 transition-colors"
+          @click="optOut"
+        >
+          Non merci, c'est bon
+        </button>
+      </div>
+    </div>
+
     <!-- Bandeaux mise à jour firmware (une par type d'appareil) -->
     <div
       v-for="banner in firmwareBanners"
@@ -163,21 +232,32 @@ onUnmounted(() => {
           (nécessite un abonnement Garantie ou Premium)
         </span>
       </span>
-      <button
-        v-if="hasOtaPlan"
-        type="button"
-        class="ml-4 rounded-md bg-white/20 px-3 py-1 text-xs font-semibold hover:bg-white/30 transition-colors"
-        @click="openFirmwareUpdate(banner)"
-      >
-        Lancer la mise à jour
-      </button>
-      <router-link
-        v-else
-        to="/abonnement"
-        class="ml-4 rounded-md bg-white/20 px-3 py-1 text-xs font-semibold hover:bg-white/30 transition-colors"
-      >
-        Voir les abonnements
-      </router-link>
+      <div class="ml-4 flex items-center gap-2">
+        <button
+          v-if="hasOtaPlan"
+          type="button"
+          class="rounded-md bg-white/20 px-3 py-1 text-xs font-semibold hover:bg-white/30 transition-colors"
+          @click="openFirmwareUpdate(banner)"
+        >
+          Lancer la mise à jour
+        </button>
+        <router-link
+          v-else
+          to="/abonnement"
+          class="rounded-md bg-white/20 px-3 py-1 text-xs font-semibold hover:bg-white/30 transition-colors"
+        >
+          Voir les abonnements
+        </router-link>
+        <button
+          type="button"
+          class="rounded-md p-1 hover:bg-white/30 transition-colors"
+          title="Fermer"
+          aria-label="Fermer"
+          @click="dismissFirmwareBanner(banner.id)"
+        >
+          <XMarkIcon class="h-4 w-4" />
+        </button>
+      </div>
     </div>
 
     <!-- Header principal -->
@@ -194,9 +274,8 @@ onUnmounted(() => {
           <Bars3Icon class="h-6 w-6" />
         </button>
 
-        <!-- Collapse sidebar button (desktop) -->
+        <!-- Collapse sidebar button (desktop) : disponible pour tous les rôles -->
         <button
-          v-if="canCollapseSidebar"
           type="button"
           class="hidden text-gray-500 hover:text-gray-700 lg:block"
           @click="ui.toggleSidebar()"
@@ -217,7 +296,7 @@ onUnmounted(() => {
       </div>
 
       <div class="flex items-center gap-4">
-        <AppLiveIndicator class="hidden md:inline-flex" />
+        <AppLiveIndicator v-if="auth.user?.role !== UserRole.EMPLOYE" class="hidden md:inline-flex" />
 
         <!-- Date et heure en temps réel -->
         <div class="hidden md:flex flex-col items-end leading-tight">

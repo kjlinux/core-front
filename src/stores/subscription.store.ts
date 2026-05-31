@@ -9,6 +9,8 @@ import type {
   SubscriptionPlanDef,
   SubscriptionState,
   SubscriptionPayment,
+  SubscriptionEvent,
+  ProrataQuote,
   InitiatePaymentResult,
 } from '@/types/subscription'
 
@@ -16,7 +18,18 @@ export const useSubscriptionStore = defineStore('subscription', () => {
   const state = ref<SubscriptionState | null>(null)
   const plans = ref<SubscriptionPlanDef[]>([])
   const payments = ref<SubscriptionPayment[]>([])
+  const events = ref<SubscriptionEvent[]>([])
+  const quotes = ref<Record<string, ProrataQuote>>({})
   const isLoading = ref(false)
+
+  /**
+   * Prix mensuel d'un plan, issu de la grille DB (fetchPlans). Fallback sur la
+   * constante locale tant que les plans ne sont pas chargés.
+   */
+  function priceOf(code: PlanCode): number {
+    const p = plans.value.find((pl) => pl.code === code)
+    return p ? p.monthly_price_xof : PLAN_PRICES_XOF[code]
+  }
 
   async function fetchPlans() {
     try {
@@ -37,8 +50,28 @@ export const useSubscriptionStore = defineStore('subscription', () => {
   }
 
   async function fetchHistory() {
-    const r = await subscriptionApi.history()
-    payments.value = r.data
+    try {
+      const r = await subscriptionApi.history()
+      payments.value = r.data
+    } catch (e) {
+      console.error('fetchHistory failed', e)
+      useToast().error(i18n.global.t('common.error'), i18n.global.t('toast.abonnement.loadHistoryError'))
+    }
+  }
+
+  async function fetchEvents() {
+    try {
+      const r = await subscriptionApi.events()
+      events.value = r.data
+    } catch (e) {
+      console.error('fetchEvents failed', e)
+      useToast().error(i18n.global.t('common.error'), i18n.global.t('toast.abonnement.loadHistoryError'))
+    }
+  }
+
+  /** Récupère le devis autoritatif (montant exact débité) pour un plan cible. */
+  async function fetchQuote(planCode: PlanCode) {
+    quotes.value = { ...quotes.value, [planCode]: await subscriptionApi.quote(planCode) }
   }
 
   async function subscribe(planCode: PlanCode): Promise<InitiatePaymentResult> {
@@ -63,10 +96,10 @@ export const useSubscriptionStore = defineStore('subscription', () => {
    */
   function computeProrata(targetPlan: PlanCode): { amount: number; daysRemaining: number; isProrata: boolean } {
     if (!state.value || !state.value.expires_at || !state.value.is_active) {
-      return { amount: PLAN_PRICES_XOF[targetPlan], daysRemaining: 30, isProrata: false }
+      return { amount: priceOf(targetPlan), daysRemaining: 30, isProrata: false }
     }
-    const newPrice = PLAN_PRICES_XOF[targetPlan]
-    const oldPrice = PLAN_PRICES_XOF[(state.value.subscription as PlanCode)] ?? 0
+    const newPrice = priceOf(targetPlan)
+    const oldPrice = priceOf(state.value.subscription as PlanCode)
     if (newPrice <= oldPrice) {
       return { amount: 0, daysRemaining: 0, isProrata: false }
     }
@@ -77,9 +110,9 @@ export const useSubscriptionStore = defineStore('subscription', () => {
   }
 
   return {
-    state, plans, payments, isLoading,
-    fetchPlans, fetchMe, fetchHistory,
+    state, plans, payments, events, quotes, isLoading,
+    fetchPlans, fetchMe, fetchHistory, fetchEvents, fetchQuote,
     subscribe, upgrade, payNextPeriod,
-    computeProrata,
+    computeProrata, priceOf,
   }
 })

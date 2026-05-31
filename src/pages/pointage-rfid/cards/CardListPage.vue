@@ -180,7 +180,6 @@
 </template>
 
 <script setup lang="ts">
-// @ts-nocheck
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
@@ -289,18 +288,18 @@ const getCompanyName = (companyId: string): string => {
   return companyStore.companies.find(c => c.id === companyId)?.name || '-';
 };
 
-const getStatusVariant = (status: CardStatus): string => {
+const getStatusVariant = (status: CardStatus): 'success' | 'warning' | 'info' | 'neutral' | 'danger' => {
   switch (status) {
     case CardStatus.ACTIVE:
       return 'success';
     case CardStatus.INACTIVE:
-      return 'secondary';
+      return 'neutral';
     case CardStatus.BLOCKED:
       return 'danger';
     case CardStatus.LOST:
       return 'warning';
     default:
-      return 'secondary';
+      return 'neutral';
   }
 };
 
@@ -357,7 +356,7 @@ const confirmAssign = async () => {
     await reload();
     selectedCard.value = null;
     selectedEmployeeId.value = '';
-  } catch (error: any) {
+  } catch (error) {
     toast.error(t('common.error'), extractApiErrorMessage(error, t('cards.assignError')));
   }
 };
@@ -386,7 +385,7 @@ const confirmBlock = async () => {
     await reload();
     selectedCard.value = null;
     blockReason.value = '';
-  } catch (error: any) {
+  } catch (error) {
     toast.error(t('common.error'), extractApiErrorMessage(error, t('cards.blockError')));
   }
 };
@@ -411,7 +410,7 @@ const confirmUnblock = async () => {
     unblockModalVisible.value = false;
     await reload();
     selectedCard.value = null;
-  } catch (error: any) {
+  } catch (error) {
     toast.error(t('common.error'), extractApiErrorMessage(error, t('cards.unblockError')));
   }
 };

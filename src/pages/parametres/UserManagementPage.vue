@@ -101,6 +101,8 @@ const roleLabels = computed<Record<string, string>>(() => ({
   admin_enterprise: t('parametres.adminEnterprise'),
   manager: t('parametres.managerRole'),
   technicien: t('parametres.technicienRole'),
+  support_it: t('roles.support_it'),
+  employe: t('roles.employe'),
 }))
 
 const roleBadgeVariant: Record<string, string> = {
@@ -108,6 +110,8 @@ const roleBadgeVariant: Record<string, string> = {
   admin_enterprise: 'warning',
   manager: 'info',
   technicien: 'success',
+  support_it: 'info',
+  employe: 'neutral',
 }
 
 const roleOptions = computed(() => {
@@ -118,6 +122,7 @@ const roleOptions = computed(() => {
       { label: t('roles.admin_enterprise'), value: 'admin_enterprise' },
       { label: t('roles.manager'), value: 'manager' },
       { label: t('roles.technicien'), value: 'technicien' },
+      { label: t('roles.support_it'), value: 'support_it' },
     ]
   }
   if (permissions.isTechnicien.value) {
@@ -131,6 +136,24 @@ const roleOptions = computed(() => {
     { label: t('parametres.selectRole'), value: '' },
     { label: t('roles.manager'), value: 'manager' },
   ]
+})
+
+// Options de rôle pour la modale d'édition : on inclut « employe » (les comptes
+// créés via la fiche employé portent ce rôle, sinon le select s'afficherait vide)
+// et on retire le placeholder vide puisqu'un utilisateur a toujours un rôle.
+const editRoleOptions = computed(() => {
+  if (permissions.isSuperAdmin.value) {
+    return [
+      { label: t('roles.super_admin'), value: 'super_admin' },
+      { label: t('roles.admin_enterprise'), value: 'admin_enterprise' },
+      { label: t('roles.manager'), value: 'manager' },
+      { label: t('roles.technicien'), value: 'technicien' },
+      { label: t('roles.support_it'), value: 'support_it' },
+      { label: t('roles.employe'), value: 'employe' },
+    ]
+  }
+  // admin_enterprise et technicien ne peuvent éditer que des managers (cf. backend).
+  return [{ label: t('roles.manager'), value: 'manager' }]
 })
 
 const companyOptions = computed(() => {
@@ -150,6 +173,8 @@ const roleFilterOptions = computed(() => [
   { label: t('roles.admin_enterprise'), value: 'admin_enterprise' },
   { label: t('roles.manager'), value: 'manager' },
   { label: t('roles.technicien'), value: 'technicien' },
+  { label: t('roles.support_it'), value: 'support_it' },
+  { label: t('roles.employe'), value: 'employe' },
 ])
 
 // Options du filtre entreprise (toolbar).
@@ -168,13 +193,14 @@ const statusFilterOptions = computed(() => [
 ])
 
 // Seuls admin_enterprise et manager sont rattaches a une entreprise.
-// super_admin et technicien interviennent sans entreprise fixe.
+// super_admin, technicien et support_it interviennent sans entreprise fixe.
 const requiresCompany = computed(
   () =>
     permissions.isSuperAdmin.value &&
     !!createForm.value.role &&
     createForm.value.role !== 'super_admin' &&
-    createForm.value.role !== 'technicien',
+    createForm.value.role !== 'technicien' &&
+    createForm.value.role !== 'support_it',
 )
 
 function formatDate(date: string) {
@@ -286,6 +312,10 @@ async function handleCreate() {
 
 async function handleEditSave() {
   if (!editingUser.value) return
+  if (!editingUser.value.role) {
+    toast.showError(t('parametres.fillRequired'))
+    return
+  }
   isSaving.value = true
   try {
     await userApi.update(editingUser.value.id, {
@@ -499,7 +529,7 @@ onMounted(async () => {
         <AppSelect
           v-model="editingUser.role"
           :label="t('parametres.role')"
-          :options="roleOptions"
+          :options="editRoleOptions"
         />
       </div>
       <template #footer>

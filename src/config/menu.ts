@@ -33,6 +33,7 @@ import {
   UserCircleIcon,
 } from '@heroicons/vue/24/outline'
 import { UserRole } from '@/types/enums'
+import type { PlanFeature } from '@/types/subscription'
 
 export interface MenuItem {
   id: string
@@ -42,6 +43,11 @@ export interface MenuItem {
   icon: Component
   roles: UserRole[]
   match?: (path: string) => boolean
+  // Fonctionnalite d'abonnement requise. L'entree reste VISIBLE pour les plans inferieurs
+  // mais s'affiche avec un cadenas (cf. TheSidebarItem) ; la page rend FeatureLock.
+  feature?: PlanFeature
+  // Cle de badge "attention" (cf. badges.store + TheSidebarItem). Pastille rouge si count > 0.
+  badge?: string
 }
 
 export interface MenuGroup {
@@ -105,6 +111,15 @@ const sections: MenuSection[] = [
         match: exact('/'),
       },
       {
+        id: 'analytics-avances',
+        labelKey: 'nav.analyticsAvances',
+        to: '/analytics',
+        icon: ChartBarIcon,
+        roles: CLIENTS,
+        feature: 'advanced_analytics',
+        match: exact('/analytics'),
+      },
+      {
         id: 'organisation',
         labelKey: 'nav.organisation',
         icon: BuildingOffice2Icon,
@@ -149,6 +164,7 @@ const sections: MenuSection[] = [
           },
           {
             id: 'rfid-absences',
+            badge: 'rfidAbsences',
             labelKey: 'nav.absenceRequests',
             to: '/organisation/absences',
             icon: ClipboardDocumentListIcon,
@@ -168,14 +184,17 @@ const sections: MenuSection[] = [
             to: '/paie/configuration',
             icon: Cog8ToothIcon,
             roles: ADMIN_SUPER,
+            feature: 'payroll',
             match: exact('/paie/configuration'),
           },
           {
             id: 'paie-generer',
+            badge: 'paieGenerer',
             labelKey: 'nav.paieFiches',
             to: '/paie/generer',
             icon: DocumentChartBarIcon,
             roles: ADMIN_SUPER,
+            feature: 'payroll',
             match: exact('/paie/generer'),
           },
         ],
@@ -188,6 +207,7 @@ const sections: MenuSection[] = [
         children: [
           {
             id: 'rfid-devices',
+            badge: 'rfidDevices',
             labelKey: 'nav.rfidDevices',
             to: '/pointage-rfid/devices',
             icon: DevicePhoneMobileIcon,
@@ -283,6 +303,7 @@ const sections: MenuSection[] = [
           },
           {
             id: 'bio-devices',
+            badge: 'bioDevices',
             labelKey: 'nav.biometricDevices',
             to: '/biometrique/devices',
             icon: DevicePhoneMobileIcon,
@@ -342,6 +363,7 @@ const sections: MenuSection[] = [
           },
           {
             id: 'feelback-devices',
+            badge: 'feelbackDevices',
             labelKey: 'nav.biometricDevices',
             to: '/feelback/devices',
             icon: DevicePhoneMobileIcon,
@@ -349,6 +371,7 @@ const sections: MenuSection[] = [
           },
           {
             id: 'feelback-alerts',
+            badge: 'feelbackAlerts',
             labelKey: 'nav.feelbackAlerts',
             to: '/feelback/alerts',
             icon: BellAlertIcon,
@@ -408,6 +431,7 @@ const sections: MenuSection[] = [
           },
           {
             id: 'mk-orders',
+            badge: 'mkOrders',
             labelKey: 'nav.orders',
             to: '/marketplace/orders',
             icon: ClipboardDocumentListIcon,
@@ -430,6 +454,7 @@ const sections: MenuSection[] = [
           },
           {
             id: 'mk-admin-orders',
+            badge: 'mkAdminOrders',
             labelKey: 'nav.adminOrders',
             to: '/marketplace/admin/orders',
             icon: ClipboardDocumentListIcon,
@@ -538,7 +563,9 @@ const sections: MenuSection[] = [
             labelKey: 'nav.dashboard',
             to: '/support-it',
             icon: HomeIcon,
-            roles: [UserRole.SUPER_ADMIN, UserRole.SUPPORT_IT],
+            // support_it n'a pas de tableau de bord : sa page d'accueil est la santé système.
+            // Réservé au super_admin qui supervise l'ensemble.
+            roles: [UserRole.SUPER_ADMIN],
             match: exact('/support-it'),
           },
           {
@@ -550,6 +577,7 @@ const sections: MenuSection[] = [
           },
           {
             id: 'sit-devices',
+            badge: 'sitDevices',
             labelKey: 'nav.supportItDevices',
             to: '/support-it/devices',
             icon: CpuChipIcon,
@@ -571,6 +599,7 @@ const sections: MenuSection[] = [
           },
           {
             id: 'sit-alerts',
+            badge: 'sitAlerts',
             labelKey: 'nav.supportItAlerts',
             to: '/support-it/alerts',
             icon: BellAlertIcon,
@@ -578,6 +607,7 @@ const sections: MenuSection[] = [
           },
           {
             id: 'sit-tickets',
+            badge: 'sitTickets',
             labelKey: 'nav.supportItTickets',
             to: '/support-it/tickets',
             icon: ClipboardDocumentListIcon,
@@ -608,6 +638,7 @@ const sections: MenuSection[] = [
           },
           {
             id: 'crm-followups',
+            badge: 'crmFollowups',
             labelKey: 'nav.crmFollowups',
             to: '/crm/followups',
             icon: ClipboardDocumentListIcon,
@@ -650,6 +681,7 @@ const sections: MenuSection[] = [
       },
       {
         id: 'param-admin-abonnements',
+        badge: 'paramAdminAbonnements',
         labelKey: 'nav.adminAbonnements',
         to: '/parametres/admin/abonnements',
         icon: BanknotesIcon,
@@ -665,6 +697,7 @@ const sections: MenuSection[] = [
     entries: [
       {
         id: 'mon-espace',
+        badge: 'monEspace',
         labelKey: 'nav.monEspace',
         to: '/mon-espace',
         icon: UserCircleIcon,
@@ -689,7 +722,7 @@ const sections: MenuSection[] = [
             labelKey: 'nav.company',
             to: '/parametres/entreprise',
             icon: BuildingOffice2Icon,
-            roles: ADMIN_SUPER,
+            roles: ADMIN_SUPER_TECH,
             match: exact('/parametres/entreprise'),
           },
           {
@@ -714,14 +747,17 @@ const sections: MenuSection[] = [
             to: '/parametres/rapports-planifies',
             icon: DocumentChartBarIcon,
             roles: ADMIN_SUPER,
+            feature: 'hr_reports',
             match: exact('/parametres/rapports-planifies'),
           },
           {
             id: 'param-support',
+            badge: 'paramSupport',
             labelKey: 'nav.supportPlaintes',
             to: '/parametres/support',
             icon: WrenchScrewdriverIcon,
             roles: [UserRole.ADMIN_ENTERPRISE, UserRole.MANAGER],
+            feature: 'sav_included',
             match: exact('/parametres/support'),
           },
           {

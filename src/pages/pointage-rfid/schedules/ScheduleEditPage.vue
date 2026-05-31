@@ -49,7 +49,6 @@
 </template>
 
 <script setup lang="ts">
-// @ts-nocheck
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
@@ -73,7 +72,6 @@ const scheduleStore = useScheduleStore()
 const companyStore = useCompanyStore()
 const departmentStore = useDepartmentStore()
 const permissions = usePermissions()
-const { isSuperAdmin, isAdminEnterprise } = permissions
 const toast = useToast()
 
 const loading = ref(false)
@@ -91,7 +89,7 @@ const handleSubmit = async (data: Partial<Schedule>) => {
     await scheduleStore.updateSchedule(scheduleId.value, data)
     toast.success(t('common.success'), t('schedules.updatedSuccess'))
     router.push('/organisation/schedules')
-  } catch (error: any) {
+  } catch (error) {
     toast.error(t('common.error'), extractApiErrorMessage(error, t('schedules.updateError')))
   } finally {
     loading.value = false
@@ -111,7 +109,7 @@ const handleDelete = async () => {
     await scheduleStore.deleteSchedule(scheduleId.value)
     showDeleteModal.value = false
     router.push('/organisation/schedules')
-  } catch (error: any) {
+  } catch (error) {
     toast.error(t('common.error'), extractApiErrorMessage(error, t('schedules.deleteError')))
   }
 }

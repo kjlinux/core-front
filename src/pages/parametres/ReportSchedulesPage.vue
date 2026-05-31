@@ -10,6 +10,7 @@ import {
   type ReportScheduleFrequency,
 } from '@/services/api/report-schedule.api'
 import { useToast } from '@/composables/useToast'
+import { extractApiErrorMessage } from '@/utils/api-error'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
@@ -19,15 +20,20 @@ import AppBadge from '@/components/ui/AppBadge.vue'
 import AppToggle from '@/components/ui/AppToggle.vue'
 import AppSpinner from '@/components/ui/AppSpinner.vue'
 import AppConfirmDialog from '@/components/ui/AppConfirmDialog.vue'
+import FeatureLock from '@/components/ui/FeatureLock.vue'
+import { usePlan } from '@/composables/usePlan'
 
 const { t } = useI18n()
 const toast = useToast()
+const { hasFeature } = usePlan()
 
 const schedules = ref<ReportSchedule[]>([])
 const loading = ref(false)
 const saving = ref(false)
 const modalOpen = ref(false)
 const editingId = ref<string | null>(null)
+
+const sendingId = ref<string | null>(null)
 
 const confirmOpen = ref(false)
 const deleteTarget = ref<string | null>(null)
@@ -157,6 +163,19 @@ async function toggleActive(s: ReportSchedule) {
   }
 }
 
+async function sendNow(s: ReportSchedule) {
+  sendingId.value = s.id
+  try {
+    await reportScheduleApi.sendNow(s.id)
+    toast.showSuccess(t('reportSchedule.sendSuccess'))
+    await load()
+  } catch (e) {
+    toast.showError(extractApiErrorMessage(e, t('reportSchedule.sendError')))
+  } finally {
+    sendingId.value = null
+  }
+}
+
 function askDelete(id: string) {
   deleteTarget.value = id
   confirmOpen.value = true
@@ -176,10 +195,14 @@ async function confirmDelete() {
   }
 }
 
-onMounted(load)
+onMounted(() => {
+  // Pas de chargement si le plan n'inclut pas les rapports RH : la page affiche le verrou.
+  if (hasFeature('hr_reports')) load()
+})
 </script>
 
 <template>
+  <FeatureLock feature="hr_reports">
   <div class="space-y-6">
     <div class="flex items-center justify-between">
       <div>
@@ -209,6 +232,7 @@ onMounted(load)
               <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">{{ t('reportSchedule.colFrequency') }}</th>
               <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">{{ t('reportSchedule.colRecipients') }}</th>
               <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">{{ t('reportSchedule.colNextRun') }}</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">{{ t('reportSchedule.colLastSent') }}</th>
               <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">{{ t('reportSchedule.colStatus') }}</th>
               <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">{{ t('reportSchedule.colActions') }}</th>
             </tr>
@@ -220,6 +244,17 @@ onMounted(load)
               <td class="px-4 py-4 text-sm text-gray-500">{{ frequencyLabel(s.frequency) }}</td>
               <td class="px-4 py-4 text-sm text-gray-500">{{ s.recipients.join(', ') }}</td>
               <td class="px-4 py-4 text-sm text-gray-500">{{ formatDate(s.next_run_at) }}</td>
+              <td class="px-4 py-4 text-sm text-gray-500">
+                <div class="flex items-center gap-2">
+                  <span>{{ s.last_sent_at ? formatDate(s.last_sent_at) : t('reportSchedule.neverSent') }}</span>
+                  <AppBadge v-if="s.last_status === 'failed'" variant="danger" size="sm" :title="s.last_error ?? ''">
+                    {{ t('reportSchedule.statusFailed') }}
+                  </AppBadge>
+                  <AppBadge v-else-if="s.last_status === 'success'" variant="success" size="sm">
+                    {{ t('reportSchedule.statusSuccess') }}
+                  </AppBadge>
+                </div>
+              </td>
               <td class="px-4 py-4">
                 <AppBadge :variant="s.is_active ? 'success' : 'neutral'" size="sm">
                   {{ s.is_active ? t('reportSchedule.active') : t('reportSchedule.inactive') }}
@@ -227,6 +262,13 @@ onMounted(load)
               </td>
               <td class="px-4 py-4 text-right">
                 <div class="flex items-center justify-end gap-3">
+                  <button
+                    class="text-sm text-primary hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+                    :disabled="sendingId === s.id"
+                    @click="sendNow(s)"
+                  >
+                    {{ sendingId === s.id ? t('common.loading') : t('reportSchedule.sendNow') }}
+                  </button>
                   <button class="text-sm text-primary hover:underline" @click="toggleActive(s)">
                     {{ s.is_active ? t('reportSchedule.pause') : t('reportSchedule.resume') }}
                   </button>
@@ -283,4 +325,5 @@ onMounted(load)
       @cancel="confirmOpen = false"
     />
   </div>
+  </FeatureLock>
 </template>

@@ -5,12 +5,13 @@ import { useAbsenceStore } from '@/stores/absence.store'
 import { useAuthStore } from '@/stores/auth.store'
 import { useToast } from '@/composables/useToast'
 import AppCard from '@/components/ui/AppCard.vue'
+import AppAvatar from '@/components/ui/AppAvatar.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import AppModal from '@/components/ui/AppModal.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
 import { CheckCircleIcon, XCircleIcon, EyeIcon, PaperClipIcon } from '@heroicons/vue/24/outline'
-import type { AbsenceRequest, AbsenceStatus } from '@/types/absence'
+import type { AbsenceRequest, AbsenceStatus, ReviewAbsencePayload } from '@/types/absence'
 import { sortByRecent } from '@/utils/sort'
 
 const absenceStore = useAbsenceStore()
@@ -80,28 +81,23 @@ function openReview(request: AbsenceRequest, action: 'approved' | 'rejected') {
 async function confirmReview() {
   if (!selectedRequest.value) return
   try {
-    // L'admin peut modifier les dates/motif avant de valider : ce sont les
-    // valeurs modifiees qui font foi (et qui seront prises en compte pour le
-    // calcul des pointages et de la paie).
-    if (reviewAction.value === 'approved') {
-      const req = selectedRequest.value
-      const changed =
-        editDateStart.value !== req.dateStart ||
-        editDateEnd.value !== req.dateEnd ||
-        editReason.value.trim() !== req.reason
-      if (changed) {
-        await absenceStore.updateRequest(req.id, {
-          dateStart: editDateStart.value,
-          dateEnd: editDateEnd.value,
-          reason: editReason.value.trim(),
-        })
-      }
-    }
-    await absenceStore.reviewRequest(selectedRequest.value.id, {
+    // L'admin peut ajuster les dates/motif avant de valider : ce sont les valeurs
+    // modifiees qui font foi (prises en compte pour les pointages et la paie).
+    // Tout part dans un seul appel atomique a /review (statut + ajustements),
+    // ce qui evite la fragilite d'un update separe dependant du statut "pending".
+    const payload: ReviewAbsencePayload = {
       status: reviewAction.value,
       reviewNote: reviewNote.value.trim() || undefined,
-    })
-    toast.showSuccess(reviewAction.value === 'approved' ? t('toast.absence.approved') : t('toast.absence.rejected'))
+    }
+    if (reviewAction.value === 'approved') {
+      payload.dateStart = editDateStart.value
+      payload.dateEnd = editDateEnd.value
+      payload.reason = editReason.value.trim()
+    }
+    await absenceStore.reviewRequest(selectedRequest.value.id, payload)
+    toast.showSuccess(
+      reviewAction.value === 'approved' ? t('toast.absence.approved') : t('toast.absence.rejected'),
+    )
     showReviewModal.value = false
     await absenceStore.fetchRequests({ page: absenceStore.pagination.currentPage })
     selectedRequest.value = null
@@ -128,7 +124,9 @@ onMounted(loadRequests)
   <div class="space-y-6">
     <div>
       <h1 class="text-2xl font-bold text-gray-900">Justificatifs d'absence</h1>
-      <p class="text-sm text-gray-500 mt-1">Consultez et traitez les demandes soumises par les employés</p>
+      <p class="text-sm text-gray-500 mt-1">
+        Consultez et traitez les demandes soumises par les employés
+      </p>
     </div>
 
     <!-- Filtres -->
@@ -149,7 +147,9 @@ onMounted(loadRequests)
 
     <!-- Liste -->
     <div v-if="absenceStore.isLoading" class="flex justify-center py-16">
-      <div class="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+      <div
+        class="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"
+      ></div>
     </div>
 
     <div v-else-if="sortedRequests.length === 0" class="text-center py-16 text-gray-400">
@@ -157,15 +157,10 @@ onMounted(loadRequests)
     </div>
 
     <div v-else class="space-y-3">
-      <AppCard
-        v-for="req in sortedRequests"
-        :key="req.id"
-      >
+      <AppCard v-for="req in sortedRequests" :key="req.id">
         <div class="flex items-start justify-between gap-4 flex-wrap">
           <div class="flex items-start gap-4 min-w-0">
-            <div class="flex-shrink-0 w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-sm font-semibold text-gray-600">
-              {{ req.employeeName.charAt(0).toUpperCase() }}
-            </div>
+            <AppAvatar :src="req.employeeAvatar" :name="req.employeeName" size="lg" />
             <div class="min-w-0">
               <p class="font-semibold text-gray-900">{{ req.employeeName }}</p>
               <p class="text-sm text-gray-500">
@@ -222,17 +217,17 @@ onMounted(loadRequests)
           </div>
         </div>
 
-        <div v-if="req.reviewNote" class="mt-3 pt-3 border-t border-gray-100 text-sm text-gray-500 italic">
+        <div
+          v-if="req.reviewNote"
+          class="mt-3 pt-3 border-t border-gray-100 text-sm text-gray-500 italic"
+        >
           Note : {{ req.reviewNote }}
         </div>
       </AppCard>
     </div>
 
     <!-- Pagination -->
-    <div
-      v-if="absenceStore.pagination.totalPages > 1"
-      class="flex justify-center gap-2 pt-2"
-    >
+    <div v-if="absenceStore.pagination.totalPages > 1" class="flex justify-center gap-2 pt-2">
       <AppButton
         variant="secondary"
         :disabled="absenceStore.pagination.currentPage === 1"
@@ -253,7 +248,7 @@ onMounted(loadRequests)
     </div>
 
     <!-- Modal détail -->
-    <AppModal v-model="showDetailModal" title="Détail de la demande" size="md">
+    <AppModal v-model="showDetailModal" title="Détails de la demande" size="md">
       <div v-if="selectedRequest" class="space-y-4 text-sm">
         <div class="grid grid-cols-2 gap-4">
           <div>
@@ -276,7 +271,9 @@ onMounted(loadRequests)
           </div>
           <div>
             <p class="text-gray-400 text-xs mb-0.5">Durée</p>
-            <p class="font-medium text-gray-900">{{ daysDiff(selectedRequest.dateStart, selectedRequest.dateEnd) }}</p>
+            <p class="font-medium text-gray-900">
+              {{ daysDiff(selectedRequest.dateStart, selectedRequest.dateEnd) }}
+            </p>
           </div>
           <div>
             <p class="text-gray-400 text-xs mb-0.5">Soumis le</p>
@@ -311,14 +308,28 @@ onMounted(loadRequests)
       <template #footer>
         <div class="flex justify-end gap-3">
           <template v-if="selectedRequest?.status === 'pending'">
-            <AppButton variant="danger" @click="openReview(selectedRequest!, 'rejected'); showDetailModal = false">
+            <AppButton
+              variant="danger"
+              @click="
+                openReview(selectedRequest, 'rejected');
+                showDetailModal = false;
+              "
+            >
               Rejeter
             </AppButton>
-            <AppButton variant="primary" @click="openReview(selectedRequest!, 'approved'); showDetailModal = false">
+            <AppButton
+              variant="primary"
+              @click="
+                openReview(selectedRequest, 'approved');
+                showDetailModal = false;
+              "
+            >
               Approuver
             </AppButton>
           </template>
-          <AppButton v-else variant="secondary" @click="showDetailModal = false">{{ t('common.close') }}</AppButton>
+          <AppButton v-else variant="secondary" @click="showDetailModal = false">{{
+            t('common.close')
+          }}</AppButton>
         </div>
       </template>
     </AppModal>
@@ -333,18 +344,20 @@ onMounted(loadRequests)
         <p class="text-sm text-gray-600">
           <template v-if="reviewAction === 'approved'">
             Vous allez approuver la demande d'absence de
-            <strong>{{ selectedRequest?.employeeName }}</strong>.
+            <strong>{{ selectedRequest?.employeeName }}</strong
+            >.
           </template>
           <template v-else>
             Vous allez rejeter la demande d'absence de
-            <strong>{{ selectedRequest?.employeeName }}</strong>.
+            <strong>{{ selectedRequest?.employeeName }}</strong
+            >.
           </template>
         </p>
 
         <div v-if="reviewAction === 'approved'" class="space-y-3 rounded-lg bg-gray-50 p-3">
           <p class="text-xs text-gray-500">
-            Vous pouvez ajuster les dates ou le motif avant de valider. Les valeurs
-            modifiées seront prises en compte pour les pointages et la paie.
+            Vous pouvez ajuster les dates ou le motif avant de valider. Les valeurs modifiées seront
+            prises en compte pour les pointages et la paie.
           </p>
           <div class="grid grid-cols-2 gap-3">
             <div>
@@ -375,9 +388,7 @@ onMounted(loadRequests)
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">
-            Note (optionnel)
-          </label>
+          <label class="block text-sm font-medium text-gray-700 mb-1"> Note (optionnel) </label>
           <textarea
             v-model="reviewNote"
             rows="3"
@@ -388,7 +399,9 @@ onMounted(loadRequests)
       </div>
       <template #footer>
         <div class="flex justify-end gap-3">
-          <AppButton variant="secondary" @click="showReviewModal = false">{{ t('common.cancel') }}</AppButton>
+          <AppButton variant="secondary" @click="showReviewModal = false">{{
+            t('common.cancel')
+          }}</AppButton>
           <AppButton
             :variant="reviewAction === 'approved' ? 'primary' : 'danger'"
             :loading="absenceStore.isSubmitting"

@@ -1,27 +1,41 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth.store'
 import { useCompanyStore } from '@/stores/company.store'
+import { useActiveCompanyStore } from '@/stores/active-company.store'
 import { usePermissions } from '@/composables/usePermissions'
 import { useToast } from '@/composables/useToast'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppInput from '@/components/ui/AppInput.vue'
+import AppSelect from '@/components/ui/AppSelect.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import AppConfirmDialog from '@/components/ui/AppConfirmDialog.vue'
 
 const { t } = useI18n()
-const router = useRouter()
 const authStore = useAuthStore()
 const companyStore = useCompanyStore()
+const activeCompanyStore = useActiveCompanyStore()
 const permissions = usePermissions()
 const toast = useToast()
 
 const showDeactivateDialog = ref(false)
 
 const company = computed(() => companyStore.currentCompany)
+
+// super_admin et technicien n'ont pas de company_id fixe : ils choisissent l'entreprise
+// a gerer via un selecteur. admin_enterprise est verrouille sur sa propre entreprise.
+const needsCompanySelector = permissions.isSetupRole
+const selectedCompanyId = ref('')
+const currentCompanyId = computed(
+  () => authStore.user?.companyId || selectedCompanyId.value || '',
+)
+
+const companyOptions = computed(() => [
+  { label: t('parametres.selectCompanyPlaceholder'), value: '' },
+  ...companyStore.companies.map((c) => ({ label: c.name, value: c.id })),
+])
 
 const form = ref({
   name: '',
@@ -52,25 +66,45 @@ async function saveSettings() {
   }
 }
 
-function handleDeactivate() {
-  toast.showSuccess(t('parametres.companySaved'))
-  showDeactivateDialog.value = false
+async function handleDeactivate() {
+  if (!company.value) return
+  try {
+    await companyStore.toggleActive(company.value.id)
+    toast.showSuccess(t('parametres.companySaved'))
+  } catch {
+    toast.showError(t('parametres.settingsSaveError'))
+  } finally {
+    showDeactivateDialog.value = false
+  }
 }
 
-onMounted(async () => {
-  await companyStore.fetchCompanies({ perPage: 200 })
-  const userCompanyId = authStore.user?.companyId
-  if (userCompanyId) {
-    await companyStore.fetchCompany(userCompanyId)
-  } else if (companyStore.companies.length > 0) {
-    await companyStore.fetchCompany(companyStore.companies[0]!.id)
-  }
+function fillForm() {
   if (company.value) {
     form.value.name = company.value.name
     form.value.email = company.value.email ?? ''
     form.value.phone = company.value.phone ?? ''
     form.value.address = company.value.address ?? ''
   }
+}
+
+async function loadCompany() {
+  if (!currentCompanyId.value) {
+    companyStore.currentCompany = null
+    return
+  }
+  await companyStore.fetchCompany(currentCompanyId.value)
+  fillForm()
+}
+
+watch(currentCompanyId, loadCompany)
+
+onMounted(async () => {
+  await companyStore.fetchCompanies({ perPage: 200 })
+  // Technicien : pre-selectionner l'entreprise active choisie a la connexion.
+  if (permissions.isTechnicien.value && !selectedCompanyId.value && activeCompanyStore.activeCompanyId) {
+    selectedCompanyId.value = activeCompanyStore.activeCompanyId
+  }
+  await loadCompany()
 })
 </script>
 
@@ -78,7 +112,22 @@ onMounted(async () => {
   <div class="space-y-6">
     <h1 class="text-2xl font-bold text-gray-900">{{ t('parametres.companyTitle') }}</h1>
 
-    <div v-if="companyStore.isLoading" class="flex justify-center py-12">
+    <!-- Selecteur entreprise (super_admin / technicien) -->
+    <AppCard v-if="needsCompanySelector">
+      <label class="mb-1 block text-sm font-medium text-gray-700">
+        {{ t('parametres.companySelectorLabel') }}
+      </label>
+      <AppSelect v-model="selectedCompanyId" :options="companyOptions" />
+    </AppCard>
+
+    <div
+      v-if="needsCompanySelector && !currentCompanyId"
+      class="rounded-lg border border-dashed border-gray-300 py-12 text-center text-sm text-gray-500"
+    >
+      {{ t('parametres.selectCompanyPrompt') }}
+    </div>
+
+    <div v-else-if="companyStore.isLoading" class="flex justify-center py-12">
       <div class="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
     </div>
 

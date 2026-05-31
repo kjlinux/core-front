@@ -14,6 +14,16 @@ import {
   BellAlertIcon,
   ShieldCheckIcon,
 } from '@heroicons/vue/24/outline'
+import {
+  alertSeverityLabel,
+  alertSeverityVariant,
+  alertStatusLabel,
+  alertStatusVariant,
+  healthStatusLabel,
+  healthStatusVariant,
+  labelOf,
+  variantOf,
+} from '@/utils/support-labels'
 
 const store = useSupportStore()
 const toast = useToast()
@@ -51,7 +61,11 @@ const recentAlerts = computed(() => store.alerts.slice(0, 5))
 
 onMounted(async () => {
   try {
-    await Promise.all([store.fetchHealth(), store.fetchOverview(), store.fetchAlerts({ per_page: 10 })])
+    await Promise.all([
+      store.fetchHealth(),
+      store.fetchOverview(),
+      store.fetchAlerts({ perPage: 10 }),
+    ])
   } catch (e) {
     toast.error(t('toast.support.loadError'), extractApiErrorMessage(e, t('common.genericError')))
   }
@@ -89,26 +103,34 @@ onMounted(async () => {
         :value="store.overview?.alerts.open ?? 0"
         :icon="BellAlertIcon"
         :icon-bg-class="(store.overview?.alerts.open ?? 0) > 0 ? 'bg-red-100' : 'bg-gray-100'"
-        :icon-color-class="(store.overview?.alerts.open ?? 0) > 0 ? 'text-red-600' : 'text-gray-600'"
+        :icon-color-class="
+          (store.overview?.alerts.open ?? 0) > 0 ? 'text-red-600' : 'text-gray-600'
+        "
       />
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <AppCard title="Santé système" subtitle="Composants critiques">
         <template #actions>
-          <RouterLink to="/support-it/health" class="text-sm text-blue-600 hover:underline">Détail</RouterLink>
+          <RouterLink to="/support-it/health" class="text-sm text-blue-600 hover:underline"
+            >Détails</RouterLink
+          >
         </template>
         <div v-if="store.health" class="space-y-2">
-          <div v-for="(c, name) in {
-            'Base de données': store.health.components.db,
-            'Cache': store.health.components.cache,
-            'File de jobs': store.health.components.queue,
-            'Broker MQTT': store.health.components.mqtt,
-            'WebSocket (Reverb)': store.health.components.reverb,
-          }" :key="name" class="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
+          <div
+            v-for="(c, name) in {
+              'Base de données': store.health.components.db,
+              Cache: store.health.components.cache,
+              'File de jobs': store.health.components.queue,
+              'Broker MQTT': store.health.components.mqtt,
+              'WebSocket (Reverb)': store.health.components.reverb,
+            }"
+            :key="name"
+            class="flex items-center justify-between py-2 border-b border-gray-100 last:border-0"
+          >
             <span class="text-sm text-gray-700">{{ name }}</span>
-            <AppBadge :variant="c.status === 'ok' ? 'success' : c.status === 'degraded' ? 'warning' : 'danger'" size="sm">
-              {{ c.status }}
+            <AppBadge :variant="variantOf(healthStatusVariant, c.status)" size="sm">
+              {{ labelOf(healthStatusLabel, c.status) }}
             </AppBadge>
           </div>
         </div>
@@ -117,20 +139,31 @@ onMounted(async () => {
 
       <AppCard title="Alertes récentes">
         <template #actions>
-          <RouterLink to="/support-it/alerts" class="text-sm text-blue-600 hover:underline">Voir tout</RouterLink>
+          <RouterLink to="/support-it/alerts" class="text-sm text-blue-600 hover:underline"
+            >Voir tout</RouterLink
+          >
         </template>
-        <div v-if="recentAlerts.length === 0" class="text-sm text-gray-500 py-4">Aucune alerte récente.</div>
+        <div v-if="recentAlerts.length === 0" class="text-sm text-gray-500 py-4">
+          Aucune alerte récente.
+        </div>
         <div v-else class="space-y-3">
-          <div v-for="a in recentAlerts" :key="a.id" class="flex items-start gap-3 py-2 border-b border-gray-100 last:border-0">
-            <AppBadge
-              :variant="a.severity === 'critical' || a.severity === 'high' ? 'danger' : a.severity === 'medium' ? 'warning' : 'info'"
-              size="sm"
-            >{{ a.severity }}</AppBadge>
+          <div
+            v-for="a in recentAlerts"
+            :key="a.id"
+            class="flex items-start gap-3 py-2 border-b border-gray-100 last:border-0"
+          >
+            <AppBadge :variant="variantOf(alertSeverityVariant, a.severity)" size="sm">{{
+              labelOf(alertSeverityLabel, a.severity)
+            }}</AppBadge>
             <div class="flex-1 min-w-0">
               <p class="text-sm font-medium text-gray-900 truncate">{{ a.title }}</p>
-              <p class="text-xs text-gray-500">{{ new Date(a.created_at).toLocaleString('fr-FR') }}</p>
+              <p class="text-xs text-gray-500">
+                {{ new Date(a.created_at).toLocaleString('fr-FR') }}
+              </p>
             </div>
-            <AppBadge :variant="a.status === 'resolved' ? 'success' : 'neutral'" size="sm">{{ a.status }}</AppBadge>
+            <AppBadge :variant="variantOf(alertStatusVariant, a.status)" size="sm">{{
+              labelOf(alertStatusLabel, a.status)
+            }}</AppBadge>
           </div>
         </div>
       </AppCard>

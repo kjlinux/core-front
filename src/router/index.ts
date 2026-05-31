@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { authGuard } from './guards'
 import authRoutes from './routes/auth.routes'
 import dashboardRoutes from './routes/dashboard.routes'
+import analyticsRoutes from './routes/analytics.routes'
 import pointageRfidRoutes from './routes/pointage-rfid.routes'
 import organisationRoutes from './routes/organisation.routes'
 import pointageQrcodeRoutes from './routes/pointage-qrcode.routes'
@@ -13,6 +14,7 @@ import settingsRoutes from './routes/settings.routes'
 import paieRoutes from './routes/paie.routes'
 import publicRoutes from './routes/public.routes'
 import supportItRoutes from './routes/support-it.routes'
+import whatsNewRoutes from './routes/whats-new.routes'
 import { abonnementRoutes } from './routes/abonnement.routes'
 import { crmRoutes } from './routes/crm.routes'
 
@@ -22,6 +24,7 @@ const router = createRouter({
     ...publicRoutes,
     ...authRoutes,
     ...dashboardRoutes,
+    ...analyticsRoutes,
     ...organisationRoutes,
     ...pointageRfidRoutes,
     ...pointageQrcodeRoutes,
@@ -32,6 +35,7 @@ const router = createRouter({
     ...settingsRoutes,
     ...paieRoutes,
     ...supportItRoutes,
+    ...whatsNewRoutes,
     ...abonnementRoutes,
     ...crmRoutes,
     {

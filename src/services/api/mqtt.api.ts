@@ -22,4 +22,8 @@ export const mqttApi = {
       command,
     }).then((r) => r.data)
   },
+
+  scanCard(deviceId: string): Promise<SendCommandResponse> {
+    return apiClient.post(`/rfid/devices/${deviceId}/scan`).then((r) => r.data)
+  },
 }

@@ -6,23 +6,40 @@ import type {
   PaginatedResponse,
   SupportDevice,
   SystemHealth,
+  User,
 } from '@/types'
 
 export interface DevicesFilter {
-  company_id?: string
-  site_id?: string
+  companyId?: string
+  siteId?: string
   type?: DeviceKind
   status?: 'online' | 'offline'
   witness?: boolean
+  search?: string
+  page?: number
+  perPage?: number
 }
 
 export interface AlertsFilter {
   status?: 'open' | 'acknowledged' | 'resolved'
   severity?: 'low' | 'medium' | 'high' | 'critical'
   type?: string
-  company_id?: string
+  companyId?: string
+  search?: string
   page?: number
-  per_page?: number
+  perPage?: number
+}
+
+export interface CompaniesFilter {
+  search?: string
+  page?: number
+  perPage?: number
+}
+
+export interface WitnessFilter {
+  search?: string
+  page?: number
+  perPage?: number
 }
 
 export interface SupportCompanyRow {
@@ -54,6 +71,29 @@ export interface SupportCompanyDetail {
   alerts: DeviceAlert[]
 }
 
+export interface ImpersonationResult {
+  accessToken: string
+  user: User
+  impersonator: { id: string; name: string }
+}
+
+/** Détail capteur renvoyé par /support/devices/{kind}/{id} (clés snake_case). */
+export interface SupportDeviceDetail {
+  id: string
+  kind: DeviceKind
+  name?: string
+  serial_number?: string | null
+  company_id?: string | null
+  company_name?: string | null
+  site_id?: string | null
+  site_name?: string | null
+  is_online?: boolean
+  is_witness?: boolean
+  firmware_version?: string | null
+  last_ping_at?: string | null
+  last_sync_at?: string | null
+}
+
 export type SupportCommand = 'STATUS' | 'REBOOT' | 'RESET'
 
 export const supportApi = {
@@ -65,11 +105,11 @@ export const supportApi = {
     return apiClient.get('/support/devices/overview', { params: { company_id: companyId } }).then((r) => r.data)
   },
 
-  getDevices(filter: DevicesFilter = {}): Promise<SupportDevice[]> {
+  getDevices(filter: DevicesFilter = {}): Promise<PaginatedResponse<SupportDevice>> {
     return apiClient.get('/support/devices', { params: filter }).then((r) => r.data)
   },
 
-  getDevice(kind: DeviceKind, id: string): Promise<{ device: any; kind: DeviceKind; alerts: DeviceAlert[] }> {
+  getDevice(kind: DeviceKind, id: string): Promise<{ device: SupportDeviceDetail; kind: DeviceKind; alerts: DeviceAlert[] }> {
     return apiClient.get(`/support/devices/${kind}/${id}`).then((r) => r.data)
   },
 
@@ -77,8 +117,8 @@ export const supportApi = {
     return apiClient.post(`/support/devices/${kind}/${id}/ping`).then((r) => r.data)
   },
 
-  listWitnesses(): Promise<SupportDevice[]> {
-    return apiClient.get('/support/witnesses').then((r) => r.data)
+  listWitnesses(filter: WitnessFilter = {}): Promise<PaginatedResponse<SupportDevice>> {
+    return apiClient.get('/support/witnesses', { params: filter }).then((r) => r.data)
   },
 
   markWitness(kind: DeviceKind, id: string): Promise<void> {
@@ -101,8 +141,8 @@ export const supportApi = {
     return apiClient.post(`/support/alerts/${id}/resolve`).then((r) => r.data)
   },
 
-  getCompanies(): Promise<SupportCompanyRow[]> {
-    return apiClient.get('/support/companies').then((r) => r.data)
+  getCompanies(filter: CompaniesFilter = {}): Promise<PaginatedResponse<SupportCompanyRow>> {
+    return apiClient.get('/support/companies', { params: filter }).then((r) => r.data)
   },
 
   getCompanyDetail(id: string): Promise<SupportCompanyDetail> {
@@ -115,5 +155,15 @@ export const supportApi = {
 
   resetUserPassword(userId: string): Promise<{ userId: string; tempPassword: string }> {
     return apiClient.post(`/support/users/${userId}/reset-password`).then((r) => r.data)
+  },
+
+  /** Prise de contrôle : émet un token agissant comme l'admin de l'entreprise. */
+  impersonateCompany(companyId: string): Promise<ImpersonationResult> {
+    return apiClient.post(`/support/companies/${companyId}/impersonate`).then((r) => r.data)
+  },
+
+  /** Prise de contrôle d'un utilisateur précis. */
+  impersonateUser(userId: string): Promise<ImpersonationResult> {
+    return apiClient.post(`/support/users/${userId}/impersonate`).then((r) => r.data)
   },
 }

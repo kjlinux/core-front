@@ -16,8 +16,10 @@ const { t } = useI18n()
 const store = useMarketplaceStore()
 const toast = useToast()
 
+type ProductRow = { id: string; name?: string; stockQuantity: number; status?: string; [key: string]: unknown }
+
 const showAdjustModal = ref(false)
-const selectedProduct = ref<any>(null)
+const selectedProduct = ref<ProductRow | null>(null)
 const adjustForm = ref({ newQuantity: 0, reason: '' })
 
 const { filters, search, applyFilters, handlePageChange, reload } = useServerTable({
@@ -69,13 +71,14 @@ const tableData = computed(() =>
   })),
 )
 
-function openAdjustModal(product: any) {
+function openAdjustModal(product: ProductRow) {
   selectedProduct.value = product
   adjustForm.value = { newQuantity: product.stockQuantity, reason: '' }
   showAdjustModal.value = true
 }
 
 async function saveAdjustment() {
+  if (!selectedProduct.value) return
   if (!adjustForm.value.reason) {
     toast.showError(t('marketplace.adjustReasonRequired'))
     return

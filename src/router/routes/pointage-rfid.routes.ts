@@ -20,7 +20,7 @@ const pointageRfidRoutes: RouteRecordRaw[] = [
         name: 'rfid-device-detail',
         component: () => import('@/pages/pointage-rfid/devices/DeviceDetailPage.vue'),
         meta: {
-          title: 'Détail terminal RFID',
+          title: 'Détails terminal RFID',
           roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN_ENTERPRISE, UserRole.TECHNICIEN],
         },
       },
@@ -43,7 +43,7 @@ const pointageRfidRoutes: RouteRecordRaw[] = [
         path: 'cards/:id',
         name: 'rfid-card-detail',
         component: () => import('@/pages/pointage-rfid/cards/CardDetailPage.vue'),
-        meta: { title: 'Détail carte' },
+        meta: { title: 'Détails carte' },
       },
       {
         path: 'cards/:id/history',

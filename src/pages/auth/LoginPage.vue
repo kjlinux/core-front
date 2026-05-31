@@ -129,7 +129,7 @@ async function handleLogin() {
     authStore.persistUser()
     const redirect = route.query.redirect as string
     router.push(redirect || '/')
-  } catch (error: any) {
+  } catch (error) {
     errorMessage.value = extractApiErrorMessage(error, t('auth.loginErrorFallback'))
   }
 }

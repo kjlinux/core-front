@@ -2,6 +2,7 @@ import type { RouteLocationNormalized } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
 import { useActiveCompanyStore } from '@/stores/active-company.store'
 import { useSubscriptionStore } from '@/stores/subscription.store'
+import { shouldAutoShowWhatsNew } from '@/composables/useWhatsNew'
 import { PLAN_FEATURES } from '@/config/plan-features'
 import type { UserRole } from '@/types/enums'
 import type { PlanCode, PlanFeature } from '@/types/subscription'
@@ -38,6 +39,27 @@ export function authGuard(to: RouteLocationNormalized, _from: RouteLocationNorma
     }
   }
 
+  // Mise en avant des nouveautes : a la 1re arrivee sur le tableau de bord apres une
+  // mise a jour, on ouvre la presentation des nouveautes (filtree par role). Une seule
+  // fois : la page se marque comme vue (cf. useWhatsNew), ensuite seul le bandeau
+  // "revoir" subsiste dans l'en-tete. Place AVANT la redirection support_it -> sante et
+  // AVANT le confinement employe pour que tous les roles y aient droit a la connexion.
+  if (
+    auth.isAuthenticated &&
+    auth.user &&
+    to.name === 'dashboard' &&
+    shouldAutoShowWhatsNew(auth.user)
+  ) {
+    return { name: 'whats-new' }
+  }
+
+  // support_it n'a pas de tableau de bord global : sa page d'accueil est la santé système.
+  // On le redirige donc dès qu'il atterrit sur le dashboard (login frais, lien logo, etc.).
+  // super_admin garde le dashboard global même s'il a aussi accès aux pages support.
+  if (auth.isAuthenticated && auth.user?.role === 'support_it' && to.name === 'dashboard') {
+    return { name: 'support-health' }
+  }
+
   // Check roles from matched routes (most specific route with roles wins, then falls back to parent)
   const matchedWithRoles = to.matched
     .slice()
@@ -55,9 +77,9 @@ export function authGuard(to: RouteLocationNormalized, _from: RouteLocationNorma
   const matchedWithFeature = to.matched
     .slice()
     .reverse()
-    .find((r) => (r.meta as any)?.requiredFeature)
+    .find((r) => (r.meta as { requiredFeature?: PlanFeature })?.requiredFeature)
   if (matchedWithFeature && auth.user?.role !== 'super_admin') {
-    const required = (matchedWithFeature.meta as any).requiredFeature as PlanFeature
+    const required = (matchedWithFeature.meta as { requiredFeature?: PlanFeature }).requiredFeature as PlanFeature
     const subs = useSubscriptionStore()
     const plan = (subs.state?.subscription as PlanCode) ?? 'freemium'
     const allowed = PLAN_FEATURES[plan] ?? []
@@ -72,9 +94,9 @@ export function authGuard(to: RouteLocationNormalized, _from: RouteLocationNorma
     }
   }
 
-  // Employe: can only access /mon-espace and /parametres/profile
+  // Employe: can only access /mon-espace, /parametres/profile et la page nouveautes
   if (auth.isAuthenticated && auth.user?.role === 'employe') {
-    const allowed = ['/mon-espace', '/parametres/profile']
+    const allowed = ['/mon-espace', '/parametres/profile', '/nouveautes']
     const isAllowed = allowed.some((prefix) => to.path === prefix || to.path.startsWith(prefix + '/'))
     if (!isAllowed && to.name !== 'login') {
       return { path: '/mon-espace' }

@@ -239,7 +239,7 @@ onMounted(async () => {
   }
 })
 
-function handleDepartmentClick(row: any) {
+function handleDepartmentClick(row: { id: string }) {
   router.push({ name: 'rfid-department-detail', params: { id: row.id } })
 }
 

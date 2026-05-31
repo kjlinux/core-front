@@ -136,7 +136,7 @@ async function handleSubmit() {
       password_confirmation: form.value.passwordConfirmation,
     })
     successMessage.value = t('auth.passwordResetSuccess')
-  } catch (err: any) {
+  } catch (err) {
     errorMessage.value = extractApiErrorMessage(err, t('auth.invalidLinkFallback'))
   } finally {
     isLoading.value = false

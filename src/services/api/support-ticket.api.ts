@@ -1,4 +1,5 @@
 import apiClient from './client'
+import type { PaginatedResponse } from '@/types'
 
 export type TicketStatus = 'open' | 'in_progress' | 'resolved'
 export type TicketPriority = 'low' | 'medium' | 'high'
@@ -37,7 +38,16 @@ export const supportTicketApi = {
   },
 
   // Support
-  listAll(filter: { status?: TicketStatus; priority?: TicketPriority; company_id?: string } = {}): Promise<SupportTicket[]> {
+  listAll(
+    filter: {
+      status?: TicketStatus
+      priority?: TicketPriority
+      companyId?: string
+      search?: string
+      page?: number
+      perPage?: number
+    } = {},
+  ): Promise<PaginatedResponse<SupportTicket>> {
     return apiClient.get('/support/tickets', { params: filter }).then((r) => r.data)
   },
   update(id: string, data: { status?: TicketStatus; support_notes?: string }): Promise<ClientTicket> {

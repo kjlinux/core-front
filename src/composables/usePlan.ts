@@ -18,7 +18,9 @@ export function usePlan() {
 
   function hasFeature(feature: PlanFeature): boolean {
     if (isSuperAdmin.value) return true
-    const allowed = PLAN_FEATURES[planCode.value] ?? []
+    // Autorite : la liste renvoyee par l'API (/subscriptions/me) qui tient compte de
+    // l'expiration. Fallback sur la grille statique tant que l'etat n'est pas hydrate.
+    const allowed = subs.state?.features ?? PLAN_FEATURES[planCode.value] ?? []
     return allowed.includes(feature)
   }
 

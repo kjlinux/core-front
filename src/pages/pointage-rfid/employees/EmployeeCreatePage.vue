@@ -56,7 +56,7 @@ const handleSubmit = async () => {
     await employeeStore.createEmployee(formData.value)
     toast.success(t('common.success'), t('employees.createdSuccess'))
     router.push({ name: 'rfid-employees' })
-  } catch (error: any) {
+  } catch (error) {
     toast.error(t('common.error'), extractApiErrorMessage(error, t('employees.createError')))
   }
 }

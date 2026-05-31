@@ -13,7 +13,9 @@ import AppButton from '@/components/ui/AppButton.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
 import AppInput from '@/components/ui/AppInput.vue'
 import AppSkeleton from '@/components/ui/AppSkeleton.vue'
+import FeatureLock from '@/components/ui/FeatureLock.vue'
 import { PlusIcon, TrashIcon, ClockIcon } from '@heroicons/vue/24/outline'
+import { usePlan } from '@/composables/usePlan'
 
 type DraftRule = Pick<LatenessRule, 'toleranceMinutes' | 'minutesThreshold' | 'penaltyValue' | 'penaltyType' | 'applyPer'>
 
@@ -21,6 +23,7 @@ const auth = useAuthStore()
 const companyStore = useCompanyStore()
 const toast = useToast()
 const { t } = useI18n()
+const { hasFeature } = usePlan()
 
 const isLoading = ref(true)
 const isSaving = ref(false)
@@ -135,6 +138,11 @@ async function save() {
 watch(selectedCompanyId, load)
 
 onMounted(async () => {
+  // Pas de chargement si le plan n'inclut pas la paie : la page affiche le verrou.
+  if (!hasFeature('payroll')) {
+    isLoading.value = false
+    return
+  }
   if (isSuperAdmin.value) {
     await companyStore.fetchCompanies({ perPage: 200 })
     selectedCompanyId.value = ''
@@ -148,6 +156,7 @@ onMounted(async () => {
 </script>
 
 <template>
+  <FeatureLock feature="payroll">
   <div class="space-y-6">
     <div class="flex items-center justify-between">
       <div>
@@ -282,4 +291,5 @@ onMounted(async () => {
       </AppCard>
     </div>
   </div>
+  </FeatureLock>
 </template>

@@ -4,7 +4,8 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth.store'
 import { onClickOutside } from '@vueuse/core'
-import { UserCircleIcon, ArrowRightOnRectangleIcon, Cog6ToothIcon } from '@heroicons/vue/24/outline'
+import { ArrowRightOnRectangleIcon, Cog6ToothIcon } from '@heroicons/vue/24/outline'
+import AppAvatar from '@/components/ui/AppAvatar.vue'
 import { ROLE_LABELS } from '@/utils/constants'
 
 const { t } = useI18n()
@@ -30,7 +31,7 @@ async function handleLogout() {
       class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
       @click="isOpen = !isOpen"
     >
-      <UserCircleIcon class="h-8 w-8 text-gray-400" />
+      <AppAvatar :src="auth.user?.avatar" :name="auth.fullName" size="md" />
       <div v-if="auth.user" class="hidden text-left md:block">
         <p class="font-medium">{{ auth.fullName }}</p>
         <p class="text-xs text-gray-500">{{ ROLE_LABELS[auth.user.role] }}</p>

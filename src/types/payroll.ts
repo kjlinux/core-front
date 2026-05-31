@@ -28,6 +28,8 @@ export interface PayrollConfig {
   standardDailyHours: number
   // nombre de jours ouvrables par mois (pour mode mensuel)
   workingDaysPerMonth: number
+  // nombre de jours travailles par semaine (pour mode hebdomadaire)
+  workingDaysPerWeek: number
   // jour de versement de la paie (1-31)
   paymentDay: number
   // activer le calcul automatique des penalites retard

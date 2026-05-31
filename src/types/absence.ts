@@ -4,6 +4,7 @@ export interface AbsenceRequest {
   id: string
   employeeId: string
   employeeName: string
+  employeeAvatar: string | null
   companyId: string
   dateStart: string
   dateEnd: string
@@ -37,6 +38,10 @@ export interface CreateAbsencePayload {
 export interface ReviewAbsencePayload {
   status: 'approved' | 'rejected'
   reviewNote?: string
+  // Ajustements optionnels appliques atomiquement a l'approbation (ignores au rejet).
+  dateStart?: string
+  dateEnd?: string
+  reason?: string
 }
 
 export interface UpdateAbsencePayload {

@@ -22,7 +22,7 @@ export const attendanceApi = {
     return apiClient.get('/attendance/daily', { params: { date, ...filters } }).then((r) => r.data)
   },
 
-  getMonthlyReport(month: string, filters?: AttendanceFilters): Promise<any> {
+  getMonthlyReport(month: string, filters?: AttendanceFilters): Promise<unknown> {
     return apiClient.get('/attendance/monthly', { params: { month, ...filters } }).then((r) => r.data)
   },
 

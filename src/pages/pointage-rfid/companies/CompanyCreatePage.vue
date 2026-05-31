@@ -38,7 +38,7 @@ async function handleSubmit() {
     }
     toast.success(t('common.success'), t('companies.createdSuccess'))
     router.push({ name: 'rfid-companies' })
-  } catch (error: any) {
+  } catch (error) {
     toast.error(t('common.error'), extractApiErrorMessage(error, t('companies.createError')))
   }
 }

@@ -23,7 +23,7 @@ function readState() {
     state.value = 'disconnected'
     return
   }
-  const pusher: any = (echo.connector as any)?.pusher
+  const pusher = (echo.connector as { pusher?: { connection?: { state?: string } } })?.pusher
   const s: string | undefined = pusher?.connection?.state
   if (s === 'connected') state.value = 'connected'
   else if (s === 'connecting' || s === 'initialized') state.value = 'connecting'

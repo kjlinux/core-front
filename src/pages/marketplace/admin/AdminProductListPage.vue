@@ -101,7 +101,7 @@ async function updateStock() {
   }
 }
 
-async function toggleActive(id: string, product: any) {
+async function toggleActive(id: string, product: { isActive: boolean }) {
   try {
     await store.updateProduct(id, { isActive: !product.isActive })
     toast.showSuccess(product.isActive ? t('marketplace.productDisabled') : t('marketplace.productEnabled'))

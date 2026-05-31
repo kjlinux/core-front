@@ -2,6 +2,7 @@ import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import type { Payslip } from '@/types/payroll'
 import { i18n } from '@/plugins/i18n'
+import { sanitizePdfText } from '@/utils/format'
 
 const t = (key: string, params?: Record<string, unknown>) =>
   i18n.global.t(key, params ?? {}) as string
@@ -12,14 +13,16 @@ function localeTag(): string {
 
 const PAYMENT_MODE_KEYS: Record<string, string> = {
   monthly: 'payslip.modeMonthly',
-  hourly:  'payslip.modeHourly',
-  daily:   'payslip.modeDaily',
-  weekly:  'payslip.modeWeekly',
+  hourly: 'payslip.modeHourly',
+  daily: 'payslip.modeDaily',
+  weekly: 'payslip.modeWeekly',
   forfait: 'payslip.modeForfait',
 }
 
 function formatAmount(amount: number): string {
-  return new Intl.NumberFormat(localeTag()).format(amount) + ' FCFA'
+  // sanitizePdfText : Intl utilise une espace insécable comme séparateur de
+  // milliers, que jsPDF mesure mal et qui fait déborder la colonne « Montant ».
+  return sanitizePdfText(new Intl.NumberFormat(localeTag()).format(amount)) + ' FCFA'
 }
 
 function formatDate(date: string): string {
@@ -27,17 +30,17 @@ function formatDate(date: string): string {
 }
 
 const C = {
-  primary:    [30, 41, 59]    as [number, number, number],
+  primary: [30, 41, 59] as [number, number, number],
   primary400: [148, 163, 184] as [number, number, number],
   primary100: [241, 245, 249] as [number, number, number],
-  white:      [255, 255, 255] as [number, number, number],
-  text:       [30, 41, 59]    as [number, number, number],
-  textMuted:  [100, 116, 139] as [number, number, number],
-  green:      [22, 163, 74]   as [number, number, number],
-  greenBg:    [240, 253, 244] as [number, number, number],
-  red:        [220, 38, 38]   as [number, number, number],
-  border:     [226, 232, 240] as [number, number, number],
-  amber:      [202, 138, 4]   as [number, number, number],
+  white: [255, 255, 255] as [number, number, number],
+  text: [30, 41, 59] as [number, number, number],
+  textMuted: [100, 116, 139] as [number, number, number],
+  green: [22, 163, 74] as [number, number, number],
+  greenBg: [240, 253, 244] as [number, number, number],
+  red: [220, 38, 38] as [number, number, number],
+  border: [226, 232, 240] as [number, number, number],
+  amber: [202, 138, 4] as [number, number, number],
 }
 
 /**
@@ -64,16 +67,27 @@ function renderPayslipPage(doc: jsPDF, slip: Payslip, pageWidth: number, marginX
       .toUpperCase()
   })()
   doc.text(`${t('payslip.period')} : ${periodLabel}`, marginX, 21)
-  doc.text(t('payslip.rangeFromTo', { start: formatDate(slip.periodStart), end: formatDate(slip.periodEnd) }), marginX, 27)
+  doc.text(
+    t('payslip.rangeFromTo', {
+      start: formatDate(slip.periodStart),
+      end: formatDate(slip.periodEnd),
+    }),
+    marginX,
+    27,
+  )
   doc.text(`${t('payslip.company')} : ${slip.companyName}`, marginX, 33)
 
   // Matricule en haut a droite
   doc.setFontSize(8)
   doc.setTextColor(...C.primary400)
-  doc.text(`${t('payslip.employeeNumber')} : ${slip.employeeNumber}`, pageWidth - marginX, 21, { align: 'right' })
+  doc.text(`${t('payslip.employeeNumber')} : ${slip.employeeNumber}`, pageWidth - marginX, 21, {
+    align: 'right',
+  })
   const modeKey = PAYMENT_MODE_KEYS[slip.paymentMode]
   const modeLabel = modeKey ? t(modeKey) : slip.paymentMode
-  doc.text(`${t('payslip.paymentMode')} : ${modeLabel}`, pageWidth - marginX, 27, { align: 'right' })
+  doc.text(`${t('payslip.paymentMode')} : ${modeLabel}`, pageWidth - marginX, 27, {
+    align: 'right',
+  })
 
   let y = 50
 
@@ -110,42 +124,44 @@ function renderPayslipPage(doc: jsPDF, slip: Payslip, pageWidth: number, marginX
   const DEDUCTION = t('payslip.deduction')
   const GROSS = t('payslip.grossSalary')
 
-  const rows: (string | number)[][] = [
-    [t('payslip.baseSalary'), '', formatAmount(slip.baseSalary)],
-  ]
+  // slip.lines (construit par buildPayslipLines cote backend) est la SOURCE
+  // UNIQUE des lignes du tableau : salaire de base, primes, heures sup, et
+  // deductions (absence/retard) y figurent deja. On ne reaffiche donc ni
+  // slip.baseSalary ni les heures sup / deductions separement, sous peine de
+  // DOUBLER chaque montant dans le PDF (cause du salaire affiche x2).
+  const rows: (string | number)[][] = []
 
-  // Lignes additionnelles (primes etc.)
   if (slip.lines?.length) {
-    for (const line of slip.lines) {
-      rows.push([
-        line.label,
-        line.type === 'earning' ? BONUS : DEDUCTION,
-        (line.type === 'deduction' ? '-' : '+') + formatAmount(line.amount),
-      ])
-    }
-  }
-
-  if (slip.overtimeAmount > 0) {
-    rows.push([t('payslip.overtime', { hours: slip.overtimeHours }), BONUS, `+${formatAmount(slip.overtimeAmount)}`])
+    slip.lines.forEach((line, i) => {
+      if (i === 0) {
+        // 1re ligne = salaire de base : pas de signe +/- ni de type (ce n'est
+        // pas une prime), comme presente historiquement.
+        rows.push([line.label, '', formatAmount(line.amount)])
+      } else {
+        rows.push([
+          line.label,
+          line.type === 'earning' ? BONUS : DEDUCTION,
+          (line.type === 'deduction' ? '-' : '+') + formatAmount(line.amount),
+        ])
+      }
+    })
   }
 
   rows.push(['', '', ''])
   rows.push([GROSS, '', formatAmount(slip.grossAmount)])
   rows.push(['', '', ''])
 
-  // Affiche la ligne dès qu'il y a soit une déduction, soit des jours absents (ex: congé payé = jours sans déduction).
-  if (slip.absenceDeduction > 0 || slip.absentDays > 0) {
-    rows.push([
-      t('payslip.absenceLine', { days: slip.absentDays }),
-      DEDUCTION,
-      slip.absenceDeduction > 0 ? `-${formatAmount(slip.absenceDeduction)}` : formatAmount(0),
-    ])
+  // Lignes purement informatives : jours d'absence / minutes de retard existants
+  // SANS deduction associee (ex : conge paye approuve). buildPayslipLines ne
+  // liste que les deductions > 0, donc ces lignes ne sont jamais en double.
+  if (slip.absenceDeduction === 0 && slip.absentDays > 0) {
+    rows.push([t('payslip.absenceLine', { days: slip.absentDays }), DEDUCTION, formatAmount(0)])
   }
-  if (slip.latenessDeduction > 0 || slip.totalLatenessMinutes > 0) {
+  if (slip.latenessDeduction === 0 && slip.totalLatenessMinutes > 0) {
     rows.push([
       t('payslip.latenessLine', { minutes: slip.totalLatenessMinutes }),
       DEDUCTION,
-      slip.latenessDeduction > 0 ? `-${formatAmount(slip.latenessDeduction)}` : formatAmount(0),
+      formatAmount(0),
     ])
   }
 
@@ -211,13 +227,22 @@ function renderPayslipPage(doc: jsPDF, slip: Payslip, pageWidth: number, marginX
 
   autoTable(doc, {
     startY: y,
-    head: [[t('payslip.workedDays'), t('payslip.workedHours'), t('payslip.absences'), t('payslip.latenessTotal')]],
-    body: [[
-      t('payslip.daysSuffix', { n: slip.workedDays }),
-      t('payslip.hoursSuffix', { n: slip.workedHours }),
-      t('payslip.daysSuffix', { n: slip.absentDays }),
-      t('payslip.minutesSuffix', { n: slip.totalLatenessMinutes }),
-    ]],
+    head: [
+      [
+        t('payslip.workedDays'),
+        t('payslip.workedHours'),
+        t('payslip.absences'),
+        t('payslip.latenessTotal'),
+      ],
+    ],
+    body: [
+      [
+        t('payslip.daysSuffix', { n: slip.workedDays }),
+        t('payslip.hoursSuffix', { n: slip.workedHours }),
+        t('payslip.daysSuffix', { n: slip.absentDays }),
+        t('payslip.minutesSuffix', { n: slip.totalLatenessMinutes }),
+      ],
+    ],
     theme: 'grid',
     headStyles: { fillColor: C.primary, textColor: C.white, fontStyle: 'bold', fontSize: 8.5 },
     bodyStyles: { fontSize: 9, textColor: C.text, halign: 'center' },
@@ -248,12 +273,14 @@ function renderPayslipPage(doc: jsPDF, slip: Payslip, pageWidth: number, marginX
   doc.setFontSize(7)
   doc.setTextColor(...C.primary400)
   doc.text(
-    t('payslip.footer', { company: slip.companyName, date: new Date().toLocaleDateString(localeTag()) }),
+    t('payslip.footer', {
+      company: slip.companyName,
+      date: new Date().toLocaleDateString(localeTag()),
+    }),
     pageWidth / 2,
     pageH - 6,
     { align: 'center' },
   )
-
 }
 
 export function generatePayslipPdf(slip: Payslip): void {

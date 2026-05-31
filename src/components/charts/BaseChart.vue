@@ -60,7 +60,7 @@ function darkifyAxis(axis: unknown): unknown {
 
 // Applique le theme sombre par-dessus une option deja construite par le chart enfant.
 function applyDarkTheme(option: EChartsOption): EChartsOption {
-  let themed: AnyObj = { ...(option as AnyObj) }
+  const themed: AnyObj = { ...(option as AnyObj) }
 
   // Texte global par defaut (legendes/labels sans couleur explicite).
   themed.textStyle = deepMerge((themed.textStyle ?? {}) as AnyObj, { color: DARK.text })
@@ -90,11 +90,14 @@ function applyDarkTheme(option: EChartsOption): EChartsOption {
     themed.visualMap = deepMerge(themed.visualMap, { textStyle: { color: DARK.textMuted } })
   }
 
-  // Separateurs de parts de camembert : faire correspondre la couleur de la carte.
+  // Camembert : separateurs de parts couleur carte + couleur explicite des labels.
+  // Sans `label.color`, ECharts laisse le remplissage en 'auto' et zrender ajoute
+  // un contour (halo) blanc auto autour du texte (le fond du chart est transparent,
+  // donc zrender ignore qu'on est en sombre). Fixer la couleur supprime ce halo.
   if (Array.isArray(themed.series)) {
     themed.series = themed.series.map((s) =>
       isPlainObject(s) && s.type === 'pie'
-        ? deepMerge(s, { itemStyle: { borderColor: DARK.surface } })
+        ? deepMerge(s, { itemStyle: { borderColor: DARK.surface }, label: { color: DARK.text } })
         : s,
     )
   }

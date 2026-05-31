@@ -1,7 +1,5 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useAuthStore } from '@/stores/auth.store'
-import { UserRole } from '@/types/enums'
 import AppCard from '@/components/ui/AppCard.vue'
 import {
   CreditCardIcon,
@@ -15,13 +13,6 @@ import {
   MagnifyingGlassIcon,
 } from '@heroicons/vue/24/outline'
 
-const auth = useAuthStore()
-const isTechnicien = computed(() => auth.user?.role === UserRole.TECHNICIEN)
-const isAdminOrSuper = computed(
-  () =>
-    auth.user?.role === UserRole.SUPER_ADMIN ||
-    auth.user?.role === UserRole.ADMIN_ENTERPRISE,
-)
 
 const searchQuery = ref('')
 const expandedSections = ref<Set<string>>(new Set())

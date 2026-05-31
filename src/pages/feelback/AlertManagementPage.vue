@@ -70,7 +70,7 @@ function formatDate(date: string) {
   return new Date(date).toLocaleString('fr-FR')
 }
 
-function markAsRead(alert: any) {
+function markAsRead(alert: { isRead: boolean }) {
   alert.isRead = true
   toast.showSuccess(t('feelback.markRead'))
 }

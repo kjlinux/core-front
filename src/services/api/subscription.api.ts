@@ -4,6 +4,8 @@ import type {
   SubscriptionPlanDef,
   SubscriptionState,
   SubscriptionPayment,
+  SubscriptionEvent,
+  ProrataQuote,
   InitiatePaymentResult,
 } from '@/types/subscription'
 import type { PaginatedResponse } from '@/types'
@@ -18,6 +20,12 @@ export const subscriptionApi = {
   history(params?: { page?: number; per_page?: number }): Promise<PaginatedResponse<SubscriptionPayment>> {
     return apiClient.get('/subscriptions/history', { params }).then((r) => r.data)
   },
+  events(params?: { page?: number; per_page?: number }): Promise<PaginatedResponse<SubscriptionEvent>> {
+    return apiClient.get('/subscriptions/events', { params }).then((r) => r.data)
+  },
+  quote(planCode: PlanCode): Promise<ProrataQuote> {
+    return apiClient.get('/subscriptions/quote', { params: { plan_code: planCode } }).then((r) => r.data)
+  },
   subscribe(planCode: PlanCode): Promise<InitiatePaymentResult> {
     return apiClient.post('/subscriptions/subscribe', { plan_code: planCode }).then((r) => r.data)
   },
@@ -29,13 +37,13 @@ export const subscriptionApi = {
   },
 
   // Super-admin
-  adminList(params?: { page?: number; per_page?: number }): Promise<PaginatedResponse<any>> {
+  adminList(params?: { page?: number; per_page?: number }): Promise<PaginatedResponse<unknown>> {
     return apiClient.get('/admin/subscriptions', { params }).then((r) => r.data)
   },
-  adminAnalytics(): Promise<any> {
+  adminAnalytics(): Promise<unknown> {
     return apiClient.get('/admin/subscriptions/analytics').then((r) => r.data)
   },
-  adminUpdate(companyId: string, payload: { plan_code: PlanCode; expires_at?: string | null; warranty_ends_at?: string | null }): Promise<any> {
+  adminUpdate(companyId: string, payload: { plan_code: PlanCode; expires_at?: string | null; warranty_ends_at?: string | null }): Promise<unknown> {
     return apiClient.patch(`/admin/companies/${companyId}/subscription`, payload).then((r) => r.data)
   },
 }

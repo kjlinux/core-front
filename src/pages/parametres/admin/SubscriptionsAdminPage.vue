@@ -19,10 +19,26 @@ import type { TableColumn } from '@/types/common'
 const toast = useToast()
 const { t } = useI18n()
 
-const companies = ref<any[]>([])
-const analytics = ref<any>(null)
+interface AdminCompanyRow {
+  id: string
+  name?: string
+  email?: string
+  created_at?: string
+  subscription: PlanCode
+  subscription_expires_at: string | null
+  warranty_ends_at: string | null
+  [key: string]: unknown
+}
+
+interface AdminAnalytics {
+  revenue_current_month_xof?: number
+  by_plan?: Record<string, number>
+}
+
+const companies = ref<AdminCompanyRow[]>([])
+const analytics = ref<AdminAnalytics | null>(null)
 const isLoading = ref(false)
-const editing = ref<any | null>(null)
+const editing = ref<AdminCompanyRow | null>(null)
 const editPlan = ref<PlanCode>('freemium')
 const editExpiresAt = ref<string>('')
 const editWarrantyEndsAt = ref<string>('')
@@ -52,9 +68,7 @@ const filtered = computed(() => {
 
 const sorted = computed(() =>
   [...filtered.value].sort(
-    (a, b) =>
-      new Date(b.subscription_expires_at ?? 0).getTime() -
-      new Date(a.subscription_expires_at ?? 0).getTime(),
+    (a, b) => new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime(),
   ),
 )
 
@@ -73,8 +87,8 @@ async function load() {
   isLoading.value = true
   try {
     const [list, ana] = await Promise.all([subscriptionApi.adminList(), subscriptionApi.adminAnalytics()])
-    companies.value = list.data
-    analytics.value = ana
+    companies.value = list.data as AdminCompanyRow[]
+    analytics.value = ana as AdminAnalytics
   } catch (e) {
     toast.error(t('toast.abonnement.loadError'), extractApiErrorMessage(e, t('common.genericError')))
   } finally {
@@ -82,7 +96,7 @@ async function load() {
   }
 }
 
-function openEdit(c: any) {
+function openEdit(c: AdminCompanyRow) {
   editing.value = c
   editPlan.value = c.subscription
   editExpiresAt.value = c.subscription_expires_at?.slice(0, 10) ?? ''
@@ -148,8 +162,6 @@ onMounted(load)
         :data="pagedCompanies"
         :loading="isLoading"
         :pagination="paginationObj"
-        default-sort-column="expires"
-        default-sort-direction="desc"
         empty-message="Aucune compagnie"
         @page-change="(p) => (currentPage = p)"
       >

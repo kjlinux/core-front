@@ -1,23 +1,45 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { onMounted } from 'vue'
 import { useSupportStore } from '@/stores/support.store'
+import { useServerTable } from '@/composables/useServerTable'
 import { useI18n } from 'vue-i18n'
 import { useToast } from '@/composables/useToast'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
+import DataTable from '@/components/data-display/DataTable.vue'
 import { CheckIcon, EyeIcon } from '@heroicons/vue/24/outline'
 import type { AlertSeverity, AlertStatus } from '@/types'
+import type { TableColumn } from '@/types/common'
 import { extractApiErrorMessage } from '@/utils/api-error'
+import {
+  alertSeverityLabel,
+  alertSeverityVariant,
+  alertStatusLabel,
+  alertStatusVariant,
+  deviceKindLabel,
+  labelOf,
+  variantOf,
+} from '@/utils/support-labels'
 
 const store = useSupportStore()
 const toast = useToast()
 const { t } = useI18n()
 
-const filter = ref<{ status?: AlertStatus | ''; severity?: AlertSeverity | '' }>({
-  status: 'open',
-  severity: '',
+const { filters, applyFilters, handlePageChange, reload } = useServerTable({
+  initialFilters: {
+    status: 'open' as AlertStatus | '',
+    severity: '' as AlertSeverity | '',
+  },
+  fetcher: async (p) => {
+    await store.fetchAlerts({
+      page: p.page,
+      perPage: p.perPage,
+      status: (p.status || undefined) as AlertStatus | undefined,
+      severity: (p.severity || undefined) as AlertSeverity | undefined,
+    })
+  },
 })
 
 const statusOptions = [
@@ -34,15 +56,14 @@ const severityOptions = [
   { value: 'low', label: 'Faible' },
 ]
 
-async function load() {
-  await store.fetchAlerts({
-    status: (filter.value.status || undefined) as AlertStatus | undefined,
-    severity: (filter.value.severity || undefined) as AlertSeverity | undefined,
-    per_page: 50,
-  })
-}
-
-watch(filter, load, { deep: true })
+const columns: TableColumn[] = [
+  { key: 'title', label: 'Alerte', sortable: false },
+  { key: 'severity', label: 'Sévérité', sortable: false },
+  { key: 'type', label: 'Type', sortable: false },
+  { key: 'status', label: 'Statut', sortable: false },
+  { key: 'created_at', label: 'Détecté', sortable: false },
+  { key: 'actions', label: '', sortable: false, align: 'right' },
+]
 
 async function ack(id: string) {
   try {
@@ -61,23 +82,12 @@ async function resolve(id: string) {
   }
 }
 
-function severityVariant(s: string) {
-  if (s === 'critical' || s === 'high') return 'danger'
-  if (s === 'medium') return 'warning'
-  return 'info'
-}
-function statusVariant(s: string) {
-  if (s === 'resolved') return 'success'
-  if (s === 'acknowledged') return 'warning'
-  return 'danger'
-}
-
 function fmtDate(s: string | null | undefined) {
   if (!s) return '-'
   return new Date(s).toLocaleString('fr-FR')
 }
 
-onMounted(load)
+onMounted(reload)
 </script>
 
 <template>
@@ -89,50 +99,52 @@ onMounted(load)
 
     <AppCard padding="sm">
       <div class="flex flex-wrap gap-3 items-end">
-        <AppSelect v-model="filter.status" :options="statusOptions" label="Statut" />
-        <AppSelect v-model="filter.severity" :options="severityOptions" label="Sévérité" />
+        <AppSelect v-model="filters.status" :options="statusOptions" label="Statut" @update:model-value="applyFilters" />
+        <AppSelect v-model="filters.severity" :options="severityOptions" label="Sévérité" @update:model-value="applyFilters" />
         <div class="ml-auto text-sm text-gray-500">{{ store.alertsTotal }} résultat(s)</div>
       </div>
     </AppCard>
 
     <AppCard padding="none">
-      <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-          <thead class="bg-gray-50">
-            <tr>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Alerte</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sévérité</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Statut</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Détecté</th>
-              <th class="px-4 py-3"></th>
-            </tr>
-          </thead>
-          <tbody class="bg-white divide-y divide-gray-100">
-            <tr v-for="a in store.alerts" :key="a.id" class="hover:bg-gray-50">
-              <td class="px-4 py-3">
-                <div class="font-medium text-gray-900">{{ a.title }}</div>
-                <div class="text-xs text-gray-500">{{ a.message }}</div>
-              </td>
-              <td class="px-4 py-3"><AppBadge :variant="severityVariant(a.severity)" size="sm">{{ a.severity }}</AppBadge></td>
-              <td class="px-4 py-3 text-xs text-gray-500">{{ a.device_kind }} · {{ a.type }}</td>
-              <td class="px-4 py-3"><AppBadge :variant="statusVariant(a.status)" size="sm">{{ a.status }}</AppBadge></td>
-              <td class="px-4 py-3 text-sm text-gray-700">{{ fmtDate(a.created_at) }}</td>
-              <td class="px-4 py-3 text-right space-x-2 whitespace-nowrap">
-                <AppButton v-if="a.status === 'open'" size="sm" variant="outline" @click="ack(a.id)">
-                  <EyeIcon class="w-4 h-4" /> Reconnaître
-                </AppButton>
-                <AppButton v-if="a.status !== 'resolved'" size="sm" variant="success" @click="resolve(a.id)">
-                  <CheckIcon class="w-4 h-4" /> Résoudre
-                </AppButton>
-              </td>
-            </tr>
-            <tr v-if="store.alerts.length === 0">
-              <td colspan="6" class="px-4 py-8 text-center text-sm text-gray-500">Aucune alerte</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <DataTable
+        :columns="columns"
+        :data="store.alerts"
+        :loading="store.isLoading"
+        :pagination="store.alertsMeta ?? undefined"
+        empty-message="Aucune alerte"
+        @page-change="handlePageChange"
+      >
+        <template #title="{ row }">
+          <div class="font-medium text-gray-900">{{ row.title }}</div>
+          <div class="text-xs text-gray-500">{{ row.message }}</div>
+        </template>
+        <template #severity="{ row }">
+          <AppBadge :variant="variantOf(alertSeverityVariant, row.severity)" size="sm">
+            {{ labelOf(alertSeverityLabel, row.severity) }}
+          </AppBadge>
+        </template>
+        <template #type="{ row }">
+          <span class="text-xs text-gray-500">{{ labelOf(deviceKindLabel, row.device_kind) }} · {{ row.type }}</span>
+        </template>
+        <template #status="{ row }">
+          <AppBadge :variant="variantOf(alertStatusVariant, row.status)" size="sm">
+            {{ labelOf(alertStatusLabel, row.status) }}
+          </AppBadge>
+        </template>
+        <template #created_at="{ row }">
+          <span class="text-sm text-gray-700">{{ fmtDate(row.created_at) }}</span>
+        </template>
+        <template #actions="{ row }">
+          <div class="text-right space-x-2 whitespace-nowrap" @click.stop>
+            <AppButton v-if="row.status === 'open'" size="sm" variant="outline" @click="ack(row.id)">
+              <EyeIcon class="w-4 h-4" /> Reconnaître
+            </AppButton>
+            <AppButton v-if="row.status !== 'resolved'" size="sm" variant="success" @click="resolve(row.id)">
+              <CheckIcon class="w-4 h-4" /> Résoudre
+            </AppButton>
+          </div>
+        </template>
+      </DataTable>
     </AppCard>
   </div>
 </template>

@@ -51,11 +51,13 @@ onMounted(async () => {
 
 const handleSubmit = async () => {
   try {
-    const { employeeNumber, ...updateData } = formData.value as any
+    // Le matricule est genere/gere cote serveur : on l'exclut du payload de mise a jour.
+    const updateData: Partial<Employee> = { ...formData.value }
+    delete updateData.employeeNumber
     await employeeStore.updateEmployee(employeeId, updateData)
     toast.success(t('common.success'), t('employees.updatedSuccess'))
     router.push({ name: 'rfid-employee-detail', params: { id: employeeId } })
-  } catch (error: any) {
+  } catch (error) {
     toast.error(t('common.error'), extractApiErrorMessage(error, t('employees.updateError')))
   }
 }

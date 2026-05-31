@@ -31,8 +31,8 @@ const localValue = computed({
   set: (value) => emit('update:modelValue', value)
 })
 
-const updateField = (field: keyof RfidCard, value: any) => {
-  localValue.value = { ...localValue.value, [field]: value }
+const updateField = (field: keyof RfidCard, value: unknown) => {
+  localValue.value = { ...localValue.value, [field]: value } as Partial<RfidCard>
 }
 
 const companyOptions = computed(() =>
@@ -58,12 +58,6 @@ function handleForceOnline() {
     emit('toggle-device-online', selectedDeviceId.value)
   }
 }
-
-const statusOptions = [
-  { label: 'Active', value: 'active' },
-  { label: 'Inactive', value: 'inactive' },
-  { label: 'Bloquée', value: 'blocked' }
-]
 
 const isEditing = computed(() => !!localValue.value.id)
 const isWaiting = computed(() => props.scanStatus === 'waiting')

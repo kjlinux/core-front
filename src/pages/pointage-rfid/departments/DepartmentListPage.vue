@@ -42,8 +42,6 @@
         :data="tableData"
         :loading="departmentStore.isLoading"
         :pagination="departmentStore.pagination"
-        default-sort-column="name"
-        default-sort-direction="desc"
         @row-click="handleRowClick"
         @page-change="handlePageChange"
       >
@@ -322,7 +320,7 @@ function handleCompanyFilterChange() {
   applyFilters()
 }
 
-function handleRowClick(row: any) {
+function handleRowClick(row: { id: string }) {
   router.push({ name: 'rfid-department-detail', params: { id: row.id } })
 }
 
@@ -343,7 +341,7 @@ async function handleCreateDepartment() {
     toast.success(t('common.success'), t('departments.createdSuccess'))
     closeCreateModal()
     await reload()
-  } catch (error: any) {
+  } catch (error) {
     toast.error(t('common.error'), extractApiErrorMessage(error, t('departments.createError')))
   } finally {
     isSubmitting.value = false
@@ -375,7 +373,7 @@ async function handleEditDepartment() {
     toast.success(t('common.success'), t('departments.updatedSuccess'))
     closeEditModal()
     await reload()
-  } catch (error: any) {
+  } catch (error) {
     toast.error(t('common.error'), extractApiErrorMessage(error, t('departments.updateError')))
   } finally {
     isSubmitting.value = false
@@ -388,7 +386,7 @@ async function handleDeleteDepartment(dept: Department) {
     await departmentStore.deleteDepartment(dept.id)
     toast.success(t('common.success'), t('departments.deletedSuccess'))
     await reload()
-  } catch (error: any) {
+  } catch (error) {
     toast.error(t('common.error'), extractApiErrorMessage(error, t('departments.deleteError')))
   }
 }

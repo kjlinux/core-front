@@ -132,7 +132,7 @@
               </td>
               <td class="whitespace-nowrap px-4 py-4 text-sm">
                 <AppBadge v-if="record.isDoubleBadge" variant="danger" size="sm">
-                  {{ t('common.yes') }} ({{ record.ignoredBadges }} {{ record.ignoredBadges > 1 ? t('biometric.ignoredPl') : t('biometric.ignored') }})
+                  {{ t('common.yes') }} ({{ record.ignoredBadges }} {{ (record.ignoredBadges ?? 0) > 1 ? t('biometric.ignoredPl') : t('biometric.ignored') }})
                 </AppBadge>
                 <span v-else class="text-gray-400">-</span>
               </td>
@@ -160,6 +160,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAttendanceStore } from '@/stores/attendance.store'
+import type { AttendanceRecord, AttendanceDailyReport } from '@/types'
 import StatCard from '@/components/data-display/StatCard.vue'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
@@ -181,7 +182,10 @@ const attendanceStore = useAttendanceStore()
 const selectedDate = ref(new Date().toISOString().split('T')[0])
 const today = new Date().toISOString().split('T')[0]
 const loading = ref(false)
-const rawReport = ref<any>(null)
+type BiometricRow = AttendanceRecord & { department?: string; ignoredBadges?: number }
+const rawReport = ref<
+  (Omit<AttendanceDailyReport, 'records'> & { records: BiometricRow[] }) | null
+>(null)
 
 const formattedDate = computed(() =>
   new Date(selectedDate.value ?? '').toLocaleDateString('fr-FR', {
@@ -199,10 +203,10 @@ watch(
     if (selectedDate.value !== today || !rawReport.value) return
     const incoming = activity.filter((r) => r.source === 'biometric')
     if (incoming.length === 0) return
-    const existing = rawReport.value.records as any[]
+    const existing = rawReport.value.records
     let changed = false
     for (const r of incoming) {
-      const idx = existing.findIndex((e: any) => e.id === r.id)
+      const idx = existing.findIndex((e: AttendanceRecord) => e.id === r.id)
       if (idx !== -1) {
         existing[idx] = r
         changed = true
@@ -241,9 +245,9 @@ const stats = computed(() => {
   const recs = rawReport.value?.records ?? []
   return {
     totalEmployees: rawReport.value?.totalEmployees ?? recs.length,
-    present: recs.filter((r: any) => r.status === 'present').length,
-    late: recs.filter((r: any) => r.status === 'late').length,
-    doubleBadgeCount: recs.filter((r: any) => r.isDoubleBadge).length,
+    present: recs.filter((r: AttendanceRecord) => r.status === 'present').length,
+    late: recs.filter((r: AttendanceRecord) => r.status === 'late').length,
+    doubleBadgeCount: recs.filter((r: AttendanceRecord & { isDoubleBadge?: boolean }) => r.isDoubleBadge).length,
   }
 })
 

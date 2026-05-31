@@ -1,25 +1,65 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { supportTicketApi, type SupportTicket, type TicketStatus, type TicketPriority } from '@/services/api/support-ticket.api'
+import { supportApi } from '@/services/api/support.api'
+import { useAuthStore } from '@/stores/auth.store'
+import type { PaginatedResponse } from '@/types'
 import { useI18n } from 'vue-i18n'
 import { useToast } from '@/composables/useToast'
+import { useServerTable } from '@/composables/useServerTable'
 import { extractApiErrorMessage } from '@/utils/api-error'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
+import AppInput from '@/components/ui/AppInput.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
 import AppModal from '@/components/ui/AppModal.vue'
-import { PhoneIcon, EnvelopeIcon, BuildingOffice2Icon, WrenchScrewdriverIcon } from '@heroicons/vue/24/outline'
+import DataTable from '@/components/data-display/DataTable.vue'
+import type { TableColumn } from '@/types/common'
+import { PhoneIcon, EnvelopeIcon, BuildingOffice2Icon, WrenchScrewdriverIcon, ArrowRightOnRectangleIcon } from '@heroicons/vue/24/outline'
+import {
+  ticketStatusLabel,
+  ticketStatusVariant,
+  ticketPriorityLabel,
+  ticketPriorityVariant,
+  labelOf,
+  variantOf,
+} from '@/utils/support-labels'
 
 const router = useRouter()
 const toast = useToast()
+const authStore = useAuthStore()
 const { t } = useI18n()
 
 const tickets = ref<SupportTicket[]>([])
+const pagination = ref<PaginatedResponse<SupportTicket>['meta'] | null>(null)
 const loading = ref(false)
-const filterStatus = ref<TicketStatus | ''>('open')
-const filterPriority = ref<TicketPriority | ''>('')
+
+const { filters, search, applyFilters, handlePageChange, reload } = useServerTable({
+  initialFilters: {
+    status: 'open' as TicketStatus | '',
+    priority: '' as TicketPriority | '',
+  },
+  fetcher: async (p) => {
+    loading.value = true
+    try {
+      const r = await supportTicketApi.listAll({
+        page: p.page,
+        perPage: p.perPage,
+        search: p.search || undefined,
+        status: (p.status || undefined) as TicketStatus | undefined,
+        priority: (p.priority || undefined) as TicketPriority | undefined,
+      })
+      tickets.value = r.data
+      pagination.value = r.meta
+    } catch (e) {
+      toast.error(t('toast.support.loadError'), extractApiErrorMessage(e, t('common.genericError')))
+    } finally {
+      loading.value = false
+    }
+  },
+})
 
 const statusOptions = [
   { value: '', label: 'Tous statuts' },
@@ -34,36 +74,19 @@ const priorityOptions = [
   { value: 'low', label: 'Basse' },
 ]
 
-const statusLabel: Record<string, string> = { open: 'Ouverte', in_progress: 'En cours', resolved: 'Résolue' }
-const statusVariant: Record<string, 'warning' | 'info' | 'success'> = { open: 'warning', in_progress: 'info', resolved: 'success' }
-const priorityLabel: Record<string, string> = { low: 'Basse', medium: 'Normale', high: 'Urgente' }
-
-// Tri urgent en premier
-const sorted = computed(() =>
-  [...tickets.value].sort((a, b) => {
-    const rank: Record<string, number> = { high: 3, medium: 2, low: 1 }
-    return (rank[b.priority] ?? 0) - (rank[a.priority] ?? 0)
-  }),
-)
+const columns: TableColumn[] = [
+  { key: 'priority', label: 'Priorité', sortable: false },
+  { key: 'subject', label: 'Sujet', sortable: false },
+  { key: 'company', label: 'Compagnie', sortable: false },
+  { key: 'status', label: 'Statut', sortable: false },
+  { key: 'createdAt', label: 'Créé le', sortable: false },
+]
 
 const selected = ref<SupportTicket | null>(null)
 const editStatus = ref<TicketStatus>('open')
 const editNotes = ref('')
 const saving = ref(false)
-
-async function load() {
-  loading.value = true
-  try {
-    tickets.value = await supportTicketApi.listAll({
-      status: filterStatus.value || undefined,
-      priority: filterPriority.value || undefined,
-    })
-  } catch (e) {
-    toast.error(t('toast.support.loadError'), extractApiErrorMessage(e, t('common.genericError')))
-  } finally {
-    loading.value = false
-  }
-}
+const takingControl = ref(false)
 
 function openDetail(t: SupportTicket) {
   selected.value = t
@@ -81,7 +104,7 @@ async function save() {
     })
     toast.success(t('toast.support.ticketUpdated'))
     selected.value = null
-    await load()
+    await reload()
   } catch (e) {
     toast.error(t('common.failed'), extractApiErrorMessage(e, t('common.genericError')))
   } finally {
@@ -99,41 +122,70 @@ function goCompany() {
   }
 }
 
-onMounted(load)
+async function takeControl() {
+  if (!selected.value?.company) return
+  takingControl.value = true
+  try {
+    const res = await supportApi.impersonateCompany(selected.value.company.id)
+    authStore.startImpersonation(res, router.currentRoute.value.fullPath)
+    toast.success('Prise de contrôle activée')
+    selected.value = null
+    router.push('/')
+  } catch (e) {
+    toast.error(t('common.failed'), extractApiErrorMessage(e, t('common.genericError')))
+  } finally {
+    takingControl.value = false
+  }
+}
+
+onMounted(reload)
 </script>
 
 <template>
   <div class="space-y-6">
     <div>
       <h1 class="text-2xl font-semibold text-gray-900">Plaintes clients</h1>
-      <p class="text-sm text-gray-500">Plaintes envoyées par les compagnies — rappeler, agir à distance, marquer résolu.</p>
+      <p class="text-sm text-gray-500">Plaintes envoyées par les compagnies. Rappeler, agir à distance, marquer résolu.</p>
     </div>
 
     <AppCard>
-      <div class="flex gap-3 flex-wrap mb-4">
-        <AppSelect v-model="filterStatus" :options="statusOptions" @update:model-value="load" />
-        <AppSelect v-model="filterPriority" :options="priorityOptions" @update:model-value="load" />
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <AppInput v-model="search" :placeholder="t('common.search') || 'Rechercher...'" :label="t('common.search') || 'Rechercher'" />
+        <AppSelect v-model="filters.status" :options="statusOptions" label="Statut" @update:model-value="applyFilters" />
+        <AppSelect v-model="filters.priority" :options="priorityOptions" label="Priorité" @update:model-value="applyFilters" />
       </div>
-      <div v-if="loading" class="py-4 text-sm text-gray-500">Chargement...</div>
-      <div v-else-if="sorted.length === 0" class="py-4 text-sm text-gray-500">Aucune plainte.</div>
-      <div v-else class="divide-y divide-gray-100">
-        <div v-for="t in sorted" :key="t.id" class="py-3 hover:bg-gray-50 cursor-pointer px-2 rounded" @click="openDetail(t)">
-          <div class="flex items-start justify-between gap-3">
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center gap-2">
-                <AppBadge :variant="t.priority === 'high' ? 'danger' : t.priority === 'medium' ? 'warning' : 'neutral'" size="sm">{{ priorityLabel[t.priority] }}</AppBadge>
-                <p class="text-sm font-medium text-gray-900 truncate">{{ t.subject }}</p>
-              </div>
-              <p class="text-xs text-gray-500 mt-0.5">
-                <BuildingOffice2Icon class="w-3 h-3 inline" />
-                {{ t.company?.name ?? '-' }} · {{ t.createdBy?.name ?? '-' }} · {{ fmtDate(t.createdAt) }}
-              </p>
-              <p class="text-sm text-gray-700 mt-1 line-clamp-2">{{ t.message }}</p>
-            </div>
-            <AppBadge :variant="statusVariant[t.status]" size="sm">{{ statusLabel[t.status] }}</AppBadge>
+    </AppCard>
+
+    <AppCard padding="none">
+      <DataTable
+        :columns="columns"
+        :data="tickets"
+        :loading="loading"
+        :pagination="pagination ?? undefined"
+        empty-message="Aucune plainte."
+        @row-click="openDetail"
+        @page-change="handlePageChange"
+      >
+        <template #priority="{ row }">
+          <AppBadge :variant="variantOf(ticketPriorityVariant, row.priority)" size="sm">{{ labelOf(ticketPriorityLabel, row.priority) }}</AppBadge>
+        </template>
+        <template #subject="{ row }">
+          <div class="font-medium text-gray-900">{{ row.subject }}</div>
+          <div class="text-xs text-gray-500 line-clamp-1">{{ row.message }}</div>
+        </template>
+        <template #company="{ row }">
+          <div class="text-sm text-gray-700">
+            <BuildingOffice2Icon class="w-3 h-3 inline" /> {{ row.company?.name ?? '-' }}
           </div>
-        </div>
-      </div>
+          <div class="text-xs text-gray-500">{{ row.createdBy?.name ?? '-' }}</div>
+        </template>
+        <template #status="{ row }">
+          <AppBadge :variant="variantOf(ticketStatusVariant, row.status)" size="sm">{{ labelOf(ticketStatusLabel, row.status) }}</AppBadge>
+        </template>
+        <template #createdAt="{ row }">
+          <span class="text-sm text-gray-700">{{ fmtDate(row.createdAt) }}</span>
+        </template>
+      </DataTable>
     </AppCard>
 
     <AppModal :model-value="selected !== null" :title="selected?.subject ?? ''" @update:model-value="selected = null">
@@ -160,7 +212,10 @@ onMounted(load)
             <AppButton variant="outline" size="sm"><EnvelopeIcon class="w-4 h-4" /> Email</AppButton>
           </a>
           <AppButton v-if="selected.company" variant="outline" size="sm" @click="goCompany">
-            <WrenchScrewdriverIcon class="w-4 h-4" /> Agir sur la compagnie
+            <WrenchScrewdriverIcon class="w-4 h-4" /> Fiche entreprise
+          </AppButton>
+          <AppButton v-if="selected.company" variant="primary" size="sm" :disabled="takingControl" @click="takeControl">
+            <ArrowRightOnRectangleIcon class="w-4 h-4" /> Prendre le contrôle de l'entreprise
           </AppButton>
         </div>
 

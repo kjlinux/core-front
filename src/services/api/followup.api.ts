@@ -13,10 +13,10 @@ export interface ClientFollowupCall {
   usage_rate: number | undefined
   satisfaction_score: number | undefined
   notes: string | undefined
-  actions: any[] | null
+  actions: unknown[] | null
   assigned_to_user_id: number | null
   company?: { id: string; name: string; phone?: string }
-  installationSheet?: any
+  installationSheet?: unknown
 }
 
 /** Libellés FR partagés (liste, détail, fiche d'installation). */

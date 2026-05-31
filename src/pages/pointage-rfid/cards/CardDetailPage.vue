@@ -55,7 +55,7 @@
 
           <div class="info-row border-b border-gray-100">
             <label class="text-gray-500">{{ t('cards.company') }}</label>
-            <span class="text-gray-900">{{ companyStore.companies.find(c => c.id === card.companyId)?.name || card.companyId || '-' }}</span>
+            <span class="text-gray-900">{{ companyStore.companies.find(c => c.id === card?.companyId)?.name || card?.companyId || '-' }}</span>
           </div>
 
           <div class="info-row border-b border-gray-100">
@@ -202,7 +202,6 @@
 </template>
 
 <script setup lang="ts">
-// @ts-nocheck
 import { ref, computed, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
@@ -287,18 +286,18 @@ const employeeSelectOptions = computed(() => [
   })),
 ]);
 
-const getStatusVariant = (status: CardStatus): string => {
+const getStatusVariant = (status: CardStatus): 'success' | 'warning' | 'info' | 'neutral' | 'danger' => {
   switch (status) {
     case CardStatus.ACTIVE:
       return 'success';
     case CardStatus.INACTIVE:
-      return 'secondary';
+      return 'neutral';
     case CardStatus.BLOCKED:
       return 'danger';
     case CardStatus.LOST:
       return 'warning';
     default:
-      return 'secondary';
+      return 'neutral';
   }
 };
 
@@ -351,7 +350,7 @@ const confirmAssign = async () => {
     assignModalVisible.value = false;
     selectedEmployeeId.value = '';
     await cardStore.fetchCard(cardId.value);
-  } catch (error: any) {
+  } catch (error) {
     toast.showError(extractApiErrorMessage(error, t('cards.assignError')));
   }
 };
@@ -371,7 +370,7 @@ const confirmUnassign = async () => {
     toast.showSuccess(t('cards.unassignedSuccess'));
     unassignModalVisible.value = false;
     await cardStore.fetchCard(cardId.value);
-  } catch (error: any) {
+  } catch (error) {
     toast.showError(extractApiErrorMessage(error, t('cards.unassignError')));
   }
 };
@@ -392,7 +391,7 @@ const confirmBlock = async () => {
     blockModalVisible.value = false;
     blockReason.value = '';
     await cardStore.fetchCard(cardId.value);
-  } catch (error: any) {
+  } catch (error) {
     toast.showError(extractApiErrorMessage(error, t('cards.blockError')));
   }
 };
@@ -412,7 +411,7 @@ const confirmUnblock = async () => {
     toast.showSuccess(t('cards.unblockedSuccess'));
     unblockModalVisible.value = false;
     await cardStore.fetchCard(cardId.value);
-  } catch (error: any) {
+  } catch (error) {
     toast.showError(extractApiErrorMessage(error, t('cards.unblockError')));
   }
 };
@@ -424,7 +423,7 @@ const cancelUnblock = () => {
 onMounted(async () => {
   loading.value = true;
   try {
-    const promises: Promise<any>[] = [
+    const promises: Promise<unknown>[] = [
       cardStore.fetchCard(cardId.value),
       employeeStore.fetchEmployees({ perPage: 500, companyId: undefined, siteId: undefined, departmentId: undefined, search: undefined, isActive: undefined }),
     ];
@@ -434,7 +433,7 @@ onMounted(async () => {
     }
     await Promise.all(promises);
   } catch {
-    toast.showError(t('cards.loadError'));
+    toast.showError(t('common.error'), t('cards.loadError'));
   } finally {
     loading.value = false;
   }

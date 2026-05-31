@@ -85,7 +85,7 @@ async function handleToggleActive(company: Company) {
     await companyStore.toggleActive(company.id)
     toast.success(t('common.success'), company.isActive ? t('companies.deactivated') : t('companies.activated'))
     await reload()
-  } catch (error: any) {
+  } catch (error) {
     toast.error(t('common.error'), extractApiErrorMessage(error, t('companies.statusError')))
   }
 }

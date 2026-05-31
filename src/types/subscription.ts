@@ -33,6 +33,9 @@ export interface SubscriptionState {
   is_active: boolean
   warranty_ends_at: string | null
   is_warranty_active: boolean
+  // Fonctionnalites effectivement disponibles (resolues cote backend, tiennent compte
+  // de l'expiration). Source de verite du gating ; fallback sur PLAN_FEATURES si absent.
+  features?: PlanFeature[]
 }
 
 export interface SubscriptionPayment {
@@ -57,4 +60,33 @@ export interface InitiatePaymentResult {
   token: string | null
   payment_id: string | null
   scheduled_at?: string | null
+}
+
+/** Devis autoritatif calculé côté backend pour un changement de plan. */
+export interface ProrataQuote {
+  amount_xof: number
+  days_remaining: number
+  is_prorata: boolean
+}
+
+export type SubscriptionEventType =
+  | 'subscribed'
+  | 'upgraded'
+  | 'downgraded'
+  | 'renewed'
+  | 'prepaid'
+  | 'rolled_over'
+  | 'expired'
+  | 'admin_changed'
+
+export interface SubscriptionEvent {
+  id: number
+  company_id: string
+  event: SubscriptionEventType
+  from_plan: PlanCode | null
+  to_plan: PlanCode | null
+  actor_user_id: number | null
+  payment_id: string | null
+  notes: string | null
+  created_at: string
 }

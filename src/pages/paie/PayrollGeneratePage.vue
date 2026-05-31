@@ -13,7 +13,9 @@ import AppButton from '@/components/ui/AppButton.vue'
 import AppInput from '@/components/ui/AppInput.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
+import FeatureLock from '@/components/ui/FeatureLock.vue'
 import { DocumentArrowDownIcon, DocumentCheckIcon } from '@heroicons/vue/24/outline'
+import { usePlan } from '@/composables/usePlan'
 import type { Payslip } from '@/types/payroll'
 
 const authStore = useAuthStore()
@@ -24,6 +26,7 @@ const departmentStore = useDepartmentStore()
 const toast = useToast()
 const { t } = useI18n()
 const { generatePayslipPdf, generateBatchPayslipPdf } = usePayrollPdf()
+const { hasFeature } = usePlan()
 
 const isSuperAdmin = computed(() => authStore.user?.role === 'super_admin')
 const selectedCompanyId = ref('')
@@ -160,6 +163,8 @@ watch(companyId, () => {
 })
 
 onMounted(async () => {
+  // Pas de chargement si le plan n'inclut pas la paie : la page affiche le verrou.
+  if (!hasFeature('payroll')) return
   if (isSuperAdmin.value) {
     await companyStore.fetchCompanies({ perPage: 200 })
   }
@@ -168,6 +173,7 @@ onMounted(async () => {
 </script>
 
 <template>
+  <FeatureLock feature="payroll">
   <div class="space-y-6">
     <div>
       <h1 class="text-2xl font-bold text-gray-900">Génération des fiches de paie</h1>
@@ -325,4 +331,5 @@ onMounted(async () => {
       <p>Utilisez les filtres ci-dessus pour générer les fiches de paie</p>
     </div>
   </div>
+  </FeatureLock>
 </template>

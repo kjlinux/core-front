@@ -18,7 +18,6 @@ import AppModal from '@/components/ui/AppModal.vue'
 import type { TableColumn } from '@/types/common'
 import type { Employee } from '@/types'
 import { EyeIcon, PlusIcon, ArrowsRightLeftIcon } from '@heroicons/vue/24/outline'
-import type { EmployeeFilters } from '@/services/api/employee.api'
 import { sortByRecent } from '@/utils/sort'
 
 const { t } = useI18n()

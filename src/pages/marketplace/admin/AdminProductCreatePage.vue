@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useMarketplaceStore } from '@/stores/marketplace.store'
@@ -7,7 +7,6 @@ import { useToast } from '@/composables/useToast'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppInput from '@/components/ui/AppInput.vue'
-import AppSelect from '@/components/ui/AppSelect.vue'
 import AppToggle from '@/components/ui/AppToggle.vue'
 import AppTextarea from '@/components/ui/AppTextarea.vue'
 
@@ -29,11 +28,6 @@ const form = ref({
   images: [] as string[],
 })
 
-const categoryOptions = computed(() => [
-  { label: t('marketplace.categories.standard'), value: 'standard_card' },
-  { label: t('marketplace.categories.custom'), value: 'custom_card' },
-  { label: t('marketplace.categories.pack'), value: 'enterprise_pack' },
-])
 
 async function handleSubmit() {
   if (!form.value.name || !form.value.description || form.value.price < 0) {

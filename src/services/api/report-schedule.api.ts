@@ -15,6 +15,8 @@ export interface ReportSchedule {
   recipients: string[]
   is_active: boolean
   last_sent_at: string | null
+  last_status: 'success' | 'failed' | null
+  last_error: string | null
   next_run_at: string | null
   created_at: string
   user?: { id: number; first_name: string; last_name: string }
@@ -46,5 +48,9 @@ export const reportScheduleApi = {
 
   remove(id: string): Promise<void> {
     return apiClient.delete(`/reports/schedules/${id}`).then(() => undefined)
+  },
+
+  sendNow(id: string): Promise<ReportSchedule> {
+    return apiClient.post(`/reports/schedules/${id}/send`).then((r) => r.data)
   },
 }

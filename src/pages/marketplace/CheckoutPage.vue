@@ -99,13 +99,16 @@ async function confirmOrder() {
     })
     if (order) {
       selectedOrderId.value = order.orderNumber ?? order.id
-      const paymentResult = await orderStore.initiatePayment(order.id, selectedPaymentMethod.value as any)
-      if (paymentResult && (paymentResult as any).payment_url) {
+      const paymentResult = await orderStore.initiatePayment(
+        order.id,
+        selectedPaymentMethod.value as Parameters<typeof orderStore.initiatePayment>[1],
+      ) as { payment_url?: string; pending?: boolean } | null
+      if (paymentResult && paymentResult.payment_url) {
         cartStore.clearCart()
-        window.location.href = (paymentResult as any).payment_url
+        window.location.href = paymentResult.payment_url
         return
       }
-      if ((paymentResult as any)?.pending) {
+      if (paymentResult?.pending) {
         toast.showWarning(t('marketplace.gatewayUnavailable'))
       }
     }

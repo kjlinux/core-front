@@ -6,6 +6,7 @@ import { useToast } from '@/composables/useToast'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppInput from '@/components/ui/AppInput.vue'
+import AppAvatar from '@/components/ui/AppAvatar.vue'
 
 const { t } = useI18n()
 const authStore = useAuthStore()
@@ -26,12 +27,6 @@ const passwordForm = ref({
   currentPassword: '',
   newPassword: '',
   confirmPassword: '',
-})
-
-const initials = computed(() => {
-  const first = profileForm.value.firstName[0] ?? ''
-  const last = profileForm.value.lastName[0] ?? ''
-  return (first + last).toUpperCase()
 })
 
 async function saveProfile() {
@@ -88,8 +83,9 @@ async function changePassword() {
     })
     toast.showSuccess(t('parametres.passwordUpdated'))
     passwordForm.value = { currentPassword: '', newPassword: '', confirmPassword: '' }
-  } catch {
-    toast.showError(t('parametres.passwordUpdateError'))
+  } catch (error) {
+    const message = error instanceof Error ? error.message : ''
+    toast.showError(message || t('parametres.passwordUpdateError'))
   } finally {
     isSavingPassword.value = false
   }
@@ -111,11 +107,15 @@ onMounted(() => {
 
     <AppCard :title="t('parametres.personalInfo')">
       <div class="flex items-start gap-6 mb-6">
-        <div class="w-20 h-20 rounded-full bg-primary flex items-center justify-center text-white text-2xl font-bold shrink-0">
-          {{ initials || 'U' }}
-        </div>
+        <AppAvatar
+          :src="user?.avatar"
+          :name="`${profileForm.firstName} ${profileForm.lastName}`"
+          size="xl"
+        />
         <div>
-          <p class="font-semibold text-gray-900">{{ profileForm.firstName }} {{ profileForm.lastName }}</p>
+          <p class="font-semibold text-gray-900">
+            {{ profileForm.firstName }} {{ profileForm.lastName }}
+          </p>
           <p class="text-sm text-gray-500">{{ profileForm.email }}</p>
         </div>
       </div>
@@ -135,22 +135,38 @@ onMounted(() => {
         </div>
         <div>
           <p class="text-sm font-medium text-gray-700 mb-1">{{ t('parametres.role') }}</p>
-          <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+          <span
+            class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800"
+          >
             {{ user?.role ? t('roles.' + user.role) : '' }}
           </span>
         </div>
       </div>
 
       <div class="mt-6">
-        <AppButton variant="primary" :loading="isSavingProfile" @click="saveProfile">{{ t('parametres.saveBtn') }}</AppButton>
+        <AppButton variant="primary" :loading="isSavingProfile" @click="saveProfile">{{
+          t('parametres.saveBtn')
+        }}</AppButton>
       </div>
     </AppCard>
 
     <AppCard :title="t('parametres.changePassword')">
       <div class="space-y-4 max-w-sm">
-        <AppInput v-model="passwordForm.currentPassword" :label="t('parametres.currentPassword')" type="password" />
-        <AppInput v-model="passwordForm.newPassword" :label="t('parametres.newPassword')" type="password" />
-        <AppInput v-model="passwordForm.confirmPassword" :label="t('parametres.confirmPassword')" type="password" />
+        <AppInput
+          v-model="passwordForm.currentPassword"
+          :label="t('parametres.currentPassword')"
+          type="password"
+        />
+        <AppInput
+          v-model="passwordForm.newPassword"
+          :label="t('parametres.newPassword')"
+          type="password"
+        />
+        <AppInput
+          v-model="passwordForm.confirmPassword"
+          :label="t('parametres.confirmPassword')"
+          type="password"
+        />
         <div class="text-xs text-gray-500 space-y-1">
           <p class="font-medium text-gray-700">{{ t('parametres.requirements') }}</p>
           <p>{{ t('parametres.req8chars') }}</p>
@@ -158,7 +174,9 @@ onMounted(() => {
           <p>{{ t('parametres.reqLowercase') }}</p>
           <p>{{ t('parametres.reqDigit') }}</p>
         </div>
-        <AppButton variant="primary" :loading="isSavingPassword" @click="changePassword">{{ t('parametres.changePasswordBtn') }}</AppButton>
+        <AppButton variant="primary" :loading="isSavingPassword" @click="changePassword">{{
+          t('parametres.changePasswordBtn')
+        }}</AppButton>
       </div>
     </AppCard>
   </div>

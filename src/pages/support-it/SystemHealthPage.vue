@@ -9,6 +9,7 @@ import AppButton from '@/components/ui/AppButton.vue'
 import { ArrowPathIcon } from '@heroicons/vue/24/outline'
 import { extractApiErrorMessage } from '@/utils/api-error'
 import type { HealthComponent } from '@/types'
+import { deviceKindLabel, healthStatusLabel, healthStatusVariant, labelOf, variantOf } from '@/utils/support-labels'
 
 const store = useSupportStore()
 const toast = useToast()
@@ -33,12 +34,6 @@ const rows = computed<Row[]>(() => {
     { name: 'Listener Feelback', component: h.components.listeners.feelback },
   ]
 })
-
-function variantFor(s: string) {
-  if (s === 'ok') return 'success'
-  if (s === 'degraded') return 'warning'
-  return 'danger'
-}
 
 async function refresh() {
   try {
@@ -80,7 +75,7 @@ onMounted(async () => {
             <p v-else-if="row.component.size !== undefined" class="text-xs text-gray-500 mt-0.5">{{ row.component.size }} jobs en file</p>
             <p v-else-if="row.component.lastHeartbeatAt" class="text-xs text-gray-500 mt-0.5">Heartbeat : il y a {{ Math.round(row.component.ageSeconds || 0) }}s</p>
           </div>
-          <AppBadge :variant="variantFor(row.component.status)" size="sm">{{ row.component.status }}</AppBadge>
+          <AppBadge :variant="variantOf(healthStatusVariant, row.component.status)" size="sm">{{ labelOf(healthStatusLabel, row.component.status) }}</AppBadge>
         </div>
       </div>
     </AppCard>
@@ -88,7 +83,7 @@ onMounted(async () => {
     <AppCard title="Capteurs en ligne par type" >
       <div class="grid grid-cols-3 gap-4">
         <div v-for="(d, kind) in (store.health?.devices as Record<string, { total: number; online: number }> | undefined) ?? {}" :key="kind" class="text-center p-4 bg-gray-50 rounded">
-          <p class="text-xs text-gray-500 uppercase">{{ kind }}</p>
+          <p class="text-xs text-gray-500 uppercase">{{ labelOf(deviceKindLabel, String(kind)) }}</p>
           <p class="text-2xl font-bold text-gray-900 mt-1">{{ d.online }} / {{ d.total }}</p>
         </div>
       </div>

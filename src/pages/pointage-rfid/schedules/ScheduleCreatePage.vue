@@ -63,7 +63,7 @@ const handleSubmit = async (data: Partial<Schedule>) => {
     await scheduleStore.createSchedule(data)
     toast.success(t('common.success'), t('schedules.createdSuccess'))
     router.push('/organisation/schedules')
-  } catch (error: any) {
+  } catch (error) {
     toast.error(t('common.error'), extractApiErrorMessage(error, t('schedules.createError')))
   } finally {
     loading.value = false

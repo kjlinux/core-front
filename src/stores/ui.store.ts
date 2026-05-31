@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import type { ToastMessage } from '@/types'
+import { playToastSound } from '@/utils/toastSound'
 
 export const useUiStore = defineStore('ui', () => {
   const sidebarCollapsed = ref(false)
@@ -23,6 +24,9 @@ export const useUiStore = defineStore('ui', () => {
     const id = Date.now().toString()
     const newToast: ToastMessage = { ...toast, id }
     toasts.value.push(newToast)
+
+    // Son de succès pour les toasts verts (success), son d'erreur sinon.
+    playToastSound(toast.type)
 
     const duration = toast.duration || 5000
     setTimeout(() => {

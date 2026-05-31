@@ -222,8 +222,6 @@ onMounted(async () => {
         :data="tableData"
         :loading="deviceStore.isLoading"
         :pagination="deviceStore.pagination"
-        default-sort-column="name"
-        default-sort-direction="desc"
         :empty-message="t('devices.notFound')"
         @row-click="(row) => router.push(`/pointage-rfid/devices/${row.id}`)"
         @page-change="handlePageChange"

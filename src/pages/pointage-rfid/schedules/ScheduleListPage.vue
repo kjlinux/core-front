@@ -34,8 +34,6 @@
         :columns="columns"
         :loading="scheduleStore.isLoading"
         :pagination="scheduleStore.pagination"
-        default-sort-column="name"
-        default-sort-direction="desc"
         @page-change="handlePageChange"
         @row-click="handleRowClick"
       >
@@ -104,7 +102,6 @@
 </template>
 
 <script setup lang="ts">
-// @ts-nocheck
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
@@ -187,8 +184,9 @@ const typeLabel = (type: string): string => {
   return map[type] ?? type
 }
 
-const typeBadgeVariant = (type: string): string => {
-  const map: Record<string, string> = {
+type BadgeVariant = 'success' | 'warning' | 'info' | 'neutral' | 'danger'
+const typeBadgeVariant = (type: string): BadgeVariant => {
+  const map: Record<string, BadgeVariant> = {
     standard: 'info',
     custom: 'warning',
     day: 'success',
@@ -198,7 +196,8 @@ const typeBadgeVariant = (type: string): string => {
 }
 
 const getWorkedDayBadges = (row: Schedule): string[] => {
-  const dayLabels: Record<number, string> = { 1: 'L', 2: 'M', 3: 'M', 4: 'J', 5: 'V', 6: 'S', 7: 'D' }
+  // 1=lundi .. 7=dimanche (ISO). Mardi/Mercredi distincts (Ma/Me) pour ne pas confondre.
+  const dayLabels: Record<number, string> = { 1: 'L', 2: 'Ma', 3: 'Me', 4: 'J', 5: 'V', 6: 'S', 7: 'D' }
   return (row.days ?? [])
     .filter((d) => d.worked && d.segments.length > 0)
     .map((d) => dayLabels[d.weekday] ?? String(d.weekday))
@@ -226,7 +225,7 @@ const handleDuplicate = async (schedule: Schedule) => {
     await scheduleStore.createSchedule(duplicatedData)
     toast.success(t('common.success'), t('schedules.duplicatedSuccess'))
     await reload()
-  } catch (error: any) {
+  } catch (error) {
     toast.error(t('common.error'), extractApiErrorMessage(error, t('schedules.duplicateError')))
   }
 }
@@ -243,7 +242,7 @@ const confirmDelete = async () => {
       deleteModalVisible.value = false
       scheduleToDelete.value = null
       await reload()
-    } catch (error: any) {
+    } catch (error) {
       toast.error(t('common.error'), extractApiErrorMessage(error, t('schedules.deleteError')))
     }
   }

@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { useDashboardStore } from '@/stores/dashboard.store'
 import { usePermissions } from '@/composables/usePermissions'
 import { useAuthStore } from '@/stores/auth.store'
+import { UserRole } from '@/types/enums'
 import StatCard from '@/components/data-display/StatCard.vue'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppSpinner from '@/components/ui/AppSpinner.vue'
@@ -32,6 +33,21 @@ const permissions = usePermissions()
 const authStore = useAuthStore()
 
 const isSuperAdmin = permissions.isSuperAdmin
+
+// Sous-titre du header adapte au role de l'utilisateur connecte (cf. cles dashboard.*View).
+const subtitle = computed(() => {
+  const byRole: Partial<Record<string, string>> = {
+    [UserRole.SUPER_ADMIN]: 'dashboard.globalView',
+    [UserRole.ADMIN_ENTERPRISE]: 'dashboard.companyView',
+    [UserRole.MANAGER]: 'dashboard.managerView',
+    [UserRole.TECHNICIEN]: 'dashboard.technicianView',
+    [UserRole.SUPPORT_IT]: 'dashboard.supportView',
+    [UserRole.EMPLOYE]: 'dashboard.employeeView',
+  }
+  const key = (authStore.user && byRole[authStore.user.role]) || 'dashboard.companyView'
+  return t(key)
+})
+
 const greeting = computed(() => {
   const h = new Date().getHours()
   if (h < 12) return t('dashboard.greetingMorning')
@@ -100,7 +116,14 @@ function formatRevenue(v: number) {
 }
 
 onMounted(async () => {
-  await Promise.all([dashboardStore.fetchStats(), dashboardStore.fetchCharts()])
+  // Best-effort : un échec API (403, réseau, rôle sans périmètre dashboard) ne doit pas
+  // remonter en "Unhandled error during execution of mounted hook". On dégrade vers
+  // l'état vide (cf. template v-else → dashboard.noData).
+  try {
+    await Promise.all([dashboardStore.fetchStats(), dashboardStore.fetchCharts()])
+  } catch (err) {
+    console.warn('[dashboard] chargement des statistiques impossible', err)
+  }
 })
 </script>
 
@@ -109,9 +132,7 @@ onMounted(async () => {
     <!-- Header -->
     <div>
       <h1 class="text-2xl font-bold text-gray-900">{{ greeting }}, {{ authStore.user?.firstName ?? '' }}</h1>
-      <p class="text-sm text-gray-500 mt-1">
-        {{ isSuperAdmin ? t('dashboard.globalView') : t('dashboard.companyView') }}
-      </p>
+      <p class="text-sm text-gray-500 mt-1">{{ subtitle }}</p>
     </div>
 
     <!-- Loading -->

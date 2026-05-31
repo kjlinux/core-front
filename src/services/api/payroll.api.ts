@@ -12,6 +12,7 @@ export const payrollApi = {
       default_payment_mode: data.defaultPaymentMode,
       standard_daily_hours: data.standardDailyHours,
       working_days_per_month: data.workingDaysPerMonth,
+      working_days_per_week: data.workingDaysPerWeek,
       payment_day: data.paymentDay,
       lateness_deduction_enabled: data.latenessDeductionEnabled,
       overtime_enabled: data.overtimeEnabled,

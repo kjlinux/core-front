@@ -54,7 +54,7 @@ const roles = computed(() => {
 })
 
 function check(role: string, module: Module, action: Action): boolean {
-  return hasPermission(role as any, module, action)
+  return hasPermission(role as Parameters<typeof hasPermission>[0], module, action)
 }
 
 const totalPermissions = computed(() => {

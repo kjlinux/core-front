@@ -10,17 +10,6 @@ export interface FeelbackReportSiteRow {
   satisfactionRate: number
 }
 
-export interface FeelbackReportDepartmentRow {
-  departmentId: string
-  department: string
-  site: string
-  totalResponses: number
-  bon: number
-  neutre: number
-  mauvais: number
-  satisfactionRate: number
-}
-
 export interface FeelbackReportPeriodRow {
   period: string
   totalResponses: number
@@ -36,7 +25,6 @@ export interface FeelbackReportData {
   neutreRate: number
   mauvaisRate: number
   bySite: FeelbackReportSiteRow[]
-  byDepartment: FeelbackReportDepartmentRow[]
   byPeriod: FeelbackReportPeriodRow[]
 }
 

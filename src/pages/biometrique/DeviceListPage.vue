@@ -215,8 +215,6 @@ onMounted(async () => {
         :data="store.devices"
         :loading="store.isLoading"
         :pagination="store.devicesPagination"
-        default-sort-column="name"
-        default-sort-direction="desc"
         :empty-message="t('biometric.notFound')"
         @row-click="(row) => router.push(`/biometrique/devices/${row.id}`)"
         @page-change="handlePageChange"

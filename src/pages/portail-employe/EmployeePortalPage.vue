@@ -13,7 +13,12 @@ import AppBadge from '@/components/ui/AppBadge.vue'
 import AppInput from '@/components/ui/AppInput.vue'
 import AppModal from '@/components/ui/AppModal.vue'
 import AttendanceSegmentCell from '@/components/attendance/AttendanceSegmentCell.vue'
-import { DocumentArrowDownIcon, CalendarDaysIcon, BanknotesIcon, ClipboardDocumentListIcon } from '@heroicons/vue/24/outline'
+import {
+  DocumentArrowDownIcon,
+  CalendarDaysIcon,
+  BanknotesIcon,
+  ClipboardDocumentListIcon,
+} from '@heroicons/vue/24/outline'
 import type { Payslip } from '@/types/payroll'
 
 const authStore = useAuthStore()
@@ -68,12 +73,15 @@ const paymentModeLabels: Record<string, string> = {
   forfait: 'Forfait',
 }
 
-function formatAmount(amount: number) {
-  return new Intl.NumberFormat('fr-FR').format(amount) + ' FCFA'
+function formatAmount(amount: number | null | undefined) {
+  return new Intl.NumberFormat('fr-FR').format(amount ?? 0) + ' FCFA'
 }
 
-function formatDate(date: string) {
-  return new Date(date).toLocaleDateString('fr-FR')
+function formatDate(date: string | null | undefined) {
+  if (!date) return '-'
+  const d = new Date(date)
+  if (Number.isNaN(d.getTime())) return '-'
+  return d.toLocaleDateString('fr-FR')
 }
 
 // Mois selectionne pour l'onglet presences (format YYYY-MM)
@@ -110,15 +118,27 @@ function downloadPayslip(slip: Payslip) {
   generatePayslipPdf(slip)
 }
 
+const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5 Mo (cf. regle backend max:5120)
+
 function handleFileChange(event: Event) {
   const input = event.target as HTMLInputElement
-  if (input.files?.[0]) {
-    absenceForm.value.justificatif = input.files[0]
+  const file = input.files?.[0]
+  if (!file) return
+  if (file.size > MAX_FILE_SIZE) {
+    toast.showError(t('toast.employeePortal.fileTooLarge'))
+    input.value = ''
+    absenceForm.value.justificatif = null
+    return
   }
+  absenceForm.value.justificatif = file
 }
 
 async function submitAbsence() {
-  if (!absenceForm.value.dateStart || !absenceForm.value.dateEnd || !absenceForm.value.reason.trim()) {
+  if (
+    !absenceForm.value.dateStart ||
+    !absenceForm.value.dateEnd ||
+    !absenceForm.value.reason.trim()
+  ) {
     toast.showError(t('toast.employeePortal.fillRequired'))
     return
   }
@@ -137,8 +157,9 @@ async function submitAbsence() {
     toast.showSuccess(t('toast.employeePortal.absenceSent'))
     showAbsenceModal.value = false
     absenceForm.value = { dateStart: '', dateEnd: '', reason: '', justificatif: null }
-  } catch {
-    toast.showError(t('toast.employeePortal.sendError'))
+  } catch (e) {
+    const message = e instanceof Error ? e.message : ''
+    toast.showError(message || t('toast.employeePortal.sendError'))
   }
 }
 
@@ -147,11 +168,15 @@ onMounted(async () => {
     toast.showError(t('toast.employeePortal.noEmployeeLink'))
     return
   }
-  await Promise.all([
-    payrollStore.fetchMyPayslips(employeeId.value),
-    absenceStore.fetchMyRequests(employeeId.value),
-    loadPresences(),
-  ])
+  try {
+    await Promise.all([
+      payrollStore.fetchMyPayslips(employeeId.value),
+      absenceStore.fetchMyRequests(employeeId.value),
+      loadPresences(),
+    ])
+  } catch {
+    toast.showError(t('toast.employeePortal.loadError'))
+  }
 })
 </script>
 
@@ -164,205 +189,257 @@ onMounted(async () => {
 
     <AppCard v-if="!employeeId" title="Compte non lié">
       <p class="text-sm text-gray-600">
-        Votre compte utilisateur n'est pas associé à une fiche employé.
-        Contactez votre administrateur pour que le rattachement soit effectué.
+        Votre compte utilisateur n'est pas associé à une fiche employé. Contactez votre
+        administrateur pour que le rattachement soit effectué.
       </p>
     </AppCard>
     <template v-else>
-
-    <!-- Tabs -->
-    <div class="border-b border-gray-200">
-      <nav class="-mb-px flex gap-6">
-        <button
-          v-for="tab in tabs"
-          :key="tab.key"
-          type="button"
-          :class="[
-            'flex items-center gap-2 pb-3 text-sm font-medium border-b-2 transition-colors',
-            activeTab === tab.key
-              ? 'border-primary text-primary'
-              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
-          ]"
-          @click="activeTab = tab.key as any"
-        >
-          <component :is="tab.icon" class="w-4 h-4" />
-          {{ tab.label }}
-        </button>
-      </nav>
-    </div>
-
-    <!-- Onglet Presences -->
-    <div v-if="activeTab === 'presences'" class="space-y-4">
-      <AppCard title="Mes pointages du mois">
-        <div class="mb-4 flex items-center gap-3">
-          <label class="text-sm text-gray-600">Mois</label>
-          <input
-            v-model="selectedMonth"
-            type="month"
-            class="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-          />
-        </div>
-
-        <div v-if="attendanceStore.isLoading" class="flex justify-center py-8">
-          <div class="h-6 w-6 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-        </div>
-
-        <div v-else-if="presenceRecords.length === 0" class="text-sm text-gray-500 py-6 text-center">
-          Aucun pointage pour ce mois
-        </div>
-
-        <div v-else class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-              <tr>
-                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Date</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Entrée</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Sortie</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Présence</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-200 bg-white">
-              <tr v-for="rec in presenceRecords" :key="rec.id" class="hover:bg-gray-50">
-                <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-900">{{ formatDate(rec.date) }}</td>
-                <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-700">{{ rec.entryTime ?? '-' }}</td>
-                <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-700">{{ rec.exitTime ?? '-' }}</td>
-                <td class="px-4 py-3"><AttendanceSegmentCell :record="rec" /></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </AppCard>
-    </div>
-
-    <!-- Onglet Fiches de paie -->
-    <div v-if="activeTab === 'fiches'" class="space-y-4">
-      <div v-if="payrollStore.isLoading" class="flex justify-center py-12">
-        <div class="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+      <!-- Tabs -->
+      <div class="border-b border-gray-200">
+        <nav class="-mb-px flex gap-6">
+          <button
+            v-for="tab in tabs"
+            :key="tab.key"
+            type="button"
+            :class="[
+              'flex items-center gap-2 pb-3 text-sm font-medium border-b-2 transition-colors',
+              activeTab === tab.key
+                ? 'border-primary text-primary'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
+            ]"
+            @click="activeTab = tab.key as any"
+          >
+            <component :is="tab.icon" class="w-4 h-4" />
+            {{ tab.label }}
+          </button>
+        </nav>
       </div>
 
-      <div v-else-if="payrollStore.myPayslips.length === 0" class="text-center py-12 text-gray-400">
-        Aucune fiche de paie disponible
-      </div>
-
-      <div v-else class="space-y-3">
-        <AppCard
-          v-for="slip in payrollStore.myPayslips"
-          :key="slip.id"
-        >
-          <div class="flex items-center justify-between gap-4 flex-wrap">
-            <div class="flex items-center gap-4">
-              <BanknotesIcon class="w-8 h-8 text-gray-300 shrink-0" />
-              <div>
-                <p class="font-semibold text-gray-900 capitalize">{{ formatPeriod(slip.period) }}</p>
-                <p class="text-xs text-gray-400">
-                  {{ formatDate(slip.periodStart) }} - {{ formatDate(slip.periodEnd) }}
-                  · {{ paymentModeLabels[slip.paymentMode] ?? slip.paymentMode }}
-                </p>
-              </div>
-            </div>
-
-            <div class="flex items-center gap-6 flex-wrap">
-              <div class="text-right">
-                <p class="text-xs text-gray-400">Salaire brut</p>
-                <p class="font-medium text-gray-900">{{ formatAmount(slip.grossAmount) }}</p>
-              </div>
-              <div class="text-right">
-                <p class="text-xs text-gray-400">Déductions</p>
-                <p class="font-medium text-red-600">-{{ formatAmount(slip.latenessDeduction + slip.absenceDeduction) }}</p>
-              </div>
-              <div class="text-right">
-                <p class="text-xs text-gray-400">Net à payer</p>
-                <p class="text-lg font-bold text-green-700">{{ formatAmount(slip.netAmount) }}</p>
-              </div>
-
-              <AppBadge :variant="(statusVariants[slip.status] ?? 'neutral') as any">
-                {{ statusLabels[slip.status] ?? slip.status }}
-              </AppBadge>
-
-              <button
-                type="button"
-                class="text-gray-500 hover:text-gray-700"
-                title="Télécharger PDF"
-                @click="downloadPayslip(slip)"
-              >
-                <DocumentArrowDownIcon class="w-5 h-5" />
-              </button>
-            </div>
+      <!-- Onglet Presences -->
+      <div v-if="activeTab === 'presences'" class="space-y-4">
+        <AppCard title="Mes pointages du mois">
+          <div class="mb-4 flex items-center gap-3">
+            <label class="text-sm text-gray-600">Mois</label>
+            <input
+              v-model="selectedMonth"
+              type="month"
+              class="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            />
           </div>
 
-          <!-- Détail des lignes -->
-          <div v-if="slip.lines.length > 0" class="mt-4 pt-4 border-t border-gray-100">
+          <div v-if="attendanceStore.isLoading" class="flex justify-center py-8">
             <div
-              v-for="(line, index) in slip.lines"
-              :key="`line-${index}`"
-              class="flex justify-between text-sm py-1"
+              class="h-6 w-6 animate-spin rounded-full border-4 border-primary border-t-transparent"
+            ></div>
+          </div>
+
+          <div
+            v-else-if="presenceRecords.length === 0"
+            class="text-sm text-gray-500 py-6 text-center"
+          >
+            Aucun pointage pour ce mois
+          </div>
+
+          <div v-else class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th
+                    class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500"
+                  >
+                    Date
+                  </th>
+                  <th
+                    class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500"
+                  >
+                    Entrée
+                  </th>
+                  <th
+                    class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500"
+                  >
+                    Sortie
+                  </th>
+                  <th
+                    class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500"
+                  >
+                    Présence
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200 bg-white">
+                <tr v-for="rec in presenceRecords" :key="rec.id" class="hover:bg-gray-50">
+                  <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-900">
+                    {{ formatDate(rec.date) }}
+                  </td>
+                  <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-700">
+                    {{ rec.entryTime ?? '-' }}
+                  </td>
+                  <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-700">
+                    {{ rec.exitTime ?? '-' }}
+                  </td>
+                  <td class="px-4 py-3"><AttendanceSegmentCell :record="rec" /></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </AppCard>
+      </div>
+
+      <!-- Onglet Fiches de paie -->
+      <div v-if="activeTab === 'fiches'" class="space-y-4">
+        <div v-if="payrollStore.isLoading" class="flex justify-center py-12">
+          <div
+            class="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"
+          ></div>
+        </div>
+
+        <div
+          v-else-if="payrollStore.myPayslips.length === 0"
+          class="text-center py-12 text-gray-400"
+        >
+          Aucune fiche de paie disponible
+        </div>
+
+        <div v-else class="space-y-3">
+          <AppCard v-for="slip in payrollStore.myPayslips" :key="slip.id">
+            <div class="flex items-center justify-between gap-4 flex-wrap">
+              <div class="flex items-center gap-4">
+                <BanknotesIcon class="w-8 h-8 text-gray-300 shrink-0" />
+                <div>
+                  <p class="font-semibold text-gray-900 capitalize">
+                    {{ formatPeriod(slip.period) }}
+                  </p>
+                  <p class="text-xs text-gray-400">
+                    {{ formatDate(slip.periodStart) }} - {{ formatDate(slip.periodEnd) }} ·
+                    {{ paymentModeLabels[slip.paymentMode] ?? slip.paymentMode }}
+                  </p>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-6 flex-wrap">
+                <div class="text-right">
+                  <p class="text-xs text-gray-400">Salaire brut</p>
+                  <p class="font-medium text-gray-900">{{ formatAmount(slip.grossAmount) }}</p>
+                </div>
+                <div class="text-right">
+                  <p class="text-xs text-gray-400">Déductions</p>
+                  <p class="font-medium text-red-600">
+                    -{{ formatAmount(slip.latenessDeduction + slip.absenceDeduction) }}
+                  </p>
+                </div>
+                <div class="text-right">
+                  <p class="text-xs text-gray-400">Net à payer</p>
+                  <p class="text-lg font-bold text-green-700">{{ formatAmount(slip.netAmount) }}</p>
+                </div>
+
+                <AppBadge :variant="(statusVariants[slip.status] ?? 'neutral') as any">
+                  {{ statusLabels[slip.status] ?? slip.status }}
+                </AppBadge>
+
+                <button
+                  type="button"
+                  class="text-gray-500 hover:text-gray-700"
+                  title="Télécharger PDF"
+                  @click="downloadPayslip(slip)"
+                >
+                  <DocumentArrowDownIcon class="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            <!-- Détails des lignes -->
+            <div v-if="(slip.lines?.length ?? 0) > 0" class="mt-4 pt-4 border-t border-gray-100">
+              <div
+                v-for="(line, index) in slip.lines"
+                :key="`line-${index}`"
+                class="flex justify-between text-sm py-1"
+              >
+                <span class="text-gray-600">{{ line.label }}</span>
+                <span
+                  :class="line.type === 'deduction' ? 'text-red-600' : 'text-green-700'"
+                  class="font-medium"
+                >
+                  {{ line.type === 'deduction' ? '-' : '+' }}{{ formatAmount(line.amount) }}
+                </span>
+              </div>
+            </div>
+          </AppCard>
+        </div>
+      </div>
+
+      <!-- Onglet Justificatifs absences -->
+      <div v-if="activeTab === 'absences'" class="space-y-4">
+        <div class="flex justify-end">
+          <AppButton variant="primary" @click="showAbsenceModal = true">
+            Soumettre un justificatif
+          </AppButton>
+        </div>
+
+        <AppCard title="Mes demandes d'absence">
+          <div v-if="absenceStore.isLoading" class="flex justify-center py-8">
+            <div
+              class="h-6 w-6 animate-spin rounded-full border-4 border-primary border-t-transparent"
+            ></div>
+          </div>
+
+          <div
+            v-else-if="absenceStore.myRequests.length === 0"
+            class="text-sm text-gray-500 py-6 text-center"
+          >
+            Aucune demande d'absence soumise pour le moment
+          </div>
+
+          <div v-else class="divide-y divide-gray-100">
+            <div
+              v-for="req in absenceStore.myRequests"
+              :key="req.id"
+              class="py-3 flex items-start justify-between gap-4"
             >
-              <span class="text-gray-600">{{ line.label }}</span>
-              <span :class="line.type === 'deduction' ? 'text-red-600' : 'text-green-700'" class="font-medium">
-                {{ line.type === 'deduction' ? '-' : '+' }}{{ formatAmount(line.amount) }}
-              </span>
+              <div class="min-w-0">
+                <p class="text-sm font-medium text-gray-900">
+                  {{ formatDate(req.dateStart) }} - {{ formatDate(req.dateEnd) }}
+                </p>
+                <p class="text-sm text-gray-500 truncate">{{ req.reason }}</p>
+                <p v-if="req.reviewNote" class="text-xs text-gray-400 italic mt-0.5">
+                  Note : {{ req.reviewNote }}
+                </p>
+              </div>
+              <AppBadge
+                :variant="
+                  ({ pending: 'warning', approved: 'success', rejected: 'error' }[req.status] ??
+                    'neutral') as any
+                "
+                class="shrink-0"
+              >
+                {{
+                  { pending: 'En attente', approved: 'Approuvé', rejected: 'Rejeté' }[req.status]
+                }}
+              </AppBadge>
             </div>
           </div>
         </AppCard>
       </div>
-    </div>
-
-    <!-- Onglet Justificatifs absences -->
-    <div v-if="activeTab === 'absences'" class="space-y-4">
-      <div class="flex justify-end">
-        <AppButton variant="primary" @click="showAbsenceModal = true">
-          Soumettre un justificatif
-        </AppButton>
-      </div>
-
-      <AppCard title="Mes demandes d'absence">
-        <div v-if="absenceStore.isLoading" class="flex justify-center py-8">
-          <div class="h-6 w-6 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-        </div>
-
-        <div v-else-if="absenceStore.myRequests.length === 0" class="text-sm text-gray-500 py-6 text-center">
-          Aucune demande d'absence soumise pour le moment
-        </div>
-
-        <div v-else class="divide-y divide-gray-100">
-          <div
-            v-for="req in absenceStore.myRequests"
-            :key="req.id"
-            class="py-3 flex items-start justify-between gap-4"
-          >
-            <div class="min-w-0">
-              <p class="text-sm font-medium text-gray-900">
-                {{ formatDate(req.dateStart) }} - {{ formatDate(req.dateEnd) }}
-              </p>
-              <p class="text-sm text-gray-500 truncate">{{ req.reason }}</p>
-              <p v-if="req.reviewNote" class="text-xs text-gray-400 italic mt-0.5">Note : {{ req.reviewNote }}</p>
-            </div>
-            <AppBadge
-              :variant="({ pending: 'warning', approved: 'success', rejected: 'error' }[req.status] ?? 'neutral') as any"
-              class="shrink-0"
-            >
-              {{ { pending: 'En attente', approved: 'Approuvé', rejected: 'Rejeté' }[req.status] }}
-            </AppBadge>
-          </div>
-        </div>
-      </AppCard>
-    </div>
-
     </template>
 
     <!-- Modal justificatif -->
     <AppModal v-model="showAbsenceModal" title="Soumettre un justificatif d'absence" size="md">
       <div class="space-y-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Date de début <span class="text-red-500">*</span></label>
+          <label class="block text-sm font-medium text-gray-700 mb-1"
+            >Date de début <span class="text-red-500">*</span></label
+          >
           <AppInput v-model="absenceForm.dateStart" type="date" />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Date de fin <span class="text-red-500">*</span></label>
+          <label class="block text-sm font-medium text-gray-700 mb-1"
+            >Date de fin <span class="text-red-500">*</span></label
+          >
           <AppInput v-model="absenceForm.dateEnd" type="date" :min="absenceForm.dateStart" />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Motif <span class="text-red-500">*</span></label>
+          <label class="block text-sm font-medium text-gray-700 mb-1"
+            >Motif <span class="text-red-500">*</span></label
+          >
           <textarea
             v-model="absenceForm.reason"
             rows="3"
@@ -371,13 +448,18 @@ onMounted(async () => {
           />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Pièce justificative (optionnel)</label>
+          <label class="block text-sm font-medium text-gray-700 mb-1"
+            >Pièce justificative (optionnel)</label
+          >
           <input
             type="file"
             accept=".pdf,.jpg,.jpeg,.png"
-            class="w-full text-sm text-gray-600 file:mr-3 file:rounded file:border-0 file:bg-gray-100 file:px-3 file:py-1.5 file:text-sm file:font-medium hover:file:bg-gray-200"
+            class="w-full text-sm text-gray-600 file:mr-3 file:rounded file:border-0 file:bg-gray-100 file:px-3 file:py-1.5 file:text-sm file:font-medium hover:file:bg-gray-200 dark:text-gray-300 dark:file:bg-gray-700 dark:file:text-gray-200 dark:hover:file:bg-gray-600"
             @change="handleFileChange"
           />
+          <p v-if="absenceForm.justificatif" class="text-xs text-gray-600 mt-1 truncate">
+            {{ absenceForm.justificatif.name }}
+          </p>
           <p class="text-xs text-gray-400 mt-1">PDF, JPG ou PNG · max 5 Mo</p>
         </div>
       </div>

@@ -17,7 +17,8 @@ const supportItRoutes: RouteRecordRaw[] = [
         component: () => import('@/pages/support-it/SupportDashboardPage.vue'),
         meta: {
           title: 'Support IT - Dashboard',
-          roles: [UserRole.SUPPORT_IT, UserRole.SUPER_ADMIN],
+          // support_it n'a pas de tableau de bord : sa page d'accueil est /support-it/health.
+          roles: [UserRole.SUPER_ADMIN],
         },
       },
       {
@@ -36,7 +37,7 @@ const supportItRoutes: RouteRecordRaw[] = [
         path: 'devices/:kind/:id',
         name: 'support-device-detail',
         component: () => import('@/pages/support-it/DeviceDetailPage.vue'),
-        meta: { title: 'Détail capteur', roles: [UserRole.SUPPORT_IT, UserRole.SUPER_ADMIN] },
+        meta: { title: 'Détails capteur', roles: [UserRole.SUPPORT_IT, UserRole.SUPER_ADMIN] },
       },
       {
         path: 'companies',
@@ -48,7 +49,7 @@ const supportItRoutes: RouteRecordRaw[] = [
         path: 'companies/:id',
         name: 'support-company-detail',
         component: () => import('@/pages/support-it/CompanyDetailPage.vue'),
-        meta: { title: 'Détail compagnie', roles: [UserRole.SUPPORT_IT, UserRole.SUPER_ADMIN] },
+        meta: { title: 'Détails compagnie', roles: [UserRole.SUPPORT_IT, UserRole.SUPER_ADMIN] },
       },
       {
         path: 'witnesses',

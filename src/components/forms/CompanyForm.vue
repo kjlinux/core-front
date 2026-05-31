@@ -4,7 +4,6 @@ import type { Company } from '@/types'
 import FormSection from './FormSection.vue'
 import FormRow from './FormRow.vue'
 import AppInput from '@/components/ui/AppInput.vue'
-import AppButton from '@/components/ui/AppButton.vue'
 
 const props = defineProps<{
   modelValue: Partial<Company>
@@ -23,8 +22,8 @@ const localValue = computed({
   set: (value) => emit('update:modelValue', value)
 })
 
-const updateField = (field: keyof Company, value: any) => {
-  localValue.value = { ...localValue.value, [field]: value }
+const updateField = (field: keyof Company, value: unknown) => {
+  localValue.value = { ...localValue.value, [field]: value } as Partial<Company>
 }
 
 const validate = (): boolean => {

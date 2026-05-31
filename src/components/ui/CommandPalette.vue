@@ -78,7 +78,7 @@ async function searchEmployees(q: string) {
   try {
     const res = await employeeApi.getAll({ search: q, perPage: 5 })
     if (controller.signal.aborted) return
-    employeeResults.value = (res.data ?? []).map((e: any) => ({
+    employeeResults.value = (res.data ?? []).map((e: { id: string; firstName?: string; lastName?: string; employeeNumber?: string; email?: string }) => ({
       kind: 'employee' as const,
       label: `${e.firstName} ${e.lastName}`,
       subtitle: e.employeeNumber ? `#${e.employeeNumber}` : (e.email ?? ''),
@@ -122,7 +122,11 @@ function onKeydown(e: KeyboardEvent) {
   const isMeta = e.metaKey || e.ctrlKey
   if (isMeta && e.key.toLowerCase() === 'k') {
     e.preventDefault()
-    isOpen.value ? close() : open()
+    if (isOpen.value) {
+      close()
+    } else {
+      open()
+    }
     return
   }
   if (!isOpen.value) return

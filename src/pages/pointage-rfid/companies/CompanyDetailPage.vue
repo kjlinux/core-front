@@ -41,7 +41,7 @@ const subscriptionLabel = computed(() => {
 onMounted(async () => {
   try {
     await companyStore.fetchCompany(companyId.value)
-  } catch (error: any) {
+  } catch (error) {
     toast.error(t('common.error'), extractApiErrorMessage(error, t('companies.loadError')))
     router.push({ name: 'rfid-companies' })
   }

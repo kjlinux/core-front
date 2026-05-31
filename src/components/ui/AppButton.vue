@@ -5,7 +5,9 @@
     :class="buttonClasses"
     @click="handleClick"
   >
-    <AppSpinner v-if="loading" :size="spinnerSize" color="currentColor" />
+    <span v-if="loading" class="absolute inset-0 flex items-center justify-center">
+      <AppSpinner :size="spinnerSize" color="currentColor" />
+    </span>
     <span class="inline-flex items-center gap-1.5" :class="{ 'opacity-0': loading }">
       <slot />
     </span>

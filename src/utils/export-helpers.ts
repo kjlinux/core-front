@@ -1,5 +1,6 @@
 import { saveAs } from 'file-saver'
 import dayjs from 'dayjs'
+import { sanitizePdfText } from '@/utils/format'
 
 // Brand colors from main.css @theme
 const BRAND = {
@@ -157,12 +158,16 @@ export async function exportToExcel(options: ExcelExportOptions): Promise<void> 
 
   // --- Footer ---
   sheet.addRow([])
-  const footerRow = sheet.addRow([`Généré le ${dayjs().format('DD/MM/YYYY')} à ${dayjs().format('HH:mm')}`])
+  const footerRow = sheet.addRow([
+    `Généré le ${dayjs().format('DD/MM/YYYY')} à ${dayjs().format('HH:mm')}`,
+  ])
   footerRow.getCell(1).font = { italic: true, size: 8, color: { argb: BRAND.primaryMid } }
 
   // --- Generate and download ---
   const buffer = await workbook.xlsx.writeBuffer()
-  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+  const blob = new Blob([buffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  })
   saveAs(blob, `${filename}.xlsx`)
 }
 
@@ -179,7 +184,15 @@ export interface PdfExportOptions {
 }
 
 export async function exportToPdf(options: PdfExportOptions): Promise<void> {
-  const { filename, title, subtitle, summaryRows, columns, data, orientation = 'landscape' } = options
+  const {
+    filename,
+    title,
+    subtitle,
+    summaryRows,
+    columns,
+    data,
+    orientation = 'landscape',
+  } = options
 
   const { jsPDF } = await import('jspdf')
   const { default: autoTable } = await import('jspdf-autotable')
@@ -198,7 +211,7 @@ export async function exportToPdf(options: PdfExportOptions): Promise<void> {
   doc.setTextColor(30, 41, 59)
   doc.setFontSize(12)
   doc.setFont('helvetica', 'bold')
-  doc.text(title, pageWidth / 2, 24, { align: 'center' })
+  doc.text(sanitizePdfText(title), pageWidth / 2, 24, { align: 'center' })
 
   let currentY = 30
 
@@ -207,7 +220,7 @@ export async function exportToPdf(options: PdfExportOptions): Promise<void> {
     doc.setFontSize(9)
     doc.setFont('helvetica', 'italic')
     doc.setTextColor(100, 116, 139)
-    doc.text(subtitle, pageWidth / 2, currentY, { align: 'center' })
+    doc.text(sanitizePdfText(subtitle), pageWidth / 2, currentY, { align: 'center' })
     currentY += 8
   }
 
@@ -223,20 +236,22 @@ export async function exportToPdf(options: PdfExportOptions): Promise<void> {
 
     for (const { label, value } of summaryRows) {
       doc.setFont('helvetica', 'bold')
-      doc.text(`${label} :`, 18, currentY + 4)
+      doc.text(sanitizePdfText(`${label} :`), 18, currentY + 4)
       doc.setFont('helvetica', 'normal')
-      doc.text(String(value), 80, currentY + 4)
+      doc.text(sanitizePdfText(String(value)), 80, currentY + 4)
       currentY += 7
     }
     currentY += 6
   }
 
   // --- Table ---
-  const head = [columns.map((c) => c.header)]
+  // sanitizePdfText : neutralise les espaces insécables (séparateurs de milliers
+  // d'Intl/formatCurrency) que jsPDF mesure mal et qui débordent des colonnes.
+  const head = [columns.map((c) => sanitizePdfText(c.header))]
   const body = data.map((record) =>
     columns.map((c) => {
       const v = record[c.key]
-      return v === null || v === undefined ? '' : String(v)
+      return v === null || v === undefined ? '' : sanitizePdfText(String(v))
     }),
   )
 
@@ -264,7 +279,9 @@ export async function exportToPdf(options: PdfExportOptions): Promise<void> {
     didDrawPage: (hookData) => {
       // Footer on each page
       const pageHeight = doc.internal.pageSize.getHeight()
-      const pageCount = (doc as unknown as { internal: { getNumberOfPages: () => number } }).internal.getNumberOfPages()
+      const pageCount = (
+        doc as unknown as { internal: { getNumberOfPages: () => number } }
+      ).internal.getNumberOfPages()
       const currentPage = hookData.pageNumber
       doc.setFontSize(7)
       doc.setTextColor(100, 116, 139)

@@ -4,7 +4,47 @@ import { attendanceApi } from '@/services/api/attendance.api'
 import { useToast } from '@/composables/useToast'
 import { i18n } from '@/plugins/i18n'
 import type { AttendanceRecord, AttendanceDailyReport, AttendanceSummary } from '@/types'
-import type { DateRange } from '@/services/api/attendance.api'
+
+/** Ligne de synthese mensuelle telle que consommee par les pages (apres normalisation). */
+interface MonthlySummaryRow {
+  employeeId: string
+  employeeName: string
+  period: string
+  totalDays: number
+  presentDays: number
+  absentDays: number
+  lateDays: number
+  totalLateMinutes: number
+  averageEntryTime: string
+  averageExitTime: string
+  attendanceRate: number
+}
+
+/** Synthese brute renvoyee par l'API (cles snake_case ou camelCase selon l'endpoint). */
+interface RawSummary {
+  employee_id?: string
+  employeeId?: string
+  employee_name?: string
+  employeeName?: string
+  totalDays?: number
+  presentDays?: number
+  absentDays?: number
+  lateDays?: number
+  totalLateMinutes?: number
+  averageEntryTime?: string
+  averageExitTime?: string
+}
+
+/** Ligne employe agregee pour la vue "presence par departement". */
+interface DepartmentEmployeeRow {
+  employeeId: string
+  name: string
+  position: string
+  presentDays: number
+  absentDays: number
+  lateDays: number
+  attendanceRate: number
+}
 
 export const useAttendanceStore = defineStore('attendance', () => {
   // --- State ---
@@ -19,7 +59,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
   })
 
   // Monthly state
-  const monthlyRecords = ref<any[]>([])
+  const monthlyRecords = ref<MonthlySummaryRow[]>([])
   const monthlyStatsData = ref<{ averageAttendanceRate: number; totalAbsences: number; totalLateMinutes: number } | null>(null)
 
   // Employee state
@@ -28,7 +68,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
   const employeeCalendarData = ref<Array<{ date: string; dayNumber: number; status: string; statusLabel: string; tooltip: string }>>([])
 
   // Department state
-  const departmentEmployeesData = ref<any[]>([])
+  const departmentEmployeesData = ref<DepartmentEmployeeRow[]>([])
   const departmentStatsData = ref<{ totalEmployees: number; averageAttendanceRate: number; totalAbsences: number; totalLateInstances: number } | null>(null)
 
   // --- Computed aliases ---
@@ -36,14 +76,19 @@ export const useAttendanceStore = defineStore('attendance', () => {
   const dailyAttendanceTotal = computed(() => dailyReport.value?.records?.length ?? 0)
   const dailyStats = computed(() => {
     if (!dailyReport.value) return null
+    const extra = dailyReport.value as AttendanceDailyReport & {
+      averageEntryTime?: string
+      earlyDepartures?: number
+      doubleBadgeCount?: number
+    }
     return {
       totalEmployees: dailyReport.value.totalEmployees,
       present: dailyReport.value.present,
       absent: dailyReport.value.absent,
       late: dailyReport.value.late,
-      averageEntryTime: (dailyReport.value as any).averageEntryTime ?? '-',
-      earlyDepartures: (dailyReport.value as any).earlyDepartures ?? 0,
-      doubleBadgeCount: (dailyReport.value as any).doubleBadgeCount ?? 0,
+      averageEntryTime: extra.averageEntryTime ?? '-',
+      earlyDepartures: extra.earlyDepartures ?? 0,
+      doubleBadgeCount: extra.doubleBadgeCount ?? 0,
     }
   })
 
@@ -67,7 +112,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
     try {
       const date = typeof params === 'string' ? params : (params.date ?? new Date().toISOString().split('T')[0])
       const extraFilters = typeof params === 'string' ? filters : params
-      dailyReport.value = await attendanceApi.getDailyReport(date!, extraFilters as any)
+      dailyReport.value = await attendanceApi.getDailyReport(date!, extraFilters as Record<string, unknown>)
       if (dailyReport.value) {
         records.value = dailyReport.value.records
       }
@@ -93,8 +138,8 @@ export const useAttendanceStore = defineStore('attendance', () => {
     try {
       const monthStr = `${params.year}-${String(params.month).padStart(2, '0')}`
       const response = await attendanceApi.getMonthlyReport(monthStr)
-      const rawSummaries: any[] = (response as any)?.summaries ?? (Array.isArray(response) ? response : [])
-      monthlyRecords.value = rawSummaries.map((s: any) => ({
+      const rawSummaries: RawSummary[] = (response as { summaries?: RawSummary[] })?.summaries ?? (Array.isArray(response) ? (response as RawSummary[]) : [])
+      monthlyRecords.value = rawSummaries.map((s: RawSummary) => ({
         employeeId: s.employee_id ?? s.employeeId ?? '',
         employeeName: s.employee_name ?? s.employeeName ?? '',
         period: monthStr,
@@ -105,7 +150,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
         totalLateMinutes: s.totalLateMinutes ?? 0,
         averageEntryTime: s.averageEntryTime ?? '-',
         averageExitTime: s.averageExitTime ?? '-',
-        attendanceRate: (s.totalDays ?? 0) > 0 ? Math.round(((s.presentDays ?? 0) / s.totalDays) * 100) : 0,
+        attendanceRate: (s.totalDays ?? 0) > 0 ? Math.round(((s.presentDays ?? 0) / (s.totalDays ?? 1)) * 100) : 0,
       }))
     } finally {
       isLoading.value = false
@@ -116,10 +161,10 @@ export const useAttendanceStore = defineStore('attendance', () => {
     try {
       const monthStr = `${params.year}-${String(params.month).padStart(2, '0')}`
       const response = await attendanceApi.getMonthlyReport(monthStr)
-      const rawSummaries: any[] = (response as any)?.summaries ?? (Array.isArray(response) ? response : [])
-      const totalAbsences = rawSummaries.reduce((sum: number, s: any) => sum + (s.absentDays ?? 0), 0)
-      const totalLateMinutes = rawSummaries.reduce((sum: number, s: any) => sum + (s.totalLateMinutes ?? 0), 0)
-      const rates = rawSummaries.map((s: any) => (s.totalDays ?? 0) > 0 ? ((s.presentDays ?? 0) / s.totalDays) * 100 : 0)
+      const rawSummaries: RawSummary[] = (response as { summaries?: RawSummary[] })?.summaries ?? (Array.isArray(response) ? (response as RawSummary[]) : [])
+      const totalAbsences = rawSummaries.reduce((sum: number, s: RawSummary) => sum + (s.absentDays ?? 0), 0)
+      const totalLateMinutes = rawSummaries.reduce((sum: number, s: RawSummary) => sum + (s.totalLateMinutes ?? 0), 0)
+      const rates = rawSummaries.map((s: RawSummary) => (s.totalDays ?? 0) > 0 ? ((s.presentDays ?? 0) / (s.totalDays ?? 1)) * 100 : 0)
       const averageAttendanceRate = rates.length > 0 ? Math.round(rates.reduce((a, b) => a + b, 0) / rates.length) : 0
       monthlyStatsData.value = { averageAttendanceRate, totalAbsences, totalLateMinutes }
     } catch (e) {
@@ -132,7 +177,12 @@ export const useAttendanceStore = defineStore('attendance', () => {
   async function fetchMonthlyReport(month: string, filters?: Record<string, unknown>) {
     isLoading.value = true
     try {
-      summaries.value = await attendanceApi.getMonthlyReport(month, filters)
+      // L'endpoint renvoie { month, summaries: [...] } : on extrait le tableau
+      // (meme pattern que fetchMonthlyAttendance/fetchMonthlyStats), sinon summaries
+      // contiendrait l'objet enveloppe et les operations tableau planteraient.
+      const response = await attendanceApi.getMonthlyReport(month, filters)
+      const wrapped = response as { summaries?: AttendanceSummary[] }
+      summaries.value = wrapped?.summaries ?? (Array.isArray(response) ? response : [])
     } finally {
       isLoading.value = false
     }
@@ -143,7 +193,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
     try {
       const result = await attendanceApi.getByEmployee(params.employeeId, { startDate: params.startDate, endDate: params.endDate })
       employeeRecords.value = Array.isArray(result) ? result : []
-      const firstName = (employeeRecords.value[0] as any)?.employeeName
+      const firstName = employeeRecords.value[0]?.employeeName
       return firstName ? { employeeName: firstName } : null
     } finally {
       isLoading.value = false
@@ -203,12 +253,12 @@ export const useAttendanceStore = defineStore('attendance', () => {
     }
   }
 
-  async function fetchDepartmentAttendance(params: { departmentId: string; startDate: string; endDate: string; page?: number; perPage?: number }) {
+  async function fetchDepartmentAttendance(params: { departmentId: string; startDate: string; endDate: string; page?: number; perPage?: number }): Promise<{ departmentName?: string } | null> {
     isLoading.value = true
     try {
       const result = await attendanceApi.getByDepartment(params.departmentId, { startDate: params.startDate, endDate: params.endDate })
-      const recs = Array.isArray(result) ? result : []
-      const byEmployee: Record<string, any[]> = {}
+      const recs: AttendanceRecord[] = Array.isArray(result) ? result : []
+      const byEmployee: Record<string, AttendanceRecord[]> = {}
       for (const r of recs) {
         if (!byEmployee[r.employeeId]) byEmployee[r.employeeId] = []
         byEmployee[r.employeeId]!.push(r)
@@ -221,7 +271,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
         return {
           employeeId: empId,
           name: empRecs[0]?.employeeName ?? '',
-          position: (empRecs[0] as any)?.position ?? '-',
+          position: (empRecs[0] as AttendanceRecord & { position?: string })?.position ?? '-',
           presentDays,
           absentDays,
           lateDays,
@@ -241,7 +291,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
       const employeeIds = new Set(recs.map((r) => r.employeeId))
       const totalAbsences = recs.filter((r) => r.status === 'absent').length
       const totalLateInstances = recs.filter((r) => r.status === 'late').length
-      const byEmployee: Record<string, any[]> = {}
+      const byEmployee: Record<string, AttendanceRecord[]> = {}
       for (const r of recs) {
         if (!byEmployee[r.employeeId]) byEmployee[r.employeeId] = []
         byEmployee[r.employeeId]!.push(r)

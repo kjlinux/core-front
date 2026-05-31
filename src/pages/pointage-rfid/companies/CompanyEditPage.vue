@@ -34,7 +34,7 @@ onMounted(async () => {
         subscription: companyStore.currentCompany.subscription,
       }
     }
-  } catch (error: any) {
+  } catch (error) {
     toast.error(t('common.error'), extractApiErrorMessage(error, t('companies.loadError')))
     router.push({ name: 'rfid-companies' })
   }
@@ -45,7 +45,7 @@ async function handleSubmit() {
     await companyStore.updateCompany(companyId.value, formData.value)
     toast.success(t('common.success'), t('companies.updatedSuccess'))
     router.push({ name: 'rfid-company-detail', params: { id: companyId.value } })
-  } catch (error: any) {
+  } catch (error) {
     toast.error(t('common.error'), extractApiErrorMessage(error, t('companies.updateError')))
   }
 }

@@ -54,6 +54,8 @@ export function usePeriodSelector(initialMode: PeriodMode = 'monthly'): PeriodSe
         return dayjs(`${month.value}-01`).startOf('month').format('YYYY-MM-DD')
       case 'custom':
         return customStart.value
+      default:
+        return day.value
     }
   })
 
@@ -67,6 +69,8 @@ export function usePeriodSelector(initialMode: PeriodMode = 'monthly'): PeriodSe
         return dayjs(`${month.value}-01`).endOf('month').format('YYYY-MM-DD')
       case 'custom':
         return customEnd.value
+      default:
+        return day.value
     }
   })
 

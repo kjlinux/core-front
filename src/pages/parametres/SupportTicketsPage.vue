@@ -9,6 +9,7 @@ import AppButton from '@/components/ui/AppButton.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import AppInput from '@/components/ui/AppInput.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
+import FeatureLock from '@/components/ui/FeatureLock.vue'
 
 const toast = useToast()
 const { t } = useI18n()
@@ -84,28 +85,30 @@ onMounted(load)
   <div class="space-y-6">
     <div>
       <h1 class="text-2xl font-semibold text-gray-900">Support / Plaintes</h1>
-      <p class="text-sm text-gray-500">Signalez un problème — le support IT vous rappellera et pourra intervenir à distance.</p>
+      <p class="text-sm text-gray-500">Signalez un problème. Le support IT vous rappellera et pourra intervenir à distance.</p>
     </div>
 
-    <AppCard title="Nouvelle plainte">
-      <div class="space-y-3">
-        <AppInput v-model="subject" label="Sujet" placeholder="Capteur RFID en panne au site X" />
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-          <textarea
-            v-model="message"
-            rows="4"
-            maxlength="5000"
-            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-            placeholder="Décrivez le problème observé, depuis quand, quels capteurs/sites sont concernés..."
-          />
+    <FeatureLock feature="sav_included">
+      <AppCard title="Nouvelle plainte">
+        <div class="space-y-3">
+          <AppInput v-model="subject" label="Sujet" placeholder="Capteur RFID en panne au site X" />
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <textarea
+              v-model="message"
+              rows="4"
+              maxlength="5000"
+              class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+              placeholder="Décrivez le problème observé, depuis quand, quels capteurs/sites sont concernés..."
+            />
+          </div>
+          <AppSelect v-model="priority" label="Priorité" :options="priorityOptions" />
+          <div class="flex justify-end">
+            <AppButton variant="primary" :disabled="submitting" @click="submit">Envoyer</AppButton>
+          </div>
         </div>
-        <AppSelect v-model="priority" label="Priorité" :options="priorityOptions" />
-        <div class="flex justify-end">
-          <AppButton variant="primary" :disabled="submitting" @click="submit">Envoyer</AppButton>
-        </div>
-      </div>
-    </AppCard>
+      </AppCard>
+    </FeatureLock>
 
     <AppCard title="Mes plaintes">
       <div v-if="loading" class="py-4 text-sm text-gray-500">Chargement...</div>
