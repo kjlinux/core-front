@@ -47,7 +47,8 @@ async function generate() {
       siteName: qrCode.siteName ?? siteStore.sites.find((s) => s.id === selectedSiteId.value)?.name,
     }
     // Le contenu du QR est l'URL de la page de scan avec le token en paramètre
-    const scanUrl = `${window.location.origin}/qr-scan?token=${qrCode.token}`
+    const appBase = import.meta.env.VITE_PUBLIC_APP_URL || window.location.origin
+    const scanUrl = `${appBase}/qr-scan?token=${qrCode.token}`
     qrDataUrl.value = await QRCode.toDataURL(scanUrl, { width: 300, margin: 2 })
     toast.success(t('qrcode.generatedSuccess'))
   } catch {

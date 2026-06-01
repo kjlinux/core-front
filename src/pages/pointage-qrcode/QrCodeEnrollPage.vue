@@ -61,7 +61,8 @@ async function startEnrollment() {
     timeLeft.value = result.expiresIn
 
     // Générer le QR Code contenant l'URL de soumission
-    const enrollUrl = `${window.location.origin}/qr-scan?enroll=${result.sessionToken}`
+    const appBase = import.meta.env.VITE_PUBLIC_APP_URL || window.location.origin
+    const enrollUrl = `${appBase}/qr-scan?enroll=${result.sessionToken}`
     qrDataUrl.value = await QRCode.toDataURL(enrollUrl, { width: 280, margin: 2 })
 
     startPolling(session.value!.sessionToken)
