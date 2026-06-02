@@ -38,7 +38,15 @@ const isLoading = ref(false)
 const showCreateModal = ref(false)
 const showEditModal = ref(false)
 const editingUser = ref<UserData | null>(null)
+const editPassword = ref('')
+const editConfirmPassword = ref('')
 const isSaving = ref(false)
+
+// Le changement manuel de mot de passe depuis la fiche d'édition est réservé
+// au super_admin et au technicien (l'admin_enterprise ne voit pas le champ).
+const canSetPassword = computed(
+  () => permissions.isSuperAdmin.value || permissions.isTechnicien.value,
+)
 const showDeleteModal = ref(false)
 const deletingUser = ref<UserData | null>(null)
 const isDeleting = ref(false)
@@ -209,6 +217,8 @@ function formatDate(date: string) {
 
 function openEditModal(user: UserData) {
   editingUser.value = { ...user }
+  editPassword.value = ''
+  editConfirmPassword.value = ''
   showEditModal.value = true
 }
 
@@ -316,6 +326,18 @@ async function handleEditSave() {
     toast.showError(t('parametres.fillRequired'))
     return
   }
+  // Mot de passe optionnel : on ne valide/n'envoie que si un mot de passe est saisi.
+  const wantsPasswordChange = canSetPassword.value && editPassword.value.length > 0
+  if (wantsPasswordChange) {
+    if (editPassword.value.length < 8) {
+      toast.showError(t('parametres.min8'))
+      return
+    }
+    if (editPassword.value !== editConfirmPassword.value) {
+      toast.showError(t('parametres.passwordMismatch'))
+      return
+    }
+  }
   isSaving.value = true
   try {
     await userApi.update(editingUser.value.id, {
@@ -323,6 +345,12 @@ async function handleEditSave() {
       last_name: editingUser.value.lastName,
       email: editingUser.value.email,
       role: editingUser.value.role,
+      ...(wantsPasswordChange
+        ? {
+            password: editPassword.value,
+            password_confirmation: editConfirmPassword.value,
+          }
+        : {}),
     })
     toast.showSuccess(t('parametres.userUpdated'))
     showEditModal.value = false
@@ -531,6 +559,25 @@ onMounted(async () => {
           :label="t('parametres.role')"
           :options="editRoleOptions"
         />
+        <div v-if="canSetPassword" class="pt-2 border-t border-gray-100 space-y-4">
+          <p class="text-sm font-medium text-gray-700">
+            {{ t('parametres.changePasswordOptional') }}
+          </p>
+          <div class="grid grid-cols-2 gap-4">
+            <AppInput
+              v-model="editPassword"
+              :label="t('parametres.newPassword')"
+              type="password"
+              autocomplete="new-password"
+            />
+            <AppInput
+              v-model="editConfirmPassword"
+              :label="t('parametres.confirmPassword')"
+              type="password"
+              autocomplete="new-password"
+            />
+          </div>
+        </div>
       </div>
       <template #footer>
         <div class="flex justify-end gap-3">

@@ -55,6 +55,8 @@ export interface UpdateUserPayload {
   phone?: string
   role?: string
   company_id?: string
+  password?: string
+  password_confirmation?: string
 }
 
 export const userApi = {

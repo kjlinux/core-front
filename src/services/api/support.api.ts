@@ -157,6 +157,16 @@ export const supportApi = {
     return apiClient.post(`/support/users/${userId}/reset-password`).then((r) => r.data)
   },
 
+  /** Définit manuellement un mot de passe choisi par le support pour un utilisateur. */
+  setUserPassword(userId: string, password: string, passwordConfirmation: string): Promise<{ userId: string }> {
+    return apiClient
+      .post(`/support/users/${userId}/set-password`, {
+        password,
+        password_confirmation: passwordConfirmation,
+      })
+      .then((r) => r.data)
+  },
+
   /** Prise de contrôle : émet un token agissant comme l'admin de l'entreprise. */
   impersonateCompany(companyId: string): Promise<ImpersonationResult> {
     return apiClient.post(`/support/companies/${companyId}/impersonate`).then((r) => r.data)

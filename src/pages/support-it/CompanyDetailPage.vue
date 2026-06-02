@@ -12,6 +12,7 @@ import AppCard from '@/components/ui/AppCard.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppModal from '@/components/ui/AppModal.vue'
+import AppInput from '@/components/ui/AppInput.vue'
 import AppSearchInput from '@/components/ui/AppSearchInput.vue'
 import AppSpinner from '@/components/ui/AppSpinner.vue'
 import { ArrowLeftIcon, ArrowRightOnRectangleIcon, KeyIcon, PhoneIcon } from '@heroicons/vue/24/outline'
@@ -112,6 +113,45 @@ function closeModal() {
   tempPassword.value = null
 }
 
+const setPwdUser = ref<SupportCompanyUser | null>(null)
+const setPwd = ref('')
+const setPwdConfirm = ref('')
+const settingPwd = ref(false)
+
+function askSetPassword(user: SupportCompanyUser) {
+  setPwd.value = ''
+  setPwdConfirm.value = ''
+  setPwdUser.value = user
+}
+
+function closeSetPassword() {
+  setPwdUser.value = null
+  setPwd.value = ''
+  setPwdConfirm.value = ''
+}
+
+async function doSetPassword() {
+  if (!setPwdUser.value) return
+  if (setPwd.value.length < 8) {
+    toast.error(t('common.failed'), t('parametres.min8'))
+    return
+  }
+  if (setPwd.value !== setPwdConfirm.value) {
+    toast.error(t('common.failed'), t('parametres.passwordMismatch'))
+    return
+  }
+  settingPwd.value = true
+  try {
+    await supportApi.setUserPassword(setPwdUser.value.id, setPwd.value, setPwdConfirm.value)
+    toast.success(t('toast.support.passwordSet'))
+    closeSetPassword()
+  } catch (e) {
+    toast.error(t('common.failed'), extractApiErrorMessage(e, t('common.genericError')))
+  } finally {
+    settingPwd.value = false
+  }
+}
+
 onMounted(async () => {
   try {
     await store.fetchCompanyDetail(id.value)
@@ -182,6 +222,15 @@ onMounted(async () => {
               </AppButton>
               <AppButton
                 v-if="u.role !== 'super_admin'"
+                variant="ghost"
+                size="sm"
+                :title="'Définir un mot de passe manuellement'"
+                @click="askSetPassword(u)"
+              >
+                <KeyIcon class="w-4 h-4" /> Définir MDP
+              </AppButton>
+              <AppButton
+                v-if="u.role !== 'super_admin'"
                 variant="outline"
                 size="sm"
                 :disabled="takingControl === u.id"
@@ -232,6 +281,31 @@ onMounted(async () => {
         <p class="font-mono text-lg bg-gray-50 rounded p-3 text-center select-all">{{ tempPassword }}</p>
         <div class="flex justify-end">
           <AppButton variant="primary" @click="closeModal">Fermer</AppButton>
+        </div>
+      </div>
+    </AppModal>
+
+    <AppModal :model-value="setPwdUser !== null" title="Définir un mot de passe" @update:model-value="closeSetPassword">
+      <div class="space-y-3">
+        <p class="text-sm text-gray-700">
+          Définir un mot de passe pour <strong>{{ setPwdUser?.name }}</strong> ({{ setPwdUser?.email }}).
+          Ses sessions seront déconnectées.
+        </p>
+        <AppInput
+          v-model="setPwd"
+          :label="t('parametres.newPassword')"
+          type="password"
+          autocomplete="new-password"
+        />
+        <AppInput
+          v-model="setPwdConfirm"
+          :label="t('parametres.confirmPassword')"
+          type="password"
+          autocomplete="new-password"
+        />
+        <div class="flex justify-end gap-2">
+          <AppButton variant="ghost" @click="closeSetPassword">Annuler</AppButton>
+          <AppButton variant="primary" :disabled="settingPwd" @click="doSetPassword">Confirmer</AppButton>
         </div>
       </div>
     </AppModal>
