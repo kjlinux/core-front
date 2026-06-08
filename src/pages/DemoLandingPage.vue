@@ -61,18 +61,10 @@ function launch(role: DemoRole) {
     <div class="mx-auto max-w-6xl px-6 py-12 lg:py-16">
       <!-- En-tete -->
       <header class="text-center">
-        <span class="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-sm font-medium text-emerald-300 ring-1 ring-white/15">
-          <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          Démonstration interactive
-        </span>
-        <h1 class="mt-6 text-4xl font-bold tracking-tight sm:text-5xl">
+        <h1 class="text-4xl font-bold tracking-tight sm:text-5xl">
           Testez <span class="bg-gradient-to-r from-emerald-300 to-sky-300 bg-clip-text text-transparent">TangaFlow</span>
           sans inscription
         </h1>
-        <p class="mx-auto mt-4 max-w-2xl text-lg text-slate-300">
-          Choisissez un profil et explorez l'application avec un jeu de données fictif.
-          Ajoutez, modifiez, supprimez : tout fonctionne, rien n'est enregistré.
-        </p>
       </header>
 
       <!-- Cartes de role -->
