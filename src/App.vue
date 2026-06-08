@@ -21,6 +21,13 @@ useDarkMode()
 authStore.loadFromStorage()
 
 const layoutComponent = computed(() => {
+  // Tant que la navigation initiale n'est pas resolue (deep-link au chargement),
+  // route.matched est vide et route.meta.layout indefini : on ne monte AUCUN
+  // layout. Sans ce garde, DashboardLayout (layout par defaut) se monte par
+  // defaut et declenche au onMounted des appels API authentifies (/auth/me,
+  // /menu-badges...) qui, sur une page publique non authentifiee comme /demo,
+  // renvoient 401 et provoquent une redirection vers /login.
+  if (route.matched.length === 0) return null
   const layout = route.meta.layout
   if (layout === 'none') return null
   if (layout === 'auth') return AuthLayout

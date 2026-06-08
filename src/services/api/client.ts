@@ -84,8 +84,10 @@ apiClient.interceptors.response.use(
     const isOnPublicQrPage = currentPath.includes('/qr-scan')
     const isOnPublicReviewPage = currentPath.startsWith('/avis/')
     const isOnAuthPage = currentPath.includes('/forgot-password') || currentPath.includes('/reset-password')
+    // La page publique /demo ne doit jamais etre redirigee vers /login.
+    const isOnDemoPage = currentPath === '/demo' || currentPath.startsWith('/demo/')
 
-    if (error.response?.status === 401 && !isAuthEndpoint && !isOnLoginPage && !isOnPublicQrPage && !isOnPublicReviewPage && !isOnAuthPage) {
+    if (error.response?.status === 401 && !isAuthEndpoint && !isOnLoginPage && !isOnPublicQrPage && !isOnPublicReviewPage && !isOnAuthPage && !isOnDemoPage) {
       // Vider le header Authorization par defaut pour eviter de renvoyer
       // l'ancien token sur les prochaines requetes.
       delete apiClient.defaults.headers.common.Authorization
