@@ -13,6 +13,7 @@ import marketplaceRoutes from './routes/marketplace.routes'
 import settingsRoutes from './routes/settings.routes'
 import paieRoutes from './routes/paie.routes'
 import publicRoutes from './routes/public.routes'
+import demoRoutes from './routes/demo.routes'
 import supportItRoutes from './routes/support-it.routes'
 import whatsNewRoutes from './routes/whats-new.routes'
 import { abonnementRoutes } from './routes/abonnement.routes'
@@ -22,6 +23,7 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     ...publicRoutes,
+    ...demoRoutes,
     ...authRoutes,
     ...dashboardRoutes,
     ...analyticsRoutes,

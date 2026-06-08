@@ -6,6 +6,7 @@ import { useDarkMode } from '@/composables/useDarkMode'
 import AuthLayout from '@/layouts/AuthLayout.vue'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
 import AppToastContainer from '@/components/ui/AppToastContainer.vue'
+import DemoBanner from '@/components/layout/DemoBanner.vue'
 
 const route = useRoute()
 const authStore = useAuthStore()
@@ -33,4 +34,5 @@ const layoutComponent = computed(() => {
     <RouterView />
   </component>
   <AppToastContainer />
+  <DemoBanner />
 </template>

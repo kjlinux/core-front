@@ -4,6 +4,7 @@ import { useActiveCompanyStore } from '@/stores/active-company.store'
 import { useSubscriptionStore } from '@/stores/subscription.store'
 import { shouldAutoShowWhatsNew } from '@/composables/useWhatsNew'
 import { PLAN_FEATURES } from '@/config/plan-features'
+import { isDemoMode } from '@/services/demo'
 import type { UserRole } from '@/types/enums'
 import type { PlanCode, PlanFeature } from '@/types/subscription'
 
@@ -78,7 +79,8 @@ export function authGuard(to: RouteLocationNormalized, _from: RouteLocationNorma
     .slice()
     .reverse()
     .find((r) => (r.meta as { requiredFeature?: PlanFeature })?.requiredFeature)
-  if (matchedWithFeature && auth.user?.role !== 'super_admin') {
+  // En mode démo, toutes les fonctionnalités sont déverrouillées (aucune restriction de plan).
+  if (matchedWithFeature && auth.user?.role !== 'super_admin' && !isDemoMode()) {
     const required = (matchedWithFeature.meta as { requiredFeature?: PlanFeature }).requiredFeature as PlanFeature
     const subs = useSubscriptionStore()
     const plan = (subs.state?.subscription as PlanCode) ?? 'freemium'

@@ -3,6 +3,7 @@ import router from '@/router'
 import { useAuthStore } from '@/stores/auth.store'
 import { disconnectEcho } from '@/services/echo'
 import { extractApiErrorMessage } from '@/utils/api-error'
+import { isDemoMode, installDemoAdapter } from '@/services/demo'
 
 /**
  * Convert camelCase keys to snake_case recursively for API requests.
@@ -112,5 +113,12 @@ apiClient.interceptors.response.use(
     return Promise.reject(error)
   }
 )
+
+// Mode démo : détourne tout le trafic vers la base factice en mémoire.
+// Installé au chargement du module pour intercepter dès le premier appel
+// (ex: /auth/me déclenché par le layout au montage).
+if (isDemoMode()) {
+  installDemoAdapter(apiClient)
+}
 
 export default apiClient
