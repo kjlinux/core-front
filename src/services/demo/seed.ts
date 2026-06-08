@@ -24,25 +24,30 @@ function mulberry32(seed: number) {
 }
 
 const FIRST_NAMES = [
-  'Awa', 'Issa', 'Fatou', 'Moussa', 'Aicha', 'Ibrahim', 'Mariam', 'Boureima',
-  'Salimata', 'Adama', 'Rasmane', 'Bintou', 'Yacouba', 'Safiatou', 'Oumarou',
-  'Korotimi', 'Hamidou', 'Nafissatou', 'Souleymane', 'Djeneba', 'Karim',
+  'Awa', 'Issa', 'Fatou', 'Moussa', 'Aïcha', 'Ibrahim', 'Mariam', 'Boureima',
+  'Salimata', 'Adama', 'Rasmané', 'Bintou', 'Yacouba', 'Safiatou', 'Oumarou',
+  'Korotimi', 'Hamidou', 'Nafissatou', 'Souleymane', 'Djénéba', 'Karim',
   'Habibou', 'Seydou', 'Ramata', 'Alassane', 'Aminata', 'Drissa', 'Kadiatou',
 ]
 const LAST_NAMES = [
-  'Ouedraogo', 'Sawadogo', 'Traore', 'Compaore', 'Kabore', 'Zongo', 'Nikiema',
-  'Sankara', 'Konate', 'Bamogo', 'Ouattara', 'Diallo', 'Sory', 'Tapsoba',
-  'Yameogo', 'Coulibaly', 'Bationo', 'Kafando', 'Ilboudo', 'Dabre', 'Nana',
+  'Ouédraogo', 'Sawadogo', 'Traoré', 'Compaoré', 'Kaboré', 'Zongo', 'Nikiéma',
+  'Sankara', 'Konaté', 'Bamogo', 'Ouattara', 'Diallo', 'Sory', 'Tapsoba',
+  'Yaméogo', 'Coulibaly', 'Bationo', 'Kafando', 'Ilboudo', 'Dabré', 'Nana',
   'Belem', 'Gnoumou', 'Sebgo',
 ]
 const POSITIONS = [
   'Agent de production', 'Superviseur', 'Comptable', 'Technicien',
-  'Agent de securite', 'Responsable RH', 'Magasinier', 'Charge clientele',
+  'Agent de sécurité', 'Responsable RH', 'Magasinier', 'Chargé clientèle',
   'Chauffeur', 'Assistant administratif', 'Commercial', 'Agent de maintenance',
 ]
 
 function pad(n: number, len = 3): string {
   return String(n).padStart(len, '0')
+}
+
+/** Retire les accents (pour générer des emails ASCII valides à partir des noms). */
+function deburr(s: string): string {
+  return s.normalize('NFD').replace(/\p{Diacritic}/gu, '')
 }
 
 function isoDate(d: Date): string {
@@ -106,11 +111,11 @@ export function buildSeedDb(): DemoDb {
 
   // --- Sites & départements ---
   const siteDefs = [
-    { id: 'site-1', name: 'Siege Ouagadougou', address: 'Avenue Kwame Nkrumah, Ouagadougou', lat: 12.3686, lng: -1.5275 },
-    { id: 'site-2', name: 'Agence Bobo-Dioulasso', address: 'Rue de la Liberte, Bobo-Dioulasso', lat: 11.1771, lng: -4.2979 },
-    { id: 'site-3', name: 'Entrepot Koudougou', address: 'Zone industrielle, Koudougou', lat: 12.2526, lng: -2.3623 },
+    { id: 'site-1', name: 'Siège Ouagadougou', address: 'Avenue Kwame Nkrumah, Ouagadougou', lat: 12.3686, lng: -1.5275 },
+    { id: 'site-2', name: 'Agence Bobo-Dioulasso', address: 'Rue de la Liberté, Bobo-Dioulasso', lat: 11.1771, lng: -4.2979 },
+    { id: 'site-3', name: 'Entrepôt Koudougou', address: 'Zone industrielle, Koudougou', lat: 12.2526, lng: -2.3623 },
   ]
-  const deptNames = ['Production', 'Administration', 'Logistique', 'Securite', 'Commercial', 'Maintenance']
+  const deptNames = ['Production', 'Administration', 'Logistique', 'Sécurité', 'Commercial', 'Maintenance']
 
   const departments: Dict[] = []
   const sites: Dict[] = siteDefs.map((s, si) => {
@@ -144,7 +149,7 @@ export function buildSeedDb(): DemoDb {
     startTime: '07:30',
     endTime: '12:30',
     expectedPunches: [
-      { time: '07:30', label: 'Arrivee' },
+      { time: '07:30', label: 'Arrivée' },
       { time: '12:30', label: 'Pause' },
     ],
     lateTolerance: lateTol,
@@ -155,7 +160,7 @@ export function buildSeedDb(): DemoDb {
     endTime: '17:30',
     expectedPunches: [
       { time: '14:00', label: 'Reprise' },
-      { time: '17:30', label: 'Depart' },
+      { time: '17:30', label: 'Départ' },
     ],
     lateTolerance: lateTol,
   })
@@ -212,7 +217,7 @@ export function buildSeedDb(): DemoDb {
       departmentId: dep.id,
       firstName,
       lastName,
-      email: `${firstName.toLowerCase()}.${lastName.toLowerCase()}${i + 1}@demo-tangaflow.bf`,
+      email: `${deburr(firstName).toLowerCase()}.${deburr(lastName).toLowerCase()}${i + 1}@demo-tangaflow.bf`,
       phone: `+226 70 ${pad(10 + i, 2)} ${pad(20 + i, 2)} ${pad(30 + i, 2)}`,
       position: pick(POSITIONS),
       employeeNumber: `DEMO-${pad(i + 1)}`,
@@ -303,14 +308,14 @@ export function buildSeedDb(): DemoDb {
   // --- Jours fériés ---
   const year = new Date().getFullYear()
   const holidays: Dict[] = [
-    { id: 'hol-1', companyId: cid, name: 'Jour de l An', date: `${year}-01-01`, isRecurring: true },
-    { id: 'hol-2', companyId: cid, name: 'Fete du Travail', date: `${year}-05-01`, isRecurring: true },
-    { id: 'hol-3', companyId: cid, name: 'Independance', date: `${year}-12-11`, isRecurring: true },
-    { id: 'hol-4', companyId: cid, name: 'Noel', date: `${year}-12-25`, isRecurring: true },
+    { id: 'hol-1', companyId: cid, name: "Jour de l'An", date: `${year}-01-01`, isRecurring: true },
+    { id: 'hol-2', companyId: cid, name: 'Fête du Travail', date: `${year}-05-01`, isRecurring: true },
+    { id: 'hol-3', companyId: cid, name: 'Indépendance', date: `${year}-12-11`, isRecurring: true },
+    { id: 'hol-4', companyId: cid, name: 'Noël', date: `${year}-12-25`, isRecurring: true },
   ]
 
   // --- Demandes d'absence ---
-  const absReasons = ['Conge annuel', 'Maladie', 'Evenement familial', 'Rendez-vous medical', 'Conge sans solde']
+  const absReasons = ['Congé annuel', 'Maladie', 'Événement familial', 'Rendez-vous médical', 'Congé sans solde']
   const absStatuses = ['pending', 'approved', 'rejected']
   const absenceRequests: Dict[] = Array.from({ length: 9 }, (_, i) => {
     const emp = employees[i + 1]
@@ -330,7 +335,7 @@ export function buildSeedDb(): DemoDb {
       status,
       reviewedBy: status === 'pending' ? null : 'Awa Directrice',
       reviewedAt: status === 'pending' ? null : daysAgo(20 - i * 2 + 1).toISOString(),
-      reviewNote: status === 'rejected' ? 'Periode non couverte' : null,
+      reviewNote: status === 'rejected' ? 'Période non couverte' : null,
       createdAt: daysAgo(22 - i * 2).toISOString(),
     }
   })
@@ -345,7 +350,7 @@ export function buildSeedDb(): DemoDb {
     status: i % 9 === 0 ? 'blocked' : 'active',
     assignedAt: daysAgo(100 - i).toISOString(),
     blockedAt: i % 9 === 0 ? daysAgo(5).toISOString() : undefined,
-    blockReason: i % 9 === 0 ? 'Carte perdue declaree' : undefined,
+    blockReason: i % 9 === 0 ? 'Carte perdue déclarée' : undefined,
     createdAt: daysAgo(110 - i).toISOString(),
   }))
   // Quelques cartes en stock non assignées
@@ -367,7 +372,7 @@ export function buildSeedDb(): DemoDb {
     action: 'assigned',
     performedBy: 'Awa Directrice',
     timestamp: c.assignedAt ?? daysAgo(50).toISOString(),
-    details: `Assignee a ${c.employeeName ?? '-'}`,
+    details: `Assignée à ${c.employeeName ?? '-'}`,
   }))
 
   // --- Appareils RFID / Biométrie / Feelback ---
@@ -388,7 +393,7 @@ export function buildSeedDb(): DemoDb {
     serialNumber: `AS608-${pad(i + 1)}`,
     companyId: cid,
     siteId: s.id,
-    name: `Borne biometrique ${s.name}`,
+    name: `Borne biométrique ${s.name}`,
     isOnline: true,
     lastSyncAt: daysAgo(0).toISOString(),
     firmwareVersion: '2.3.1',
@@ -458,19 +463,19 @@ export function buildSeedDb(): DemoDb {
   // --- Firmware ---
   const firmwareVersions: Dict[] = [
     {
-      id: 'fw-1', version: '2.3.1', deviceKind: 'rfid', description: 'Stabilite MQTT + heartbeat',
+      id: 'fw-1', version: '2.3.1', deviceKind: 'rfid', description: 'Stabilité MQTT + heartbeat',
       fileUrl: undefined, fileSize: 524288, isAutoUpdate: true, isPublished: true,
-      publishedAt: daysAgo(20).toISOString(), uploadedAt: daysAgo(22).toISOString(), uploadedBy: 'Equipe technique',
+      publishedAt: daysAgo(20).toISOString(), uploadedAt: daysAgo(22).toISOString(), uploadedBy: 'Équipe technique',
     },
     {
       id: 'fw-2', version: '2.2.0', deviceKind: 'rfid', description: 'Support double badge',
       fileUrl: undefined, fileSize: 510000, isAutoUpdate: false, isPublished: true,
-      publishedAt: daysAgo(70).toISOString(), uploadedAt: daysAgo(72).toISOString(), uploadedBy: 'Equipe technique',
+      publishedAt: daysAgo(70).toISOString(), uploadedAt: daysAgo(72).toISOString(), uploadedBy: 'Équipe technique',
     },
     {
       id: 'fw-3', version: '1.5.0', deviceKind: 'biometric', description: 'Gestion slots AS608',
       fileUrl: undefined, fileSize: 720000, isAutoUpdate: true, isPublished: true,
-      publishedAt: daysAgo(15).toISOString(), uploadedAt: daysAgo(16).toISOString(), uploadedBy: 'Equipe technique',
+      publishedAt: daysAgo(15).toISOString(), uploadedAt: daysAgo(16).toISOString(), uploadedBy: 'Équipe technique',
     },
   ]
   const OTA = ['success', 'success', 'in_progress', 'failed', 'pending'] as const
@@ -587,9 +592,9 @@ export function buildSeedDb(): DemoDb {
       absenceDeduction,
       lines: [
         { label: 'Salaire de base', type: 'earning', amount: monthly },
-        ...(overtimeAmount ? [{ label: 'Heures supplementaires', type: 'earning', amount: overtimeAmount }] : []),
-        ...(latenessDeduction ? [{ label: 'Penalite retard', type: 'deduction', amount: latenessDeduction }] : []),
-        ...(absenceDeduction ? [{ label: 'Deduction absence', type: 'deduction', amount: absenceDeduction }] : []),
+        ...(overtimeAmount ? [{ label: 'Heures supplémentaires', type: 'earning', amount: overtimeAmount }] : []),
+        ...(latenessDeduction ? [{ label: 'Pénalité retard', type: 'deduction', amount: latenessDeduction }] : []),
+        ...(absenceDeduction ? [{ label: 'Déduction absence', type: 'deduction', amount: absenceDeduction }] : []),
       ],
       grossAmount: gross,
       netAmount: net,
@@ -601,17 +606,17 @@ export function buildSeedDb(): DemoDb {
   // --- Marketplace ---
   const products: Dict[] = [
     {
-      id: 'prod-1', name: 'Carte RFID standard', description: 'Carte de pointage RFID 125 kHz, lot economique.',
+      id: 'prod-1', name: 'Carte RFID standard', description: 'Carte de pointage RFID 125 kHz, lot économique.',
       category: 'standard_card', price: 1500, currency: 'XOF', stockQuantity: 480,
       images: [], customizable: false, minQuantity: 10, isActive: true,
     },
     {
-      id: 'prod-2', name: 'Carte RFID personnalisee', description: 'Carte imprimee au logo de votre entreprise.',
+      id: 'prod-2', name: 'Carte RFID personnalisée', description: 'Carte imprimée au logo de votre entreprise.',
       category: 'custom_card', price: 2500, currency: 'XOF', stockQuantity: 150,
       images: [], customizable: true, minQuantity: 25, isActive: true,
     },
     {
-      id: 'prod-3', name: 'Pack entreprise (lecteur + 100 cartes)', description: 'Kit de demarrage complet pour un site.',
+      id: 'prod-3', name: 'Pack entreprise (lecteur + 100 cartes)', description: 'Kit de démarrage complet pour un site.',
       category: 'enterprise_pack', price: 185000, currency: 'XOF', stockQuantity: 12,
       images: [], customizable: false, minQuantity: 1, isActive: true,
     },
@@ -639,7 +644,7 @@ export function buildSeedDb(): DemoDb {
   const followups: Dict[] = [
     {
       id: 'fup-1', companyId: cid, companyName: cname, type: 'onboarding', status: 'open',
-      priority: 'medium', title: 'Suivi installation site Bobo', notes: 'Verifier la connexion du lecteur',
+      priority: 'medium', title: 'Suivi installation site Bobo', notes: 'Vérifier la connexion du lecteur',
       createdAt: daysAgo(10).toISOString(), updatedAt: daysAgo(2).toISOString(),
     },
   ]

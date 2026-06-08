@@ -16,7 +16,7 @@ export type DemoRole = 'admin_enterprise' | 'manager' | 'employe'
 export const DEMO_ROLES: { role: DemoRole; label: string; home: string }[] = [
   { role: 'admin_enterprise', label: 'Admin entreprise', home: '/' },
   { role: 'manager', label: 'Manager', home: '/' },
-  { role: 'employe', label: 'Employe', home: '/mon-espace' },
+  { role: 'employe', label: 'Employé', home: '/mon-espace' },
 ]
 
 /** Le mode démo est-il actif ? */

@@ -39,7 +39,7 @@ function quit() {
     >
       <span class="flex items-center gap-2 pl-1 font-semibold">
         <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
-        <span class="hidden sm:inline">Mode demo</span>
+        <span class="hidden sm:inline">Mode démo</span>
       </span>
 
       <span class="h-5 w-px bg-white/15"></span>
@@ -67,7 +67,7 @@ function quit() {
         class="rounded-full px-3 py-1 text-xs font-medium text-slate-300 transition hover:bg-white/10"
         @click="reset"
       >
-        Reinitialiser
+        Réinitialiser
       </button>
       <button
         type="button"

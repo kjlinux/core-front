@@ -23,25 +23,25 @@ const roles: RoleCard[] = [
   {
     role: 'admin_enterprise',
     title: 'Admin entreprise',
-    tagline: 'Vue complete de la solution',
+    tagline: 'Vue complète de la solution',
     icon: BuildingOffice2Icon,
-    points: ['Sites, departements et employes', 'Pointage RFID, QR et biometrie', 'Paie, rapports et abonnement'],
+    points: ['Sites, départements et employés', 'Pointage RFID, QR et biométrie', 'Paie, rapports et abonnement'],
     accent: 'from-indigo-500 to-blue-600',
   },
   {
     role: 'manager',
     title: 'Manager',
-    tagline: 'Pilotage des equipes au quotidien',
+    tagline: 'Pilotage des équipes au quotidien',
     icon: UserGroupIcon,
-    points: ['Suivi de presence en temps reel', 'Validation des absences', 'Rapports et tableaux de bord'],
+    points: ['Suivi de présence en temps réel', 'Validation des absences', 'Rapports et tableaux de bord'],
     accent: 'from-emerald-500 to-teal-600',
   },
   {
     role: 'employe',
-    title: 'Employe',
+    title: 'Employé',
     tagline: 'Espace personnel du collaborateur',
     icon: UserIcon,
-    points: ['Mes pointages et mon historique', 'Mes demandes de conge', 'Mes fiches de paie'],
+    points: ['Mes pointages et mon historique', 'Mes demandes de congé', 'Mes fiches de paie'],
     accent: 'from-amber-500 to-orange-600',
   },
 ]
@@ -63,15 +63,15 @@ function launch(role: DemoRole) {
       <header class="text-center">
         <span class="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-sm font-medium text-emerald-300 ring-1 ring-white/15">
           <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          Demonstration interactive
+          Démonstration interactive
         </span>
         <h1 class="mt-6 text-4xl font-bold tracking-tight sm:text-5xl">
           Testez <span class="bg-gradient-to-r from-emerald-300 to-sky-300 bg-clip-text text-transparent">TangaFlow</span>
           sans inscription
         </h1>
         <p class="mx-auto mt-4 max-w-2xl text-lg text-slate-300">
-          Choisissez un profil et explorez l'application avec un jeu de donnees fictif.
-          Ajoutez, modifiez, supprimez : tout fonctionne, rien n'est enregistre.
+          Choisissez un profil et explorez l'application avec un jeu de données fictif.
+          Ajoutez, modifiez, supprimez : tout fonctionne, rien n'est enregistré.
         </p>
       </header>
 
@@ -102,7 +102,7 @@ function launch(role: DemoRole) {
           <span class="mt-6 inline-flex items-center gap-1.5 text-sm font-medium text-emerald-300 group-hover:gap-2.5 transition-all">
             <template v-if="launching === card.role">Lancement...</template>
             <template v-else>
-              Lancer la demo
+              Lancer la démo
               <ArrowRightIcon class="h-4 w-4" />
             </template>
           </span>
@@ -111,7 +111,7 @@ function launch(role: DemoRole) {
 
       <!-- Note bas de page -->
       <p class="mt-12 text-center text-sm text-slate-400">
-        Vous pourrez changer de profil ou reinitialiser les donnees a tout moment depuis la barre de demonstration.
+        Vous pourrez changer de profil ou réinitialiser les données à tout moment depuis la barre de démonstration.
       </p>
     </div>
   </div>

@@ -84,8 +84,8 @@ const demoAdapter: AxiosAdapter = (config: InternalAxiosRequestConfig): Promise<
         if (result === NOT_FOUND) {
           reject({
             config,
-            response: makeResponse({ message: 'Ressource introuvable (demo)' }, 404),
-            message: 'Ressource introuvable (demo)',
+            response: makeResponse({ message: 'Ressource introuvable (démo)' }, 404),
+            message: 'Ressource introuvable (démo)',
             isDemoError: true,
           })
           return

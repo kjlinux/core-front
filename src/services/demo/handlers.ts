@@ -363,7 +363,7 @@ function handleItemAction(
     case 'block':
       item.status = 'blocked'
       item.blockedAt = new Date().toISOString()
-      item.blockReason = body.reason ?? body.blockReason ?? 'Bloquee'
+      item.blockReason = body.reason ?? body.blockReason ?? 'Bloquée'
       saveDb()
       return item
     case 'unblock':
@@ -659,7 +659,7 @@ function dailyReport(db: ReturnType<typeof getDb>, params: Dict): Dict {
   return {
     date,
     departmentId: params.departmentId ?? '',
-    departmentName: 'Tous les departements',
+    departmentName: 'Tous les départements',
     totalEmployees: emps.length,
     present: records.filter((r) => r.status === 'present').length,
     absent: records.filter((r) => r.status === 'absent').length,
