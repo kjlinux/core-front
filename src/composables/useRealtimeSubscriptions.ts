@@ -130,8 +130,18 @@ export function useRealtimeSubscriptions() {
           (authStore.isAdminEnterprise && !!data.companyId && data.companyId === authStore.userCompanyId)
         if (!isTarget) return
 
+        // Resolution du nom lisible : payload > store du module (deja charge sur la page
+        // capteurs concernee) > store support > numero de serie. On n'affiche JAMAIS l'UUID
+        // brut en dernier recours (illisible pour l'utilisateur).
+        const moduleList = (
+          data.deviceType === 'biometric' ? biometricStore.devices
+            : data.deviceType === 'rfid' ? rfidDeviceStore.devices
+              : data.deviceType === 'feelback' ? feelbackDeviceStore.devices
+                : []
+        ) as Array<{ id: string; name?: string }>
+        const moduleName = moduleList.find((d) => d.id === data.deviceId)?.name
         const fallback = supportStore.devices.find((d) => d.id === data.deviceId && d.kind === data.deviceType)
-        const name = data.deviceName ?? fallback?.name ?? data.serialNumber ?? data.deviceId
+        const name = data.deviceName ?? moduleName ?? fallback?.name ?? data.serialNumber ?? 'Capteur'
         const ctx = [data.companyName, data.siteName ?? fallback?.siteName].filter(Boolean).join(' - ')
         const msg = ctx ? `${name} - ${ctx}` : String(name)
 

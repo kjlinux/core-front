@@ -137,7 +137,11 @@ async function launchCapture() {
           captureError.value = t('biometric.captureFailed')
         }
       },
-      { interval: 2000, timeout: 60000 },
+      // Le firmware attend le doigt jusqu'a ENROLL_TIMEOUT_MS (60 s) APRES reception
+      // de la commande MQTT. Le front doit donc patienter plus longtemps que le capteur
+      // (latence commande + capture + remontee du resultat), sinon il affiche un faux
+      // "delai depasse" alors que l'enrolement aboutit cote capteur.
+      { interval: 2000, timeout: 90000 },
     )
     activePoll = poll
     await poll.promise
