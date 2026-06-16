@@ -6,6 +6,7 @@ import { useCompanyStore } from '@/stores/company.store'
 import { useSiteStore } from '@/stores/site.store'
 import { usePermissions } from '@/composables/usePermissions'
 import { useToast } from '@/composables/useToast'
+import { useConfirm } from '@/composables/useConfirm'
 import { useServerTable } from '@/composables/useServerTable'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
@@ -23,6 +24,7 @@ const companyStore = useCompanyStore()
 const siteStore = useSiteStore()
 const permissions = usePermissions()
 const toast = useToast()
+const { confirm: askConfirm } = useConfirm()
 
 const showAddModal = ref(false)
 const showEditModal = ref(false)
@@ -131,7 +133,13 @@ async function handleToggleOnline(device: FeelbackDevice) {
 }
 
 async function handleDelete(id: string) {
-  if (!confirm(t('common.confirm_delete'))) return
+  const ok = await askConfirm({
+    title: t('common.delete'),
+    message: t('common.confirm_delete'),
+    confirmLabel: t('common.delete'),
+    variant: 'danger',
+  })
+  if (!ok) return
   try {
     await deviceStore.deleteDevice(id)
     toast.showSuccess(t('toast.feelback.deviceDeleted'))

@@ -10,6 +10,7 @@ import TheHeader from '@/components/layout/TheHeader.vue'
 import ImpersonationBanner from '@/components/layout/ImpersonationBanner.vue'
 import AppBreadcrumb from '@/components/ui/AppBreadcrumb.vue'
 import CommandPalette from '@/components/ui/CommandPalette.vue'
+import ConfirmModal from '@/components/ui/ConfirmModal.vue'
 
 const ui = useUiStore()
 const authStore = useAuthStore()
@@ -57,5 +58,7 @@ onUnmounted(() => {
       </main>
       <CommandPalette />
     </div>
+
+    <ConfirmModal />
   </div>
 </template>

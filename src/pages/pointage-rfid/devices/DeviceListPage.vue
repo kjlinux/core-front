@@ -8,6 +8,7 @@ import { useSiteStore } from '@/stores/site.store'
 import { usePermissions } from '@/composables/usePermissions'
 import { useServerTable } from '@/composables/useServerTable'
 import { useToast } from '@/composables/useToast'
+import { useConfirm } from '@/composables/useConfirm'
 import { mqttApi } from '@/services/api/mqtt.api'
 import type { DeviceCommand } from '@/services/api/mqtt.api'
 import { rfidDeviceApi } from '@/services/api/rfid-device.api'
@@ -40,6 +41,7 @@ const companyStore = useCompanyStore()
 const siteStore = useSiteStore()
 const permissions = usePermissions()
 const toast = useToast()
+const { confirm: askConfirm } = useConfirm()
 
 const showAddModal = ref(false)
 const isSubmitting = ref(false)
@@ -162,7 +164,13 @@ async function handleCommand(deviceId: string, command: DeviceCommand) {
 }
 
 async function handleDelete(id: string) {
-  if (!confirm(t('common.confirm_delete'))) return
+  const ok = await askConfirm({
+    title: t('common.delete'),
+    message: t('common.confirm_delete'),
+    confirmLabel: t('common.delete'),
+    variant: 'danger',
+  })
+  if (!ok) return
   try {
     await deviceStore.deleteDevice(id)
     toast.showSuccess(t('devices.deletedSuccess'))
