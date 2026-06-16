@@ -662,6 +662,14 @@ const sections: MenuSection[] = [
             match: (p) => p.startsWith('/parametres/fiches-installation'),
           },
           {
+            id: 'fiche-maintenance',
+            labelKey: 'nav.ficheMaintenance',
+            to: '/parametres/fiches-maintenance',
+            icon: WrenchScrewdriverIcon,
+            roles: SETUP,
+            match: (p) => p.startsWith('/parametres/fiches-maintenance'),
+          },
+          {
             id: 'param-rapport-tech',
             labelKey: 'nav.rapportTechnicien',
             to: '/parametres/rapport-technicien',

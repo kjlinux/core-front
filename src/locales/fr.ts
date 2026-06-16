@@ -72,6 +72,7 @@ export default {
     supportItTickets: 'Plaintes clients',
     rapportTechnicien: 'Rapport technicien',
     ficheInstallation: "Fiches d'installation",
+    ficheMaintenance: 'Fiches de maintenance',
     activitesTechniciens: 'Activités techniciens',
     rapportsPlanifies: 'Rapports planifiés',
     supportPlaintes: 'Support / Plaintes',

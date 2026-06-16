@@ -67,6 +67,33 @@ const settingsRoutes: RouteRecordRaw[] = [
         },
       },
       {
+        path: 'fiches-maintenance',
+        name: 'technicien-maintenance-sheets',
+        component: () => import('@/pages/parametres/MaintenanceSheetsListPage.vue'),
+        meta: {
+          title: 'Fiches de maintenance',
+          roles: [UserRole.SUPER_ADMIN, UserRole.TECHNICIEN],
+        },
+      },
+      {
+        path: 'fiches-maintenance/nouvelle',
+        name: 'technicien-maintenance-sheet',
+        component: () => import('@/pages/parametres/MaintenanceSheetCreatePage.vue'),
+        meta: {
+          title: 'Nouvelle fiche de maintenance',
+          roles: [UserRole.SUPER_ADMIN, UserRole.TECHNICIEN],
+        },
+      },
+      {
+        path: 'fiches-maintenance/:id',
+        name: 'technicien-maintenance-sheet-detail',
+        component: () => import('@/pages/parametres/MaintenanceSheetDetailPage.vue'),
+        meta: {
+          title: 'Fiche de maintenance',
+          roles: [UserRole.SUPER_ADMIN, UserRole.TECHNICIEN],
+        },
+      },
+      {
         path: 'rapport-technicien',
         name: 'technicien-report',
         component: () => import('@/pages/parametres/TechnicienReportPage.vue'),
