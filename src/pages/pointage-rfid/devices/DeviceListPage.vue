@@ -162,9 +162,11 @@ async function handleCommand(deviceId: string, command: DeviceCommand) {
 }
 
 async function handleDelete(id: string) {
+  if (!confirm(t('common.confirm_delete'))) return
   try {
     await deviceStore.deleteDevice(id)
     toast.showSuccess(t('devices.deletedSuccess'))
+    await reload()
   } catch {
     toast.showError(t('devices.deleteError'))
   }

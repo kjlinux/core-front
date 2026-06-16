@@ -179,6 +179,17 @@ export const useBiometricStore = defineStore('biometric', () => {
     }
   }
 
+  async function deleteDevice(id: string) {
+    isLoading.value = true
+    try {
+      await biometricApi.deleteDevice(id)
+      devices.value = devices.value.filter((d) => d.id !== id)
+      if (currentDevice.value?.id === id) currentDevice.value = null
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   /**
    * Appelé par useRealtimeSubscriptions - met à jour le statut d'un device biométrique.
    */
@@ -211,6 +222,7 @@ export const useBiometricStore = defineStore('biometric', () => {
     deleteEnrollment,
     setDeviceOnline,
     syncDevice,
+    deleteDevice,
     handleRealtimeDevice,
   }
 })

@@ -31,6 +31,7 @@ import {
   FingerPrintIcon,
   PlusIcon,
   WifiIcon,
+  TrashIcon,
 } from '@heroicons/vue/24/outline'
 
 const { t } = useI18n()
@@ -165,6 +166,17 @@ async function handleSync(device: BiometricDevice) {
   }
 }
 
+async function handleDelete(id: string) {
+  if (!confirm(t('common.confirm_delete'))) return
+  try {
+    await store.deleteDevice(id)
+    toast.showSuccess(t('devices.deletedSuccess'))
+    await reload()
+  } catch {
+    toast.showError(t('devices.deleteError'))
+  }
+}
+
 async function handleAddDevice() {
   if (!newDevice.value.name || !newDevice.value.companyId || !newDevice.value.siteId) {
     toast.showError(t('devices.fillRequired'))
@@ -264,6 +276,16 @@ onMounted(async () => {
               @click="handleToggleOnline(row)"
             >
               <WifiIcon class="w-4 h-4" />
+            </AppButton>
+            <AppButton
+              v-if="canManage"
+              size="sm"
+              variant="ghost"
+              class="text-red-600 hover:text-red-700"
+              :title="t('devices.deleteBtn')"
+              @click="handleDelete(row.id)"
+            >
+              <TrashIcon class="w-4 h-4" />
             </AppButton>
           </div>
         </template>
