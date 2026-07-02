@@ -1,5 +1,7 @@
 // Seuil par défaut (minutes) aligné sur devices.offline_threshold_minutes côté backend.
-export const DEFAULT_OFFLINE_THRESHOLD_MINUTES = 5
+// Relevé à 15 min : les terminaux ne pingent pas de façon régulière < 5 min, un seuil court
+// affichait « hors ligne » à tort entre deux signaux.
+export const DEFAULT_OFFLINE_THRESHOLD_MINUTES = 15
 
 /**
  * Détermine si un capteur est réellement en ligne à partir de son dernier signal,
